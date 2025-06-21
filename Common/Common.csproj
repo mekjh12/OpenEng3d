@@ -1,0 +1,100 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{A88A06C4-C819-47A1-828F-DB054C066BEE}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Common</RootNamespace>
+    <AssemblyName>Common</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="OpenGL.Net, Version=0.8.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\OpenGL.Net.0.8.4\lib\net461\OpenGL.Net.dll</HintPath>
+    </Reference>
+    <Reference Include="OpenGL.Net.Math, Version=0.8.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\OpenGL.Net.Math.0.8.4\lib\net461\OpenGL.Net.Math.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Numerics.Vectors, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Numerics.Vectors.4.3.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.3.0\lib\netstandard1.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Abstractions\BaseEntity.cs" />
+    <Compile Include="Abstractions\BaseModel3d.cs" />
+    <Compile Include="Abstractions\BaseRenderer3d.cs" />
+    <Compile Include="Abstractions\BoundVolume.cs" />
+    <Compile Include="Abstractions\Camera.cs" />
+    <Compile Include="Abstractions\Color.cs" />
+    <Compile Include="Abstractions\GeometricElement.cs" />
+    <Compile Include="Abstractions\IAnimateComponent.cs" />
+    <Compile Include="Abstractions\IBaseEntity.cs" />
+    <Compile Include="Abstractions\IBoundVolumeCostable.cs" />
+    <Compile Include="Abstractions\IBoundVolumable.cs" />
+    <Compile Include="Abstractions\ICamera.cs" />
+    <Compile Include="Abstractions\ICameraProperties.cs" />
+    <Compile Include="Abstractions\ICameraTransformation.cs" />
+    <Compile Include="Abstractions\ICameraMovement.cs" />
+    <Compile Include="Abstractions\ICameraLifecycle.cs" />
+    <Compile Include="Abstractions\IPhysicsComponent.cs" />
+    <Compile Include="Abstractions\IShaderProgram.cs" />
+    <Compile Include="Abstractions\ITransformable.cs" />
+    <Compile Include="Abstractions\Light.cs" />
+    <Compile Include="Abstractions\ShaderProgram.cs" />
+    <Compile Include="Abstractions\UniformLoader.cs" />
+    <Compile Include="Core\GUID.cs" />
+    <Compile Include="Mathematics\Pose.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="주의사항.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Geometry\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ZetaExt\ZetaExt.csproj">
+      <Project>{878cf1d9-16ce-4e58-a6e7-165d00c56d1f}</Project>
+      <Name>ZetaExt</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

@@ -1,0 +1,75 @@
+//-----------------------------------------------------------------------------
+// 테셀레이션 제어 셰이더 (Tessellation Control Shader)
+// 거리 기반 적응형 테셀레이션을 구현
+//-----------------------------------------------------------------------------
+#version 430
+
+// 패치당 4개의 제어점 출력 설정
+
+layout(vertices = 4) out;
+
+// 버텍스 셰이더로부터의 입력
+in vec2 Tex1[];           // 입력 텍스처 좌표 배열
+
+// 테셀레이션 평가 셰이더로의 출력
+out vec2 Tex2[];          // 출력 텍스처 좌표 배열
+out vec4 ViewSpacePos[];  // 뷰 공간 위치 배열
+
+// 변환 행렬
+uniform mat4 proj;        // 투영 행렬
+uniform mat4 model;       // 모델 행렬
+uniform mat4 view;        // 뷰 행렬
+
+void main()
+{
+    // 제어점 위치와 텍스처 좌표를 출력으로 전달
+    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
+    Tex2[gl_InvocationID] = Tex1[gl_InvocationID];
+
+    // 모델-뷰 변환 행렬 계산
+    mat4 gView = view * model;
+
+    // 단계 1: 각 정점을 뷰 공간으로 변환
+    vec4 ViewSpacePos00 = gView * gl_in[0].gl_Position;  // 좌하단
+    vec4 ViewSpacePos01 = gView * gl_in[1].gl_Position;  // 우하단
+    vec4 ViewSpacePos10 = gView * gl_in[2].gl_Position;  // 좌상단
+    vec4 ViewSpacePos11 = gView * gl_in[3].gl_Position;  // 우상단
+
+    // 단계 2: 각 정점의 뷰 공간에서의 거리 계산
+    float Len00 = length(ViewSpacePos00.xyz);
+    float Len01 = length(ViewSpacePos01.xyz);
+    float Len10 = length(ViewSpacePos10.xyz);
+    float Len11 = length(ViewSpacePos11.xyz);
+
+    // 거리 기반 테셀레이션을 위한 상수
+    const float MIN_DISTANCE = 1;     // 최대 테셀레이션 적용 거리
+    const float MAX_DISTANCE = 400;   // 최소 테셀레이션 적용 거리
+
+    // 단계 3: 거리값을 [0,1] 범위로 정규화
+    float Distance00 = clamp((Len00 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0.0, 1.0);
+    float Distance01 = clamp((Len01 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0.0, 1.0);
+    float Distance10 = clamp((Len10 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0.0, 1.0);
+    float Distance11 = clamp((Len11 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0.0, 1.0);
+
+    // 테셀레이션 레벨 범위
+    const int MIN_TESS_LEVEL = 16;    // 최소 테셀레이션 분할 수
+    const int MAX_TESS_LEVEL = 64;   // 최대 테셀레이션 분할 수
+
+    // 단계 4: 각 엣지의 테셀레이션 레벨 계산
+    // 각 엣지에서 가까운 정점의 거리를 기준으로 보간
+    float TessLevel0 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(Distance10, Distance00));  // 좌측 엣지
+    float TessLevel1 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(Distance00, Distance01));  // 하단 엣지
+    float TessLevel2 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(Distance01, Distance11));  // 우측 엣지
+    float TessLevel3 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(Distance11, Distance10));  // 상단 엣지
+
+    // 단계 5: 외곽 엣지 테셀레이션 레벨 설정
+    gl_TessLevelOuter[0] = TessLevel0;
+    gl_TessLevelOuter[1] = TessLevel1;
+    gl_TessLevelOuter[2] = TessLevel2;
+    gl_TessLevelOuter[3] = TessLevel3;
+
+    // 단계 6: 내부 테셀레이션 레벨 설정
+    // 대응되는 외곽 엣지들 중 높은 값 사용
+    gl_TessLevelInner[0] = max(TessLevel1, TessLevel3);  // 수평 방향
+    gl_TessLevelInner[1] = max(TessLevel0, TessLevel2);  // 수직 방향
+}

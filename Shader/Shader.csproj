@@ -1,0 +1,212 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{3B2ECAA9-57BD-4B21-BFB8-B5DE46C80D4B}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Shader</RootNamespace>
+    <AssemblyName>Shader</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DocumentationFile>
+    </DocumentationFile>
+    <NoWarn>1591</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="OpenGL.Net, Version=0.8.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\OpenGL.Net.0.8.4\lib\net461\OpenGL.Net.dll</HintPath>
+    </Reference>
+    <Reference Include="OpenGL.Net.Math, Version=0.8.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\OpenGL.Net.Math.0.8.4\lib\net461\OpenGL.Net.Math.dll</HintPath>
+    </Reference>
+    <Reference Include="OpenGL.Net.WinForms, Version=0.8.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\OpenGL.Net.WinForms.0.8.4\lib\net461\OpenGL.Net.WinForms.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Numerics.Vectors, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Numerics.Vectors.4.3.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.3.0\lib\netstandard1.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="ZetaExt">
+      <HintPath>..\ZetaExt\bin\Debug\ZetaExt.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AnimateShader\AnimateShader.cs" />
+    <Compile Include="AtmosphericScatteringLUT\AtmosphericScatteringLUT.cs" />
+    <Compile Include="CloudShader\CloudShadowMapShader.cs" />
+    <Compile Include="CloudShader\CloudTestRenderShader.cs" />
+    <Compile Include="CloudShader\CloudComputeShader.cs" />
+    <Compile Include="AtmosphericScatteringLUT\AtmosphericLUTComputeShader.cs" />
+    <Compile Include="AtmosphericScatteringLUT\AtmosphericRenderShader.cs" />
+    <Compile Include="GlobalUniformBuffers.cs" />
+    <Compile Include="ShaderManager.cs" />
+    <Compile Include="SkyDomeShader\CloudShader.cs" />
+    <Compile Include="SkyDomeShader\SkyDomeRenderShader.cs" />
+    <Compile Include="SkyDomeShader\SkyDomeTexture2dShader.cs" />
+    <Compile Include="SkyDomeShader\SkyColorShader.cs" />
+    <Compile Include="SkyDomeShader\VolumetricCloudShader.cs" />
+    <Compile Include="TerrainShader\HzbComputeShader.cs" />
+    <Compile Include="TerrainShader\TerrainChunkShader.cs" />
+    <Compile Include="TerrainShader\SimpleTerrainShader.cs" />
+    <Compile Include="VegetationBillboardShader\VegetationBillboardShader.cs" />
+    <Compile Include="ImpostorShader\ImpostorShader.cs" />
+    <Compile Include="BillboardShader\BillboardShader.cs" />
+    <Compile Include="HzmShader\HzmMipmapShader.cs" />
+    <Compile Include="HzmShader\HzmDepthShader.cs" />
+    <Compile Include="ComputeShader\ComputeShader.cs" />
+    <Compile Include="ScreenShader\NullDepthShader3.cs" />
+    <Compile Include="ScreenShader\NullDepthShader.cs" />
+    <Compile Include="ScreenShader\ScreenShader.cs" />
+    <Compile Include="ColorShader\ColorShader.cs" />
+    <Compile Include="InertiaShader\InertiaShader.cs" />
+    <Compile Include="NoiseShader\NoiseShader.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TerrainShader\TerrainDepthShader.cs" />
+    <Compile Include="TerrainShader\TerrainImposterShader.cs" />
+    <Compile Include="TerrainShader\TerrainTessellationShader .cs" />
+    <Compile Include="SkyBoxShader\SkyBoxShader.cs" />
+    <Compile Include="SimpleDepthShader\SimpleDepthShader.cs" />
+    <Compile Include="UnlitShader\UnlitShader.cs" />
+    <Compile Include="ZDepthShader\ZDepthShader.cs" />
+    <Compile Include="StaticShader\StaticShader.cs" />
+    <Compile Include="InfiniteGridShader\InfiniteGridShader.cs" />
+    <Compile Include="WorleyNoiseGenShader\WorleyNoiseGenShader.cs" />
+    <Compile Include="WorleyNoiseShader\WorleyNoiseShader.cs" />
+    <Compile Include="VolumeRenderShader\VolumeRenderShader.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="AnimateShader\ani.frag" />
+    <None Include="AnimateShader\ani.vert" />
+    <None Include="AtmosphericScatteringLUT\scattering.comp" />
+    <None Include="CloudShader\noise3d.comp" />
+    <None Include="CloudShader\volumeRaycasting.frag" />
+    <None Include="CloudShader\cloudRenderTest.frag" />
+    <None Include="CloudShader\cloudRenderTest.vert" />
+    <None Include="CloudShader\shadowMap.comp" />
+    <None Include="CloudShader\noise.comp" />
+    <None Include="AtmosphericScatteringLUT\atmosphere.comp" />
+    <None Include="AtmosphericScatteringLUT\atmosphere.frag" />
+    <None Include="AtmosphericScatteringLUT\atmosphere.vert" />
+    <None Include="includes\lib_terrain_normal.glsl" />
+    <None Include="includes\lib_terrain_height_sampling.glsl" />
+    <None Include="includes\lib_vegetation.glsl" />
+    <None Include="includes\lib_terrain_texturing.glsl" />
+    <None Include="includes\lib_fog_effect.glsl" />
+    <None Include="SkyDomeShader\volumetric_cloud.comp" />
+    <None Include="SkyDomeShader\cloudGenerator.comp" />
+    <None Include="SkyDomeShader\skyColorGenerator.comp" />
+    <None Include="SkyDomeShader\skydome.frag" />
+    <None Include="SkyDomeShader\skydome.vert" />
+    <None Include="TerrainShader\simple.vert" />
+    <None Include="TerrainShader\simple.frag" />
+    <None Include="TerrainShader\simple.tcs.glsl" />
+    <None Include="TerrainShader\simple.tes.glsl" />
+    <None Include="TerrainShader\hzb_compute.comp" />
+    <None Include="TerrainShader\test.frag" />
+    <None Include="TerrainShader\chunk.vert" />
+    <None Include="TerrainShader\chunk.frag" />
+    <None Include="TerrainShader\chunk.tcs.glsl" />
+    <None Include="TerrainShader\chunk.tes.glsl" />
+    <None Include="VegetationBillboardShader\vegetation.frag" />
+    <None Include="VegetationBillboardShader\vegetation.gem.glsl" />
+    <None Include="VegetationBillboardShader\vegetation.vert" />
+    <None Include="ColorShader\color.frag" />
+    <None Include="ColorShader\color.vert" />
+    <None Include="ImpostorShader\impostor.gem.glsl" />
+    <None Include="ImpostorShader\impostor.frag" />
+    <None Include="ImpostorShader\impostor.vert" />
+    <None Include="BillboardShader\billboard.frag" />
+    <None Include="BillboardShader\billboard.gem.glsl" />
+    <None Include="BillboardShader\billboard.vert" />
+    <None Include="common\PerspectiveProjMat.glsl" />
+    <None Include="common\boxIntersectFuncs.glsl" />
+    <None Include="common\perlinNoise3d.glsl" />
+    <None Include="common\worleyNoise3d.glsl" />
+    <None Include="common\noiseFuncsImproved.glsl" />
+    <None Include="common\noiseFuncs.glsl" />
+    <None Include="HzmShader\copy.frag" />
+    <None Include="HzmShader\hi-z.frag" />
+    <None Include="HzmShader\hi-z.gs.glsl" />
+    <None Include="HzmShader\post.gs.glsl" />
+    <None Include="HzmShader\depth.frag" />
+    <None Include="HzmShader\dummy.vert" />
+    <None Include="NoiseShader\noise3-3.frag" />
+    <None Include="NoiseShader\noise3-2.frag" />
+    <None Include="NoiseShader\noise3-1.frag" />
+    <None Include="NoiseShader\noise3.vert" />
+    <None Include="NoiseShader\noise3.frag" />
+    <None Include="NoiseShader\noise2-2.frag" />
+    <None Include="NoiseShader\noise2-1.frag" />
+    <None Include="NoiseShader\noise2.frag" />
+    <None Include="NoiseShader\noise1.frag" />
+    <None Include="NoiseShader\noise1.vert" />
+    <None Include="packages.config" />
+    <None Include="InfiniteGridShader\grid.frag" />
+    <None Include="InfiniteGridShader\grid.vert" />
+    <None Include="ComputeShader\hiz.comp" />
+    <None Include="ScreenShader\screen.frag" />
+    <None Include="ScreenShader\screen.vert" />
+    <None Include="TerrainShader\null.frag" />
+    <None Include="TerrainShader\terrain.frag" />
+    <None Include="TerrainShader\terrain.tcs.glsl" />
+    <None Include="TerrainShader\terrain.tes.glsl" />
+    <None Include="TerrainShader\terrain.vert" />
+    <None Include="SimpleDepthShader\null.frag" />
+    <None Include="SimpleDepthShader\simple.vert" />
+    <None Include="UnlitShader\unlit.frag" />
+    <None Include="UnlitShader\unlit.vert" />
+    <None Include="StaticShader\static.frag" />
+    <None Include="StaticShader\static.vert" />
+    <None Include="WorleyNoiseGenShader\worleyGen.frag" />
+    <None Include="WorleyNoiseGenShader\worleyGen.vert" />
+    <None Include="WorleyNoiseShader\worley.frag" />
+    <None Include="WorleyNoiseShader\worley.vert" />
+    <None Include="VolumeRenderShader\vr.frag" />
+    <None Include="VolumeRenderShader\vr.vert" />
+    <None Include="ZDepthShader\zdepth.frag" />
+    <None Include="ZDepthShader\zdepth.vert" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Common\Common.csproj">
+      <Project>{a88a06c4-c819-47a1-828f-db054c066bee}</Project>
+      <Name>Common</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

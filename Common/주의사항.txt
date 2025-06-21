@@ -1,0 +1,27 @@
+﻿Solution
+├── Common.Abstractions     // 인터페이스와 추상 클래스
+│   ├── Entities/
+│   │   ├── IPrimitiveEntity.cs
+│   │   └── IEntity.cs
+│   └── Components/
+│       └── IComponent.cs
+│
+├── Common.Core            // 핵심 기능 구현
+│   ├── Entities/
+│   │   └── PrimitiveEntity.cs
+│   └── Base/
+│       └── BaseComponent.cs
+│
+├── Common.Mathematics    // 수학 관련
+│   ├── Vectors/
+│   └── Matrices/
+│
+└── Common.Graphics      // 그래픽스 관련 기본 구조
+    ├── Primitives/
+    └── Rendering/
+
+
+* 주의할 점:
+ - Common에 너무 많은 책임을 주지 않기
+ - 실제 구현은 각 기능별 프로젝트에 두기
+ - Common은 최대한 가볍게 유지하기

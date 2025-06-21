@@ -1,0 +1,39 @@
+﻿#version 430
+layout(local_size_x = 8, local_size_y = 8) in;
+
+layout(binding = 0) uniform sampler2D InputDepth;
+layout(binding = 1, r32f) uniform writeonly image2D OutputDepth;
+uniform int CurrentLevel;
+
+void main()
+{
+	ivec2 texCoord = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 inputSize = textureSize(InputDepth, CurrentLevel);
+	
+	if (any(greaterThanEqual(texCoord, inputSize / 2))) 
+		return;
+	
+	// 2x2 영역의 깊이값 샘플링
+	vec4 depths;
+	ivec2 baseCoord = texCoord * 2;
+	
+	depths.x = texelFetch(InputDepth, baseCoord, CurrentLevel).r;
+	
+	if (baseCoord.x + 1 < inputSize.x)
+		depths.y = texelFetch(InputDepth, baseCoord + ivec2(1, 0), CurrentLevel).r;
+	else
+		depths.y = depths.x;
+		
+	if (baseCoord.y + 1 < inputSize.y)
+		depths.z = texelFetch(InputDepth, baseCoord + ivec2(0, 1), CurrentLevel).r;
+	else
+		depths.z = depths.x;
+		
+	if (all(lessThan(baseCoord + ivec2(1), inputSize)))
+		depths.w = texelFetch(InputDepth, baseCoord + ivec2(1, 1), CurrentLevel).r;
+	else
+		depths.w = depths.x;
+	
+	float maxDepth = max(max(depths.x, depths.y), max(depths.z, depths.w));
+	imageStore(OutputDepth, texCoord, vec4(0.5f));
+}

@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Model3d.Entity">
+    <Position X="2.75" Y="8" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AEQAAAAAAWgAkAUgKfIAEAIAEAIEAACQCAhEAEgAiAA=</HashCode>
+      <FileName>Entity.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Common.Abstractions.BaseEntity">
+    <Position X="3" Y="4" Width="1.5" />
+    <TypeIdentifier />
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Model3d.LodEntity">
+    <Position X="0.75" Y="17.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAABAAAAAAAgAABAAAAAAAAAAAAgAgAAAAAA=</HashCode>
+      <FileName>LodEntity.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Model3d.LODComponent" BaseTypeListCollapsed="true">
+    <Position X="2.5" Y="19.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAABAACAAAAAAAAAAAAAACAAgAAAAgAAAAAA=</HashCode>
+      <FileName>LODComponent.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Occlusion.OccluderEntity">
+    <Position X="5.5" Y="17.25" Width="1.5" />
+    <TypeIdentifier />
+    <Lollipop Position="0.2" />
+  </Class>
+  <Interface Name="Common.Abstractions.ITransformable">
+    <Position X="5.25" Y="8" Width="1.5" />
+    <TypeIdentifier />
+  </Interface>
+  <Interface Name="Geometry.IBoundBoxable">
+    <Position X="5.25" Y="12" Width="1.5" />
+    <TypeIdentifier />
+  </Interface>
+  <Interface Name="Occlusion.IOcclusionable">
+    <Position X="7.25" Y="17.25" Width="1.5" />
+    <TypeIdentifier />
+  </Interface>
+  <Interface Name="Model3d.ILodable">
+    <Position X="2.5" Y="17.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAA=</HashCode>
+      <FileName>ILodable.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Font Name="맑은 고딕" Size="9" />
+</ClassDiagram>

@@ -1,0 +1,28 @@
+#version 430
+
+// 정점 입력 데이터
+layout(location = 0) in vec2 position; // 기본 사각형의 정점 좌표 (0,0), (1,0), (0,1), (1,1)
+
+// 청크 변환 관련 uniform 변수들
+uniform vec3 chunkOffset;   // 청크의 월드 공간 오프셋 (x, y 사용)
+uniform float chunkSize;    // 청크의 전체 크기
+
+// 출력 텍스처 좌표
+out vec2 Tex1;
+
+void main() 
+{
+   // 청크의 절반 크기 계산 (정점 변환에 사용)
+   const float CHUNK_HALF_SIZE = chunkSize * 0.5f;
+   
+   // 로컬 좌표를 월드 좌표로 변환
+   // position * CHUNK_HALF_SIZE: 청크 크기만큼 스케일링
+   // + chunkOffset.xy: 청크 오프셋만큼 이동
+   vec2 worldPos = (position * CHUNK_HALF_SIZE) + chunkOffset.xy;
+   
+   // 텍스처 좌표 설정 (예: 입력 position을 그대로 사용)
+   Tex1 = position;
+   
+   // 최종 정점 위치 설정 (z=0으로 2D 평면상에 위치)
+   gl_Position = vec4(worldPos, 0.0, 1.0);
+}

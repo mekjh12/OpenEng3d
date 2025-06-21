@@ -1,0 +1,256 @@
+﻿#version 430 core
+
+// 작업 그룹 크기 정의
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
+
+// 출력 텍스처 (3D 산란 LUT)
+layout(binding = 0, rgba32f) uniform image3D scatteringLUT;
+
+// 입력 텍스처 (2D 투과율 LUT)
+layout(binding = 1) uniform sampler2D transmittanceLUT;
+
+// 대기 매개변수
+uniform float R_e;         // 지구 반지름 (km)
+uniform float R_a;         // 대기 반지름 (km)
+uniform vec3 beta_R;       // Rayleigh 산란 계수
+uniform float beta_M;      // Mie 산란 계수
+uniform float H_R;         // Rayleigh 스케일 높이
+uniform float H_M;         // Mie 스케일 높이
+uniform float g;           // Mie 비대칭 계수
+uniform int viewSamples;   // 뷰 광선 샘플 수
+uniform vec3 I_sun;        // 태양 강도
+
+// LUT 크기 및 매개변수
+uniform vec3 lutDimensions;    // (viewAngles, sunAngles, heights)
+
+// 수학적 상수
+#define M_PI 3.1415926535897932384626433832795
+
+/**
+ * 광선과 구의 교차점을 계산
+ */
+vec2 raySphereIntersection(vec3 o, vec3 d, float r) 
+{
+    float a = dot(d, d);
+    float b = 2.0 * dot(o, d);
+    float c = dot(o, o) - r * r;
+    float discriminant = b * b - 4.0 * a * c;
+    
+    if (discriminant < 0.0) {
+        return vec2(100000.0, -100000.0);
+    }
+    
+    float sqrtDet = sqrt(discriminant);
+    return vec2((-b - sqrtDet) / (2.0 * a), (-b + sqrtDet) / (2.0 * a));
+}
+
+/**
+ * 텍스처 LUT 좌표에서 실제 매개변수로 변환
+ */
+void getLUTParams(ivec3 coords, vec3 dimensions, out float height, out vec3 viewDir, out vec3 sunDir) 
+{
+    // 좌표를 [0,1] 범위로 정규화
+    vec3 uvw = vec3(coords) / vec3(dimensions - 1);
+    
+    // 높이 매핑: 지표면(R_e)에서 대기 상한(R_a)까지
+    height = mix(R_e, R_a, uvw.z);
+    
+    // 시야 방향 계산: 구면 좌표계 사용
+    float viewZenith = uvw.x * M_PI; // 0 ~ π (천정각)
+    float viewAzimuth = uvw.y * 2.0 * M_PI; // 0 ~ 2π (방위각)
+    
+    viewDir = vec3(
+        sin(viewZenith) * cos(viewAzimuth),
+        sin(viewZenith) * sin(viewAzimuth),
+        cos(viewZenith)
+    );
+    
+    // 태양 방향 계산: 고정된 방위각(0)과 변화하는 천정각
+    // 태양 천정각만 변경 (0은 천정, π/2는 지평선, π는 직하)
+    float sunZenith = mix(0.0, M_PI, uvw.y);
+    
+    sunDir = vec3(
+        sin(sunZenith), 
+        0.0, 
+        cos(sunZenith)
+    );
+}
+
+/**
+ * LUT에서 투과율 조회를 위한 UV 좌표 계산
+ */
+vec2 getTransmittanceUV(float height, float mu) 
+{
+    // 높이를 [0,1] 범위로 정규화
+    float h = (height - R_e) / (R_a - R_e);
+    
+    // 현재 높이에서의 수평선 방향 계산
+    float horizonMu = -sqrt(1.0 - (R_e * R_e) / (height * height));
+    
+    float x;
+    if (mu < horizonMu) {
+        // 수평선 아래 방향 (지구 방향)
+        x = (mu - (-1.0)) / (horizonMu - (-1.0)) * 0.5;
+    } else {
+        // 수평선 위 방향 (우주 방향)
+        x = 0.5 + (mu - horizonMu) / (1.0 - horizonMu) * 0.5;
+    }
+    
+    return vec2(x, 1.0f - h);
+}
+
+/**
+ * 투과율 LUT에서 투과율 조회
+ */
+vec3 getTransmittance(float height, float mu) 
+{
+    vec2 uv = getTransmittanceUV(height, mu);
+    return texture(transmittanceLUT, uv).rgb;
+}
+
+/**
+ * 위상 함수 계산
+ */
+float rayleighPhase(float mu) 
+{
+    return 3.0 / (16.0 * M_PI) * (1.0 + mu * mu);
+}
+
+float miePhase(float mu, float g) 
+{
+    float g2 = g * g;
+    return 3.0 / (8.0 * M_PI) * 
+           ((1.0 - g2) * (1.0 + mu * mu)) / 
+           ((2.0 + g2) * pow(1.0 + g2 - 2.0 * g * mu, 1.5));
+}
+
+/**
+ * 특정 관찰자 위치와 방향에서의 대기 산란 계산
+ */
+vec4 computeScatteringAtPoint(vec3 rayOrigin, vec3 rayDir, vec3 sunDir) 
+{
+    // 지구와의 교차 확인
+    vec2 earthIntersect = raySphereIntersection(rayOrigin, rayDir, R_e);
+    
+    // 대기와의 교차점 계산
+    vec2 atmosphereIntersect = raySphereIntersection(rayOrigin, rayDir, R_a);
+    
+    // 광선이 대기 영역에 있는지 확인
+    if (atmosphereIntersect.y < 0) {
+        return vec4(0.0); // 대기를 지나지 않음
+    }
+    
+    // 샘플링 범위 설정 (대기 시작 ~ 지구 교차 또는 대기 끝)
+    float startDist = max(0.0, atmosphereIntersect.x);
+    float endDist = (earthIntersect.x > 0 && earthIntersect.x < atmosphereIntersect.y) ? 
+                    earthIntersect.x : atmosphereIntersect.y;
+    
+    float segmentLength = (endDist - startDist) / float(viewSamples);
+    float tCurrent = startDist;
+    
+    // Rayleigh와 Mie 산란 누적값
+    vec3 rayleighScattering = vec3(0.0);
+    vec3 mieScattering = vec3(0.0);
+    
+    // 광선을 따라 샘플링
+    for (int i = 0; i < viewSamples; i++) 
+    {
+        // 현재 샘플 위치
+        vec3 samplePoint = rayOrigin + rayDir * (tCurrent + segmentLength * 0.5);
+        float height = length(samplePoint) - R_e;
+        
+        // 샘플이 지구 내부인 경우 스킵
+        if (height < 0) {
+            tCurrent += segmentLength;
+            continue;
+        }
+        
+        // 샘플에서 태양 방향으로의 각도
+        float sunMu = dot(normalize(samplePoint), sunDir);
+        
+        // 샘플에서 태양까지의 투과율
+        vec3 transmittanceToSun = getTransmittance(height, sunMu);
+        
+        // 관찰자에서 샘플까지의 투과율
+        vec3 transmittanceToEye;
+        
+        // 관찰자가 지구 중심에 가깝게 위치한 경우
+        if (length(rayOrigin) - R_e < 0.0001) 
+        {
+            // 중심 위치에서 샘플 방향으로의 각도
+            float viewMu = dot(normalize(samplePoint - rayOrigin), rayDir);
+            float sampleDist = height; // 근사값
+            
+            // 관찰자에서 샘플까지의 투과율
+            transmittanceToEye = getTransmittance(length(rayOrigin) - R_e, viewMu);
+        } 
+        else 
+        {
+            // 샘플에서 관찰자 방향으로의 각도
+            vec3 sampleToOrigin = rayOrigin - samplePoint;
+            float distToOrigin = length(sampleToOrigin);
+            vec3 dirToOrigin = sampleToOrigin / distToOrigin;
+            float sampleMu = dot(normalize(samplePoint), dirToOrigin);
+            
+            // 샘플에서 관찰자까지의 투과율
+            transmittanceToEye = getTransmittance(height, sampleMu);
+        }
+        
+        // 현재 샘플의 대기 밀도
+        float densityR = exp(-height / H_R) * segmentLength;
+        float densityM = exp(-height / H_M) * segmentLength;
+        
+        // 산란 누적 (sun -> sample -> eye)
+        rayleighScattering += densityR * transmittanceToSun * transmittanceToEye;
+        mieScattering += densityM * transmittanceToSun * transmittanceToEye;
+        
+        tCurrent += segmentLength;
+    }
+    
+    // 위상 함수 계산 (sun -> sample -> eye 방향)
+    float mu = dot(rayDir, sunDir);
+    float phaseR = rayleighPhase(mu);
+    float phaseM = miePhase(mu, g);
+    
+    // 최종 산란 결과 (Rayleigh와 Mie 산란 합산)
+    vec3 totalScattering = (
+        beta_R * phaseR * rayleighScattering + 
+        beta_M * phaseM * mieScattering * vec3(1.0)
+    ) * I_sun;
+    
+    // 시각적 동적 범위를 넓히기 위해 로그 인코딩 적용
+    // L = log(1 + k*S) / log(1 + k) 변환 적용 (k=10)
+    float k = 10.0;
+    vec3 logEncoded = log(1.0 + k * totalScattering) / log(1.0 + k);
+    
+    return vec4(logEncoded, 1.0);
+}
+
+void main() 
+{
+    // 글로벌 워크 아이템 ID
+    ivec3 coords = ivec3(gl_GlobalInvocationID.xyz);
+    
+    // LUT 범위를 벗어난 경우 계산 중단
+    if (coords.x >= lutDimensions.x || 
+        coords.y >= lutDimensions.y || 
+        coords.z >= lutDimensions.z) {
+        return;
+    }
+    
+    // 좌표를 물리적 매개변수로 변환
+    float height;     // 관찰자 높이
+    vec3 viewDir;     // 시야 방향
+    vec3 sunDir;      // 태양 방향
+    
+    getLUTParams(coords, lutDimensions, height, viewDir, sunDir);
+    
+    // 관찰자 위치 계산 (지구 중심 기준)
+    vec3 origin = vec3(0.0, 0.0, height);
+    
+    // 특정 조건에서의 대기 산란 계산
+    vec4 scattering = computeScatteringAtPoint(origin, viewDir, sunDir);
+    
+    // 결과를 LUT에 저장
+    imageStore(scatteringLUT, coords, scattering);
+}

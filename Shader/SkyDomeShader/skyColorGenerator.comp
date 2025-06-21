@@ -1,0 +1,129 @@
+﻿// SkyColorGenerator.comp - 하늘색만 생성하는 컴퓨트 셰이더
+#version 430 core
+
+// 컴퓨트 셰이더 워크그룹 크기
+layout (local_size_x = 16, local_size_y = 16) in;
+
+// 출력 이미지
+layout (rgba16f, binding = 0) writeonly uniform image2D skyTexture;
+
+// 유니폼 변수
+uniform vec3 sunPosition;          // 태양 위치 (정규화된 방향 벡터)
+
+// 상수
+const float PI = 3.14159265359;
+const float TWO_PI = 2.0 * PI;
+
+// 색상 상수
+const vec3 sunColor = vec3(1.0, 0.95, 0.8);           // 태양 색상
+const vec3 skyZenithColor = vec3(0.3, 0.5, 0.9);      // 천정 색상
+const vec3 skyHorizonColor = vec3(0.7, 0.85, 1.0);    // 지평선 색상
+const vec3 sunGlowColor = vec3(1.0, 0.9, 0.7);        // 태양 주변 글로우 색상
+const vec3 sunriseColor = vec3(1.0, 0.6, 0.4);        // 일출/일몰 색상
+
+//----------------------------------------------------------------------
+// 하늘 색상 계산 함수들
+//----------------------------------------------------------------------
+
+// 일출/일몰 효과 계산
+float calculateSunsetFactor(vec3 sunPos) {
+    if (sunPos.z < 0.5) {
+        return max(0.0, 1.0 - sunPos.z * 2.0);
+    }
+    return 0.0;
+}
+
+// 기본 하늘 색상 계산
+vec3 calculateBaseSkyColor(float skyBlend) {
+    // 천정과 지평선 사이의 색상 혼합
+    return mix(skyHorizonColor, skyZenithColor, skyBlend);
+}
+
+// 태양 효과 계산 (태양 디스크와 글로우)
+vec3 addSunEffect(vec3 baseColor, vec3 pixelDir, float sunsetFactor) {
+    float dotProduct = dot(pixelDir, sunPosition);
+    vec3 resultColor = baseColor;
+    
+    // 태양과의 각도 계산 (내적값은 -1 ~ 1 범위, 1에 가까울수록 태양에 가까움)
+    float sunFactor = max(0.0, (dotProduct - 0.9) * 10.0);
+    
+    // 태양 주변 글로우 효과
+    if (dotProduct > 0.95 && dotProduct < 0.99) {
+        float glowFactor = (dotProduct - 0.95) * 25.0;
+        resultColor = mix(resultColor, sunGlowColor, glowFactor);
+    }
+    
+    // 태양 자체
+    if (dotProduct > 0.995) {
+        resultColor = sunColor;
+    } else {
+        // 일반적인 태양 효과
+        resultColor = mix(resultColor, sunColor, sunFactor);
+    }
+    
+    return resultColor;
+}
+
+// 일출/일몰 색상 효과 적용
+vec3 applySunsetEffect(vec3 baseColor, vec3 pixelDir, float skyBlend, float sunsetFactor) {
+    if (sunsetFactor <= 0.0) {
+        return baseColor;
+    }
+    
+    float dotProduct = dot(pixelDir, sunPosition);
+    float horizonFactor = (1.0 - skyBlend) * sunsetFactor;
+    float sunDirFactor = 0.5 + 0.5 * dotProduct;
+    float sunsetBlend = horizonFactor * sunDirFactor * 0.7;
+    
+    return mix(baseColor, sunriseColor, sunsetBlend);
+}
+
+// 전체 하늘 색상 계산 (태양 및 일출/일몰 효과 모두 포함)
+vec3 calculateSkyColor(vec3 pixelDir, float skyBlend) {
+    // 기본 하늘 색상 계산
+    vec3 skyColor = calculateBaseSkyColor(skyBlend);
+    
+    // 일출/일몰 효과 계산
+    float sunsetFactor = calculateSunsetFactor(sunPosition);
+    
+    // 일출/일몰 효과 적용
+    skyColor = applySunsetEffect(skyColor, pixelDir, skyBlend, sunsetFactor);
+    
+    // 태양 효과 추가
+    skyColor = addSunEffect(skyColor, pixelDir, sunsetFactor);
+    
+    return skyColor;
+}
+
+//----------------------------------------------------------------------
+// 메인 함수
+//----------------------------------------------------------------------
+void main() 
+{
+    // 텍스처 크기
+    ivec2 texSize = imageSize(skyTexture);
+    ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+    
+    // 텍스처 좌표 계산 (0-1 범위)
+    vec2 uv = vec2(pixelCoords) / vec2(texSize - 1);
+    
+    // 구면 좌표 변환
+    float azimuth = uv.x * TWO_PI;          // 경도 (0-2π)
+    float altitude = uv.y * PI / 2.0;       // 위도 (0-π/2, 상반구만)
+    
+    // 3D 방향 벡터 계산
+    vec3 pixelDir = vec3(
+        cos(altitude) * cos(azimuth),
+        cos(altitude) * sin(azimuth),
+        sin(altitude)
+    );
+    
+    // 천정과 지평선 사이의 혼합
+    float skyBlend = sin(altitude); // 천정(1)에서 지평선(0)으로
+    
+    // 하늘 색상 계산
+    vec3 finalColor = calculateSkyColor(pixelDir, skyBlend);
+    
+    // 최종 색상 출력
+    imageStore(skyTexture, pixelCoords, vec4(finalColor, 1.0));
+}

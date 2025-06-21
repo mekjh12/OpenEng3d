@@ -1,0 +1,352 @@
+﻿// SkyGenerator.comp - 구름 레이어가 개선된 컴퓨트 셰이더
+#version 430 core
+
+// 컴퓨트 셰이더 워크그룹 크기
+layout (local_size_x = 16, local_size_y = 16) in;
+
+// 출력 이미지
+layout (rgba16f, binding = 0) writeonly uniform image2D skyTexture;
+
+// 유니폼 변수
+uniform vec3 sunPosition;              // 태양 위치 (정규화된 방향 벡터)
+uniform float cloudCoverage;           // 구름 커버리지 (0.0 - 1.0)
+
+// 구름 레이어 정의 (직접적인 고도 지정)
+uniform float cloudBaseAltitude;       // 구름 바닥 고도 (0.0 - 1.0, 0 = 지평선, 1 = 천정)
+uniform float cloudTopAltitude;        // 구름 최상층 고도 (0.0 - 1.0)
+uniform float cloudFeatheringDistance; // 구름 경계면 페더링 거리 (0.0 - 0.2)
+
+// 구름 품질 설정
+uniform float cloudDensity;            // 구름 밀도 (0.0 - 2.0)
+uniform float cloudDetail;             // 구름 디테일 수준 (0.0 - 2.0)
+
+// 기타 설정
+uniform vec4 randomSeed;               // 랜덤 시드
+uniform float time;                    // 시간 변수
+uniform vec3 cloudOffset;              // 구름 오프셋
+
+// 상수
+const float PI = 3.14159265359;
+const float TWO_PI = 2.0 * PI;
+const float HALF_PI = PI * 0.5;
+
+// 색상 상수
+const vec3 sunColor = vec3(1.0, 0.95, 0.8);           // 태양 색상
+const vec3 skyZenithColor = vec3(0.3, 0.5, 0.9);      // 천정 색상
+const vec3 skyHorizonColor = vec3(0.7, 0.85, 1.0);    // 지평선 색상
+const vec3 sunGlowColor = vec3(1.0, 0.9, 0.7);        // 태양 주변 글로우 색상
+const vec3 sunriseColor = vec3(1.0, 0.6, 0.4);        // 일출/일몰 색상
+const vec3 cloudBrightColor = vec3(1.0, 1.0, 1.0);    // 밝은 구름 색상
+const vec3 cloudDarkColor = vec3(0.6, 0.6, 0.7);      // 어두운 구름 색상
+const vec3 cloudSunsetColor = vec3(1.0, 0.7, 0.5);    // 일몰 때 구름 색상
+
+//----------------------------------------------------------------------
+// 2D 노이즈 함수 (구면 좌표에 최적화)
+//----------------------------------------------------------------------
+
+// 2D 해시 함수
+float hash2D(vec2 p) {
+    p = fract(p * vec2(123.34, 234.34));
+    p += dot(p, p + 34.45);
+    return fract(p.x * p.y);
+}
+
+// 2D 값 노이즈 구현 (구면 좌표에 적합)
+float noise2D(vec2 p) {
+    vec2 ip = floor(p);
+    vec2 fp = fract(p);
+    
+    // 스무스 스텝을 사용한 보간 계산
+    fp = fp * fp * (3.0 - 2.0 * fp);
+    
+    // 네 코너에서의 해시값 계산
+    float a = hash2D(ip);
+    float b = hash2D(ip + vec2(1.0, 0.0));
+    float c = hash2D(ip + vec2(0.0, 1.0));
+    float d = hash2D(ip + vec2(1.0, 1.0));
+    
+    // 바일린어 보간을 사용하여 최종 노이즈 값 계산
+    float x1 = mix(a, b, fp.x);
+    float x2 = mix(c, d, fp.x);
+    
+    return mix(x1, x2, fp.y) * 2.0 - 1.0;
+}
+
+// 구면 좌표에 적용된 fbm (Fractal Brownian Motion)
+float sphericalFBM(vec2 sphereCoord, int octaves, float lacunarity, float persistence) {
+    float value = 0.0;
+    float amplitude = 0.5;
+    float frequency = 1.0;
+    
+    // 구면 좌표 시스템에서는 azimuth(경도)가 0-2PI, altitude(위도)가 0-PI/2의 범위를 가짐
+    // 랜덤 시드 적용
+    vec2 p = sphereCoord + randomSeed.xy;
+    
+    // 경도 처리 시 경계 조건 고려 (0과 2π가 연결됨)
+    for (int i = 0; i < octaves; i++) {
+        // 위도에 따른 노이즈 스케일 조정 (극점 부근에서 왜곡 방지)
+        float latFactor = sin(sphereCoord.y); // 적도에서 1, 극점에서 0
+        
+        // 샘플링 위치 계산 - 경도의 주기성 고려
+        vec2 samplePos = vec2(
+            sin(sphereCoord.x * frequency) * 10.0,
+            cos(sphereCoord.x * frequency) * 10.0 + sphereCoord.y * frequency * 5.0
+        );
+        
+        // 위도에 따른 스케일 조정 적용
+        samplePos.y *= max(0.1, latFactor);
+        
+        value += amplitude * noise2D(samplePos);
+        amplitude *= persistence;
+        frequency *= lacunarity;
+    }
+    
+    return value;
+}
+
+// 구름 패턴 생성을 위한 특화된 구면 노이즈
+float cloudNoise(vec2 sphereCoord, float baseScale, float detailScale) {
+    // 구름 패턴에 특화된 노이즈 설정
+    vec2 cloudPos = sphereCoord + cloudOffset.xy * 0.1;
+    
+    // 위도(altitude)에 따른 노이즈 스케일 조정
+    float altitudeFactor = sin(sphereCoord.y) / sin(HALF_PI); // 0(지평선)에서 1(천정)까지 정규화
+    
+    // 구름의 기본 형태를 위한 대규모 노이즈
+    float baseNoise = sphericalFBM(cloudPos * (baseScale * (0.8 + 0.4 * altitudeFactor)), 3, 2.0, 0.5);
+    
+    // 구름의 세부 디테일을 위한 소규모 노이즈 (cloudDetail 매개변수 사용)
+    float detailNoise = sphericalFBM(cloudPos * (detailScale * (0.8 + 0.4 * altitudeFactor)), 2, 2.0, 0.5) * cloudDetail;
+    
+    // 두 노이즈 결합
+    return baseNoise * 0.65 + detailNoise * 0.35;
+}
+
+//----------------------------------------------------------------------
+// 하늘 색상 계산 함수들
+//----------------------------------------------------------------------
+
+// 일출/일몰 효과 계산
+float calculateSunsetFactor(vec3 sunPos) {
+    if (sunPos.z < 0.5) {
+        return max(0.0, 1.0 - sunPos.z * 2.0);
+    }
+    return 0.0;
+}
+
+// 기본 하늘 색상 계산
+vec3 calculateBaseSkyColor(float skyBlend) {
+    // 천정과 지평선 사이의 색상 혼합
+    return mix(skyHorizonColor, skyZenithColor, skyBlend);
+}
+
+// 태양 효과 계산 (태양 디스크와 글로우)
+vec3 addSunEffect(vec3 baseColor, vec3 pixelDir, float sunsetFactor) {
+    float dotProduct = dot(pixelDir, sunPosition);
+    vec3 resultColor = baseColor;
+    
+    // 태양과의 각도 계산 (내적값은 -1 ~ 1 범위, 1에 가까울수록 태양에 가까움)
+    float sunFactor = max(0.0, (dotProduct - 0.9) * 10.0);
+    
+    // 태양 주변 글로우 효과
+    if (dotProduct > 0.95 && dotProduct < 0.99) {
+        float glowFactor = (dotProduct - 0.95) * 25.0;
+        resultColor = mix(resultColor, sunGlowColor, glowFactor);
+    }
+    
+    // 태양 자체
+    if (dotProduct > 0.995) {
+        resultColor = sunColor;
+    } else {
+        // 일반적인 태양 효과
+        resultColor = mix(resultColor, sunColor, sunFactor);
+    }
+    
+    return resultColor;
+}
+
+// 일출/일몰 색상 효과 적용
+vec3 applySunsetEffect(vec3 baseColor, vec3 pixelDir, float skyBlend, float sunsetFactor) {
+    if (sunsetFactor <= 0.0) {
+        return baseColor;
+    }
+    
+    float dotProduct = dot(pixelDir, sunPosition);
+    float horizonFactor = (1.0 - skyBlend) * sunsetFactor;
+    float sunDirFactor = 0.5 + 0.5 * dotProduct;
+    float sunsetBlend = horizonFactor * sunDirFactor * 0.7;
+    
+    return mix(baseColor, sunriseColor, sunsetBlend);
+}
+
+// 전체 하늘 색상 계산 (태양 및 일출/일몰 효과 모두 포함)
+vec3 calculateSkyColor(vec3 pixelDir, float skyBlend) {
+    // 기본 하늘 색상 계산
+    vec3 skyColor = calculateBaseSkyColor(skyBlend);
+    
+    // 일출/일몰 효과 계산
+    float sunsetFactor = calculateSunsetFactor(sunPosition);
+    
+    // 일출/일몰 효과 적용
+    skyColor = applySunsetEffect(skyColor, pixelDir, skyBlend, sunsetFactor);
+    
+    // 태양 효과 추가
+    skyColor = addSunEffect(skyColor, pixelDir, sunsetFactor);
+    
+    return skyColor;
+}
+
+//----------------------------------------------------------------------
+// 구름 레이어 함수들 (개선됨)
+//----------------------------------------------------------------------
+
+// 주어진 고도가 구름 레이어 내에 있는지 확인하고 페더링 가중치 계산
+float getCloudLayerWeight(float normalizedAltitude) {
+    // 페더링 거리 계산
+    float featherDist = max(0.01, cloudFeatheringDistance);
+    
+    // 구름층 상단과 하단에 페더링 적용
+    if (normalizedAltitude < cloudBaseAltitude) {
+        // 구름 바닥보다 아래 - 페더링 영역인지 확인
+        float dist = cloudBaseAltitude - normalizedAltitude;
+        if (dist < featherDist) {
+            return 1.0 - (dist / featherDist); // 0에서 1로 증가
+        }
+        return 0.0; // 구름 영역 밖
+    } 
+    else if (normalizedAltitude > cloudTopAltitude) {
+        // 구름 상단보다 위 - 페더링 영역인지 확인
+        float dist = normalizedAltitude - cloudTopAltitude;
+        if (dist < featherDist) {
+            return 1.0 - (dist / featherDist); // 1에서 0으로 감소
+        }
+        return 0.0; // 구름 영역 밖
+    }
+    
+    // 구름 레이어 내부 - 중심에서 최대 밀도
+    float centerAltitude = (cloudBaseAltitude + cloudTopAltitude) * 0.5;
+    float distFromCenter = abs(normalizedAltitude - centerAltitude);
+    float layerHalfThickness = (cloudTopAltitude - cloudBaseAltitude) * 0.5;
+    
+    // 중심에서 최대 가중치, 경계로 갈수록 감소
+    return max(0.5, 1.0 - (distFromCenter / layerHalfThickness) * 0.5);
+}
+
+// 구름 노이즈 패턴 생성 (구면 좌표용)
+float generateCloudPattern(vec2 sphereCoord, float threshold) {
+    // 구름 패턴의 세부 조정을 위한 매개변수
+    float baseNoiseScale = 1.0 + cloudDensity * 0.5; // 기본 패턴 스케일
+    float detailNoiseScale = 2.0 + cloudDensity; // 디테일 패턴 스케일
+    
+    // 구름 패턴 생성
+    float cloudPattern = cloudNoise(sphereCoord, baseNoiseScale, detailNoiseScale);
+    
+    // 구름 threshold를 적용한 밀도 계산
+    return max(0.0, (cloudPattern - threshold) / (1.0 - threshold));
+}
+
+// 구름 색상 계산
+vec3 calculateCloudColor(float cloudAmount, vec3 pixelDir, vec3 skyColor, float sunsetFactor) {
+    // 태양 방향과 픽셀 사이의 각도 (구름 그림자와 밝기 계산용)
+    float cloudSunDot = dot(pixelDir, sunPosition);
+    
+    // 구름 밝기 계산 (태양 위치에 따라 변경됨)
+    float cloudBrightness = 0.5 + 0.5 * cloudSunDot;
+    
+    // 구름 내부 그림자 계산 (구름 밀도에 따라 달라짐)
+    float cloudShadow = cloudAmount * cloudDensity * 0.5;
+    cloudBrightness = max(0.2, cloudBrightness - cloudShadow);
+    
+    // 구름 색상 계산 (태양 위치에 따라 변경됨)
+    vec3 baseCloudColor;
+    if (sunsetFactor > 0.0) {
+        float cloudSunsetFactor = sunsetFactor * max(0.0, cloudSunDot) * (1.0 - pixelDir.z);
+        baseCloudColor = mix(cloudBrightColor, cloudSunsetColor, cloudSunsetFactor);
+    } else {
+        baseCloudColor = cloudBrightColor;
+    }
+    
+    // 최종 구름 색상 계산
+    vec3 actualCloudColor = mix(cloudDarkColor, baseCloudColor, cloudBrightness);
+    
+    // 구름 색상에 약간의 하늘색 적용 (대기 효과)
+    return mix(actualCloudColor, skyColor, 0.05);
+}
+
+// 하늘에 구름 추가 (개선된 버전)
+vec3 addClouds(vec3 skyColor, vec2 sphereCoord, vec3 pixelDir, float altitude) {
+    // 구름이 거의 없으면 계산 생략
+    if (cloudCoverage < 0.01) {
+        return skyColor;
+    }
+    
+    // 고도 정규화 (0-1 범위)
+    float normalizedAltitude = altitude / HALF_PI;
+    
+    // 구름 레이어 가중치 계산 (0이면 구름 없음, 1이면 최대 밀도)
+    float layerWeight = getCloudLayerWeight(normalizedAltitude);
+    
+    if (layerWeight <= 0.0) {
+        return skyColor; // 구름 레이어 밖
+    }
+    
+    // 일출/일몰 효과 계산 (구름 색상 계산에 사용)
+    float sunsetFactor = calculateSunsetFactor(sunPosition);
+    
+    // 구름 패턴 생성
+    float cloudThreshold = 0.1 - cloudCoverage * 0.2;
+    float cloudAmount = generateCloudPattern(sphereCoord, cloudThreshold);
+    
+    // 레이어 가중치와 커버리지 적용
+    cloudAmount *= layerWeight * cloudCoverage * 1.5;
+    
+    // 구름 양이 0.01보다 클 때만 구름 효과 적용
+    if (cloudAmount > 0.01) {
+        // 구름 색상 계산
+        vec3 cloudColor = calculateCloudColor(cloudAmount, pixelDir, skyColor, sunsetFactor);
+        
+        // 구름과 하늘색 혼합
+        return mix(skyColor, cloudColor, cloudAmount);
+    }
+    
+    return skyColor;
+}
+
+//----------------------------------------------------------------------
+// 메인 함수
+//----------------------------------------------------------------------
+void main() 
+{
+    // 텍스처 크기
+    ivec2 texSize = imageSize(skyTexture);
+    ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+    
+    // 텍스처 좌표 계산 (0-1 범위)
+    vec2 uv = vec2(pixelCoords) / vec2(texSize - 1);
+    
+    // 구면 좌표 변환
+    float azimuth = uv.x * TWO_PI;          // 경도 (0-2π)
+    float altitude = uv.y * HALF_PI;        // 위도 (0-π/2, 상반구만)
+    
+    // 구면 좌표 쌍 (노이즈 계산에 사용)
+    vec2 sphereCoord = vec2(azimuth, altitude);
+    
+    // 3D 방향 벡터 계산
+    vec3 pixelDir = vec3(
+        cos(altitude) * cos(azimuth),
+        cos(altitude) * sin(azimuth),
+        sin(altitude)
+    );
+    
+    // 천정과 지평선 사이의 혼합
+    float skyBlend = sin(altitude); // 천정(1)에서 지평선(0)으로
+    
+    // 하늘 색상 계산
+    vec3 finalColor = calculateSkyColor(pixelDir, skyBlend);
+    
+    // 구름 추가 (개선된 레이어 처리)
+    finalColor = addClouds(finalColor, sphereCoord, pixelDir, altitude);
+    
+    // 최종 색상 출력
+    imageStore(skyTexture, pixelCoords, vec4(finalColor, 1.0));
+}

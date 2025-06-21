@@ -1,0 +1,10 @@
+﻿// 폰트를 읽어오기 위한 설정
+// (사용법) bitmap font generator 프로그램을 이용하여 fnt, png 파일을 추출한다.
+// font설정은 32로
+// export설정은 가로,세로 크기는 2의 배수로, margin 3x3으로 해야 테두리가 깔끔하게 추출된다.
+//
+//hangul, hangul_0.png, hangul.fnt, 1.8
+consalas, consalas_0.png, consalas.fnt, 1.8
+harrington, harrington.png, harrington.fnt,1.8
+d2coding, d2coding_0.png, d2coding.fnt, 1.8
+//geogia, geogia_0.png, geogia.fnt, 1.8

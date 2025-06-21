@@ -1,0 +1,98 @@
+﻿#version 430 core
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
+layout(rgba32f, binding = 0) uniform image3D outputTexture;
+
+// 유니폼 변수들
+uniform float time;
+uniform vec3 resolution;
+
+// Worley 노이즈 파라미터
+uniform float numCellsPerAxis; // 셀 개수
+
+// 해시 함수 - 3D 위치에서 의사 랜덤 값 생성
+float hash(vec3 p) {
+    p = fract(p * vec3(123.34, 234.34, 345.65));
+    p += dot(p, p + 34.45);
+    return fract(p.x * p.y * p.z);
+}
+
+// 3D 위치에서 랜덤 포인트 생성
+vec3 randomPoint(ivec3 cellPos) {
+    vec3 seed = vec3(cellPos) + vec3(numCellsPerAxis * 10);
+    return vec3(
+        hash(seed + vec3(0, 0, 0)),
+        hash(seed + vec3(1, 0, 0)),
+        hash(seed + vec3(0, 1, 0))
+    );
+}
+
+// 유클리드 거리
+float calculateDistance(vec3 p1, vec3 p2) {
+    return length(p1 - p2);
+}
+
+void main()
+{
+    ivec3 texelCoord = ivec3(gl_GlobalInvocationID.xyz);
+    
+    // 텍스처 경계 체크
+    if(texelCoord.x >= int(resolution.x) || texelCoord.y >= int(resolution.y) || texelCoord.z >= int(resolution.z)) {
+        return;
+    }
+    
+    // 현재 텍셀의 3D 위치 계산 (0~1 사이의 정규화된 좌표)
+    vec3 position = vec3(texelCoord) / resolution;
+
+    // Worley 노이즈 계산
+    float minDist = 1.0; // 최소 거리 (큰 값으로 초기화)
+    float secondMinDist = 1.0; // 두 번째로 작은 거리
+
+    // 현재 위치가 속한 셀 계산
+    float cellSize = 1.0 / float(numCellsPerAxis);
+    ivec3 cellIndex = ivec3(floor(position / cellSize));
+
+    // 27개의 인접 셀 검사 (현재 셀 포함)
+    for(int xOffset = -1; xOffset <= 1; xOffset++) {
+        for(int yOffset = -1; yOffset <= 1; yOffset++) {
+            for(int zOffset = -1; zOffset <= 1; zOffset++) {
+                ivec3 neighborCell = cellIndex + ivec3(xOffset, yOffset, zOffset);
+                
+                // 격자의 순환 처리 (테셀레이션 노이즈 패턴을 위해)
+                ivec3 wrappedCell = neighborCell;
+                wrappedCell = (wrappedCell + ivec3(numCellsPerAxis)) % ivec3(numCellsPerAxis);
+                
+                // 해당 셀의 랜덤 포인트 생성
+                vec3 point = vec3(wrappedCell) * cellSize + randomPoint(wrappedCell) * cellSize;
+                
+                // 점까지의 거리 계산
+                float dist = calculateDistance(position, point);
+                
+                // 최소 거리 및 두 번째 최소 거리 갱신
+                if(dist < minDist) {
+                    secondMinDist = minDist;
+                    minDist = dist;
+                } else if(dist < secondMinDist) {
+                    secondMinDist = dist;
+                }
+            }
+        }
+    }
+
+     // F1: 가장 가까운 점까지의 거리
+    float f1 = minDist * 2.0; // 0~1 범위로 스케일링
+    
+    // F2: 두 번째로 가까운 점까지의 거리
+    float f2 = secondMinDist * 2.0; // 0~1 범위로 스케일링
+    
+    // F2-F1: 가장 가까운 점과 두 번째로 가까운 점 사이의 거리 차이
+    float f2_minus_f1 = f1 - f2;
+    
+    // 노이즈 값을 이미지에 저장
+    // R 채널: F1 (가장 가까운 거리)
+    // G 채널: F2 (두 번째로 가까운 거리)
+    // B 채널: F2-F1 (경계 강조)
+    // A 채널: 1.0 (완전 불투명)
+    imageStore(outputTexture, texelCoord, vec4(1.0f-f1, 1.0f-f2, f2_minus_f1, 1.0));
+    
+}

@@ -1,0 +1,289 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{935EAF29-C765-42A7-9679-2C99EF36A4C7}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>FormTools</RootNamespace>
+    <AssemblyName>FormTools</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+    <PublishUrl>게시\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="OpenGL.Net, Version=0.8.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\OpenGL.Net.0.8.4\lib\net461\OpenGL.Net.dll</HintPath>
+    </Reference>
+    <Reference Include="OpenGL.Net.Math, Version=0.8.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Model3d\bin\Debug\OpenGL.Net.Math.dll</HintPath>
+    </Reference>
+    <Reference Include="OpenGL.Net.WinForms, Version=0.8.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\OpenGL.Net.WinForms.0.8.4\lib\net461\OpenGL.Net.WinForms.dll</HintPath>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="FormAsyncTest.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormAsyncTest.Designer.cs">
+      <DependentUpon>FormAsyncTest.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormCloud.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormCloud.Designer.cs">
+      <DependentUpon>FormCloud.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormHzm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormHzm.Designer.cs">
+      <DependentUpon>FormHzm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormImpostor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormImpostor.Designer.cs">
+      <DependentUpon>FormImpostor.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormEntityTest.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormEntityTest.Designer.cs">
+      <DependentUpon>FormEntityTest.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormPhysics.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormPhysics.Designer.cs">
+      <DependentUpon>FormPhysics.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormTerrain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormTerrain.Designer.cs">
+      <DependentUpon>FormTerrain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormTerrainImposter.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormTerrainImposter.Designer.cs">
+      <DependentUpon>FormTerrainImposter.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormTexture3d.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormTexture3d.Designer.cs">
+      <DependentUpon>FormTexture3d.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormTileBaker.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormTileBaker.Designer.cs">
+      <DependentUpon>FormTileBaker.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormAnimation.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormAnimation.Designer.cs">
+      <DependentUpon>FormAnimation.cs</DependentUpon>
+    </Compile>
+    <Compile Include="IRenderer.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="FormAsyncTest.resx">
+      <DependentUpon>FormAsyncTest.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormCloud.resx">
+      <DependentUpon>FormCloud.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormHzm.resx">
+      <DependentUpon>FormHzm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormImpostor.resx">
+      <DependentUpon>FormImpostor.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormEntityTest.resx">
+      <DependentUpon>FormEntityTest.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormPhysics.resx">
+      <DependentUpon>FormPhysics.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormTerrain.resx">
+      <DependentUpon>FormTerrain.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormTerrainImposter.resx">
+      <DependentUpon>FormTerrainImposter.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormTexture3d.resx">
+      <DependentUpon>FormTexture3d.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormTileBaker.resx">
+      <DependentUpon>FormTileBaker.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormAnimation.resx">
+      <DependentUpon>FormAnimation.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <None Include="setup_GlControl.ini" />
+    <None Include="setup_hzb occlusion.ini" />
+    <None Include="setup_real-time-cloud-rendering.ini" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Animate\Animate.csproj">
+      <Project>{c1793684-1bdd-4a67-99e5-5dbea6b321f5}</Project>
+      <Name>Animate</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\BSP\BSP.csproj">
+      <Project>{9fe8744c-00c2-4a02-ac86-38489525b4c9}</Project>
+      <Name>BSP</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Camera3d\Camera3d.csproj">
+      <Project>{f5477333-11c8-4e59-8084-1bc3c01df3fe}</Project>
+      <Name>Camera3d</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Cloud\Cloud.csproj">
+      <Project>{f9979599-8257-4157-9a45-5ce6dfb9b0e8}</Project>
+      <Name>Cloud</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Common\Common.csproj">
+      <Project>{a88a06c4-c819-47a1-828f-db054c066bee}</Project>
+      <Name>Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Geometry\Geometry.csproj">
+      <Project>{3f08288e-2eba-4e72-843d-7bf773d8f6cb}</Project>
+      <Name>Geometry</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\GlWindow\glWindow.csproj">
+      <Project>{03f9af52-780f-4991-9aad-4127ba96ab72}</Project>
+      <Name>glWindow</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Light\Lights.csproj">
+      <Project>{99eae591-f4e4-436b-98e1-81800d38a3e2}</Project>
+      <Name>Lights</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Model3d\Model3d.csproj">
+      <Project>{7a699d36-8869-4b18-a70f-2231a948d828}</Project>
+      <Name>Model3d</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Occlusion\Occlusion.csproj">
+      <Project>{00582202-d29d-472e-ac4a-02152800b298}</Project>
+      <Name>Occlusion</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Physics\Physics.csproj">
+      <Project>{6d0f991f-3725-48d3-8c4e-cbac93b4f03f}</Project>
+      <Name>Physics</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Renderer\Renderer.csproj">
+      <Project>{e5f8184d-2b9b-4e0a-a11f-523394f67292}</Project>
+      <Name>Renderer</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Shader\Shader.csproj">
+      <Project>{3b2ecaa9-57bd-4b21-bfb8-b5de46c80d4b}</Project>
+      <Name>Shader</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Sky\Sky.csproj">
+      <Project>{6f3a2622-25bb-4854-8d31-cd2302f554a7}</Project>
+      <Name>Sky</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Terrain\Terrain.csproj">
+      <Project>{c7531007-5419-46d3-a5bc-0a6ba926d05c}</Project>
+      <Name>Terrain</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\UIDesign2d\Ui2d.csproj">
+      <Project>{a3041dc7-72af-4ab4-aae1-1624a1549cc4}</Project>
+      <Name>Ui2d</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ZetaExt\ZetaExt.csproj">
+      <Project>{878cf1d9-16ce-4e58-a6e7-165d00c56d1f}</Project>
+      <Name>ZetaExt</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.7.2">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4.7.2%28x86 및 x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

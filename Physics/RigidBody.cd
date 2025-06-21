@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Physics.RigidBody">
+    <Position X="5" Y="2" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>gABAASSACQIcINAwAIMQAAEgAgECBYRIQBaEgeGVAIM=</HashCode>
+      <FileName>Rigid\RigidBody.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Physics.RigidCone">
+    <Position X="1" Y="16.25" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>CAAIAQAABACQAAAAAAAAAAAAAAACAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Rigid\RigidCone.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Physics.RigidCube">
+    <Position X="3.5" Y="16.25" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAQAAAAAQQAAAAQAAAAAAAEACAACAAAAIAQAAAAA=</HashCode>
+      <FileName>Rigid\RigidCube.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Physics.RigidCylinder">
+    <Position X="6" Y="16.25" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>CAAIAQAABACQAAAAAAAAAAAAAAACAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Rigid\RigidCylinder.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Physics.RigidPlane">
+    <Position X="8.5" Y="16.25" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAQAABACQAAAAAAAAAEAAABAKQAAABAAAAAAAEAA=</HashCode>
+      <FileName>Rigid\RigidPlane.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Physics.RigidSphere">
+    <Position X="11" Y="16.25" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>CAAIAQAAAAAQAAAAAAAAAAAAAAACAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Rigid\RigidSphere.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Physics.Collision.CollisionBox">
+    <Position X="9" Y="11.25" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAIAAAARAAAAAAAEAAAAAAQCEAABAAAAAAAAA=</HashCode>
+      <FileName>Collision\CollisionBox.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Physics.Collision.CollisionPrimitive">
+    <Position X="11.5" Y="7.75" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAgIAAAAAAAAAAAAAAAAAAAgAAAmAA=</HashCode>
+      <FileName>Collision\CollisionPrimitive.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Physics.Collision.CollisionPlane">
+    <Position X="11.5" Y="11.25" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAgAAAAAAAAAIAABABAAAAAAAIAA=</HashCode>
+      <FileName>Collision\CollisionPlane.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Physics.Collision.CollisionSphere">
+    <Position X="14.5" Y="11.25" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>CAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Collision\CollisionSphere.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Interface Name="Physics.IRigidBody">
+    <Position X="7" Y="2" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAQAAAAAAAAAAAAAAACAAQAAAAAAAAAAAA=</HashCode>
+      <FileName>Rigid\IRigidBody.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Physics.Collision.ICollisionable">
+    <Position X="9.25" Y="2" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Collision\ICollisionable.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Font Name="맑은 고딕" Size="9" />
+</ClassDiagram>

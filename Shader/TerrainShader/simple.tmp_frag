@@ -1,0 +1,173 @@
+#version 430 core
+
+vec3 ApplyFog(vec3 shadedColor, vec3 fogcolor, vec3 v, float density)
+{
+   float f = exp(-density * length(v));
+   return mix(fogcolor, shadedColor, f);
+}
+
+// ----------------------------------------------------------------------------------------------------------
+// 반평면 안개
+// ----------------------------------------------------------------------------------------------------------
+vec3 ApplyHalfspaceFog(vec3 shadedColor, vec3 fogcolor, vec3 v, float density, float fv, float u1, float u2)
+{
+   const float kFogEpsilon = 0.0001f;
+   float x = min(u2, 0.0f);
+   float tau = 0.5f * density * length(v) * (u1 - x * x / (abs(fv) + kFogEpsilon));
+   return mix(fogcolor, shadedColor, exp(tau));
+}
+
+// ----------------------------------------------------------------------------------------------------------
+// 반평면 안개 효과 파라미터 계산 및 적용 함수
+// ----------------------------------------------------------------------------------------------------------
+vec3 CalculateAndApplyFog(vec3 originalColor, vec3 fogColor, float fogDensity, vec3 camPos, vec3 fragPos, vec4 fogPlane)
+{
+    // 반평면 안개 파라미터 계산
+    float fc = dot(camPos, fogPlane.xyz) + fogPlane.w;    // 카메라-안개평면 거리
+    float fp = dot(fragPos, fogPlane.xyz) + fogPlane.w;   // 프래그먼트-안개평면 거리
+    vec3 v = camPos - fragPos;                            // 시점 벡터
+    float fv = dot(v, fogPlane.xyz);                      // 시점 벡터와 안개 평면의 내적
+    float m = (fc < 0) ? 1.0f : 0.0f;                     // 카메라가 안개 평면 아래에 있는지 여부
+    float u1 = m * (fc + fp);
+    float u2 = fp * sign(fc);
+    
+    // 최종적으로 안개 효과 적용
+    return ApplyHalfspaceFog(originalColor, fogColor, v, fogDensity, fv, u1, u2);
+}
+
+
+// 높이값에 따라 지형 텍스처를 블렌딩하는 함수
+vec4 BlendTerrainTextures(float Height, vec2 Tex3, float texScale,
+    sampler2D tex0, sampler2D tex1, sampler2D tex2, 
+    sampler2D tex3, sampler2D tex4, sampler2D detailMap,
+    bool useDetail, float h0, float h1, float h2, float h3, float h4)
+{
+   vec4 TexColor;
+   vec2 ScaledTexCoord = Tex3 * texScale;
+
+   if (Height < h0) {
+      TexColor = texture(tex0, ScaledTexCoord);
+   } 
+   else if (Height < h1) {
+      vec4 Color0 = texture(tex0, ScaledTexCoord);
+      vec4 Color1 = texture(tex1, ScaledTexCoord);
+      float Delta = h1 - h0;
+      float Factor = (Height - h0) / Delta;
+      TexColor = mix(Color0, Color1, Factor);
+   } 
+   else if (Height < h2) {
+      vec4 Color0 = texture(tex1, ScaledTexCoord);
+      vec4 Color1 = texture(tex2, ScaledTexCoord);
+      float Delta = h2 - h1;
+      float Factor = (Height - h1) / Delta;
+      TexColor = mix(Color0, Color1, Factor);
+   } 
+   else if (Height < h3) {
+      vec4 Color0 = texture(tex2, ScaledTexCoord);
+      vec4 Color1 = texture(tex3, ScaledTexCoord);
+      float Delta = h3 - h2;
+      float Factor = (Height - h2) / Delta;
+      TexColor = mix(Color0, Color1, Factor);
+   } 
+   else if (Height < h4) {
+      vec4 Color0 = texture(tex3, ScaledTexCoord);
+      vec4 Color1 = texture(tex4, ScaledTexCoord);
+      float Delta = h4 - h3;
+      float Factor = (Height - h3) / Delta;
+      TexColor = mix(Color0, Color1, Factor);
+   } 
+   else {
+      TexColor = texture(tex4, ScaledTexCoord);
+   }
+
+   if (useDetail) {
+       TexColor *= texture(detailMap, ScaledTexCoord);
+   }
+
+   return TexColor;
+}
+
+// 출력 컬러 버퍼 설정
+layout(location = 0) out vec4 FragColor;
+
+// 버텍스 셰이더로부터의 입력
+in vec2 Tex3;         // 텍스처 좌표
+in float Height;      // 프래그먼트의 높이값
+in vec4 viewPos;      // 뷰 공간 위치
+in vec4 fragPos;      // 월드 공간 위치
+
+// 높이별 지형 텍스처
+uniform sampler2D gTextureHeight0;    // 최하단 높이 텍스처
+uniform sampler2D gTextureHeight1;    // 하단 높이 텍스처
+uniform sampler2D gTextureHeight2;    // 중단 높이 텍스처
+uniform sampler2D gTextureHeight3;    // 상단 높이 텍스처
+uniform sampler2D gTextureHeight4;    // 최상단 높이 텍스처
+
+// 지형 맵 텍스처
+uniform sampler2D gHeightMap;         // 높이 맵
+uniform sampler2D gDetailMap;         // 디테일 맵
+uniform bool gIsDetailMap;            // 디테일 맵 사용 여부
+uniform sampler2D gVegetationMap;     // RGBA 채널 (R: 나무, G: 풀, B: 잡목, A: 예비)
+
+// 높이 구간 경계값 (0.0 ~ 1.0 범위)
+uniform float gHeight0 = 0.07f;       // 최하단 경계
+uniform float gHeight1 = 0.15f;       // 하단 경계
+uniform float gHeight2 = 0.25f;       // 중단 경계
+uniform float gHeight3 = 0.71f;       // 상단 경계
+uniform float gHeight4 = 0.82f;       // 최상단 경계
+uniform float gHeight5 = 1.00f;       // 최대 높이
+
+// 렌더링 파라미터
+uniform vec3 gReversedLightDir;           // 반전된 빛의 방향
+uniform float gColorTexcoordScaling = 800.0f;  // 텍스처 타일링 배율
+uniform vec3 camPos;                      // 카메라 위치
+uniform vec3 fogColor;                    // 안개 색상
+uniform float fogDensity;                 // 안개 밀도
+uniform vec4 fogPlane;                    // 안개 평면 방정식(ax + by + cz + d = 0)
+uniform bool isFogEnable;                 // 안개 효과 활성화 여부
+
+//-----------------------------------------------------------------------------
+// 메인 함수
+//-----------------------------------------------------------------------------
+void main()
+{
+    // 1. 지형 텍스처 블렌딩
+    vec4 TexColor = BlendTerrainTextures(
+        Height, Tex3, gColorTexcoordScaling,
+        gTextureHeight0, gTextureHeight1, gTextureHeight2, 
+        gTextureHeight3, gTextureHeight4, gDetailMap,
+        gIsDetailMap, gHeight0, gHeight1, gHeight2, gHeight3, gHeight4
+    );   
+   
+    // 현재 프래그먼트의 법선 벡터 계산
+    vec3 Normal = vec3(1);
+
+    // 법선 벡터와 빛의 방향 벡터의 내적을 통해 디퓨즈 조명 강도 계산
+    float Diffuse = dot(Normal, normalize(gReversedLightDir));
+
+    // 완전한 어두움을 방지하기 위해 최소 조명값(0.2)을 설정
+    // 이는 환경광(Ambient Light)처럼 작용하여 그림자 부분도 어느 정도 보이게 함
+    Diffuse = max(0.5f, Diffuse);
+
+   // 안개 효과가 비활성화된 경우
+   if (!isFogEnable)
+   {
+        FragColor = vec4(Diffuse * TexColor.rgb, 1.0f);
+        FragColor = FragColor * vec4(1,0,0,1);
+        return;
+   }
+
+   // 반평면 안개 파라미터 계산
+   float fc = dot(camPos, fogPlane.xyz) + fogPlane.w;    // 카메라-안개평면 거리
+   float fp = dot(fragPos.xyz, fogPlane.xyz) + fogPlane.w;  // 프래그먼트-안개평면 거리
+   vec3 v = camPos - fragPos.xyz;    // 시점 벡터
+   float fv = dot(v, fogPlane.xyz);  // 시점 벡터와 안개 평면의 내적
+   float m = (fc < 0) ? 1.0f : 0.0f;  // 카메라가 안개 평면 아래에 있는지 여부
+   float u1 = m * (fc + fp);
+   float u2 = fp * sign(fc);
+
+   // 최종 색상 계산 (반평면 안개 효과 적용)
+   vec3 shadedColor = TexColor.xyz;
+   vec3 final = ApplyHalfspaceFog(shadedColor, fogColor, v, fogDensity, fv, u1, u2);
+   FragColor = vec4(final, 1);
+}

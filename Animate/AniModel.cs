@@ -1,0 +1,348 @@
+﻿using Common.Abstractions;
+using Model3d;
+using OpenGL;
+using Renderer;
+using Shader;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using ZetaExt;
+using static Animate.HumanAniModel;
+
+namespace Animate
+{
+    public class AniModel
+    {
+        protected string _name;
+        protected AniDae _xmlDae;
+
+        protected Action _updateBefore;
+        protected Action _updateAfter;
+        protected Transform _transform;
+
+        Dictionary<string, AnimateEntity> _models;
+        protected Bone _rootBone;
+        protected Animator _animator;
+
+        public AniDae AniDae => _xmlDae;
+
+        public string Name => _name;
+
+        public Transform Transform => _transform;
+
+        /// <summary>
+        /// Rendering Part 
+        /// </summary>
+        public enum RenderingMode { Animation, BoneWeight, Static, None, Count };
+        PolygonMode _polygonMode = PolygonMode.Fill;
+        RenderingMode _renderingMode = RenderingMode.Animation;
+        int _boneIndex = 0;
+        float _axisLength = 10.3f;
+        float _drawThick = 1.0f;
+
+        public int BoneCount => _xmlDae.BoneCount;
+
+        public Motion CurrentMotion => _animator.CurrentMotion;
+
+        public int SelectedBoneIndex
+        {
+            get => _boneIndex;
+            set => _boneIndex = value;
+        }
+
+        public PolygonMode PolygonMode
+        {
+            get => _polygonMode;
+            set => _polygonMode = value;
+        }
+
+        public RenderingMode RenderMode
+        {
+            get => _renderingMode;
+            set => _renderingMode = value;
+        }
+
+        public void PopPolygonMode()
+        {
+            _polygonMode++;
+            if (_polygonMode >= (PolygonMode)6915) _polygonMode = (PolygonMode)6912;
+        }
+
+        public void PopPolygonModeMode()
+        {
+            _renderingMode++;
+            if (_renderingMode == RenderingMode.Count - 1) _renderingMode = 0;
+        }
+
+        /// <summary>
+        /// 본이름으로부터 본을 가져온다.
+        /// </summary>
+        /// <param name="boneName"></param>
+        /// <returns></returns>
+        public Bone GetBoneByName(string boneName) => _xmlDae.GetBoneByName(boneName);
+
+        /// <summary>
+        /// Animator를 가져온다.
+        /// </summary>
+        public Animator Animator => _animator;
+
+        /// <summary>
+        /// 모션의 총 시간 길이를 가져온다.
+        /// </summary>
+        public float MotionTime => _animator.MotionTime;
+
+        /// <summary>
+        /// Entity들을 모두 가져온다.
+        /// </summary>
+        public Dictionary<string, AnimateEntity> Entities => _models;
+
+        /// <summary>
+        /// 루트본을 가져온다.
+        /// </summary>
+        public Bone RootBone => _rootBone;
+
+        /// <summary>
+        /// 생성자
+        /// </summary>
+        /// <param name="model"></param>
+        /// <param name="xmlDae"></param>
+        public AniModel(string name, AnimateEntity model, AniDae xmlDae)
+        {
+            _models = new Dictionary<string, AnimateEntity>();
+            _models.Add(name, model);
+
+            _xmlDae = xmlDae;
+            _rootBone = xmlDae.RootBone;
+            _animator = new Animator(this);
+            _transform = new Transform();
+        }
+
+        /// <summary>
+        /// 이름으로 Entity를 가져온다.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public Entity GetEntity(string name) => _models[name];
+
+
+        public virtual void SetMotionOnce(string motionName, string nextAction)
+        {
+            Motion motion = _xmlDae.Motions.GetMotion(motionName);
+            Motion nextMotion = _xmlDae.Motions.GetMotion(nextAction);
+
+            _animator.OnceFinised = () =>
+            {
+                _animator.SetMotion(nextMotion);
+                _animator.OnceFinised = null;
+            };
+
+            if (motion == null)
+                motion = _xmlDae.Motions.DefaultMotion;
+
+            if (motion != null)
+                _animator.SetMotion(motion);
+        }
+
+        /// <summary>
+        /// 모션을 설정한다.
+        /// </summary>
+        /// <param name="motionName"></param>
+        protected void SetMotion(string motionName)
+        {
+            _animator.OnceFinised = null;
+
+            Motion motion = _xmlDae.Motions.GetMotion(motionName);
+
+            if (motion == null)
+                motion = _xmlDae.Motions.DefaultMotion;
+
+            if (motion != null)
+                _animator.SetMotion(motion);
+        }
+
+        /// <summary>
+        /// 업데이트를 통하여 애니메이션 행렬을 업데이트한다.
+        /// </summary>
+        /// <param name="deltaTime"></param>
+        public void Update(int deltaTime)
+        {
+            if (_updateBefore != null)
+            {
+                _updateBefore();
+            }
+
+            _animator.Update(0.001f * deltaTime);
+
+            if (_updateAfter != null)
+            {
+                _updateAfter();
+            }
+        }
+
+        public void Render(Camera camera, StaticShader staticShader, AnimateShader ashader, 
+            bool isSkinVisible = true, bool isBoneVisible = false, bool isBoneParentCurrentVisible = false)
+        {
+            Matrix4x4f[] jointMatrix = JointTransformMatrix;
+
+            Gl.PolygonMode(MaterialFace.FrontAndBack, _polygonMode);
+
+            int index = 0;
+            foreach (KeyValuePair<string, AnimateEntity> item in _models)
+            {
+                AnimateEntity entity = item.Value;
+                Matrix4x4f modelMatrix = entity.ModelMatrix;
+
+                if (isSkinVisible) // 스킨
+                {
+                    Gl.Disable(EnableCap.CullFace);
+                    if (_renderingMode == RenderingMode.Animation)
+                    {
+                        Renderer3d.Render(ashader, _transform.Matrix4x4f, jointMatrix, entity, camera);
+                    }
+                    else if (_renderingMode == RenderingMode.BoneWeight)
+                    {
+                        //Renderer.Render(boneWeightShader, _boneIndex, _transform.Matrix4x4f, entity, camera);
+                    }
+                    else if (_renderingMode == RenderingMode.Static)
+                    {
+                        //Renderer.Render(staticShader, entity, camera);
+                    }
+                    Gl.Enable(EnableCap.CullFace);
+                }
+
+                // 애니메이션 뼈대 렌더링
+                if (isBoneVisible)
+                {
+                    int ind = 0;
+                    foreach (Matrix4x4f jointTransform in BoneAnimationTransforms)
+                    {
+                        if (ind >= 52) //52이상은 추가한 뼈들이다.
+                        {
+                            Renderer3d.RenderLocalAxis(staticShader, camera, size: jointTransform.Column3.Vertex3f().Norm() * _axisLength,
+                                thick: 5.0f*_drawThick, _transform.Matrix4x4f * modelMatrix * jointTransform);
+                        }
+                        else
+                        {
+                            Renderer3d.RenderLocalAxis(staticShader, camera, size: jointTransform.Column3.Vertex3f().Norm() * _axisLength,
+                                thick: _drawThick, _transform.Matrix4x4f * modelMatrix * jointTransform);
+                        }
+                        ind++;
+                    }
+                }
+
+                //Renderer3d.RenderLocalAxis(staticShader, camera, size: 100.0f, thick: _drawThick, _rootBone.AnimatedTransform * _transform.Matrix4x4f);
+
+                // 정지 뼈대
+                //foreach (Matrix4x4f jointTransform in _aniModel.InverseBindPoseTransforms)
+                {
+                    //Renderer.RenderLocalAxis(_shader, camera, size: _axisLength, thick: _drawThick, entityModel * jointTransform.Inverse);
+                }
+
+                index++;
+            }
+        }
+
+        /// <summary>
+        /// * bone.AnimatedTransform * bone.InverseBindTransform<br/>
+        /// * 캐릭터 공간에서의 애니메이션을 포즈행렬을 최종적으로 가져온다.<br/>
+        /// * v' = Ma(i) Md^-1(i) v (Ma 애니메이션행렬, Md 바이딩포즈행렬)<br/>
+        /// * 정점들을 바인딩포즈행렬을 이용하여 뼈 공간으로 정점을 변환 후, 애니메이션 행렬을 이용하여 뼈의 캐릭터 공간으로의 변환행렬을 가져온다.<br/>
+        /// </summary>
+        protected Matrix4x4f[] JointTransformMatrix
+        {
+            get
+            {
+                Matrix4x4f[] jointMatrices = new Matrix4x4f[BoneCount];
+                foreach (KeyValuePair<string, Bone> item in _xmlDae.DicBones)
+                {
+                    Bone bone = item.Value;
+                    if (bone.Index >= 0)
+                        jointMatrices[bone.Index] = bone.AnimatedTransform * bone.InverseBindTransform;
+                }
+                return jointMatrices;
+            }
+        }
+
+        /// <summary>
+        /// * 애니매이션에서 뼈들의 뼈공간 ==> 캐릭터 공간으로의 변환 행렬<br/>
+        /// * 뼈들의 포즈를 렌더링하기 위하여 사용할 수 있다.<br/>
+        /// </summary>
+        public Matrix4x4f[] BoneAnimationTransforms
+        {
+            get
+            {
+                Matrix4x4f[] jointMatrices = new Matrix4x4f[BoneCount];
+                foreach (KeyValuePair<string, Bone> item in _xmlDae.DicBones)
+                {
+                    Bone bone = item.Value;
+                    if (bone.Index >= 0)
+                        jointMatrices[bone.Index] = bone.AnimatedTransform;
+                }
+                return jointMatrices;
+            }
+        }
+
+        /// <summary>
+        /// * 초기의 캐릭터공간에서의 바인드 포즈행렬을 가져온다. <br/>
+        /// - 포즈행렬이란 한 뼈공간에서의 점의 상대적 좌표를 가져오는 행렬이다.<br/>
+        /// </summary>
+        public Matrix4x4f[] InverseBindPoseTransforms
+        {
+            get
+            {
+                Matrix4x4f[] jointMatrices = new Matrix4x4f[BoneCount];
+                foreach (KeyValuePair<string, Bone> item in _xmlDae.DicBones)
+                {
+                    Bone bone = item.Value;
+                    if (bone.Index >= 0 && bone.Index < BoneCount)
+                        jointMatrices[bone.Index] = bone.InverseBindTransform;
+                }
+                return jointMatrices;
+            }
+        }
+
+        protected void AddEntity(string name, AnimateEntity entity)
+        {
+            if (_models.ContainsKey(name))
+            {
+                _models.Remove(name);
+                _models.Add(name, entity);
+            }
+            else
+            {
+                _models.Add(name, entity);
+            }
+        }
+
+        protected void Remove(string name)
+        {
+            if (_models.ContainsKey(name))
+            {
+                _models.Remove(name);
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="expandValue"></param>
+        /// <returns></returns>
+        public Entity Attach(string fileName, float expandValue = 0.01f)
+        {
+            string name = Path.GetFileNameWithoutExtension(fileName);
+            List<TexturedModel> texturedModels = _xmlDae.WearCloth(fileName, expandValue);
+            AnimateEntity clothEntity = new AnimateEntity("aniModel_" + name, texturedModels[0]);
+            AddEntity(name, clothEntity);
+            return clothEntity;
+        }
+
+        public Entity Attach(string name, TexturedModel texturedModel)
+        {
+            AnimateEntity clothEntity = new AnimateEntity(name, texturedModel);
+            AddEntity(name, clothEntity);
+            return clothEntity;
+        }
+
+    }
+}

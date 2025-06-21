@@ -1,0 +1,80 @@
+﻿#version 430
+
+// 작업 그룹 크기 정의
+layout (local_size_x = 16, local_size_y = 16) in;
+
+// 입출력 이미지 바인딩
+layout (binding = 0, r32f) readonly uniform image2D inputDepth;
+layout (binding = 1, r32f) writeonly uniform image2D outputDepth;
+
+// 유니폼 변수
+uniform ivec2 inputSize;  // 입력 이미지 크기
+uniform int mipLevel;     // 현재 생성 중인 밉 레벨
+
+void main()
+{
+    // 전역 작업 ID (현재 픽셀 좌표)
+    ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
+    
+    // 출력 이미지 범위 체크
+    ivec2 outputSize = imageSize(outputDepth);
+    if (pixelCoord.x >= outputSize.x || pixelCoord.y >= outputSize.y) {
+        return;
+    }
+    
+    // 입력 이미지에서의 좌표 (2배)
+    ivec2 inputCoord = pixelCoord * 2;
+    
+    // 2x2 픽셀 영역에서 최대 깊이값 찾기
+    float maxDepth = 0.0;
+    
+    // 기본 2x2 영역
+    float depth00 = imageLoad(inputDepth, inputCoord).r;
+    maxDepth = depth00;
+    
+    // 경계 체크를 통한 안전한 액세스
+    if (inputCoord.x + 1 < inputSize.x) {
+        float depth10 = imageLoad(inputDepth, ivec2(inputCoord.x + 1, inputCoord.y)).r;
+        maxDepth = max(maxDepth, depth10);
+    }
+    
+    if (inputCoord.y + 1 < inputSize.y) {
+        float depth01 = imageLoad(inputDepth, ivec2(inputCoord.x, inputCoord.y + 1)).r;
+        maxDepth = max(maxDepth, depth01);
+    }
+    
+    if (inputCoord.x + 1 < inputSize.x && inputCoord.y + 1 < inputSize.y) {
+        float depth11 = imageLoad(inputDepth, ivec2(inputCoord.x + 1, inputCoord.y + 1)).r;
+        maxDepth = max(maxDepth, depth11);
+    }
+    
+    // 홀수 크기 처리 (입력 이미지의 가장자리)
+    if ((inputSize.x & 1) == 1 && pixelCoord.x == outputSize.x - 1) {
+        // 오른쪽 가장자리에 추가 열이 있는 경우
+        if (inputCoord.x + 2 < inputSize.x) {
+            float extraRight0 = imageLoad(inputDepth, ivec2(inputCoord.x + 2, inputCoord.y)).r;
+            maxDepth = max(maxDepth, extraRight0);
+            
+            if (inputCoord.y + 1 < inputSize.y) {
+                float extraRight1 = imageLoad(inputDepth, ivec2(inputCoord.x + 2, inputCoord.y + 1)).r;
+                maxDepth = max(maxDepth, extraRight1);
+            }
+        }
+    }
+    
+    if ((inputSize.y & 1) == 1 && pixelCoord.y == outputSize.y - 1) {
+        // 아래쪽 가장자리에 추가 행이 있는 경우
+        if (inputCoord.y + 2 < inputSize.y) {
+            float extraBottom0 = imageLoad(inputDepth, ivec2(inputCoord.x, inputCoord.y + 2)).r;
+            maxDepth = max(maxDepth, extraBottom0);
+            
+            if (inputCoord.x + 1 < inputSize.x) {
+                float extraBottom1 = imageLoad(inputDepth, ivec2(inputCoord.x + 1, inputCoord.y + 2)).r;
+                maxDepth = max(maxDepth, extraBottom1);
+            }
+        }
+    }
+    
+    // 결과를 출력 이미지에 저장
+    imageStore(outputDepth, pixelCoord, vec4(maxDepth, 0.0, 0.0, 0.0));
+}

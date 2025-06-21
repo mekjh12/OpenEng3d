@@ -1,0 +1,116 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{C7531007-5419-46D3-A5BC-0A6BA926D05C}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Terrain</RootNamespace>
+    <AssemblyName>Terrain</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="OpenGL.Net">
+      <HintPath>..\Model3d\bin\Debug\OpenGL.Net.dll</HintPath>
+    </Reference>
+    <Reference Include="OpenGL.Net.Math">
+      <HintPath>..\Model3d\bin\Debug\OpenGL.Net.Math.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Drawing.Design" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ChunkCreator.cs" />
+    <Compile Include="EntityBatchProcessor.cs" />
+    <Compile Include="ITerrainCulling.cs" />
+    <Compile Include="RecentRegionCache.cs" />
+    <Compile Include="RegionCoord.cs" />
+    <Compile Include="RegionManager.cs" />
+    <Compile Include="SimpleTerrainRegion.cs" />
+    <Compile Include="SimpleTerrainRegionCache.cs" />
+    <Compile Include="TerrainCluster.cs" />
+    <Compile Include="TerrainCulling.cs" />
+    <Compile Include="TerrainData.cs" />
+    <Compile Include="Chunk.cs" />
+    <Compile Include="TerrainMap.cs" />
+    <Compile Include="TerrainPatchFactory.cs" />
+    <Compile Include="TerrainRegion.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="VegetationMap.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BSP\BSP.csproj">
+      <Project>{9fe8744c-00c2-4a02-ac86-38489525b4c9}</Project>
+      <Name>BSP</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Camera3d\Camera3d.csproj">
+      <Project>{f5477333-11c8-4e59-8084-1bc3c01df3fe}</Project>
+      <Name>Camera3d</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Common\Common.csproj">
+      <Project>{a88a06c4-c819-47a1-828f-db054c066bee}</Project>
+      <Name>Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Geometry\Geometry.csproj">
+      <Project>{3f08288e-2eba-4e72-843d-7bf773d8f6cb}</Project>
+      <Name>Geometry</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Light\Lights.csproj">
+      <Project>{99eae591-f4e4-436b-98e1-81800d38a3e2}</Project>
+      <Name>Lights</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Model3d\Model3d.csproj">
+      <Project>{7a699d36-8869-4b18-a70f-2231a948d828}</Project>
+      <Name>Model3d</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Occlusion\Occlusion.csproj">
+      <Project>{00582202-d29d-472e-ac4a-02152800b298}</Project>
+      <Name>Occlusion</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Renderer\Renderer.csproj">
+      <Project>{e5f8184d-2b9b-4e0a-a11f-523394f67292}</Project>
+      <Name>Renderer</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Shader\Shader.csproj">
+      <Project>{3b2ecaa9-57bd-4b21-bfb8-b5de46c80d4b}</Project>
+      <Name>Shader</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ZetaExt\ZetaExt.csproj">
+      <Project>{878cf1d9-16ce-4e58-a6e7-165d00c56d1f}</Project>
+      <Name>ZetaExt</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

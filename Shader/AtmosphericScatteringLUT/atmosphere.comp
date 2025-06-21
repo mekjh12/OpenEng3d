@@ -1,0 +1,143 @@
+﻿#version 430 core
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+// 출력 텍스처 (transmittance LUT)
+layout(binding = 0, rgba32f) uniform image2D transmittanceLUT;
+
+// 대기 매개변수
+uniform float R_e;         // 지구 반지름
+uniform float R_a;         // 대기 반지름
+uniform vec3 beta_R;       // Rayleigh 산란 계수
+uniform float beta_M;      // Mie 산란 계수
+uniform float H_R;         // Rayleigh 스케일 높이
+uniform float H_M;         // Mie 스케일 높이
+uniform int lightSamples;  // 광원 광선 샘플 수
+
+// LUT 텍스처의 크기
+uniform ivec2 lutSize;    // LUT 크기
+
+/**
+ * 광선과 구의 교차점을 계산
+ */
+vec2 raySphereIntersection(vec3 o, vec3 d, float r) 
+{
+    float a = dot(d, d);
+    float b = 2.0 * dot(o, d);
+    float c = dot(o, o) - r * r;
+    float discriminant = b * b - 4.0 * a * c;
+    
+    if (discriminant < 0.0) {
+        return vec2(100000.0, -100000.0);
+    }
+    
+    float sqrtDet = sqrt(discriminant);
+    return vec2((-b - sqrtDet) / (2.0 * a), (-b + sqrtDet) / (2.0 * a));
+}
+
+/**
+ * LUT 좌표에서 실제 높이(h)와 뷰 각도(mu)로 변환
+ */
+void getHeightAndMuFromUV(vec2 uv, out float height, out float mu, out float horMu) 
+{
+    // UV 좌표를 [0,1] 범위로 정규화
+    uv = clamp(uv, vec2(0.0), vec2(1.0));
+    
+    // 높이 매핑: h = LUT 높이 축 좌표에서 실제 높이로 변환
+    // 높이는 지표면(R_e)에서 대기 상한(R_a)까지 매핑
+    height = mix(R_e, R_a, uv.y);
+    
+    // 최소/최대 코사인 각도 계산 (현재 높이에서의 수평선과 천정/지평선 방향)
+    float horizonMu = -sqrt(1.0 - (R_e * R_e) / (height * height));
+    horMu = horizonMu;
+
+    // 뷰 각도 매핑: 수평선 아래(-1.0~horizonMu)와 위(horizonMu~1.0) 구간으로 나누어 매핑
+    if (uv.x < 0.5) {
+        // 수평선 아래 방향 (지구 방향)
+        mu = mix(-1.0, horizonMu, uv.x * 2.0);
+    } else {
+        // 수평선 위 방향 (우주 방향)
+        mu = mix(horizonMu, 1.0, (uv.x - 0.5) * 2.0);
+    }
+}
+
+/**
+ * 특정 높이와 각도에서의 광학 깊이 계산
+ */
+vec2 computeOpticalDepth(vec3 rayOrigin, vec3 rayDir) 
+{
+    // 지구와의 교차 먼저 확인
+    vec2 earthIntersection = raySphereIntersection(rayOrigin, rayDir, R_e);
+    
+    // 대기와의 교차점 계산
+    vec2 atmosphereIntersection = raySphereIntersection(rayOrigin, rayDir, R_a);
+    
+    // 지구와 교차하면 대기 경계까지만 적분
+    float tMax = (earthIntersection.x > 0.0) ? min(earthIntersection.x, atmosphereIntersection.y) : atmosphereIntersection.y;
+    float tMin = max(0.0, atmosphereIntersection.x); // 광선 시작점이 대기 안에 있을 수 있음
+    
+    // 샘플링 설정
+    float segmentLength = (tMax - tMin) / float(lightSamples);    
+    float tCurrent = 0.0;
+    
+    // 광학 깊이 누적값
+    float opticalDepthR = 0.0;
+    float opticalDepthM = 0.0;
+    
+    // 광선을 따라 샘플링
+    for (int i = 0; i < lightSamples; i++) 
+    {
+        // 현재 샘플 위치
+        vec3 samplePoint = rayOrigin + rayDir * (tCurrent + segmentLength * 0.5);
+        float height = length(samplePoint) - R_e;
+        
+        // 현재 높이에서의 밀도 계산
+        float densityR = exp(-height / H_R);
+        float densityM = exp(-height / H_M);
+        
+        // 광학 깊이 누적
+        opticalDepthR += densityR * segmentLength;
+        opticalDepthM += densityM * segmentLength;
+        
+        tCurrent += segmentLength;
+    }
+    
+    return vec2(opticalDepthR, opticalDepthM);
+}
+
+void main() 
+{
+    // 계산 셰이더 글로벌 인덱스
+    ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+    
+    // LUT 범위를 벗어난 경우 계산 중단
+    if (pixelCoords.x >= lutSize.x || pixelCoords.y >= lutSize.y) {
+        return;
+    }
+    
+    // UV 좌표 계산 ([0,1] 범위)
+    vec2 uv = vec2(pixelCoords) / vec2(lutSize - 1);
+    
+    // UV에서 높이와 시야각 코사인 계산
+    float height, mu, horzMu;
+    getHeightAndMuFromUV(uv, height, mu, horzMu);
+    
+    // 관측자 위치와 방향 계산
+    vec3 rayOrigin = vec3(0.0, 0.0, height);
+    vec3 rayDir = vec3(sqrt(1.0 - mu * mu), 0.0, mu);
+    
+    // 광학 깊이 계산
+    vec2 opticalDepth = computeOpticalDepth(rayOrigin, rayDir);
+    
+    // 투과율 계산 (Beer-Lambert 법칙)
+    vec3 transmittance = exp(-(
+        beta_R * opticalDepth.x + 
+        beta_M * opticalDepth.y * vec3(1.0)
+    ));
+
+    //if (abs(mu-horzMu) < 0.004) transmittance = vec3(0,1,0);
+    //if (height< R_e + 0.01f && mu < horzMu) transmittance = vec3(0,1,0);
+
+    // LUT에 결과 저장 (RGB: 투과율, A: 사용 안 함)
+    imageStore(transmittanceLUT, pixelCoords, vec4(transmittance, 1.0));
+}
