@@ -2,8 +2,11 @@
 using Common.Abstractions;
 using GlWindow;
 using OpenGL;
+using Shader;
 using System;
+using System.IO;
 using System.Windows.Forms;
+using System.Xml;
 using ZetaExt;
 
 namespace FormTools
@@ -15,6 +18,8 @@ namespace FormTools
 
         private GlControl3 _glControl3;
 
+        StaticShader _staticShader;
+        AnimateShader _animateShader;
         HumanAniModel _humanAniModel;
         AniDae _xmlDae;
 
@@ -42,6 +47,7 @@ namespace FormTools
             _glControl3.MouseUp += (s, e) => MouseUpEvent(s, e);
             _glControl3.KeyDown += (s, e) => KeyDownEvent(s, e);
             _glControl3.KeyUp += (s, e) => KeyUpEvent(s, e);
+
             _glControl3.Start();
             _glControl3.SetVisibleMouse(true);
             Controls.Add(_glControl3);
@@ -62,7 +68,8 @@ namespace FormTools
             Rand.InitSeed(500);
 
             // 셰이더 초기화
-            //if (_cloudComputeShader == null) _cloudComputeShader = new CloudComputeShader(PROJECT_PATH);
+            if (_staticShader == null) _staticShader = new StaticShader(PROJECT_PATH);
+            if (_animateShader == null) _animateShader = new AnimateShader(PROJECT_PATH);
         }
 
         private void Init2d(int w, int h)
@@ -75,15 +82,7 @@ namespace FormTools
             _glControl3.IsVisibleGrid = bool.Parse(IniFile.GetPrivateProfileString("sysInfo", "visibleGrid", "False"));
 
             // 전체 화면 여부 
-            if (Screen.PrimaryScreen.DeviceName.IndexOf("DISPLAY") > 0) _glControl3.FullScreen(true);
-
-            // GPU 정보 출력
-            string vendor = Gl.GetString(StringName.Vendor);
-            string renderer = Gl.GetString(StringName.Renderer);
-            string version = Gl.GetString(StringName.Version);
-            Console.WriteLine($"GPU 제조사: {vendor}");
-            Console.WriteLine($"렌더러: {renderer}");
-            Console.WriteLine($"OpenGL 버전: {version}");
+            //if (Screen.PrimaryScreen.DeviceName.IndexOf("DISPLAY") > 0) _glControl3.FullScreen(true);
         }
 
         private void Init3d(int w, int h)
@@ -91,11 +90,25 @@ namespace FormTools
             // 그리드셰이더 초기화
             _glControl3.InitGridShader(PROJECT_PATH);
 
-            _xmlDae = new AniDae(@"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\Res\aa_heroNasty.dae", isLoadAnimation: false);
-            //AnimateEntity animateEntity = new AnimateEntity("aniModel", _xmlDae.Models[0]);
-            //_humanAniModel = new HumanAniModel("man", animateEntity, _xmlDae);
+            _xmlDae = new AniDae(PROJECT_PATH + @"\Res\abe.dae", isLoadAnimation: false);
+            AnimateEntity animateEntity = new AnimateEntity("man", _xmlDae.Models.ToArray());
+            _humanAniModel = new HumanAniModel("man", animateEntity, _xmlDae);
 
-            // 셰리더 해시정보는 파일로 저장
+            // *** Action ***
+            foreach (string fn in Directory.GetFiles(PROJECT_PATH + "\\Res\\Action\\"))
+            {
+                if (Path.GetExtension(fn) == ".dae")
+                {
+                    XmlDocument xml = new XmlDocument();
+                    xml.Load(fn);
+                    string motionName = Path.GetFileNameWithoutExtension(fn);
+                    AniXmlLoader.LoadMixamoMotion(_xmlDae, xml, motionName);
+                }
+            }
+
+            _humanAniModel.SetMotion(HumanAniModel.ACTION.WALK);
+
+            // 셰이더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
         }
 
@@ -110,7 +123,9 @@ namespace FormTools
         {
             // 시간 간격을 초 단위로 변환
             float duration = deltaTime * 0.001f;
- 
+
+            // 애니메이션 업데이트
+            _humanAniModel.Update(deltaTime);
 
             // UI 정보 업데이트
             _glControl3.CLabel("cam").Text =
@@ -140,6 +155,8 @@ namespace FormTools
 
             // 카메라 중심점 렌더링
             Gl.Enable(EnableCap.DepthTest);
+                        
+            _humanAniModel.Render(camera, _staticShader, _animateShader, isBoneVisible: true);
 
             // 폴리곤 모드 설정
             Gl.PolygonMode(MaterialFace.FrontAndBack, _glControl3.PolygonMode);
@@ -164,18 +181,32 @@ namespace FormTools
 
         public void KeyUpEvent(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.D1)
+            if (e.KeyCode == Keys.F)
             {
-
+                _humanAniModel.PolygonMode = 
+                    _humanAniModel.PolygonMode == PolygonMode.Fill ? PolygonMode.Line : PolygonMode.Fill;
+                Debug.PrintLine($"PolygonMode: {_humanAniModel.PolygonMode}");
+            }
+            else if (e.KeyCode == Keys.D1)
+            {
+                _humanAniModel.SetMotion(HumanAniModel.ACTION.IDLE);
+            }
+            else if (e.KeyCode == Keys.D2)
+            {
+                _humanAniModel.SetMotion(HumanAniModel.ACTION.WALK);
+            }
+            else if (e.KeyCode == Keys.D3)
+            {
+                _humanAniModel.SetMotion(HumanAniModel.ACTION.T_POSE);
+            }
+            else if (e.KeyCode == Keys.D4)
+            {
+                _glControl3.Camera.PivotPosition = new Vertex3f(0, 0, 1.0f);
             }
         }
 
         public void KeyDownEvent(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.D4)
-            {
-                _glControl3.Camera.PivotPosition = new Vertex3f(0, 0, 0);
-            }
         }
 
         private void FormCloud_Load(object sender, EventArgs e)

@@ -54,7 +54,6 @@ namespace Animate
             }
         }
 
-
         public Motion(string name, float lengthInSeconds)
         {
             _animationName = name;

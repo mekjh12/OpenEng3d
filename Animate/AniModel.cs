@@ -1,13 +1,11 @@
 ﻿using Common.Abstractions;
 using Model3d;
 using OpenGL;
-using Renderer;
 using Shader;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using ZetaExt;
-using static Animate.HumanAniModel;
 
 namespace Animate
 {
@@ -184,8 +182,6 @@ namespace Animate
         {
             Matrix4x4f[] jointMatrix = JointTransformMatrix;
 
-            Gl.PolygonMode(MaterialFace.FrontAndBack, _polygonMode);
-
             int index = 0;
             foreach (KeyValuePair<string, AnimateEntity> item in _models)
             {
@@ -194,6 +190,7 @@ namespace Animate
 
                 if (isSkinVisible) // 스킨
                 {
+                    Gl.PolygonMode(MaterialFace.FrontAndBack, _polygonMode);
                     Gl.Disable(EnableCap.CullFace);
                     if (_renderingMode == RenderingMode.Animation)
                     {
@@ -230,7 +227,7 @@ namespace Animate
                     }
                 }
 
-                //Renderer3d.RenderLocalAxis(staticShader, camera, size: 100.0f, thick: _drawThick, _rootBone.AnimatedTransform * _transform.Matrix4x4f);
+                Renderer3d.RenderLocalAxis(staticShader, camera, size: 100.0f, thick: _drawThick, _rootBone.AnimatedTransform * _transform.Matrix4x4f);
 
                 // 정지 뼈대
                 //foreach (Matrix4x4f jointTransform in _aniModel.InverseBindPoseTransforms)

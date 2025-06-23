@@ -11,6 +11,7 @@ namespace Animate
             IDLE, WALK, RUN, SLOW_RUN, JUMP, WALK_BACK, LEFT_STRAFE_WALK, RIGHT_STRAFE_WALK, GUN_PLAY,
             AXE_ATTACK,
             STOP,
+            T_POSE,
             COUNT
         };
 
@@ -170,14 +171,17 @@ namespace Animate
 
             if (_curMotion == ACTION.IDLE)
             {
-                SetMotion("Standing Idle");
+                SetMotion("Breathing Idle");
                 UnfoldHand(BODY_PART.LeftHand);
                 UnfoldHand(BODY_PART.RightHand);
-                if (_rightHandEntity != null)
-                {
-                    FoldHand(BODY_PART.RightHand);
-                    _rightHandEntity.LocalBindTransform(sx: 100, sy: 100, sz: 100, rotx: 160, roty: -90, rotz: 0);
-                }
+            }
+            else if (_curMotion == ACTION.WALK)
+            {
+                SetMotion("Walking");
+            }
+            else if (_curMotion == ACTION.T_POSE)
+            {
+                SetMotion("a-T-Pose");
             }
             else if (_curMotion == ACTION.SLOW_RUN)
             {

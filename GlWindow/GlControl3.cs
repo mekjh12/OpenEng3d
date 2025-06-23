@@ -251,8 +251,16 @@ namespace GlWindow
             Console.WriteLine("========================================================");
             Console.WriteLine(" * 오른손 좌표계 사용: x축 right, y축 forward, z축 up.");
             Console.WriteLine(" * 지형시스템: x축 양의 방향 동쪽, y축 양의 방향 북쪽");
-            Console.WriteLine(" ");
-            Console.WriteLine(" ");
+            Console.WriteLine("========================================================");
+
+            // GPU 정보 출력
+            string vendor = Gl.GetString(StringName.Vendor);
+            string renderer = Gl.GetString(StringName.Renderer);
+            string version = Gl.GetString(StringName.Version);
+            Console.WriteLine($"GPU 제조사: {vendor}");
+            Console.WriteLine($"렌더러: {renderer}");
+            Console.WriteLine($"OpenGL 버전: {version}");
+            Console.WriteLine("========================================================");
         }
 
         /// <summary>
@@ -330,6 +338,24 @@ namespace GlWindow
         /// </summary>
         public void Start()
         {
+            // 필수 이벤트들이 설정되어 있는지 확인
+            var requiredEvents = new Dictionary<string, object>
+            {
+                { "Init", _init },
+                { "Init3d", _init3d },
+                { "Init2d", _init2d },
+                { "UpdateFrame", _update },
+                { "RenderFrame", _render },
+            };
+
+            foreach (var eventPair in requiredEvents)
+            {
+                if (eventPair.Value == null)
+                {
+                    throw new InvalidOperationException($"필수 이벤트가 설정되지 않았습니다. {eventPair.Key} 이벤트를 먼저 설정해주세요.");
+                }
+            }
+
             _isRunning = true;
         }
 

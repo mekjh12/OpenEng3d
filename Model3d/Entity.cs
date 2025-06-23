@@ -45,19 +45,29 @@ namespace Model3d
             // BoundBox 컴포넌트 초기화
             if (_models.Count > 0)
             {
+                // 첫 번째 모델의 AABB와 OBB를 생성하여 BoundBoxComponent 초기화
+                RawModel3d firstRawModel = _models[0] as RawModel3d;
+                firstRawModel.GenerateBoundingBox();
+
+                // AABB와 OBB를 합쳐서 BoundBoxComponent 생성
                 AABB unionAABB =  (_models[0] as RawModel3d).AABB;
                 OBB unionOBB = (_models[0] as RawModel3d).OBB;
-                for (int i = 0; i < _models.Count; i++)
+
+                // AABB와 OBB가 여러 모델에 걸쳐 있다면 합칩니다.
+                if (_models.Count > 1)
                 {
-                    RawModel3d rawModel = (RawModel3d)_models[i];
-                    unionAABB = (AABB)rawModel.AABB.Union(unionAABB);
-                    unionOBB = (OBB)rawModel.OBB.Union(unionOBB);
+                    for (int i = 0; i < _models.Count; i++)
+                    {
+                        RawModel3d rawModel = (RawModel3d)_models[i];
+                        unionAABB = (AABB)rawModel.AABB.Union(unionAABB);
+                        unionOBB = (OBB)rawModel.OBB.Union(unionOBB);
+                    }
+                    _boundingBox = new BoundBoxComponent(this, unionAABB, unionOBB);
                 }
-                _boundingBox = new BoundBoxComponent(this, unionAABB, unionOBB);
             }
             else
             {
-                throw new System.Exception("Entity를 설정하려면 원형모델이 있어야합니다.");
+                throw new System.Exception("Entity를 설정하려면 원형모델이 있어야 합니다.");
             }
         }
 
@@ -93,12 +103,6 @@ namespace Model3d
         public BaseModel3d[] Model
         {
             get => _models.ToArray();
-            set
-            {
-                //_textured = (value[0] is TexturedModel);
-                //_models.Clear();
-                //_models.AddRange(value);
-            }
         }
 
         public Material Material
@@ -133,8 +137,6 @@ namespace Model3d
             get => _boundingBox.AABB;
             set => _boundingBox.AABB = value;
         }
-
-
 
         public OBB OBB
         {

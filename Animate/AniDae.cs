@@ -82,6 +82,8 @@ namespace Animate
             _texturedModels.AddRange(models);
 
             _motions = new MotionStorage();
+
+            _motions.AddMotion("default", new Motion("default", 2));
         }
 
         public List<TexturedModel> WearCloth(string fileName, float expandValue = 0.00005f)

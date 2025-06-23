@@ -4,6 +4,7 @@ using Model3d;
 using OpenGL;
 using Shader;
 using System.Collections.Generic;
+using ZetaExt;
 
 namespace Animate
 {
@@ -38,10 +39,7 @@ namespace Animate
         {
             if (entity == null) return;
 
-            if (entity.PolygonMode != 0)
-            {
-                Gl.PolygonMode(MaterialFace.FrontAndBack, entity.PolygonMode);
-            }
+            //Gl.PolygonMode(MaterialFace.FrontAndBack, entity.PolygonMode);
 
             shader.Bind();
             shader.LoadPosModel(entity.LocalBindMatrix);

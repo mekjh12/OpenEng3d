@@ -12,6 +12,11 @@ namespace Animate
             _animateComponent = new AnimateComponent();  // 생성자에서 초기화 필요
         }
 
+        public AnimateEntity(string name, RawModel3d[] rawModel3D) : base(name, "animateEntity", rawModel3D)
+        {
+            _animateComponent = new AnimateComponent();  // 생성자에서 초기화 필요
+        }
+
         // 인터페이스 속성 직접 위임
         public int BoneIndexOnlyOneJoint
         {
