@@ -1,4 +1,5 @@
-﻿using Animate;
+﻿using ActionEnums;
+using Animate;
 using Common.Abstractions;
 using GlWindow;
 using OpenGL;
@@ -106,7 +107,7 @@ namespace FormTools
                 }
             }
 
-            _humanAniModel.SetMotion(HumanAniModel.ACTION.WALK);
+            _humanAniModel.SetMotion(ACTION.BREATHING_IDLE);
 
             // 셰이더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
@@ -189,15 +190,15 @@ namespace FormTools
             }
             else if (e.KeyCode == Keys.D1)
             {
-                _humanAniModel.SetMotion(HumanAniModel.ACTION.IDLE);
+                _humanAniModel.SetMotion(ACTION.BREATHING_IDLE);
             }
             else if (e.KeyCode == Keys.D2)
             {
-                _humanAniModel.SetMotion(HumanAniModel.ACTION.WALK);
+                _humanAniModel.SetMotion(ACTION.WALKING);
             }
             else if (e.KeyCode == Keys.D3)
             {
-                _humanAniModel.SetMotion(HumanAniModel.ACTION.T_POSE);
+                _humanAniModel.SetMotion(ACTION.A_T_POSE);
             }
             else if (e.KeyCode == Keys.D4)
             {

@@ -88,6 +88,10 @@
     <Compile Include="Transform.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ActionEnums\ActionEnums.csproj">
+      <Project>{c6d58f37-538e-4c7b-bdec-d2f41912b406}</Project>
+      <Name>ActionEnums</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Camera3d\Camera3d.csproj">
       <Project>{f5477333-11c8-4e59-8084-1bc3c01df3fe}</Project>
       <Name>Camera3d</Name>

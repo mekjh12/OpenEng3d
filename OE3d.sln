@@ -59,6 +59,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameEngine", "GameEngine\Ga
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lights", "Light\Lights.csproj", "{99EAE591-F4E4-436B-98E1-81800D38A3E2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ActionEnums", "ActionEnums\ActionEnums.csproj", "{C6D58F37-538E-4C7B-BDEC-D2F41912B406}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -153,6 +155,10 @@ Global
 		{99EAE591-F4E4-436B-98E1-81800D38A3E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{99EAE591-F4E4-436B-98E1-81800D38A3E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{99EAE591-F4E4-436B-98E1-81800D38A3E2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C6D58F37-538E-4C7B-BDEC-D2F41912B406}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6D58F37-538E-4C7B-BDEC-D2F41912B406}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C6D58F37-538E-4C7B-BDEC-D2F41912B406}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6D58F37-538E-4C7B-BDEC-D2F41912B406}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
