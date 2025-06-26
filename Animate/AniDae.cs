@@ -83,7 +83,7 @@ namespace Animate
 
             _motions = new MotionStorage();
 
-            _motions.AddMotion("default", new Motion("default", 2));
+            _motions.AddMotion(new Motion("default", lengthInSeconds: 2.0f));
         }
 
         public List<TexturedModel> WearCloth(string fileName, float expandValue = 0.00005f)
@@ -159,6 +159,11 @@ namespace Animate
             }
 
             return texturedModels;
+        }
+
+        public void AddMotion(Motion motion)
+        {
+            Motions.AddMotion(motion);
         }
 
         public Bone AddBone(string boneName, int boneIndex, string parentBoneName, Matrix4x4f inverseBindTransform,

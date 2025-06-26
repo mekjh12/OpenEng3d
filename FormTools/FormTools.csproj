@@ -204,9 +204,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ActionEnums\ActionEnums.csproj">
+    <ProjectReference Include="..\ActionEnums\AutoGenEnums.csproj">
       <Project>{c6d58f37-538e-4c7b-bdec-d2f41912b406}</Project>
-      <Name>ActionEnums</Name>
+      <Name>AutoGenEnums</Name>
     </ProjectReference>
     <ProjectReference Include="..\Animate\Animate.csproj">
       <Project>{c1793684-1bdd-4a67-99e5-5dbea6b321f5}</Project>

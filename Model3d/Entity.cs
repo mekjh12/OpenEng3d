@@ -59,6 +59,8 @@ namespace Model3d
                     for (int i = 0; i < _models.Count; i++)
                     {
                         RawModel3d rawModel = (RawModel3d)_models[i];
+                        rawModel.GenerateBoundingBox();
+
                         unionAABB = (AABB)rawModel.AABB.Union(unionAABB);
                         unionOBB = (OBB)rawModel.OBB.Union(unionOBB);
                     }

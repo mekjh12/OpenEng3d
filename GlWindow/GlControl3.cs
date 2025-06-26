@@ -60,14 +60,14 @@ namespace GlWindow
 
         private ColorShader _colorShader;
 
-        private event Action<int, int> _init;
-        private event Action<int, int> _init3d;
-        private event Action<int, int, int, Camera> _update;
-        private event Action<int, int> _init2d;
-        private event Action<int, float, float, Vertex4f, Camera> _render;
+        protected event Action<int, int> _init;
+        protected event Action<int, int> _init3d;
+        protected event Action<int, int, int, Camera> _update;
+        protected event Action<int, int> _init2d;
+        protected event Action<int, float, float, Vertex4f, Camera> _render;
 
-        private Action<object, System.Windows.Forms.KeyEventArgs> _keyUp;
-        private Action<object, System.Windows.Forms.KeyEventArgs> _keyDown;
+        protected Action<object, System.Windows.Forms.KeyEventArgs> _keyUp;
+        protected Action<object, System.Windows.Forms.KeyEventArgs> _keyDown;
 
         private string _FontResourceFileName = "";
         private string _Ui2dResourcePath = "";
@@ -352,7 +352,7 @@ namespace GlWindow
             {
                 if (eventPair.Value == null)
                 {
-                    throw new InvalidOperationException($"필수 이벤트가 설정되지 않았습니다. {eventPair.Key} 이벤트를 먼저 설정해주세요.");
+                    //throw new InvalidOperationException($"필수 이벤트가 설정되지 않았습니다. {eventPair.Key} 이벤트를 먼저 설정해주세요.");
                 }
             }
 

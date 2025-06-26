@@ -1,4 +1,4 @@
-﻿using ActionEnums;
+﻿using AutoGenEnums;
 using Geometry;
 using OpenGL;
 using ZetaExt;
@@ -15,15 +15,15 @@ namespace Animate
             COUNT
         }
 
-        ACTION _prevMotion = ACTION.BREATHING_IDLE;
-        ACTION _curMotion = ACTION.BREATHING_IDLE;
-        HAND_ITEM _curHandItem = HAND_ITEM.NONE;
-
         public HAND_ITEM CurrentHandItem
         {
             get => _curHandItem;
             set => _curHandItem = value;
         }
+
+        ACTION _prevMotion = ACTION.BREATHING_IDLE;
+        ACTION _curMotion = ACTION.BREATHING_IDLE;
+        HAND_ITEM _curHandItem = HAND_ITEM.NONE;
 
         AABB _collider;
 
@@ -42,36 +42,9 @@ namespace Animate
                 }
                 return _collider;
             }
-        } 
-
-        public HumanAniModel(string name, AnimateEntity model, AniDae xmlDae) : base(name, model, xmlDae)
-        {
-           
         }
 
-        public void SetMotionOnce(string motionName, ACTION nextAction)
-        {
-            Motion motion = _xmlDae.Motions.GetMotion(motionName);
 
-            _animator.OnceFinised = () =>
-            {
-                if (nextAction == ACTION.STOP)
-                {
-                    _animator.Stop();
-                }
-                else
-                {
-                    SetMotion(nextAction);
-                }
-                _animator.OnceFinised = null;
-            };
-
-            if (motion == null)
-                motion = _xmlDae.Motions.DefaultMotion;
-
-            if (motion != null)
-                _animator.SetMotion(motion);
-        }
 
         public Vertex3f HipPosition
         {
@@ -124,6 +97,35 @@ namespace Animate
             }
         }
 
+        public HumanAniModel(string name, AnimateEntity model, AniDae xmlDae) : base(name, model, xmlDae)
+        {
+           
+        }
+
+        public void SetMotionOnce(string motionName, ACTION nextAction)
+        {
+            Motion motion = _xmlDae.Motions.GetMotion(motionName);
+
+            _animator.OnceFinised = () =>
+            {
+                if (nextAction == ACTION.STOP)
+                {
+                    _animator.Stop();
+                }
+                else
+                {
+                    SetMotion(nextAction);
+                }
+                _animator.OnceFinised = null;
+            };
+
+            if (motion == null)
+                motion = _xmlDae.Motions.DefaultMotion;
+
+            if (motion != null)
+                _animator.SetMotion(motion);
+        }
+
         public void HandAction()
         {
             switch (_curHandItem)
@@ -163,13 +165,17 @@ namespace Animate
             }
             else if (_curMotion == ACTION.WALKING)
             {
-                SetMotion("Walking");
+                SetMotion(Actions.WALKING);
             }
             else if (_curMotion == ACTION.A_T_POSE)
             {
-                SetMotion("a-T-Pose");
+                SetMotion( Actions.A_T_POSE);
             }
-            
+            else if (_curMotion == ACTION.SLOW_RUN)
+            {
+                SetMotion(Actions.SLOW_RUN);
+            }
+
             /*
             else if (_curMotion == ACTION.GUN_PLAY)
             {

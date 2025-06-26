@@ -560,20 +560,37 @@ namespace Animate
         }
 
         /// <summary>
+        /// AniDae클래스에 Motion를 추가한다.
+        /// </summary>
+        /// <param name="aniDae"></param>
+        /// <param name="motionFileName"></param>
+        public static void AttachMotion(AniDae aniDae, string motionFileName)
+        {
+            Motion motion = LoadMixamoMotion(aniDae, motionFileName);
+            aniDae.Motions.AddMotion(motion);
+        }
+
+        /// <summary>
         /// * Mixamo에서 Export한 Dae파일을 그대로 읽어온다. <br/>
         /// - Without Skin, Only Armature <br/>
         /// - "3D Mesh Processing and Character Animation", p.183 Animation Retargeting
         /// </summary>
-        /// <param name="xmlDae"></param>
+        /// <param name="aniDae"></param>
         /// <param name="xml"></param>
         /// <param name="motionName"></param>
-        public static void LoadMixamoMotion(AniDae xmlDae, XmlDocument xml, string motionName)
+        public static Motion LoadMixamoMotion(AniDae aniDae, string motionFileName)
         {
+            // Dae 파일을 읽어온다.
+            XmlDocument xml = new XmlDocument();
+            xml.Load(motionFileName);
+            string motionName = Path.GetFileNameWithoutExtension(motionFileName);
+
+            // dae 파일 구조에서 애니메이션 구조를 읽어온다.
             XmlNodeList libraryAnimations = xml.GetElementsByTagName("library_animations");
             if (libraryAnimations.Count == 0)
             {
                 Console.WriteLine($"{motionName} dae 파일 구조에서 애니메이션 구조를 읽어올 수 없습니다.");
-                return;
+                return null;
             }
 
             Dictionary<string, Dictionary<float, Matrix4x4f>> ani = new Dictionary<string, Dictionary<float, Matrix4x4f>>();
@@ -663,12 +680,12 @@ namespace Animate
             // Interpolation Pose만 0초에서 정상적 T-pose를 취하고 있어서 이 부분에서 가져와야 한다.
             if (motionName == "a-T-Pose") //Interpolation Pose
             {
-                xmlDae.HipHeightScale = LoadDefaultScaleTransform(ani, xmlDae.DicBones);
-                Console.WriteLine($"XmeDae HipScaled={xmlDae.HipHeightScale}");
+                aniDae.HipHeightScale = LoadDefaultScaleTransform(ani, aniDae.DicBones);
+                Console.WriteLine($"XmeDae HipScaled={aniDae.HipHeightScale}");
             }
 
             Motion motion = new Motion(motionName, maxTimeLength);
-            if (maxTimeLength > 0 && xmlDae.DicBones != null)
+            if (maxTimeLength > 0 && aniDae.DicBones != null)
             {
                 // 뼈마다 순회
                 foreach (KeyValuePair<string, Dictionary<float, Matrix4x4f>> item in ani)
@@ -676,7 +693,7 @@ namespace Animate
                     string boneName = item.Key;
                     Dictionary<float, Matrix4x4f> source = item.Value;
 
-                    Bone bone = xmlDae.GetBoneByName(boneName);
+                    Bone bone = aniDae.GetBoneByName(boneName);
                     if (bone == null) continue;
 
                     // 뼈의 시간에 따른 순회
@@ -687,7 +704,7 @@ namespace Animate
                         motion.AddKeyFrame(time);
 
                         Vertex3f position = bone.IsRootArmature ?
-                            mat.Position * xmlDae.HipHeightScale : bone.PivotPosition;
+                            mat.Position * aniDae.HipHeightScale : bone.PivotPosition;
 
                         ZetaExt.Quaternion q = AniXmlLoader.ToQuaternion(mat);
                         q.Normalize();
@@ -698,7 +715,7 @@ namespace Animate
                 }
             }
 
-            xmlDae.Motions.AddMotion(motionName, motion);
+            return motion;
         }
 
         public static void LibraryAnimations(AniDae xmlDae, XmlDocument xml)
@@ -706,7 +723,7 @@ namespace Animate
             XmlNodeList libraryAnimations = xml.GetElementsByTagName("library_animations");
             if (libraryAnimations.Count == 0)
             {
-                Console.WriteLine($"[에러] dae파일구조에서 애니메이션구조를 읽어올 수 없습니다.");
+                Console.WriteLine($"현재 캐릭터 파일에 library_animations 노드가 없습니다.");
                 return;
             }
 
@@ -797,7 +814,7 @@ namespace Animate
                     ani.Add(boneName, keyframe);
                 }
 
-                Motion animation = new Motion(motionName, maxTimeLength);
+                Motion motion = new Motion(motionName, maxTimeLength);
                 if (maxTimeLength > 0)
                 {
                     foreach (KeyValuePair<string, Dictionary<float, Matrix4x4f>> item in ani)
@@ -808,19 +825,19 @@ namespace Animate
                         {
                             float time = subsource.Key;
                             Matrix4x4f mat = subsource.Value;
-                            animation.AddKeyFrame(time);
+                            motion.AddKeyFrame(time);
 
                             ZetaExt.Quaternion q = ToQuaternion(mat);
                             q.Normalize();
                             BonePose bonePose = new BonePose();
                             bonePose.Position = new Vertex3f(mat[3, 0], mat[3, 1], mat[3, 2]);
                             bonePose.Rotation = q;
-                            animation[time].AddBoneTransform(boneName, bonePose);
+                            motion[time].AddBoneTransform(boneName, bonePose);
                         }
                     }
                 }
 
-                xmlDae.Motions.AddMotion(motionName, animation);
+                xmlDae.Motions.AddMotion(motion);
             }
         }
 

@@ -15,8 +15,9 @@ namespace Animate
             }
         }
 
-        public void AddMotion(string motionName, Motion motion)
+        public void AddMotion(Motion motion)
         {
+            string motionName = motion.Name;
             if (_motions.ContainsKey(motionName))
             {
                 _motions[motionName] = motion;

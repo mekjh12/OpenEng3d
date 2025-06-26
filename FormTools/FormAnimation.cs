@@ -1,5 +1,5 @@
-﻿using ActionEnums;
-using Animate;
+﻿using Animate;
+using AutoGenEnums;
 using Common.Abstractions;
 using GlWindow;
 using OpenGL;
@@ -7,7 +7,6 @@ using Shader;
 using System;
 using System.IO;
 using System.Windows.Forms;
-using System.Xml;
 using ZetaExt;
 
 namespace FormTools
@@ -21,8 +20,11 @@ namespace FormTools
 
         StaticShader _staticShader;
         AnimateShader _animateShader;
+        AniDae _aniDae;
         HumanAniModel _humanAniModel;
-        AniDae _xmlDae;
+        AniDae _aniDae1;
+        HumanAniModel _humanAniModel1;
+        MixamoRotMotionStorage _mixamoRotMotionStorage;
 
         public FormAnimation()
         {
@@ -91,23 +93,30 @@ namespace FormTools
             // 그리드셰이더 초기화
             _glControl3.InitGridShader(PROJECT_PATH);
 
-            _xmlDae = new AniDae(PROJECT_PATH + @"\Res\abe.dae", isLoadAnimation: false);
-            AnimateEntity animateEntity = new AnimateEntity("man", _xmlDae.Models.ToArray());
-            _humanAniModel = new HumanAniModel("man", animateEntity, _xmlDae);
+            _aniDae = new AniDae(PROJECT_PATH + @"\Res\abe.dae", isLoadAnimation: false);
+            AnimateEntity animateEntity = new AnimateEntity("man", _aniDae.Models.ToArray());
+            _humanAniModel = new HumanAniModel("man", animateEntity, _aniDae);
 
-            // *** Action ***
-            foreach (string fn in Directory.GetFiles(PROJECT_PATH + "\\Res\\Action\\"))
+            _aniDae1 = new AniDae(PROJECT_PATH + @"\Res\hero1.dae", isLoadAnimation: false);
+            AnimateEntity animateEntity1 = new AnimateEntity("hero1", _aniDae1.Models.ToArray());
+            _humanAniModel1 = new HumanAniModel("hero1", animateEntity1, _aniDae1);
+
+            // 믹사모 애니메이션 로드
+            _mixamoRotMotionStorage = new MixamoRotMotionStorage();
+            foreach (string fileName in Directory.GetFiles(PROJECT_PATH + "\\Res\\Action\\"))
             {
-                if (Path.GetExtension(fn) == ".dae")
+                if (Path.GetExtension(fileName).Equals(".dae"))
                 {
-                    XmlDocument xml = new XmlDocument();
-                    xml.Load(fn);
-                    string motionName = Path.GetFileNameWithoutExtension(fn);
-                    AniXmlLoader.LoadMixamoMotion(_xmlDae, xml, motionName);
+                    Motion motion = AniXmlLoader.LoadMixamoMotion(_aniDae, fileName);
+                    _mixamoRotMotionStorage.AddMotion(motion);
                 }
             }
 
-            _humanAniModel.SetMotion(ACTION.BREATHING_IDLE);
+            // 애니메이션 리타겟팅
+            _mixamoRotMotionStorage.RetargetMotionsTransfer(_aniDae1);
+
+            // 애니메이션 모델에 애니메이션 초기 지정
+            _humanAniModel1.SetMotion(ACTION.BREATHING_IDLE);
 
             // 셰이더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
@@ -126,7 +135,7 @@ namespace FormTools
             float duration = deltaTime * 0.001f;
 
             // 애니메이션 업데이트
-            _humanAniModel.Update(deltaTime);
+            _humanAniModel1.Update(deltaTime);
 
             // UI 정보 업데이트
             _glControl3.CLabel("cam").Text =
@@ -157,7 +166,7 @@ namespace FormTools
             // 카메라 중심점 렌더링
             Gl.Enable(EnableCap.DepthTest);
                         
-            _humanAniModel.Render(camera, _staticShader, _animateShader, isBoneVisible: true);
+            _humanAniModel1.Render(camera, _staticShader, _animateShader, isBoneVisible: true);
 
             // 폴리곤 모드 설정
             Gl.PolygonMode(MaterialFace.FrontAndBack, _glControl3.PolygonMode);
@@ -184,23 +193,27 @@ namespace FormTools
         {
             if (e.KeyCode == Keys.F)
             {
-                _humanAniModel.PolygonMode = 
+                _humanAniModel1.PolygonMode = 
                     _humanAniModel.PolygonMode == PolygonMode.Fill ? PolygonMode.Line : PolygonMode.Fill;
                 Debug.PrintLine($"PolygonMode: {_humanAniModel.PolygonMode}");
             }
             else if (e.KeyCode == Keys.D1)
             {
-                _humanAniModel.SetMotion(ACTION.BREATHING_IDLE);
+                _humanAniModel1.SetMotion(ACTION.BREATHING_IDLE);
             }
             else if (e.KeyCode == Keys.D2)
             {
-                _humanAniModel.SetMotion(ACTION.WALKING);
+                _humanAniModel1.SetMotion(ACTION.WALKING);
             }
             else if (e.KeyCode == Keys.D3)
             {
-                _humanAniModel.SetMotion(ACTION.A_T_POSE);
+                _humanAniModel1.SetMotion(ACTION.A_T_POSE);
             }
             else if (e.KeyCode == Keys.D4)
+            {
+                _humanAniModel1.SetMotion(ACTION.SLOW_RUN);
+            }
+            else if (e.KeyCode == Keys.D0)
             {
                 _glControl3.Camera.PivotPosition = new Vertex3f(0, 0, 1.0f);
             }

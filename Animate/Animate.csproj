@@ -79,6 +79,7 @@
     <Compile Include="Kinetics.cs" />
     <Compile Include="Mammal.cs" />
     <Compile Include="MeshTriangles.cs" />
+    <Compile Include="MixamoRotMotionStorage.cs" />
     <Compile Include="Motion.cs" />
     <Compile Include="MotionStorage.cs" />
     <Compile Include="ObjLoader.cs" />
@@ -88,9 +89,9 @@
     <Compile Include="Transform.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ActionEnums\ActionEnums.csproj">
+    <ProjectReference Include="..\ActionEnums\AutoGenEnums.csproj">
       <Project>{c6d58f37-538e-4c7b-bdec-d2f41912b406}</Project>
-      <Name>ActionEnums</Name>
+      <Name>AutoGenEnums</Name>
     </ProjectReference>
     <ProjectReference Include="..\Camera3d\Camera3d.csproj">
       <Project>{f5477333-11c8-4e59-8084-1bc3c01df3fe}</Project>
