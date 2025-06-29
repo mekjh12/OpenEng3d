@@ -211,8 +211,8 @@ namespace Animate
         /// <param name="meshTriangles"></param>
         /// <param name="expandValue">팽창이면 양수, 수축이면 음수를 지정한다.</param>
         /// <returns></returns>
-        public static RawModel3d Expand(List<Vertex3f> lstPositions, List<Vertex2f> lstTexCoord, 
-            List<Vertex4i> lstBoneIndex, List<Vertex4f> lstBoneWeight,
+        public static RawModel3d Expand(List<Vertex3f> lstPositions, List<Vertex2f> lstTexCoord,
+            List<VertexBoneData> vertexBoneData,
             MeshTriangles meshTriangles, float expandValue = 0.0001f)
         {
             MergeOneTopology(lstPositions, meshTriangles, out List<Vertex3f> pList, out Vertex3f[] normals, out Dictionary<uint, uint> map, expandValue);
@@ -246,8 +246,8 @@ namespace Animate
                 vertices.Add(lstPositions[idx]);
                 texcoords.Add(lstTexCoord[tidx]);
                 lstNormals.Add(outNormals[idx]);
-                boneIndices.Add(lstBoneIndex[idx]);
-                boneWeights.Add(lstBoneWeight[idx]);
+                boneIndices.Add(vertexBoneData[idx].BoneIndices);
+                boneWeights.Add(vertexBoneData[idx].BoneWeights);
             }
 
             RawModel3d _rawModel = new RawModel3d();

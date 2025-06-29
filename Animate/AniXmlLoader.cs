@@ -351,17 +351,29 @@ namespace Animate
             return meshTriangles;
         }
 
+        /// <summary>
+        /// COLLADA XML 파일에서 라이브러리 컨트롤러를 파싱하여 반환한다.
+        /// <remarks>
+        /// <para>뼈대 애니메이션을 위한 본 이름, 역바인드 포즈, 본 인덱스 및 가중치 정보를 추출합니다.</para>
+        /// <para>본 인덱스 및 가중치 정보는 읽어온 지오메트리의 정점의 갯수만큼 생성됩니다.</para>
+        /// </remarks>
+        /// </summary>
+        /// <param name="xml"></param>
+        /// <param name="boneNames"></param>
+        /// <param name="invBindPoses"></param>
+        /// <param name="lstBoneIndex"></param>
+        /// <param name="lstBoneWeight"></param>
+        /// <param name="bindShapeMatrix"></param>
         public static void LibraryController(XmlDocument xml, 
             out List<string> boneNames, 
             out Dictionary<string, Matrix4x4f> invBindPoses,
-            out List<Vertex4i> lstBoneIndex, 
-            out List<Vertex4f> lstBoneWeight, 
+            out List<VertexBoneData> vertexBoneData,
             out Matrix4x4f bindShapeMatrix)
         {
             bindShapeMatrix = Matrix4x4f.Identity;
 
-            lstBoneIndex = new List<Vertex4i>();
-            lstBoneWeight = new List<Vertex4f>();
+            // 초기화
+            vertexBoneData = new List<VertexBoneData>();
 
             string jointsName = "";
             string inverseBindMatrixName = "";
@@ -383,11 +395,11 @@ namespace Animate
                     XmlNode joints = controller["skin"]["joints"];
                     XmlNode vertex_weights = controller["skin"]["vertex_weights"];
 
+                    // bind_shape_matrix 읽어옴.
                     string[] eles = controller["skin"]["bind_shape_matrix"].InnerText.Split(' ');
                     float[] eleValues = new float[eles.Length];
                     for (int i = 0; i < eles.Length; i++)
                         eleValues[i] = float.Parse(eles[i]);
-
                     bindShapeMatrix = new Matrix4x4f(eleValues).Transposed;
 
                     // joints 읽어옴.
@@ -395,27 +407,28 @@ namespace Animate
                     {
                         if (input.Name == "input")
                         {
-                            // name 가져오기
-                            if (input.Attributes["semantic"].Value == "JOINT")
+                            // joint와 inv_bind_mat의 semantic을 읽어온다.
+                            switch (input.Attributes["semantic"].Value)
                             {
-                                jointsName = input.Attributes["source"].Value;
-                            }
-                            if (input.Attributes["semantic"].Value == "INV_BIND_MATRIX")
-                            {
-                                inverseBindMatrixName = input.Attributes["source"].Value;
+                                case "JOINT":
+                                    jointsName = input.Attributes["source"].Value;
+                                    break;
+                                case "INV_BIND_MATRIX":
+                                    inverseBindMatrixName = input.Attributes["source"].Value;
+                                    break;
                             }
 
+                            // source 읽어오기
                             foreach (XmlNode source in controller["skin"].ChildNodes)
                             {
                                 if (source.Name == "source")
                                 {
                                     string sourcesId = source.Attributes["id"].Value;
 
+                                    // BoneName 읽어오기
                                     if (source["Name_array"] != null)
                                     {
                                         string[] value = source["Name_array"].InnerText.Split(' ');
-
-                                        // BoneName가져오기
                                         if ("#" + sourcesId == jointsName)
                                         {
                                             boneNames.Clear();
@@ -423,6 +436,7 @@ namespace Animate
                                         }
                                     }
 
+                                    // INV_BIND_MATRIX 읽어오기
                                     if (source["float_array"] != null)
                                     {
                                         string[] value = source["float_array"].InnerText.Split(' ');
@@ -514,7 +528,7 @@ namespace Animate
                                 boneWeightList.Add(int.Parse(vArray[sum + 2 * j + weightOffset].Trim()));
                         }
 
-                        // 정렬하기
+                        // 가중치가 높은 순서로 정렬한다.
                         List<Vertex2f> bwList = new List<Vertex2f>();
                         for (int k = 0; k < boneWeightList.Count; k++)
                         {
@@ -522,7 +536,10 @@ namespace Animate
                             bwList.Add(new Vertex2f(boneIndexList[k], w));
                         }
 
+                        // 가중치가 높은 순서로 정렬한다.
                         bwList.Sort((a, b) => b.y.CompareTo(a.y));
+
+                        // 4개까지만 남기고 나머지는 합산한다.
                         if (bwList.Count > 4)
                         {
                             for (int k = 4; k < bwList.Count; k++)
@@ -548,8 +565,9 @@ namespace Animate
                             if (k == 3) weight.w = bwList[k].y;
                         }
 
-                        lstBoneIndex.Add(jointId);
-                        lstBoneWeight.Add(weight);
+                        var boneData = new VertexBoneData(jointId, weight);
+                        vertexBoneData.Add(boneData);
+
                         sum += 2 * vertexCount;
                     }
                 }

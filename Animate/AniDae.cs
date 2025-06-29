@@ -102,8 +102,11 @@ namespace Animate
                 out List<Vertex3f> lstPositions, out List<Vertex2f> lstTexCoord, out List<Vertex3f> lstNormals);
 
             // (3) library_controllers = boneIndex, boneWeight, bindShapeMatrix
-            AniXmlLoader.LibraryController(xml, out List<string> clothBoneNames, out Dictionary<string, Matrix4x4f> invBindPoses,
-                out List<Vertex4i> lstBoneIndex, out List<Vertex4f> lstBoneWeight, out Matrix4x4f bindShapeMatrix);
+            AniXmlLoader.LibraryController(xml, 
+                out List<string> clothBoneNames, 
+                out Dictionary<string, Matrix4x4f> invBindPoses,
+                out List<VertexBoneData> vertexBoneData, 
+                out Matrix4x4f bindShapeMatrix);
             _bindShapeMatrix = bindShapeMatrix;
 
             // (4-1) boneName, boneIndexDictionary
@@ -122,13 +125,13 @@ namespace Animate
             }
 
             // (4-2) bone-index modify.
-            for (int i = 0; i < lstBoneIndex.Count; i++)
+            for (int i = 0; i < vertexBoneData.Count; i++)
             {
-                int bx = map[lstBoneIndex[i].x];
-                int by = map[lstBoneIndex[i].y];
-                int bz = map[lstBoneIndex[i].z];
-                int bw = map[lstBoneIndex[i].w];
-                lstBoneIndex[i] = new Vertex4i(bx, by, bz, bw);
+                int bx = map[vertexBoneData[i].BoneIndices.x];
+                int by = map[vertexBoneData[i].BoneIndices.y];
+                int bz = map[vertexBoneData[i].BoneIndices.z];
+                int bw = map[vertexBoneData[i].BoneIndices.w];
+                vertexBoneData[i].BoneIndices = new Vertex4i(bx, by, bz, bw);
             }
 
             // (5) source positions으로부터 
@@ -144,7 +147,8 @@ namespace Animate
             List<TexturedModel> texturedModels = new List<TexturedModel>();
             foreach (MeshTriangles meshTriangles in meshes)
             {
-                RawModel3d _rawModel = Clothes.Expand(lstPositions, lstTexCoord, lstBoneIndex, lstBoneWeight, meshTriangles, expandValue);
+                RawModel3d _rawModel = Clothes.Expand(lstPositions, lstTexCoord,
+                    vertexBoneData, meshTriangles, expandValue);
 
                 string effect = materialToEffect[meshTriangles.Material].Replace("#", "");
                 string imageName = (effectToImage[effect]);
@@ -208,15 +212,18 @@ namespace Animate
                 out List<Vertex2f> lstTexCoord, 
                 out List<Vertex3f> lstNormals);
 
-            // (3) library_controllers = boneNames, InvBindPoses, boneIndex, boneWeight
-            // invBindPoses는 계산할 수 있으므로 생략가능하다.
+            // 컨트롤러 정보, 역바인딩포즈를 읽어온다.
             AniXmlLoader.LibraryController(xml, 
                 out List<string> boneNames, 
                 out Dictionary<string, Matrix4x4f> invBindPoses,
-                out List<Vertex4i> lstBoneIndex, 
-                out List<Vertex4f> lstBoneWeight, 
+                out List<VertexBoneData> vertexBoneData,
                 out Matrix4x4f bindShapeMatrix);
 
+            // 정점과 정점 컨트롤 데이터의 갯수가 일치하는지 확인한다.
+            if (lstPositions.Count != vertexBoneData.Count)
+                Console.WriteLine("[주의] 지오메트리의 정점의 갯수와 정점을 컨트롤할 데이터의 갯수가 다릅니다.");
+
+            // 모델의 bind shape matrix을 읽어온다.
             _bindShapeMatrix = bindShapeMatrix;
 
             // 뼈대명 배열을 만들고 뼈대 인덱스 딕셔너리를 만든다.
@@ -277,10 +284,10 @@ namespace Animate
                     _normals.Add(lstNormals[(int)meshTriangles.Normals[i]]);
 
                 for (int i = 0; i < meshTriangles.Vertices.Count; i++)
-                    _boneIndices.Add(lstBoneIndex[(int)meshTriangles.Vertices[i]]);
+                    _boneIndices.Add(vertexBoneData[(int)meshTriangles.Vertices[i]].BoneIndices);
 
                 for (int i = 0; i < meshTriangles.Vertices.Count; i++)
-                    _boneWeights.Add(lstBoneWeight[(int)meshTriangles.Vertices[i]]);
+                    _boneWeights.Add(vertexBoneData[(int)meshTriangles.Vertices[i]].BoneWeights);
 
                 // GPU에 전송할 모델을 생성한다.
                 RawModel3d _rawModel = new RawModel3d();

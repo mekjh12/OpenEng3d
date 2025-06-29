@@ -87,6 +87,7 @@
     <Compile Include="Renderer3d.cs" />
     <Compile Include="TextureStorage.cs" />
     <Compile Include="Transform.cs" />
+    <Compile Include="VertexBoneData.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ActionEnums\AutoGenEnums.csproj">
