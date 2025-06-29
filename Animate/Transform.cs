@@ -146,7 +146,7 @@ namespace Animate
         }
 
         /// <summary>현재 변환의 역변환 행렬 반환</summary>
-        public Matrix4x4f InverseMatrix => (_transform * 1000.0f).Inverse * 1000.0f;
+        public Matrix4x4f InverseMatrix => _transform.Inversed();
 
         public override string ToString()
         {

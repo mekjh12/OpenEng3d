@@ -42,7 +42,7 @@ namespace Animate
                     m[0, 0] = -d.x; m[0, 1] = -d.y; m[0, 2] = -d.z;
                     m[1, 0] = e1.x; m[1, 1] = e1.y; m[1, 2] = e1.z;
                     m[2, 0] = e2.x; m[2, 1] = e2.y; m[2, 2] = e2.z;
-                    invMat[i] = (m * 1000.0f).Inverse * 1000.0f;
+                    invMat[i] = m.Inversed();
                 }
                 Console.WriteLine("invMat complete.");
 

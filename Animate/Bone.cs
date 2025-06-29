@@ -167,7 +167,7 @@ namespace Animate
             set => _animatedTransform = value;
         }
 
-        public Matrix4x4f AnimatedInverseTransform => (_animatedTransform * 1000.0f).Inverse * 1000.0f;
+        public Matrix4x4f AnimatedInverseTransform => _animatedTransform.Inversed();
 
         /// <summary>
         /// 뼈공간에서의 변환행렬
@@ -238,7 +238,7 @@ namespace Animate
         public void UpdateLocalTransform()
         {
             if (_parent != null)
-                _localTransform = (_parent._animatedTransform * 1000.0f).Inverse * 1000.0f * _animatedTransform;
+                _localTransform = _parent._animatedTransform.Inversed() * _animatedTransform;
             else
                 _localTransform = _animatedTransform;
         }

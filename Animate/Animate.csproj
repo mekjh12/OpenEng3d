@@ -127,6 +127,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="ClassDiagram1.cd" />
+    <None Include="Entity.cd" />
     <None Include="packages.config" />
     <None Include="README.md" />
   </ItemGroup>

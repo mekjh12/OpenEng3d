@@ -13,6 +13,7 @@ namespace Model3d
         void Update(Vertex3f position, Vertex3f cameraPosition);
 
         float DistanceLodLow { get; }
+
         float DistanceLodHigh { get; }
 
     }

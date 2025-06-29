@@ -7,6 +7,17 @@ namespace ZetaExt
     public static class Matrix3x3F
     {
         /// <summary>
+        /// 역행렬을 구한다.
+        /// <para>행렬의 역행렬을 구할 때, 소수점 오차를 줄이기 위해 1000.0f로 곱한 후 역행렬을 구하고 다시 1000.0f으로 나눈다.</para>
+        /// </summary>
+        /// <param name="mat"></param>
+        /// <returns></returns>
+        public static Matrix3x3f Inversed(this Matrix3x3f mat)
+        {
+            return (mat * 1000.0f).Inverse * 1000.0f;
+        }
+
+        /// <summary>
         /// 행렬의 0, 1, 2번째 행렬에 벡터를 순서대로 설정한다.
         /// </summary>
         /// <param name="mat"></param>

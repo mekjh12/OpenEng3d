@@ -12,6 +12,17 @@ namespace ZetaExt
         public const float RAD_270 = 3.0f * RAD_90;
 
         /// <summary>
+        /// 역행렬을 구한다.
+        /// <para>행렬의 역행렬을 구할 때, 소수점 오차를 줄이기 위해 1000.0f로 곱한 후 역행렬을 구하고 다시 1000.0f으로 나눈다.</para>
+        /// </summary>
+        /// <param name="mat"></param>
+        /// <returns></returns>
+        public static Matrix4x4f Inversed(this Matrix4x4f mat)
+        {
+            return (mat * 1000.0f).Inverse * 1000.0f;
+        }
+
+        /// <summary>
         /// 점을 변환행렬에 의하여 변환한다.
         /// </summary>
         /// <param name="mat"></param>

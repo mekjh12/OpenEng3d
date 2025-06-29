@@ -192,18 +192,21 @@ namespace Animate
 
         public List<TexturedModel> LoadFile(string filename)
         {
+            // dae 파일을 읽어온다.
             XmlDocument xml = new XmlDocument();
             xml.Load(filename);
             _filename = filename;
 
-            // (1) library_images = textures
+            // 텍스처, 재질, 이미지효과 정보를 읽어온다.
             Dictionary<string, Texture> textures = AniXmlLoader.LibraryImages(_filename, xml);
             Dictionary<string, string> materialToEffect = AniXmlLoader.LoadMaterials(xml);
             Dictionary<string, string> effectToImage = AniXmlLoader.LoadEffect(xml);
 
-            // (2) library_geometries = position, normal, texcoord, color
-            List<MeshTriangles> meshes = AniXmlLoader.LibraryGeometris(xml, out List<Vertex3f> lstPositions,
-                out List<Vertex2f> lstTexCoord, out List<Vertex3f> lstNormals);
+            // 지오메트리 정보를 읽어온다. position, normal, texcoord, color, MeshTriangles 정보가 포함되어 있다.
+            List<MeshTriangles> meshes = AniXmlLoader.LibraryGeometris(xml, 
+                out List<Vertex3f> lstPositions,
+                out List<Vertex2f> lstTexCoord, 
+                out List<Vertex3f> lstNormals);
 
             // (3) library_controllers = boneNames, InvBindPoses, boneIndex, boneWeight
             // invBindPoses는 계산할 수 있으므로 생략가능하다.
@@ -216,7 +219,7 @@ namespace Animate
 
             _bindShapeMatrix = bindShapeMatrix;
 
-            // (3-1) BoneIndex 딕셔너리 
+            // 뼈대명 배열을 만들고 뼈대 인덱스 딕셔너리를 만든다.
             _boneNames = new string[boneNames.Count];
             _dicBoneIndex = new Dictionary<string, int>();
             for (int i = 0; i < boneNames.Count; i++)
@@ -248,11 +251,12 @@ namespace Animate
                 Bone cBone = bStack.Pop();
                 Matrix4x4f prevAnimatedMat = (cBone.Parent == null ? Matrix4x4f.Identity : cBone.Parent.AnimatedBindTransform);
                 cBone.AnimatedBindTransform = prevAnimatedMat * cBone.LocalBindTransform;
-                cBone.InverseBindTransform = (cBone.AnimatedBindTransform * 1000.0f).Inverse * 1000.0f;
+                cBone.InverseBindTransform = cBone.AnimatedBindTransform.Inversed();
                 foreach (Bone child in cBone.Childrens) bStack.Push(child);
             }
 
-            // 읽어온 정보의 인덱스를 이용하여 GPU에 데이터를 전송한다.
+            // lstPositions, lstTexCoord, lstNormals, lstBoneIndex, lstBoneWeight를 이용하여 RawModel3d를 생성한다.
+            // 읽어온 정보의 MeshTriangles를 이용하여 GPU에 폴리곤 정보 데이터를 전송한다.
             List<TexturedModel> texturedModels = new List<TexturedModel>();
             foreach (MeshTriangles meshTriangles in meshes)
             {
@@ -278,14 +282,17 @@ namespace Animate
                 for (int i = 0; i < meshTriangles.Vertices.Count; i++)
                     _boneWeights.Add(lstBoneWeight[(int)meshTriangles.Vertices[i]]);
 
+                // GPU에 전송할 모델을 생성한다.
                 RawModel3d _rawModel = new RawModel3d();
                 _rawModel.Init(vertices: _vertices.ToArray(), texCoords: _texcoords.ToArray(), normals: _normals.ToArray(),
                     boneIndex: _boneIndices.ToArray(), boneWeight: _boneWeights.ToArray());
                 _rawModel.GpuBind();
 
+                // 텍스쳐를 매핑한다.
                 string effect = materialToEffect[meshTriangles.Material].Replace("#", "");
                 string imageName = (effectToImage[effect]);
 
+                // 텍스쳐가 존재하는지 확인하고 텍스처 모델을 생성한다.
                 if (textures.ContainsKey(imageName))
                 {
                     TexturedModel texturedModel = new TexturedModel(_rawModel, textures[imageName]);

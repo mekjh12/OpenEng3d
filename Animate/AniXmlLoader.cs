@@ -202,7 +202,9 @@ namespace Animate
         }
 
         public static List<MeshTriangles> LibraryGeometris(XmlDocument xml,
-            out List<Vertex3f> lstPositions, out List<Vertex2f> lstTexCoord, out List<Vertex3f> lstNormals)
+            out List<Vertex3f> lstPositions, 
+            out List<Vertex2f> lstTexCoord, 
+            out List<Vertex3f> lstNormals)
         {
             List<MeshTriangles> meshTriangles = new List<MeshTriangles>();
 
@@ -234,9 +236,9 @@ namespace Animate
 
                     foreach (XmlNode node in geometry["mesh"])
                     {
-                        uint pNum = 0;
-                        uint tNum = 0;
-                        uint nNum = 0;
+                        uint pNum = 0; // position 개수
+                        uint tNum = 0; // texcoord 개수
+                        uint nNum = 0; // normal 개수
 
                         // 기본 데이터 source를 읽어옴.
                         if (node.Name == "source")
@@ -334,6 +336,7 @@ namespace Animate
 
                             string materialName = node.Attributes["material"] != null ? node.Attributes["material"].Value : "";
 
+                            // 버텍스, 텍스쳐좌표, 법선벡터의 인덱스를 모두 모아서 MeshTriangles로 만든다.
                             MeshTriangles triMesh = new MeshTriangles();
                             triMesh.Material = materialName;
                             triMesh.AddVertices(lstVertexIndices.ToArray());
@@ -348,8 +351,12 @@ namespace Animate
             return meshTriangles;
         }
 
-        public static void LibraryController(XmlDocument xml, out List<string> boneNames, out Dictionary<string, Matrix4x4f> invBindPoses,
-            out List<Vertex4i> lstBoneIndex, out List<Vertex4f> lstBoneWeight, out Matrix4x4f bindShapeMatrix)
+        public static void LibraryController(XmlDocument xml, 
+            out List<string> boneNames, 
+            out Dictionary<string, Matrix4x4f> invBindPoses,
+            out List<Vertex4i> lstBoneIndex, 
+            out List<Vertex4f> lstBoneWeight, 
+            out Matrix4x4f bindShapeMatrix)
         {
             bindShapeMatrix = Matrix4x4f.Identity;
 

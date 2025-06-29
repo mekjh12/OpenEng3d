@@ -81,7 +81,7 @@ namespace Occlusion
                 return 0;
             }
 
-            Matrix4x4f m = (Mocc * 1000.0f).Inverse * 1000.0f;
+            Matrix4x4f m = Mocc.Inversed();
             float[] cameraPosition = (float[])(m * Mcam.GetTranslation());
 
             // 6비트 오클루전 코드를 계산하고 앞면을 생성한다.
