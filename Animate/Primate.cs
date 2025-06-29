@@ -7,7 +7,26 @@ using System.IO;
 
 namespace Animate
 {
-    public class Mammal : AniModel
+    /// <summary>
+    /// 영장류 클래스 - 인간, 원숭이, 유인원 등을 포함하는 포유류 목
+    /// 
+    /// 영장류의 주요 특징:
+    /// - 발달된 뇌와 높은 지능, 복잡한 사회 구조
+    /// - 정교한 손가락 움직임과 엄지손가락 대립 가능
+    /// - 양안시(입체시)가 가능한 전방향 눈
+    /// - 직립보행 또는 팔을 이용한 나무 위 이동
+    /// - 도구 사용 능력과 학습 능력
+    /// - 긴 수명과 느린 성장 과정
+    /// 
+    /// 3D 그래픽스 구현 완료:
+    /// - 손가락 관절 애니메이션 (접기/펴기)
+    /// - 눈동자 추적 시스템
+    /// - 신체 부위별 아이템 장착 시스템
+    /// 
+    /// TODO: 표정 변화 시스템, 입 모양 변형, 헤어/털 시뮬레이션,
+    /// 근육 변형 애니메이션, 걸음걸이 패턴 다양화
+    /// </summary>
+    public class Primate : AniModel
     {
         public enum BODY_PART
         {
@@ -32,17 +51,17 @@ namespace Animate
             }
         }
 
-        public Mammal(string name, AnimateEntity model, AniDae xmlDae) : base(name, model, xmlDae)
+        public Primate(string name, AnimateEntity model, AniDae xmlDae) : base(name, model, xmlDae)
         {
             //TransplantEye(EngineLoop.PROJECT_PATH + "\\Res\\Human\\simple_eye.dae", "mixamorig_Head");
 
-            HandGrabItem(_xmlDae, "mixamorig_LeftHand_Item", "mixamorig_LeftHand",
+            HandGrabItem(_aniDae, "mixamorig_LeftHand_Item", "mixamorig_LeftHand",
                   Matrix4x4f.RotatedY(0), Matrix4x4f.Translated(0, 10, 3) * Matrix4x4f.Scaled(1, 1, 1));
-            HandGrabItem(_xmlDae, "mixamorig_RightHand_Item", "mixamorig_RightHand",
+            HandGrabItem(_aniDae, "mixamorig_RightHand_Item", "mixamorig_RightHand",
                 Matrix4x4f.RotatedY(180), Matrix4x4f.Translated(0, 10, 3) * Matrix4x4f.Scaled(1, 1, 1));
-            HandGrabItem(_xmlDae, "mixamorig_Head_Item", "mixamorig_Head",
+            HandGrabItem(_aniDae, "mixamorig_Head_Item", "mixamorig_Head",
                 Matrix4x4f.RotatedY(0), Matrix4x4f.Translated(0, 18.5f, 7.2f) * Matrix4x4f.Scaled(1, 1, 1));
-            HandGrabItem(_xmlDae, "mixamorig_Back", "mixamorig_Spine2",
+            HandGrabItem(_aniDae, "mixamorig_Back", "mixamorig_Spine2",
                 Matrix4x4f.RotatedY(0), Matrix4x4f.Translated(0, 0, -10.0f) * Matrix4x4f.Scaled(1, 1, 1));
         }
 
@@ -186,7 +205,7 @@ namespace Animate
 
             TexturedModel texturedModel = AniXmlLoader.LoadOnlyGeometryMesh(fileName);
             string boneName = $"mixamorig_eyeLeft";
-            Bone LEyeBone = _xmlDae.AddBone(boneName, _xmlDae.BoneCount, parentBoneName,
+            Bone LEyeBone = _aniDae.AddBone(boneName, _aniDae.BoneCount, parentBoneName,
                 inverseBindTransform: Matrix4x4f.RotatedY(90).Inverse,
                 localBindTransform: Matrix4x4f.Translated(4.4f, 11.8f, 12.5f) * Matrix4x4f.Scaled(0.75f, 0.65f, 0.65f));
             LEyeBone.RestrictAngle = new BoneAngle(-30, 30, -0, 0, -60, 60);
@@ -196,7 +215,7 @@ namespace Animate
             AddEntity(boneName, EntityL);
 
             boneName = $"mixamorig_eyeRight";
-            Bone REyeBone = _xmlDae.AddBone(boneName, _xmlDae.BoneCount, parentBoneName,
+            Bone REyeBone = _aniDae.AddBone(boneName, _aniDae.BoneCount, parentBoneName,
                 inverseBindTransform: Matrix4x4f.RotatedY(90).Inverse,
                 localBindTransform: Matrix4x4f.Translated(-4.4f, 11.8f, 12.5f) * Matrix4x4f.Scaled(0.75f, 0.65f, 0.65f));
             REyeBone.RestrictAngle = new BoneAngle(-30, 30, -0, 0, -60, 60);

@@ -61,6 +61,20 @@ namespace Animate
             _keyframes = new Dictionary<float, KeyFrame>();
         }
 
+
+        public Motion Clone()
+        {
+            Motion motion = new Motion(_animationName, _length);
+            foreach (KeyValuePair<float, KeyFrame> item in _keyframes)
+            {
+                KeyFrame keyFrame = item.Value.Clone();
+                motion.AddKeyFrame(keyFrame);
+            }
+
+            return motion;
+        }
+
+
         public KeyFrame CloneKeyFrame(float time)
         {
             float currentKeyFrameTime = 0.0f;

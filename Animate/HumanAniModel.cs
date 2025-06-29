@@ -5,7 +5,7 @@ using ZetaExt;
 
 namespace Animate
 {
-    public class HumanAniModel : Mammal
+    public class HumanAniModel : Primate
     {
         public enum HAND_ITEM
         {
@@ -37,8 +37,8 @@ namespace Animate
                 }
                 else
                 {
-                    _collider.LowerBound = _transform.Position + _xmlDae.LowerCollider;
-                    _collider.UpperBound = _transform.Position + _xmlDae.UpperCollider;
+                    _collider.LowerBound = _transform.Position + _aniDae.LowerCollider;
+                    _collider.UpperBound = _transform.Position + _aniDae.UpperCollider;
                 }
                 return _collider;
             }
@@ -104,7 +104,7 @@ namespace Animate
 
         public void SetMotionOnce(string motionName, ACTION nextAction)
         {
-            Motion motion = _xmlDae.Motions.GetMotion(motionName);
+            Motion motion = _aniDae.Motions.GetMotion(motionName);
 
             _animator.OnceFinised = () =>
             {
@@ -120,7 +120,7 @@ namespace Animate
             };
 
             if (motion == null)
-                motion = _xmlDae.Motions.DefaultMotion;
+                motion = _aniDae.Motions.DefaultMotion;
 
             if (motion != null)
                 _animator.SetMotion(motion);

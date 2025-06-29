@@ -7,13 +7,14 @@ namespace Animate
 {
     /// <summary>
     /// 본(뼈대)의 변환 정보를 저장하는 클래스<br/>
-    /// - 3D 공간에서 본의 위치(Position), 회전(Rotation), 크기(Scaling) 정보 관리<br/>
+    /// - 캐릭터 공간에서 본의 위치(Position), 회전(Rotation), 크기(Scaling) 정보 관리<br/>
     /// - 애니메이션 키프레임에서 본의 상태를 표현하는 기본 단위
     /// </summary>
     public class BonePose
     {
+        // 본의 스케일, 위치, 회전 정보를 저장하는 필드
         Vertex3f _scaling;   // 본의 스케일 (x, y, z 배율)
-        Vertex3f _position;  // 본의 위치 (x, y, z 좌표)
+        Vertex3f _position;  // 본의 위치 (x, y, z 좌표) 
         ZetaExt.Quaternion _rotation; // 본의 회전 (쿼터니언)
 
         public Vertex3f Scaling
@@ -48,14 +49,6 @@ namespace Animate
             _position = position;
             _rotation = rotation;
             _scaling = Vertex3f.One; // 스케일 1.0
-        }
-
-        /// <summary>Assimp Vector3D 타입으로 모든 변환 정보를 지정하는 생성자</summary>
-        public BonePose(Vector3D position, ZetaExt.Quaternion rotation, Vector3D scaling)
-        {
-            _position = new Vertex3f((float)position.X, (float)position.Y, (float)position.Z);
-            _rotation = rotation;
-            _scaling = new Vertex3f((float)scaling.X, (float)scaling.Y, (float)scaling.Z);
         }
 
         /// <summary>기본 생성자 (원점, 회전 없음, 스케일 1.0)</summary>

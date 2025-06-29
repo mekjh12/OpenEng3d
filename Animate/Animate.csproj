@@ -77,7 +77,7 @@
     <Compile Include="HumanAniModel.cs" />
     <Compile Include="KeyFrame.cs" />
     <Compile Include="Kinetics.cs" />
-    <Compile Include="Mammal.cs" />
+    <Compile Include="Primate.cs" />
     <Compile Include="MeshTriangles.cs" />
     <Compile Include="MixamoRotMotionStorage.cs" />
     <Compile Include="Motion.cs" />

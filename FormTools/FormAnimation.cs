@@ -20,11 +20,12 @@ namespace FormTools
 
         StaticShader _staticShader;
         AnimateShader _animateShader;
+        MixamoRotMotionStorage _mixamoRotMotionStorage;
         AniDae _aniDae;
         HumanAniModel _humanAniModel;
         AniDae _aniDae1;
         HumanAniModel _humanAniModel1;
-        MixamoRotMotionStorage _mixamoRotMotionStorage;
+        HumanAniModel _currentHumanModel;
 
         public FormAnimation()
         {
@@ -94,8 +95,8 @@ namespace FormTools
             _glControl3.InitGridShader(PROJECT_PATH);
 
             _aniDae = new AniDae(PROJECT_PATH + @"\Res\abe.dae", isLoadAnimation: false);
-            AnimateEntity animateEntity = new AnimateEntity("man", _aniDae.Models.ToArray());
-            _humanAniModel = new HumanAniModel("man", animateEntity, _aniDae);
+            AnimateEntity animateEntity = new AnimateEntity("abe", _aniDae.Models.ToArray());
+            _humanAniModel = new HumanAniModel("abe", animateEntity, _aniDae);
 
             _aniDae1 = new AniDae(PROJECT_PATH + @"\Res\hero1.dae", isLoadAnimation: false);
             AnimateEntity animateEntity1 = new AnimateEntity("hero1", _aniDae1.Models.ToArray());
@@ -113,10 +114,13 @@ namespace FormTools
             }
 
             // 애니메이션 리타겟팅
-            _mixamoRotMotionStorage.RetargetMotionsTransfer(_aniDae1);
+            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniDae: _aniDae1);
+            //_mixamoRotMotionStorage.RetargetMotionsTransfer(_aniDae);
+
+            _currentHumanModel = _humanAniModel1;
 
             // 애니메이션 모델에 애니메이션 초기 지정
-            _humanAniModel1.SetMotion(ACTION.BREATHING_IDLE);
+            _currentHumanModel.SetMotion(ACTION.BREATHING_IDLE);
 
             // 셰이더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
@@ -135,7 +139,7 @@ namespace FormTools
             float duration = deltaTime * 0.001f;
 
             // 애니메이션 업데이트
-            _humanAniModel1.Update(deltaTime);
+            _currentHumanModel.Update(deltaTime);
 
             // UI 정보 업데이트
             _glControl3.CLabel("cam").Text =
@@ -165,8 +169,8 @@ namespace FormTools
 
             // 카메라 중심점 렌더링
             Gl.Enable(EnableCap.DepthTest);
-                        
-            _humanAniModel1.Render(camera, _staticShader, _animateShader, isBoneVisible: true);
+
+            _currentHumanModel.Render(camera, _staticShader, _animateShader, isBoneVisible: true);
 
             // 폴리곤 모드 설정
             Gl.PolygonMode(MaterialFace.FrontAndBack, _glControl3.PolygonMode);
@@ -212,6 +216,14 @@ namespace FormTools
             else if (e.KeyCode == Keys.D4)
             {
                 _humanAniModel1.SetMotion(ACTION.SLOW_RUN);
+            }
+            else if (e.KeyCode == Keys.D5)
+            {
+                _currentHumanModel = _humanAniModel;
+            }
+            else if (e.KeyCode == Keys.D6)
+            {
+                _currentHumanModel = _humanAniModel1;
             }
             else if (e.KeyCode == Keys.D0)
             {

@@ -12,7 +12,7 @@ namespace Animate
     public class AniModel
     {
         protected string _name;
-        protected AniDae _xmlDae;
+        protected AniDae _aniDae;
 
         protected Action _updateBefore;
         protected Action _updateAfter;
@@ -22,7 +22,7 @@ namespace Animate
         protected Bone _rootBone;
         protected Animator _animator;
 
-        public AniDae AniDae => _xmlDae;
+        public AniDae AniDae => _aniDae;
 
         public string Name => _name;
 
@@ -38,7 +38,7 @@ namespace Animate
         float _axisLength = 10.3f;
         float _drawThick = 1.0f;
 
-        public int BoneCount => _xmlDae.BoneCount;
+        public int BoneCount => _aniDae.BoneCount;
 
         public Motion CurrentMotion => _animator.CurrentMotion;
 
@@ -77,7 +77,7 @@ namespace Animate
         /// </summary>
         /// <param name="boneName"></param>
         /// <returns></returns>
-        public Bone GetBoneByName(string boneName) => _xmlDae.GetBoneByName(boneName);
+        public Bone GetBoneByName(string boneName) => _aniDae.GetBoneByName(boneName);
 
         /// <summary>
         /// Animator를 가져온다.
@@ -103,14 +103,14 @@ namespace Animate
         /// 생성자
         /// </summary>
         /// <param name="model"></param>
-        /// <param name="xmlDae"></param>
-        public AniModel(string name, AnimateEntity model, AniDae xmlDae)
+        /// <param name="aniDae"></param>
+        public AniModel(string name, AnimateEntity model, AniDae aniDae)
         {
             _models = new Dictionary<string, AnimateEntity>();
             _models.Add(name, model);
 
-            _xmlDae = xmlDae;
-            _rootBone = xmlDae.RootBone;
+            _aniDae = aniDae;
+            _rootBone = aniDae.RootBone;
             _animator = new Animator(this);
             _transform = new Transform();
         }
@@ -125,8 +125,8 @@ namespace Animate
 
         public virtual void SetMotionOnce(string motionName, string nextAction)
         {
-            Motion motion = _xmlDae.Motions.GetMotion(motionName);
-            Motion nextMotion = _xmlDae.Motions.GetMotion(nextAction);
+            Motion motion = _aniDae.Motions.GetMotion(motionName);
+            Motion nextMotion = _aniDae.Motions.GetMotion(nextAction);
 
             _animator.OnceFinised = () =>
             {
@@ -135,7 +135,7 @@ namespace Animate
             };
 
             if (motion == null)
-                motion = _xmlDae.Motions.DefaultMotion;
+                motion = _aniDae.Motions.DefaultMotion;
 
             if (motion != null)
                 _animator.SetMotion(motion);
@@ -149,10 +149,10 @@ namespace Animate
         {
             _animator.OnceFinised = null;
 
-            Motion motion = _xmlDae.Motions.GetMotion(motionName);
+            Motion motion = _aniDae.Motions.GetMotion(motionName);
 
             if (motion == null)
-                motion = _xmlDae.Motions.DefaultMotion;
+                motion = _aniDae.Motions.DefaultMotion;
 
             if (motion != null)
                 _animator.SetMotion(motion);
@@ -250,7 +250,7 @@ namespace Animate
             get
             {
                 Matrix4x4f[] jointMatrices = new Matrix4x4f[BoneCount];
-                foreach (KeyValuePair<string, Bone> item in _xmlDae.DicBones)
+                foreach (KeyValuePair<string, Bone> item in _aniDae.DicBones)
                 {
                     Bone bone = item.Value;
                     if (bone.Index >= 0)
@@ -269,7 +269,7 @@ namespace Animate
             get
             {
                 Matrix4x4f[] jointMatrices = new Matrix4x4f[BoneCount];
-                foreach (KeyValuePair<string, Bone> item in _xmlDae.DicBones)
+                foreach (KeyValuePair<string, Bone> item in _aniDae.DicBones)
                 {
                     Bone bone = item.Value;
                     if (bone.Index >= 0)
@@ -288,7 +288,7 @@ namespace Animate
             get
             {
                 Matrix4x4f[] jointMatrices = new Matrix4x4f[BoneCount];
-                foreach (KeyValuePair<string, Bone> item in _xmlDae.DicBones)
+                foreach (KeyValuePair<string, Bone> item in _aniDae.DicBones)
                 {
                     Bone bone = item.Value;
                     if (bone.Index >= 0 && bone.Index < BoneCount)
@@ -328,7 +328,7 @@ namespace Animate
         public Entity Attach(string fileName, float expandValue = 0.01f)
         {
             string name = Path.GetFileNameWithoutExtension(fileName);
-            List<TexturedModel> texturedModels = _xmlDae.WearCloth(fileName, expandValue);
+            List<TexturedModel> texturedModels = _aniDae.WearCloth(fileName, expandValue);
             AnimateEntity clothEntity = new AnimateEntity("aniModel_" + name, texturedModels[0]);
             AddEntity(name, clothEntity);
             return clothEntity;

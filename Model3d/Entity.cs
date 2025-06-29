@@ -58,12 +58,15 @@ namespace Model3d
                 {
                     for (int i = 0; i < _models.Count; i++)
                     {
+                        // 각 모델의 AABB와 OBB를 가져와서 합칩니다.
                         RawModel3d rawModel = (RawModel3d)_models[i];
                         rawModel.GenerateBoundingBox();
 
                         unionAABB = (AABB)rawModel.AABB.Union(unionAABB);
                         unionOBB = (OBB)rawModel.OBB.Union(unionOBB);
                     }
+
+                    // 모든 모델의 AABB와 OBB를 합쳐 BoundBoxComponent 생성
                     _boundingBox = new BoundBoxComponent(this, unionAABB, unionOBB);
                 }
             }

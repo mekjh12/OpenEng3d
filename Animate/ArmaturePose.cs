@@ -7,14 +7,14 @@ namespace Animate
     /// ----------------------------------------------------- <br/>
     /// * 뼈대 골격의 포즈클래스 <br/>
     /// ----------------------------------------------------- <br/>
-    /// - 골격이 원점으로부터 SRT한 행렬을 가진다. <br/>
+    /// - 골격이 원점으로부터 S->R->T한 행렬을 가진다. <br/>
     /// - 뼈대의 로컬공간의 행렬이 아니다.<br/>
     /// - 골격의 뼈대의 정보는 뼈대이름의 딕셔너리로 접근한다. <br/>
     /// ----------------------------------------------------- <br/>
     /// </summary>
     public class ArmaturePose
     {
-        Dictionary<string, BonePose> _pose;
+        Dictionary<string, BonePose> _pose; // 뼈대의 이름과 뼈대 포즈를 저장하는 딕셔너리
 
         public bool ContainsKey(string name) => _pose.ContainsKey(name);
 
@@ -30,6 +30,8 @@ namespace Animate
         }
 
         public string[] JointNames => _pose.Keys.ToArray();
+
+        public BonePose[] BonePoses => _pose.Values.ToArray();
 
         public ArmaturePose Clone()
         {

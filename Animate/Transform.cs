@@ -69,6 +69,9 @@ namespace Animate
             }
         }
 
+        /// <summary>
+        /// 생성자
+        /// </summary>
         public Transform()
         {
             _transform = Matrix4x4f.Identity;

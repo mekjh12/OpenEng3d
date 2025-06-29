@@ -86,13 +86,12 @@ namespace Animate
         }
 
         /// <summary>
-        /// 엉덩이 뼈의 바닥으로부터의 상대적 높이를 반환한다.
+        /// 대입한 모델의 엉덩이 뼈를 기준으로 엉덩이 뼈의 바닥으로부터의 상대적 높이를 반환한다.
         /// </summary>
-        /// <param name="ani">이식을 가져올 애니메이션 행렬 모음</param>
+        /// <param name="animationData">이식을 가져올 애니메이션 행렬 모음</param>
         /// <param name="dicBones">이식할 뼈대의 모음</param>
         /// <returns></returns>
-        private static float LoadDefaultScaleTransform(Dictionary<string, Dictionary<float, Matrix4x4f>> ani,
-            Dictionary<string, Bone> dicBones)
+        private static float CalculateHipScaleRatio(Dictionary<string, Dictionary<float, Matrix4x4f>> animationData, Dictionary<string, Bone> dicBones)
         {
             // 알고리즘 설명: 0초의 엉덩이 뼈를 찾아 상대적 비를 계산한다.
             // 
@@ -102,33 +101,24 @@ namespace Animate
             //
             if (dicBones == null) return 1.0f;
 
-            float hipScaled = 1.0f;
-
-            // 뼈마다 순회
-            foreach (KeyValuePair<string, Dictionary<float, Matrix4x4f>> item in ani)
+            // 딕셔너리 정보는 뼈이름, <시간, 행렬>로 구성되어 있다.
+            foreach (KeyValuePair<string, Dictionary<float, Matrix4x4f>> item in animationData)
             {
                 string boneName = item.Key;
-                Dictionary<float, Matrix4x4f> source = item.Value;
+                Dictionary<float, Matrix4x4f> timeFrames = item.Value;
 
-                Bone bone = dicBones.ContainsKey(boneName) ? dicBones[boneName] : null;
-                if (bone == null) continue;
+                if (!dicBones.ContainsKey(boneName)) continue;
 
-                // 뼈의 시간에 따른 순회
-                foreach (KeyValuePair<float, Matrix4x4f> subsource in source)
+                Bone bone = dicBones[boneName];
+                if (bone.IsRootArmature && timeFrames.ContainsKey(0.0f))
                 {
-                    float time = subsource.Key;
-                    Matrix4x4f mat = subsource.Value;
-
-                    if (bone.IsRootArmature)
-                    {
-                        float dstSize = bone.PivotPosition.Norm();
-                        float srcSize = source[0.0f].Position.Norm();
-                        hipScaled = dstSize / srcSize;
-                    }
+                    float dstSize = bone.PivotPosition.Norm();
+                    float srcSize = timeFrames[0.0f].Position.Norm();
+                    return dstSize / srcSize; // 찾으면 즉시 반환
                 }
             }
 
-            return hipScaled;
+            return 1.0f; // 루트 본을 찾지 못한 경우 기본값
         }
 
         /// <summary>
@@ -576,8 +566,7 @@ namespace Animate
         /// - "3D Mesh Processing and Character Animation", p.183 Animation Retargeting
         /// </summary>
         /// <param name="aniDae"></param>
-        /// <param name="xml"></param>
-        /// <param name="motionName"></param>
+        /// <param name="motionFileName"></param>
         public static Motion LoadMixamoMotion(AniDae aniDae, string motionFileName)
         {
             // Dae 파일을 읽어온다.
@@ -593,31 +582,36 @@ namespace Animate
                 return null;
             }
 
-            Dictionary<string, Dictionary<float, Matrix4x4f>> ani = new Dictionary<string, Dictionary<float, Matrix4x4f>>();
+            // 애니메이션 정보를 담을 딕셔너리 생성 (boneName, Dictionary<time, Matrix4x4f>)
+            Dictionary<string, Dictionary<float, Matrix4x4f>> animationData = new Dictionary<string, Dictionary<float, Matrix4x4f>>();
             float maxTimeLength = 0.0f;
 
-            // bone마다 순회
+            // 각 뼈의 애니메이션 소스를 읽어온다.
+            // 행렬 정보는 4x4 행렬로 되어있고, 시간은 float로 되어있다.
+            // 행렬은 캐릭터의 발 밑 가운데를 원점으로 하는 캐릭터 공간 변환행렬이다.
             foreach (XmlNode boneAnimation in libraryAnimations[0].ChildNodes)
             {
+                // boneAnimation은 <animation> 태그로 되어있다.
                 string boneName = boneAnimation.Attributes["id"].Value;
                 boneName = boneName.Substring(0, boneName.Length - 5);
                 if (boneName == "Armature") continue;
 
-                List<float> sourceInput = new List<float>(); // time interval
+                // 애니메이션 소스의 시간과 행렬을 담을 리스트를 생성한다.
+                List<float> sourceInput = new List<float>(); 
                 List<Matrix4x4f> sourceOutput = new List<Matrix4x4f>();
                 List<string> interpolationInput = new List<string>();
 
+                // channel과 sampler를 읽어온다.
                 XmlNode channel = boneAnimation["channel"];
                 string channelName = channel.Attributes["source"].Value;
 
                 XmlNode sampler = boneAnimation["sampler"];
                 if (channelName != "#" + sampler.Attributes["id"].Value) continue;
 
+                // sampler의 INPUT, OUTPUT, INTERPOLATION을 읽어온다.
                 string inputName = "";
                 string outputName = "";
                 string interpolationName = "";
-
-                // semantic의 Name을 읽어옴.
                 foreach (XmlNode input in sampler.ChildNodes)
                 {
                     if (input.Attributes["semantic"].Value == "INPUT") inputName = input.Attributes["source"].Value;
@@ -630,6 +624,7 @@ namespace Animate
                 {
                     if (source.Name == "source")
                     {
+                        // source의 id를 읽어온다.
                         string sourcesId = source.Attributes["id"].Value;
                         if ("#" + sourcesId == inputName)
                         {
@@ -643,6 +638,9 @@ namespace Animate
                             sourceInput.AddRange(items);
                         }
 
+                        // source의 행렬을 읽어온다.
+                        // 캐릭터의 발 밑 가운데를 원점으로 하는 캐릭터 공간 변환행렬이다.
+                        // 행렬의 사이즈는 4x4이다.             ^ ^ ^  ^ ^ ^ ^ ^ ^
                         if ("#" + sourcesId == outputName)
                         {
                             string[] value = source["float_array"].InnerText.Trim().Replace("\n", " ").Split(' ');
@@ -652,12 +650,16 @@ namespace Animate
                             {
                                 List<float> mat = new List<float>();
                                 for (int j = 0; j < 16; j++) mat.Add(items[i + j]);
+
+                                // Mixamo에서 Export한 Dae파일은 행렬이 Transposed되어 있다.
                                 Matrix4x4f matrix = new Matrix4x4f(mat.ToArray());
 
+                                // 0열부터 2열은 회전정보이고, 3열은 위치정보이다.
                                 sourceOutput.Add(matrix.Transposed);
                             }
                         }
 
+                        // source의 INTERPOLATION을 읽어온다. (예) LINEAR, BEZIER 등
                         if ("#" + sourcesId == interpolationName)
                         {
                             string[] value = source["Name_array"].InnerText.Trim().Replace("\n", " ").Split(' ');
@@ -673,22 +675,23 @@ namespace Animate
                     keyframe.Add(sourceInput[i], sourceOutput[i]);
                 }
 
-                ani.Add(boneName, keyframe);
+                animationData.Add(boneName, keyframe);
             }
 
             // *** [중요] 바닥으로부터 엉덩이 위치를 맞추기 위하여 hipHeightScale을 구한다.
             // Interpolation Pose만 0초에서 정상적 T-pose를 취하고 있어서 이 부분에서 가져와야 한다.
             if (motionName == "a-T-Pose") //Interpolation Pose
             {
-                aniDae.HipHeightScale = LoadDefaultScaleTransform(ani, aniDae.DicBones);
+                aniDae.HipHeightScale = CalculateHipScaleRatio(animationData, aniDae.DicBones);
                 Console.WriteLine($"XmeDae HipScaled={aniDae.HipHeightScale}");
             }
 
+            // 애니메이션을 생성한다.
             Motion motion = new Motion(motionName, maxTimeLength);
             if (maxTimeLength > 0 && aniDae.DicBones != null)
             {
                 // 뼈마다 순회
-                foreach (KeyValuePair<string, Dictionary<float, Matrix4x4f>> item in ani)
+                foreach (KeyValuePair<string, Dictionary<float, Matrix4x4f>> item in animationData)
                 {
                     string boneName = item.Key;
                     Dictionary<float, Matrix4x4f> source = item.Value;
@@ -718,8 +721,14 @@ namespace Animate
             return motion;
         }
 
-        public static void LibraryAnimations(AniDae xmlDae, XmlDocument xml)
+        /// <summary>
+        /// COLLADA XML 파일에서 애니메이션 라이브러리를 파싱하여 AniDae 객체에 모션 데이터를 추가하는 메서드
+        /// </summary>
+        /// <param name="aniDae">애니메이션 데이터를 저장할 AniDae 객체</param>
+        /// <param name="xml">파싱할 COLLADA XML 문서</param>
+        public static void LibraryAnimations(AniDae aniDae, XmlDocument xml)
         {
+            // XML에서 library_animations 노드를 찾음
             XmlNodeList libraryAnimations = xml.GetElementsByTagName("library_animations");
             if (libraryAnimations.Count == 0)
             {
@@ -727,36 +736,46 @@ namespace Animate
                 return;
             }
 
-            Dictionary<string, Dictionary<float, Matrix4x4f>> ani = new Dictionary<string, Dictionary<float, Matrix4x4f>>();
+            // 애니메이션 데이터를 저장할 딕셔너리 (본 이름 -> 시간별 변환 매트릭스)
+            Dictionary<string, Dictionary<float, Matrix4x4f>> bonenameKeyframeDic = new Dictionary<string, Dictionary<float, Matrix4x4f>>();
+
+            // 각 애니메이션을 순회
             foreach (XmlNode libraryAnimation in libraryAnimations[0])
             {
+                // 애니메이션 이름 추출
                 string animationName = libraryAnimation.Attributes["name"].Value;
-                float maxTimeLength = 0.0f;
-                string motionName = "";
+                float maxTimeLength = 0.0f;  // 애니메이션의 최대 시간 길이
+                string motionName = "";      // 모션 이름
 
-                // bone마다 순회
+                // 각 본(bone)의 애니메이션 데이터를 순회
                 foreach (XmlNode boneAnimation in libraryAnimation.ChildNodes)
                 {
+                    // 본 이름 추출 및 정리
                     string boneName = boneAnimation.Attributes["id"].Value.Substring(animationName.Length + 1);
                     int fIdx = boneName.IndexOf("_");
                     motionName = (fIdx >= 0) ? boneName.Substring(0, fIdx) : "";
                     boneName = (fIdx >= 0) ? boneName.Substring(fIdx + 1) : boneName;
                     boneName = boneName.Replace("_pose_matrix", "");
-                    List<float> sourceInput = new List<float>(); // time interval
-                    List<Matrix4x4f> sourceOutput = new List<Matrix4x4f>();
-                    List<string> interpolationInput = new List<string>();
 
+                    // 애니메이션 데이터 저장용 리스트들
+                    List<float> sourceInput = new List<float>();           // 시간 간격 데이터
+                    List<Matrix4x4f> sourceOutput = new List<Matrix4x4f>(); // 변환 매트릭스 데이터
+                    List<string> interpolationInput = new List<string>();   // 보간 방식 데이터
+
+                    // 채널 정보 가져오기
                     XmlNode channel = boneAnimation["channel"];
                     string channelName = channel.Attributes["source"].Value;
 
+                    // 샘플러 정보 가져오기
                     XmlNode sampler = boneAnimation["sampler"];
                     if (channelName != "#" + sampler.Attributes["id"].Value) continue;
 
+                    // 입력, 출력, 보간 소스의 이름 저장용 변수들
                     string inputName = "";
                     string outputName = "";
                     string interpolationName = "";
 
-                    // semantic의 Name을 읽어옴.
+                    // 샘플러의 입력들을 순회하여 각 semantic(의미)의 소스 이름을 읽어옴
                     foreach (XmlNode input in sampler.ChildNodes)
                     {
                         if (input.Attributes["semantic"].Value == "INPUT") inputName = input.Attributes["source"].Value;
@@ -764,12 +783,14 @@ namespace Animate
                         if (input.Attributes["semantic"].Value == "INTERPOLATION") interpolationName = input.Attributes["source"].Value;
                     }
 
-                    // bone의 애니메이션 소스를 읽어온다.
+                    // 본의 애니메이션 소스 데이터를 읽어옴
                     foreach (XmlNode source in boneAnimation.ChildNodes)
                     {
                         if (source.Name == "source")
                         {
                             string sourcesId = source.Attributes["id"].Value;
+
+                            // INPUT 소스 처리 (시간 데이터)
                             if ("#" + sourcesId == inputName)
                             {
                                 string[] value = source["float_array"].InnerText.Split(' ');
@@ -777,25 +798,29 @@ namespace Animate
                                 for (int i = 0; i < value.Length; i++)
                                 {
                                     items[i] = float.Parse(value[i]);
-                                    maxTimeLength = Math.Max(items[i], maxTimeLength);
+                                    maxTimeLength = Math.Max(items[i], maxTimeLength); // 최대 시간 길이 업데이트
                                 }
                                 sourceInput.AddRange(items);
                             }
 
+                            // OUTPUT 소스 처리 (변환 매트릭스 데이터)
                             if ("#" + sourcesId == outputName)
                             {
                                 string[] value = source["float_array"].InnerText.Split(' ');
                                 float[] items = new float[value.Length];
                                 for (int i = 0; i < value.Length; i++) items[i] = float.Parse(value[i]);
+
+                                // 16개 float 값으로 4x4 매트릭스를 생성 (매트릭스는 16개 요소로 구성)
                                 for (int i = 0; i < value.Length; i += 16)
                                 {
                                     List<float> mat = new List<float>();
                                     for (int j = 0; j < 16; j++) mat.Add(items[i + j]);
                                     Matrix4x4f matrix = new Matrix4x4f(mat.ToArray());
-                                    sourceOutput.Add(matrix.Transposed);
+                                    sourceOutput.Add(matrix.Transposed); // 전치 매트릭스로 저장
                                 }
                             }
 
+                            // INTERPOLATION 소스 처리 (보간 방식 데이터)
                             if ("#" + sourcesId == interpolationName)
                             {
                                 string[] value = source["Name_array"].InnerText.Split(' ');
@@ -804,42 +829,58 @@ namespace Animate
                         }
                     }
 
-                    // 가져온 소스로 키프레임을 만든다.
+                    // 가져온 소스 데이터로 키프레임 딕셔너리를 생성
                     Dictionary<float, Matrix4x4f> keyframe = new Dictionary<float, Matrix4x4f>();
                     for (int i = 0; i < sourceInput.Count; i++)
                     {
-                        keyframe.Add(sourceInput[i], sourceOutput[i]);
+                        keyframe.Add(sourceInput[i], sourceOutput[i]); // 시간을 키로, 매트릭스를 값으로 저장
                     }
 
-                    ani.Add(boneName, keyframe);
+                    // 본 이름을 키로 하여 키프레임 데이터를 애니메이션 딕셔너리에 추가
+                    bonenameKeyframeDic.Add(boneName, keyframe);
                 }
 
+                // 모션 객체 생성
                 Motion motion = new Motion(motionName, maxTimeLength);
+
+                // 애니메이션 시간이 0보다 클 때만 키프레임 데이터를 모션에 추가
                 if (maxTimeLength > 0)
                 {
-                    foreach (KeyValuePair<string, Dictionary<float, Matrix4x4f>> item in ani)
+                    // 각 본의 애니메이션 데이터를 순회
+                    foreach (KeyValuePair<string, Dictionary<float, Matrix4x4f>> item in bonenameKeyframeDic)
                     {
                         string boneName = item.Key;
                         Dictionary<float, Matrix4x4f> source = item.Value;
+
+                        // 각 시간대별 변환 데이터를 순회
                         foreach (KeyValuePair<float, Matrix4x4f> subsource in source)
                         {
-                            float time = subsource.Key;
-                            Matrix4x4f mat = subsource.Value;
+                            float time = subsource.Key;          // 키프레임 시간
+                            Matrix4x4f mat = subsource.Value;    // 변환 매트릭스
+
+                            // 모션에 키프레임 시간 추가
                             motion.AddKeyFrame(time);
 
+                            // 매트릭스에서 쿼터니언 회전값 추출 및 정규화
                             ZetaExt.Quaternion q = ToQuaternion(mat);
                             q.Normalize();
+
+                            // 본 포즈 객체 생성 및 위치/회전 설정
                             BonePose bonePose = new BonePose();
-                            bonePose.Position = new Vertex3f(mat[3, 0], mat[3, 1], mat[3, 2]);
-                            bonePose.Rotation = q;
+                            bonePose.Position = new Vertex3f(mat[3, 0], mat[3, 1], mat[3, 2]); // 매트릭스에서 위치 추출
+                            bonePose.Rotation = q; // 회전값 설정
+
+                            // 해당 시간의 키프레임에 본 변환 데이터 추가
                             motion[time].AddBoneTransform(boneName, bonePose);
                         }
                     }
                 }
 
-                xmlDae.Motions.AddMotion(motion);
+                // 완성된 모션을 AniDae 객체의 모션 컬렉션에 추가
+                aniDae.Motions.AddMotion(motion);
             }
         }
+
 
         /// <summary>
         /// 

@@ -207,8 +207,13 @@ namespace Animate
 
             // (3) library_controllers = boneNames, InvBindPoses, boneIndex, boneWeight
             // invBindPoses는 계산할 수 있으므로 생략가능하다.
-            AniXmlLoader.LibraryController(xml, out List<string> boneNames, out Dictionary<string, Matrix4x4f> invBindPoses,
-                    out List<Vertex4i> lstBoneIndex, out List<Vertex4f> lstBoneWeight, out Matrix4x4f bindShapeMatrix);
+            AniXmlLoader.LibraryController(xml, 
+                out List<string> boneNames, 
+                out Dictionary<string, Matrix4x4f> invBindPoses,
+                out List<Vertex4i> lstBoneIndex, 
+                out List<Vertex4f> lstBoneWeight, 
+                out Matrix4x4f bindShapeMatrix);
+
             _bindShapeMatrix = bindShapeMatrix;
 
             // (3-1) BoneIndex 딕셔너리 
@@ -220,7 +225,7 @@ namespace Animate
                 _dicBoneIndex.Add(_boneNames[i], i);
             }
 
-            // (4) library_animations
+            // (4) library_animations = 애니메이션 정보
             AniXmlLoader.LibraryAnimations(this, xml);
 
             // (5) library_visual_scenes = bone hierarchy + rootBone
