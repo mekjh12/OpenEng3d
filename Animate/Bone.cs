@@ -18,8 +18,8 @@ namespace Animate
         Matrix4x4f _localTransform = Matrix4x4f.Identity;
         Matrix4x4f _animatedTransform = Matrix4x4f.Identity;
 
-        Matrix4x4f _localBindTransform = Matrix4x4f.Identity;
-        Matrix4x4f _animatedBindTransform = Matrix4x4f.Identity;
+        Matrix4x4f _localBindTransform = Matrix4x4f.Identity; // 
+        Matrix4x4f _animatedBindTransform = Matrix4x4f.Identity; // 캐릭터 공간에서의 애니메이션 변환 행렬
 
         Matrix4x4f _inverseBindTransform = Matrix4x4f.Identity;
 
@@ -143,7 +143,7 @@ namespace Animate
         }
 
         /// <summary>
-        /// 캐릭터 공간의 PivotPosition
+        /// 캐릭터 공간에서의 뼈의 시작 위치, 즉 피봇의 위치를 가져오거나 설정한다.
         /// </summary>
         public Vertex3f PivotPosition
         {
@@ -159,7 +159,7 @@ namespace Animate
         public List<Bone> Childrens => _children;
 
         /// <summary>
-        /// 캐릭터공간에서의 변환 행렬
+        /// 캐릭터 공간에서의 애니메이션 변환 행렬
         /// </summary>
         public Matrix4x4f AnimatedTransform
         {
@@ -167,10 +167,13 @@ namespace Animate
             set => _animatedTransform = value;
         }
 
+        /// <summary>
+        /// 캐릭터 공간에서의 애니메이션 변환 행렬의 역행렬
+        /// </summary>
         public Matrix4x4f AnimatedInverseTransform => _animatedTransform.Inversed();
 
         /// <summary>
-        /// 뼈공간에서의 변환행렬
+        /// 부모 뼈공간에서의 변환행렬
         /// </summary>
         public Matrix4x4f LocalTransform
         {
@@ -321,6 +324,7 @@ namespace Animate
                 UpdateChildBone(isSelfIncluded: true);
             }
         }
+
         /// <summary>
         /// 로컬 행렬로부터 애니메이션 행렬을 계산한다.
         /// </summary>

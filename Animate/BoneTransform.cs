@@ -7,12 +7,11 @@ namespace Animate
 {
     /// <summary>
     /// 본(뼈대)의 변환 정보를 저장하는 클래스<br/>
-    /// - 캐릭터 공간에서 본의 위치(Position), 회전(Rotation), 크기(Scaling) 정보 관리<br/>
+    /// - 부모뼈공간(로컬공간)에서 본의 위치(Position), 회전(Rotation), 크기(Scaling) 정보 관리<br/>
     /// - 애니메이션 키프레임에서 본의 상태를 표현하는 기본 단위
     /// </summary>
-    public class BonePose
+    public class BoneTransform
     {
-        // 본의 스케일, 위치, 회전 정보를 저장하는 필드
         Vertex3f _scaling;   // 본의 스케일 (x, y, z 배율)
         Vertex3f _position;  // 본의 위치 (x, y, z 좌표) 
         ZetaExt.Quaternion _rotation; // 본의 회전 (쿼터니언)
@@ -36,7 +35,7 @@ namespace Animate
         }
 
         /// <summary>위치만 지정하는 생성자 (기본: 회전 없음, 스케일 1.0)</summary>
-        public BonePose(Vertex3f position)
+        public BoneTransform(Vertex3f position)
         {
             _position = position;
             _rotation = new ZetaExt.Quaternion(Vertex3f.UnitX, 0); // 회전 없음
@@ -44,7 +43,7 @@ namespace Animate
         }
 
         /// <summary>위치와 회전을 지정하는 생성자 (기본: 스케일 1.0)</summary>
-        public BonePose(Vertex3f position, ZetaExt.Quaternion rotation)
+        public BoneTransform(Vertex3f position, ZetaExt.Quaternion rotation)
         {
             _position = position;
             _rotation = rotation;
@@ -52,7 +51,7 @@ namespace Animate
         }
 
         /// <summary>기본 생성자 (원점, 회전 없음, 스케일 1.0)</summary>
-        public BonePose()
+        public BoneTransform()
         {
             _position = Vertex3f.Zero;
             _rotation = ZetaExt.Quaternion.Identity;
@@ -60,7 +59,7 @@ namespace Animate
         }
 
         /// <summary>
-        /// 본의 로컬 변환 행렬 생성<br/>
+        /// 본의 로컬 변환 행렬<br/>
         /// T(이동) * R(회전) * S(스케일) 순서로 변환 적용
         /// </summary>
         public Matrix4x4f LocalTransform
@@ -115,7 +114,7 @@ namespace Animate
         /// <param name="frameB">끝 포즈</param>
         /// <param name="progression">보간 진행률 (0.0 ~ 1.0)</param>
         /// <returns>보간된 BonePose</returns>
-        public static BonePose InterpolateSlerp(BonePose frameA, BonePose frameB, float progression)
+        public static BoneTransform InterpolateSlerp(BoneTransform frameA, BoneTransform frameB, float progression)
         {
             // null 처리: 하나만 있으면 그것을 사용
             if (frameA == null && frameB != null) frameA = frameB;
@@ -125,7 +124,7 @@ namespace Animate
             Vertex3f pos = InterpolateLerp(frameA.Position, frameB.Position, progression);
             ZetaExt.Quaternion rot = frameA.Rotation.Interpolate(frameB.Rotation, progression);
 
-            return new BonePose(pos, rot);
+            return new BoneTransform(pos, rot);
         }
 
         /// <summary>두 3D 벡터 간의 선형 보간</summary>
@@ -135,15 +134,15 @@ namespace Animate
         }
 
         /// <summary>BonePose의 모든 변환 정보를 복사하여 새 인스턴스 생성</summary>
-        public BonePose Clone()
+        public BoneTransform Clone()
         {
-            return new BonePose(_position, _rotation) { Scaling = _scaling };
+            return new BoneTransform(_position, _rotation) { Scaling = _scaling };
         }
 
         /// <summary>지정된 변환 행렬에서 BonePose 생성</summary>
-        public static BonePose FromMatrix(Matrix4x4f matrix)
+        public static BoneTransform FromMatrix(Matrix4x4f matrix)
         {
-            var pose = new BonePose();
+            var pose = new BoneTransform();
             pose._position = matrix.Position;
             pose._rotation = matrix.ToQuaternion();
 

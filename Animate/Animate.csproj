@@ -71,7 +71,7 @@
     <Compile Include="ArmaturePose.cs" />
     <Compile Include="Bone.cs" />
     <Compile Include="BoneAngle.cs" />
-    <Compile Include="BonePose.cs" />
+    <Compile Include="BoneTransform.cs" />
     <Compile Include="Clothes.cs" />
     <Compile Include="ColorPoint.cs" />
     <Compile Include="HumanAniModel.cs" />

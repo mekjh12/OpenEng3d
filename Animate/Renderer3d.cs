@@ -39,15 +39,13 @@ namespace Animate
         {
             if (entity == null) return;
 
-            //Gl.PolygonMode(MaterialFace.FrontAndBack, entity.PolygonMode);
-
             shader.Bind();
             shader.LoadPosModel(entity.LocalBindMatrix);
             shader.LoadModelMatrix(bindShapeMatrix * entity.ModelMatrix);
             shader.LoadViewMatrix(camera.ViewMatrix);
             shader.LoadProjMatrix(camera.ProjectiveMatrix);
-            //shader.LoadLight(light.Direction);
 
+            // 하나의 뼈에만 작용하는 애니메이션인 경우
             shader.LoadIsOnlyOneJointWeight(entity.IsOnlyOneJointWeight);
             shader.LoadJointIndex(entity.BoneIndexOnlyOneJoint);
 

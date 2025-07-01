@@ -25,13 +25,13 @@
             set => _timeStamp = value;
         }
 
-        public BonePose this[string boneName]
+        public BoneTransform this[string boneName]
         {
             get => _pose[boneName];
             set => _pose[boneName] = value;
         }
 
-        public void AddBoneTransform(string boneName, BonePose jointTransform)
+        public void AddBoneTransform(string boneName, BoneTransform jointTransform)
         {
             _pose[boneName] = jointTransform;
         }

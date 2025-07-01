@@ -124,6 +124,7 @@ namespace Animate
 
         public void AddKeyFrame(float time)
         {
+            // 주어진 시간에 키프레임이 없으면 추가한다.
             if (!_keyframes.ContainsKey(time))
             {
                 _keyframes[time] = new KeyFrame(time);
@@ -154,7 +155,7 @@ namespace Animate
                 }
             }
 
-            BonePose pose = new BonePose(pos, q);
+            BoneTransform pose = new BoneTransform(pos, q);
             currentKeyFrame.AddBoneTransform(boneName, pose);
         }
 
@@ -205,9 +206,9 @@ namespace Animate
                         float currentTime = time - previousTime;
                         float progression = currentTime / totalTime;
 
-                        BonePose previousTransform = previousKeyFrame[boneName];
-                        BonePose nextTransform = nextKeyFrame[boneName];
-                        BonePose currentTransform = BonePose.InterpolateSlerp(previousTransform, nextTransform, progression);
+                        BoneTransform previousTransform = previousKeyFrame[boneName];
+                        BoneTransform nextTransform = nextKeyFrame[boneName];
+                        BoneTransform currentTransform = BoneTransform.InterpolateSlerp(previousTransform, nextTransform, progression);
 
                         keyFrame.AddBoneTransform(boneName, currentTransform);
                     }

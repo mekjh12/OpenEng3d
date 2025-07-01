@@ -2,6 +2,7 @@
 using OpenGL;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Xml;
 using ZetaExt;
 
@@ -12,7 +13,7 @@ namespace Animate
         string _filename; // dae
         MotionStorage _motions;
         List<TexturedModel> _texturedModels;
-        TexturedModel _bodyTexturedModel; // 모델중에서 나체를 지정한다.
+        TexturedModel _nudeBodyTexturedModel; // 모델의 나체를 지정한다.
         Bone _rootBone;
 
         Dictionary<string, Bone> _dicBones;
@@ -63,7 +64,7 @@ namespace Animate
 
         public List<TexturedModel> Models => _texturedModels;
 
-        public TexturedModel BodyWeightModels => _bodyTexturedModel;
+        public TexturedModel BodyWeightModels => _nudeBodyTexturedModel;
 
         /// <summary>
         /// 생성자
@@ -74,7 +75,7 @@ namespace Animate
             _filename = filename;
 
             List<TexturedModel> models = LoadFile(filename);
-            _bodyTexturedModel = models[0];
+            _nudeBodyTexturedModel = models[0];
 
             if (_texturedModels == null)
                 _texturedModels = new List<TexturedModel>();
@@ -170,9 +171,39 @@ namespace Animate
             Motions.AddMotion(motion);
         }
 
-        public Bone AddBone(string boneName, int boneIndex, string parentBoneName, Matrix4x4f inverseBindTransform,
+        /// <summary>
+        /// 뼈대를 추가한다.
+        /// </summary>
+        /// <param name="boneName">추가할 뼈대 이름</param>
+        /// <param name="boneIndex">추가할 뼈대 인덱스</param>
+        /// <param name="parentBoneName">붙일 뼈대 이름</param>
+        /// <param name="inverseBindTransform">캐릭터 공간의 바인딩행렬의 역행렬을 지정한다.</param>
+        /// <param name="localBindTransform">부모 뼈공간에서의 바인딩 행렬을 지정한다.</param>
+        /// <returns></returns>
+        public Bone AddBone(string boneName, int boneIndex, 
+            string parentBoneName, 
+            Matrix4x4f inverseBindTransform,
             Matrix4x4f localBindTransform)
         {
+            // 뼈대 이름이 이미 존재하는지 확인한다.
+            if (_dicBones.ContainsKey(boneName))
+            {
+                throw new Exception($"뼈대 이름({boneName})이 이미 존재합니다.");
+            }
+
+            // 뼈대 인덱스가 이미 존재하는지 확인한다.
+            if (_dicBoneIndex.ContainsKey(boneName))
+            {
+                throw new Exception($"뼈대 인덱스({boneIndex})가 이미 존재합니다.");
+            }
+
+            // 부모 뼈대를 찾는다.
+            if (!_dicBoneIndex.ContainsKey(parentBoneName))
+            {
+                throw new Exception($"부모 뼈대 이름({parentBoneName})이 존재하지 않습니다.");
+            }
+
+            // 부모 뼈대를 찾고, 새로운 뼈대를 생성한다.
             Bone parentBone = GetBoneByName(parentBoneName);
             Bone cBone = new Bone(boneName, boneIndex);
             parentBone.AddChild(cBone);
@@ -181,14 +212,8 @@ namespace Animate
             cBone.InverseBindTransform = inverseBindTransform;
             _dicBones[boneName] = cBone;
 
-            // 배열이므로 boneNames 리스트를 다시 선언하여 저장한다.
-            List<string> boneNameList = new List<string>();
-            for (int i = 0; i < _boneNames.Length; i++)
-            {
-                boneNameList.Add(_boneNames[i]);
-            }
-            boneNameList.Add(boneName);
-            _boneNames = boneNameList.ToArray();
+            // 뼈대명 배열에 추가한다.
+            _boneNames = _boneNames.Append(boneName).ToArray();
 
             return cBone;
         }

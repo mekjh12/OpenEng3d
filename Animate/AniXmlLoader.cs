@@ -626,10 +626,9 @@ namespace Animate
                 List<Matrix4x4f> sourceOutput = new List<Matrix4x4f>();
                 List<string> interpolationInput = new List<string>();
 
-                // channel과 sampler를 읽어온다.
+                // 채널과 샘플러를 가져온다.
                 XmlNode channel = boneAnimation["channel"];
                 string channelName = channel.Attributes["source"].Value;
-
                 XmlNode sampler = boneAnimation["sampler"];
                 if (channelName != "#" + sampler.Attributes["id"].Value) continue;
 
@@ -644,7 +643,7 @@ namespace Animate
                     if (input.Attributes["semantic"].Value == "INTERPOLATION") interpolationName = input.Attributes["source"].Value;
                 }
 
-                // bone의 애니메이션 소스를 읽어온다.
+                // 각 뼈마다 시간과 행렬을 가져온다.
                 foreach (XmlNode source in boneAnimation.ChildNodes)
                 {
                     if (source.Name == "source")
@@ -653,6 +652,7 @@ namespace Animate
                         string sourcesId = source.Attributes["id"].Value;
                         if ("#" + sourcesId == inputName)
                         {
+                            // 시간 배열을 가져오고 최대시간을 얻는다.
                             string[] value = source["float_array"].InnerText.Trim().Replace("\n", " ").Split(' ');
                             float[] items = new float[value.Length];
                             for (int i = 0; i < value.Length; i++)
@@ -663,9 +663,8 @@ namespace Animate
                             sourceInput.AddRange(items);
                         }
 
-                        // source의 행렬을 읽어온다.
-                        // 캐릭터의 발 밑 가운데를 원점으로 하는 캐릭터 공간 변환행렬이다.
-                        // 행렬의 사이즈는 4x4이다.             ^ ^ ^  ^ ^ ^ ^ ^ ^
+                        // source의 행렬을 읽어온다. 
+                        // 행렬은 각 본의 로컬 공간 변환행렬 (부모 본에 대한 상대적 변환)
                         if ("#" + sourcesId == outputName)
                         {
                             string[] value = source["float_array"].InnerText.Trim().Replace("\n", " ").Split(' ');
@@ -715,7 +714,7 @@ namespace Animate
             Motion motion = new Motion(motionName, maxTimeLength);
             if (maxTimeLength > 0 && aniDae.DicBones != null)
             {
-                // 뼈마다 순회
+                // 뼈마다 순회 (뼈, 시간, 로컬변환행렬)
                 foreach (KeyValuePair<string, Dictionary<float, Matrix4x4f>> item in animationData)
                 {
                     string boneName = item.Key;
@@ -724,21 +723,24 @@ namespace Animate
                     Bone bone = aniDae.GetBoneByName(boneName);
                     if (bone == null) continue;
 
-                    // 뼈의 시간에 따른 순회
+                    // 시간마다 순회 (시간, 로컬변환행렬)
                     foreach (KeyValuePair<float, Matrix4x4f> subsource in source)
                     {
                         float time = subsource.Key;
                         Matrix4x4f mat = subsource.Value;
+
+                        // 키프레임을 추가한다.
                         motion.AddKeyFrame(time);
 
+                        // 본포즈를 설정한다.
                         Vertex3f position = bone.IsRootArmature ?
-                            mat.Position * aniDae.HipHeightScale : bone.PivotPosition;
-
-                        ZetaExt.Quaternion q = AniXmlLoader.ToQuaternion(mat);
+                            mat.Position * aniDae.HipHeightScale : bone.PivotPosition * 0.001f;
+                        ZetaExt.Quaternion q = mat.ToQuaternion();
                         q.Normalize();
+                        BoneTransform boneTransform  = new BoneTransform(position, q);
 
-                        BonePose bonePose = new BonePose(position, q);
-                        motion[time].AddBoneTransform(boneName, bonePose);
+                        // 시간에 본포즈를 추가한다.
+                        motion[time].AddBoneTransform(boneName, boneTransform);
                     }
                 }
             }
@@ -887,16 +889,16 @@ namespace Animate
                             motion.AddKeyFrame(time);
 
                             // 매트릭스에서 쿼터니언 회전값 추출 및 정규화
-                            ZetaExt.Quaternion q = ToQuaternion(mat);
+                            ZetaExt.Quaternion q = mat.ToQuaternion();
                             q.Normalize();
 
                             // 본 포즈 객체 생성 및 위치/회전 설정
-                            BonePose bonePose = new BonePose();
-                            bonePose.Position = new Vertex3f(mat[3, 0], mat[3, 1], mat[3, 2]); // 매트릭스에서 위치 추출
-                            bonePose.Rotation = q; // 회전값 설정
+                            BoneTransform boneTransform = new BoneTransform();
+                            boneTransform.Position = new Vertex3f(mat[3, 0], mat[3, 1], mat[3, 2]); // 매트릭스에서 위치 추출
+                            boneTransform.Rotation = q; // 회전값 설정
 
                             // 해당 시간의 키프레임에 본 변환 데이터 추가
-                            motion[time].AddBoneTransform(boneName, bonePose);
+                            motion[time].AddBoneTransform(boneName, boneTransform);
                         }
                     }
                 }
@@ -906,34 +908,38 @@ namespace Animate
             }
         }
 
-
         /// <summary>
-        /// 
+        /// COLLADA XML 파일에서 뼈대 구조를 파싱하여 루트 본을 반환한다.
         /// </summary>
-        /// <param name="xml"></param>
-        /// <returns></returns>
-        public static Bone LibraryVisualScenes(XmlDocument xml, Dictionary<string, Matrix4x4f> invBindPoses,
+        /// <param name="xml">XML</param>
+        /// <param name="invBindPoses">역바인드 포즈 딕셔너리</param>
+        /// <param name="dicBoneIndex">본익덱스 딕셔너리</param>
+        /// <param name="dicBones">생성한 본딕셔너리</param>
+        /// <returns>루트본을 반환</returns>
+        public static Bone LibraryVisualScenes(XmlDocument xml, 
+            Dictionary<string, Matrix4x4f> invBindPoses,
             Dictionary<string, int> dicBoneIndex,
             out Dictionary<string, Bone> dicBones)
         {
+            // 뼈대 구조를 읽기 위하여 준비한다.
             XmlNodeList library_visual_scenes = xml.GetElementsByTagName("library_visual_scenes");
             dicBones = new Dictionary<string, Bone>();
-
             if (library_visual_scenes.Count == 0)
             {
                 Console.WriteLine($"[에러] dae파일구조에서 뼈대구조를 읽어올 수 없습니다.");
                 return null;
             }
 
+            // 뼈대 구조를 읽기 위해 스택을 준비한다.
             Stack<XmlNode> nStack = new Stack<XmlNode>();
             Stack<Bone> bStack = new Stack<Bone>();
             XmlNode nodes = library_visual_scenes[0]["visual_scene"];
             XmlNode rootNode = null;
 
-            // Find Root Node
+            // Armature 노드를 찾는다.
             foreach (XmlNode item in nodes)
                 if (item.Attributes["id"].Value == "Armature") rootNode = item;
-            if (rootNode == null) return null;
+            if (rootNode == null) return null; // Armature 노드가 없으면 null 반환
 
             nStack.Push(rootNode);
             Bone rootBone = new Bone("Armature", 0);
@@ -944,17 +950,20 @@ namespace Animate
                 XmlNode node = nStack.Pop();
                 Bone bone = bStack.Pop();
 
-                // 행렬읽기
+                // 노드의 변환 행렬을 읽어온다.
                 string[] value = node["matrix"].InnerText.Split(' ');
                 float[] items = new float[value.Length];
                 for (int i = 0; i < value.Length; i++) items[i] = float.Parse(value[i]);
                 Matrix4x4f mat = new Matrix4x4f(items).Transposed;
 
+                // 본 이름을 읽어온다.
                 string boneName = node.Attributes["sid"]?.Value;
 
+                // 본을 생성하고 딕셔너리에 추가한다.
                 if (boneName != null)
                     dicBones.Add(boneName, bone);
 
+                // 본의 이름과 변환 행렬을 설정한다.
                 if (boneName == null)
                 {
                     if (node.Attributes["name"].Value == "Armature")
@@ -973,6 +982,7 @@ namespace Animate
 
                 bone.PivotPosition = mat.Column3.Vertex3f();
 
+                // 역바인드 포즈를 설정한다.
                 if (invBindPoses.ContainsKey(bone.Name))
                 {
                     bone.InverseBindTransform = invBindPoses[bone.Name];
@@ -994,64 +1004,5 @@ namespace Animate
         }
 
 
-        /// <summary>
-        /// Quaternions for Computer Graphics by John Vince. p199 참고
-        /// </summary>
-        /// <param name="mat"></param>
-        /// <returns></returns>
-        private static ZetaExt.Quaternion ToQuaternion(Matrix4x4f mat)
-        {
-            ZetaExt.Quaternion q = ZetaExt.Quaternion.Identity;
-            float a11 = mat[0, 0];
-            float a12 = mat[1, 0];
-            float a13 = mat[2, 0];
-
-            float a21 = mat[0, 1];
-            float a22 = mat[1, 1];
-            float a23 = mat[2, 1];
-
-            float a31 = mat[0, 2];
-            float a32 = mat[1, 2];
-            float a33 = mat[2, 2];
-
-            float trace = a11 + a22 + a33;
-            if (trace >= -1)
-            {
-                // I changed M_EPSILON to 0
-                float s = 0.5f / (float)Math.Sqrt(trace + 1.0f);
-                q.W = 0.25f / s;
-                q.X = (a32 - a23) * s;
-                q.Y = (a13 - a31) * s;
-                q.Z = (a21 - a12) * s;
-            }
-            else
-            {
-                if (1 + a11 - a22 - a33 >= 0)
-                {
-                    float s = 2.0f * (float)Math.Sqrt(1.0f + a11 - a22 - a33);
-                    q.X = 0.25f * s;
-                    q.Y = (a12 + a21) / s;
-                    q.Z = (a13 + a31) / s;
-                    q.W = (a32 - a23) / s;
-                }
-                else if (1 - a11 + a22 - a33 >= 0)
-                {
-                    float s = 2.0f * (float)Math.Sqrt(1 - a11 + a22 - a33);
-                    q.Y = 0.25f * s;
-                    q.X = (a12 + a21) / s;
-                    q.Z = (a23 + a32) / s;
-                    q.W = (a13 - a31) / s;
-                }
-                else
-                {
-                    float s = 2.0f * (float)Math.Sqrt(1 - a11 - a22 + a33);
-                    q.Z = 0.25f * s;
-                    q.X = (a13 + a31) / s;
-                    q.Y = (a23 + a32) / s;
-                    q.W = (a21 - a12) / s;
-                }
-            }
-            return q;
-        }
     }
 }

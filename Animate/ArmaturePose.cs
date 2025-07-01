@@ -14,16 +14,16 @@ namespace Animate
     /// </summary>
     public class ArmaturePose
     {
-        Dictionary<string, BonePose> _pose; // 뼈대의 이름과 뼈대 포즈를 저장하는 딕셔너리
+        Dictionary<string, BoneTransform> _pose; // 뼈대의 이름과 뼈대 포즈를 저장하는 딕셔너리
 
         public bool ContainsKey(string name) => _pose.ContainsKey(name);
 
         public ArmaturePose()
         {
-            _pose = new Dictionary<string, BonePose>();
+            _pose = new Dictionary<string, BoneTransform>();
         }
 
-        public BonePose this[string jointName]
+        public BoneTransform this[string jointName]
         {
             get => _pose.ContainsKey(jointName)? _pose[jointName] : null;
             set => _pose[jointName] = value;
@@ -31,13 +31,13 @@ namespace Animate
 
         public string[] JointNames => _pose.Keys.ToArray();
 
-        public BonePose[] BonePoses => _pose.Values.ToArray();
+        public BoneTransform[] BoneTransforms => _pose.Values.ToArray();
 
         public ArmaturePose Clone()
         {
             ArmaturePose armature = new ArmaturePose(); 
-            Dictionary<string, BonePose> keyValuePairs = new Dictionary<string, BonePose>();
-            foreach (KeyValuePair<string, BonePose> item in _pose)
+            Dictionary<string, BoneTransform> keyValuePairs = new Dictionary<string, BoneTransform>();
+            foreach (KeyValuePair<string, BoneTransform> item in _pose)
             {
                 keyValuePairs.Add(item.Key, item.Value);
             }

@@ -13,21 +13,22 @@ out vec3 pass_normals;
 out vec2 pass_textureCoords;
 out vec4 pass_weights;
 
-uniform mat4 jointTransforms[MAX_JOINTS];
+uniform mat4 jointTransforms[MAX_JOINTS]; // 뼈대 변환 행렬들
 uniform mat4 proj;
 uniform mat4 view;
 uniform mat4 model;
 uniform mat4 pmodel;
 uniform vec3 lightDirection;
 
-uniform bool isOnlyOneJointWeight;
-uniform int jointIndex;
+uniform bool isOnlyOneJointWeight; // 하나의 뼈대에 가중치가 하나만 있는 경우
+uniform int jointIndex; // 하나의 뼈대에 가중치가 하나만 있는 경우의 뼈대 인덱스
 
 void main(void)
 {	
 	vec4 totalLocalPos = vec4(0.0);
 	vec4 totalNormal = vec4(0.0);
 	
+	// 하나의 뼈대에 가중치가 하나만 있는 경우
 	if (isOnlyOneJointWeight)
 	{
 		mat4 jointTransform = jointTransforms[jointIndex];
@@ -40,6 +41,7 @@ void main(void)
 		vec4 worldNormal = vec4(T * in_normal, 0.0);
 		totalNormal = normalize(worldNormal);
 	}
+	// 여러 뼈대에 가중치가 있는 경우
 	else
 	{
 		for (int i=0; i< MAX_WEIGHTS; i++)
@@ -59,6 +61,7 @@ void main(void)
 		}
 	}
 
+	// 최종 위치 계산
 	gl_Position = proj * view * model * totalLocalPos;
 
 	pass_normals = totalNormal.xyz;

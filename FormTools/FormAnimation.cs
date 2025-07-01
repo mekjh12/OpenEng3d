@@ -115,7 +115,7 @@ namespace FormTools
 
             // 애니메이션 리타겟팅
             _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniDae: _aniDae1);
-            //_mixamoRotMotionStorage.RetargetMotionsTransfer(_aniDae);
+            //_mixamoRotMotionStorage.RetargetMotionsTransfer(_aniDae1);
 
             _currentHumanModel = _humanAniModel1;
 
