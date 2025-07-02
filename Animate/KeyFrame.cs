@@ -1,22 +1,19 @@
-﻿namespace Animate
+﻿using System.Collections.Generic;
+using System.Linq;
+
+namespace Animate
 {
     public class KeyFrame
     {
-        private ArmaturePose _pose;
         private float _timeStamp;
+        private Dictionary<string, BoneTransform> _pose; // 뼈대의 이름과 뼈대 포즈를 저장하는 딕셔너리
 
         public bool ContainsKey(string boneName) => _pose.ContainsKey(boneName);
 
         public KeyFrame(float timeStamp)
         {
             _timeStamp = timeStamp;
-            _pose = new ArmaturePose();
-        }
-
-        public ArmaturePose Pose
-        {
-            get => _pose;
-            set => _pose = value;
+            _pose = new Dictionary<string, BoneTransform>();
         }
 
         public float TimeStamp
@@ -27,7 +24,7 @@
 
         public BoneTransform this[string boneName]
         {
-            get => _pose[boneName];
+            get => _pose.ContainsKey(boneName) ? _pose[boneName] : BoneTransform.Identity;
             set => _pose[boneName] = value;
         }
 
@@ -37,14 +34,18 @@
             _pose[boneName] = boneTransform;
         }
 
+        public string[] BoneNames => _pose.Keys.ToArray();
+
+        public BoneTransform[] BoneTransforms => _pose.Values.ToArray();
+
         public KeyFrame Clone()
         {
-            KeyFrame res = new KeyFrame(_timeStamp);
-            ArmaturePose armaturePose = new ArmaturePose();
-            armaturePose = _pose.Clone();
-            res.Pose = armaturePose;
-            return res;
+            KeyFrame dest = new KeyFrame(_timeStamp);
+            foreach (var kvp in _pose)
+            {
+                dest._pose[kvp.Key] = kvp.Value;
+            }
+            return dest;
         }
-
     }
 }
