@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ClassDiagram MajorVersion="1" MinorVersion="1">
   <Class Name="Animate.AnimateEntity" Collapsed="true">
-    <Position X="4.25" Y="4.75" Width="2.75" />
+    <Position X="2.25" Y="4.75" Width="2.75" />
     <TypeIdentifier>
       <HashCode>AAAAAAQAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAIAAA=</HashCode>
       <FileName>AnimateEntity.cs</FileName>
@@ -19,6 +19,11 @@
     <Lollipop Orientation="Left" Position="0.102" />
   </Class>
   <Class Name="Model3d.LodEntity" Collapsed="true">
+    <Position X="5.75" Y="4.75" Width="1.5" />
+    <TypeIdentifier />
+    <Lollipop Orientation="Right" Position="0.1" />
+  </Class>
+  <Class Name="Occlusion.OccluderEntity" Collapsed="true">
     <Position X="8.25" Y="4.75" Width="1.5" />
     <TypeIdentifier />
     <Lollipop Orientation="Right" Position="0.1" />

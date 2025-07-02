@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenGL;
+using System;
 using System.Collections.Generic;
 
 namespace Animate
@@ -38,7 +39,7 @@ namespace Animate
                 {
                     // src 모션의 첫번째 키프레임에서 본 포즈를 가져온다.
                     BoneTransform[] bonePoses = srcMotion.FirstKeyFrame.Pose.BoneTransforms;
-                    string[] boneNames = srcMotion.FirstKeyFrame.Pose.JointNames;
+                    string[] boneNames = srcMotion.FirstKeyFrame.Pose.BoneNames;
                     Dictionary<string, float> bonesLength = new Dictionary<string, float>();
                     for (int i=0; i < boneNames.Length; i++ )
                     {
@@ -55,8 +56,9 @@ namespace Animate
                             float destBoneLength = targetAniDae.DicBones[boneNames[i]].PivotPosition.Norm();
                             BoneTransform dstBonePose = keyframe.Pose[boneNames[i]];
 
-                            // 위치를 믹사모에서 가져온 길이로 설정
-                            dstBonePose.Position = dstBonePose.Position.Normalized * destBoneLength;
+                            // 새로운 위치로 BoneTransform 생성하여 다시 할당
+                            Vertex3f newPosition = dstBonePose.Position.Normalized * destBoneLength;
+                            keyframe.Pose[boneNames[i]] = dstBonePose.WithPosition(newPosition);
                         }                      
                     }
 

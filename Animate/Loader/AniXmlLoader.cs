@@ -707,7 +707,7 @@ namespace Animate
             if (motionName == "a-T-Pose") //Interpolation Pose
             {
                 targetAniDae.HipHeightScale = CalculateHipScaleRatio(animationData, targetAniDae.DicBones);
-                Console.WriteLine($"XmeDae HipScaled={targetAniDae.HipHeightScale}");
+                Console.WriteLine($"{targetAniDae.Name} XmeDae HipScaled={targetAniDae.HipHeightScale}");
             }
 
             // 애니메이션을 생성한다.
@@ -892,10 +892,11 @@ namespace Animate
                             ZetaExt.Quaternion q = mat.ToQuaternion();
                             q.Normalize();
 
-                            // 본 포즈 객체 생성 및 위치/회전 설정
-                            BoneTransform boneTransform = new BoneTransform();
-                            boneTransform.Position = new Vertex3f(mat[3, 0], mat[3, 1], mat[3, 2]); // 매트릭스에서 위치 추출
-                            boneTransform.Rotation = q; // 회전값 설정
+                            // 위치 추출
+                            Vertex3f position = new Vertex3f(mat[3, 0], mat[3, 1], mat[3, 2]);
+
+                            // 본 포즈 객체 생성 (생성자로 위치와 회전 설정)
+                            BoneTransform boneTransform = new BoneTransform(position, q);
 
                             // 해당 시간의 키프레임에 본 변환 데이터 추가
                             motion[time].AddBoneTransform(boneName, boneTransform);

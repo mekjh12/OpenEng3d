@@ -25,11 +25,11 @@ namespace Animate
 
         public BoneTransform this[string jointName]
         {
-            get => _pose.ContainsKey(jointName)? _pose[jointName] : null;
+            get => _pose.ContainsKey(jointName)? _pose[jointName] : BoneTransform.Identity;
             set => _pose[jointName] = value;
         }
 
-        public string[] JointNames => _pose.Keys.ToArray();
+        public string[] BoneNames => _pose.Keys.ToArray();
 
         public BoneTransform[] BoneTransforms => _pose.Values.ToArray();
 
@@ -38,7 +38,7 @@ namespace Animate
             ArmaturePose clone = new ArmaturePose();
             foreach (var kvp in _pose)
             {
-                clone._pose[kvp.Key] = kvp.Value.Clone();
+                clone._pose[kvp.Key] = kvp.Value;
             }
             return clone;
         }

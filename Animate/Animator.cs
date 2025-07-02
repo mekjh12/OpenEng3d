@@ -171,7 +171,7 @@ namespace Animate
 
             // 두 키프레임 사이의 보간된 포즈를 딕셔러리로 가져온다.
             Dictionary<string, Matrix4x4f> currentPose = new Dictionary<string, Matrix4x4f>();
-            foreach (string jointName in previousFrame.Pose.JointNames)
+            foreach (string jointName in previousFrame.Pose.BoneNames)
             {
                 BoneTransform previousTransform = previousFrame[jointName];
                 BoneTransform nextTransform = nextFrame[jointName];

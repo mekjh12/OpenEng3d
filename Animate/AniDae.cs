@@ -2,8 +2,12 @@
 using OpenGL;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 using System.Xml;
+using System.Xml.Linq;
 using ZetaExt;
 
 namespace Animate
@@ -11,6 +15,7 @@ namespace Animate
     public class AniDae
     {
         string _filename; // dae
+        readonly string _name;
         MotionStorage _motions;
         List<TexturedModel> _texturedModels;
         TexturedModel _nudeBodyTexturedModel; // 모델의 나체를 지정한다.
@@ -66,6 +71,8 @@ namespace Animate
 
         public TexturedModel BodyWeightModels => _nudeBodyTexturedModel;
 
+        public string Name => _name;
+
         /// <summary>
         /// 생성자
         /// </summary>
@@ -73,6 +80,7 @@ namespace Animate
         public AniDae(string filename, bool isLoadAnimation = true)
         {
             _filename = filename;
+            _name = Path.GetFileNameWithoutExtension(filename);
 
             List<TexturedModel> models = LoadFile(filename);
             _nudeBodyTexturedModel = models[0];
