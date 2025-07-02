@@ -31,9 +31,10 @@
             set => _pose[boneName] = value;
         }
 
-        public void AddBoneTransform(string boneName, BoneTransform jointTransform)
+        public void AddBoneTransform(string boneName, BoneTransform boneTransform)
         {
-            _pose[boneName] = jointTransform;
+            // 뼈대가 있으면 기존 뼈대에 덮어쓰고 없으면 새로운 뼈대를 추가한다.
+            _pose[boneName] = boneTransform;
         }
 
         public KeyFrame Clone()

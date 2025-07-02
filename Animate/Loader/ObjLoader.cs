@@ -8,7 +8,7 @@ using System.IO;
 
 namespace Animate
 {
-    public class ObjLoader
+    public static class ObjLoader
     {
         static string _directory = "";
 

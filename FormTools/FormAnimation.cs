@@ -21,10 +21,9 @@ namespace FormTools
         StaticShader _staticShader;
         AnimateShader _animateShader;
         MixamoRotMotionStorage _mixamoRotMotionStorage;
-        AniDae _aniDae;
         Human _humanAniModel;
-        AniDae _aniDae1;
         Human _humanAniModel1;
+        Human _humanAniModel2;
         Human _currentHumanModel;
 
         public FormAnimation()
@@ -94,13 +93,17 @@ namespace FormTools
             // 그리드셰이더 초기화
             _glControl3.InitGridShader(PROJECT_PATH);
 
-            _aniDae = new AniDae(PROJECT_PATH + @"\Res\abe.dae", isLoadAnimation: false);
+            AniDae _aniDae = new AniDae(PROJECT_PATH + @"\Res\abe.dae", isLoadAnimation: false);
             AnimateEntity animateEntity = new AnimateEntity("abe", _aniDae.Models.ToArray());
             _humanAniModel = new Human("abe", animateEntity, _aniDae);
 
-            _aniDae1 = new AniDae(PROJECT_PATH + @"\Res\hero1.dae", isLoadAnimation: false);
-            AnimateEntity animateEntity1 = new AnimateEntity("hero1", _aniDae1.Models.ToArray());
-            _humanAniModel1 = new Human("hero1", animateEntity1, _aniDae1);
+            AniDae _aniDae1 = new AniDae(PROJECT_PATH + @"\Res\Guybrush_final.dae", isLoadAnimation: false);
+            AnimateEntity animateEntity1 = new AnimateEntity("Guybrush_final", _aniDae1.Models.ToArray());
+            _humanAniModel1 = new Human("Guybrush_final", animateEntity1, _aniDae1);
+
+            AniDae _aniDae2 = new AniDae(PROJECT_PATH + @"\Res\Peasant Girl.dae", isLoadAnimation: false);
+            AnimateEntity animateEntity2 = new AnimateEntity("Peasant Girl", _aniDae2.Models.ToArray());
+            _humanAniModel2 = new Human("Peasant Girl", animateEntity2, _aniDae2);
 
             // 믹사모 애니메이션 로드
             _mixamoRotMotionStorage = new MixamoRotMotionStorage();
@@ -114,8 +117,9 @@ namespace FormTools
             }
 
             // 애니메이션 리타겟팅
-            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniDae: _aniDae1);
             _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniDae: _aniDae);
+            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniDae: _aniDae1);
+            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniDae: _aniDae2);
 
             _currentHumanModel = _humanAniModel;
 
@@ -225,6 +229,11 @@ namespace FormTools
             else if (e.KeyCode == Keys.D6)
             {
                 _currentHumanModel = _humanAniModel1;
+                _currentHumanModel.SetMotion(ACTION.BREATHING_IDLE);
+            }
+            else if (e.KeyCode == Keys.D7)
+            {
+                _currentHumanModel = _humanAniModel2;
                 _currentHumanModel.SetMotion(ACTION.BREATHING_IDLE);
             }
             else if (e.KeyCode == Keys.D0)

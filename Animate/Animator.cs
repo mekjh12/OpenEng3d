@@ -86,9 +86,11 @@ namespace Animate
 
         public void Update(float deltaTime)
         {
+            // 현재 모션이 없으면 업데이트를 하지 않는다.
             if (_currentMotion == null) return;
 
-            if (_isPlaying) // 재생시에만 
+            // 모션이 재생중이 아니면 시간을 업데이트하지 않는다.
+            if (_isPlaying)
             {
                 // 모션 시간을 업데이트한다.
                 _motionTime += deltaTime;
@@ -116,7 +118,7 @@ namespace Animate
             }
 
             // 키프레임으로부터 현재의 로컬포즈행렬을 가져온다.(bone name, mat4x4f)
-            Dictionary<string, Matrix4x4f> currentPose = CalculateCurrentAnimationLocalPose();
+            Dictionary<string, Matrix4x4f> currentPose = _currentMotion.InterpolatePoseAtTime(_motionTime);
 
             // 로컬 포즈행렬로부터 캐릭터공간의 포즈행렬을 얻는다.
             Stack<Bone> stack = new Stack<Bone>();
@@ -129,8 +131,14 @@ namespace Animate
                 Matrix4x4f parentTransform = mStack.Pop();
 
                 // 로컬포즈행렬이 없으면 기본바인딩행렬로 가져온다.
-                Matrix4x4f boneLocalTransform = (currentPose.ContainsKey(bone.Name)) ?
-                    currentPose[bone.Name] : bone.LocalBindTransform;
+                Matrix4x4f boneLocalTransform = Matrix4x4f.Identity;
+                
+                // 현재 포즈 딕셔너리에 뼈대의 이름이 있으면 그 행렬을 가져오고, 없으면 기본 로컬바인딩행렬을 사용한다.
+                if (currentPose != null)
+                {
+                    boneLocalTransform = (currentPose.ContainsKey(bone.Name)) ?
+                        currentPose[bone.Name] : bone.LocalBindTransform;
+                }
 
                 bone.LocalTransform = boneLocalTransform;
                 bone.AnimatedTransform = parentTransform * boneLocalTransform; // 행렬곱을 누적하기 위하여, 순서는 자식부터  v' = ... P2 P1 L v
@@ -141,60 +149,6 @@ namespace Animate
                     mStack.Push(bone.AnimatedTransform);
                 }
             }
-        }
-
-        /// <summary>
-        /// 현재 포즈와 시각에 대한 뼈마다의 로컬포즈행렬(부모뼈공간)을 가져온다.
-        /// </summary>
-        /// <returns></returns>
-        private Dictionary<string, Matrix4x4f> CalculateCurrentAnimationLocalPose()
-        {
-            // 현재 시간(_motionTime)에서 가장 근접한 사이의 두 개의 프레임을 가져온다.
-            KeyFrame previousFrame = _currentMotion.FirstKeyFrame;
-            KeyFrame nextFrame = _currentMotion.FirstKeyFrame;
-            float firstTime = _currentMotion.FirstKeyFrame.TimeStamp;
-            for (int i = 1; i < _currentMotion.KeyFrameCount; i++)
-            {
-                nextFrame = _currentMotion.Frame(i);
-                if (nextFrame.TimeStamp >= _motionTime - firstTime)
-                {
-                    break;
-                }
-                previousFrame = _currentMotion.Frame(i);
-            }
-
-            // 현재 진행률을 계산한다.
-            _previousTime = previousFrame.TimeStamp;
-            float totalTime = nextFrame.TimeStamp - previousFrame.TimeStamp;
-            float currentTime = _motionTime - previousFrame.TimeStamp;
-            float progression = currentTime / totalTime;
-
-            // 두 키프레임 사이의 보간된 포즈를 딕셔러리로 가져온다.
-            Dictionary<string, Matrix4x4f> currentPose = new Dictionary<string, Matrix4x4f>();
-            foreach (string jointName in previousFrame.Pose.BoneNames)
-            {
-                BoneTransform previousTransform = previousFrame[jointName];
-                BoneTransform nextTransform = nextFrame[jointName];
-                BoneTransform currentTransform = BoneTransform.InterpolateSlerp(previousTransform, nextTransform, progression);
-                currentPose[jointName] = currentTransform.LocalTransform;
-
-                // 아래는 쿼터니온 에러로 인한 NaN인 경우에 대체 포즈로 강제 지정(좋은 코드는 아님)
-                if (currentTransform.LocalTransform.Determinant.ToString() == "NaN")
-                {
-                    if (previousTransform.LocalTransform.Determinant.ToString() == "NaN")
-                    {
-                        currentTransform = BoneTransform.InterpolateSlerp(nextTransform, nextTransform, 0);
-                        currentPose[jointName] = currentTransform.LocalTransform;
-                    }
-                    if (nextTransform.LocalTransform.Determinant.ToString() == "NaN")
-                    {
-                        currentTransform = BoneTransform.InterpolateSlerp(previousTransform, previousTransform, 0);
-                        currentPose[jointName] = currentTransform.LocalTransform;
-                    }
-                }
-            }
-
-            return currentPose;
         }
 
     }

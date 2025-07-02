@@ -52,13 +52,17 @@ namespace Animate
                     {
                         for (int i = 0; i < boneNames.Length; i++)
                         {
-                            // 각 본의 위치를 믹사모에서 가져온 길이로 설정
-                            float destBoneLength = targetAniDae.DicBones[boneNames[i]].PivotPosition.Norm();
-                            BoneTransform dstBonePose = keyframe.Pose[boneNames[i]];
+                            // 설정할 본이 애니메이션 DAE에 있는지 확인한다.
+                            if (targetAniDae.DicBones.ContainsKey(boneNames[i]))
+                            {
+                                // 각 본의 위치를 믹사모에서 가져온 길이로 설정
+                                float destBoneLength = targetAniDae.DicBones[boneNames[i]].PivotPosition.Norm();
+                                BoneTransform dstBonePose = keyframe.Pose[boneNames[i]];
 
-                            // 새로운 위치로 BoneTransform 생성하여 다시 할당
-                            Vertex3f newPosition = dstBonePose.Position.Normalized * destBoneLength;
-                            keyframe.Pose[boneNames[i]] = dstBonePose.WithPosition(newPosition);
+                                // 새로운 위치로 BoneTransform 생성하여 다시 할당
+                                Vertex3f newPosition = dstBonePose.Position.Normalized * destBoneLength;
+                                keyframe.Pose[boneNames[i]] = dstBonePose.WithPosition(newPosition);
+                            }
                         }                      
                     }
 
