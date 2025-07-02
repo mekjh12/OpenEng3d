@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Animate
 {
@@ -52,7 +53,6 @@ namespace Animate
                         {
                             // 각 본의 위치를 믹사모에서 가져온 길이로 설정
                             float destBoneLength = targetAniDae.DicBones[boneNames[i]].PivotPosition.Norm();
-
                             BoneTransform dstBonePose = keyframe.Pose[boneNames[i]];
 
                             // 위치를 믹사모에서 가져온 길이로 설정

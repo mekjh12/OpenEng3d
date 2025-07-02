@@ -115,9 +115,9 @@ namespace FormTools
 
             // 애니메이션 리타겟팅
             _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniDae: _aniDae1);
-            //_mixamoRotMotionStorage.RetargetMotionsTransfer(_aniDae1);
+            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniDae: _aniDae);
 
-            _currentHumanModel = _humanAniModel1;
+            _currentHumanModel = _humanAniModel;
 
             // 애니메이션 모델에 애니메이션 초기 지정
             _currentHumanModel.SetMotion(ACTION.BREATHING_IDLE);
@@ -197,33 +197,35 @@ namespace FormTools
         {
             if (e.KeyCode == Keys.F)
             {
-                _humanAniModel1.PolygonMode = 
+                _currentHumanModel.PolygonMode = 
                     _humanAniModel.PolygonMode == PolygonMode.Fill ? PolygonMode.Line : PolygonMode.Fill;
                 Debug.PrintLine($"PolygonMode: {_humanAniModel.PolygonMode}");
             }
             else if (e.KeyCode == Keys.D1)
             {
-                _humanAniModel1.SetMotion(ACTION.BREATHING_IDLE);
+                _currentHumanModel.SetMotion(ACTION.BREATHING_IDLE);
             }
             else if (e.KeyCode == Keys.D2)
             {
-                _humanAniModel1.SetMotion(ACTION.WALKING);
+                _currentHumanModel.SetMotion(ACTION.WALKING);
             }
             else if (e.KeyCode == Keys.D3)
             {
-                _humanAniModel1.SetMotion(ACTION.A_T_POSE);
+                _currentHumanModel.SetMotion(ACTION.A_T_POSE);
             }
             else if (e.KeyCode == Keys.D4)
             {
-                _humanAniModel1.SetMotion(ACTION.SLOW_RUN);
+                _currentHumanModel.SetMotion(ACTION.SLOW_RUN);
             }
             else if (e.KeyCode == Keys.D5)
             {
                 _currentHumanModel = _humanAniModel;
+                _currentHumanModel.SetMotion(ACTION.BREATHING_IDLE);
             }
             else if (e.KeyCode == Keys.D6)
             {
                 _currentHumanModel = _humanAniModel1;
+                _currentHumanModel.SetMotion(ACTION.BREATHING_IDLE);
             }
             else if (e.KeyCode == Keys.D0)
             {

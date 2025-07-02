@@ -106,7 +106,7 @@ namespace Animate
             AniXmlLoader.LibraryController(xml, 
                 out List<string> clothBoneNames, 
                 out Dictionary<string, Matrix4x4f> invBindPoses,
-                out List<VertexBoneData> vertexBoneData, 
+                out List<BoneWeightVector4> vertexBoneData, 
                 out Matrix4x4f bindShapeMatrix);
             _bindShapeMatrix = bindShapeMatrix;
 
@@ -128,11 +128,14 @@ namespace Animate
             // (4-2) bone-index modify.
             for (int i = 0; i < vertexBoneData.Count; i++)
             {
-                int bx = map[vertexBoneData[i].BoneIndices.x];
-                int by = map[vertexBoneData[i].BoneIndices.y];
-                int bz = map[vertexBoneData[i].BoneIndices.z];
-                int bw = map[vertexBoneData[i].BoneIndices.w];
-                vertexBoneData[i].BoneIndices = new Vertex4i(bx, by, bz, bw);
+                var current = vertexBoneData[i];
+                var newIndices = new Vertex4i(
+                    map[current.BoneIndices.x],
+                    map[current.BoneIndices.y],
+                    map[current.BoneIndices.z],
+                    map[current.BoneIndices.w]
+                );
+                vertexBoneData[i] = current.WithBoneIndices(newIndices);
             }
 
             // (5) source positions으로부터 
@@ -241,7 +244,7 @@ namespace Animate
             AniXmlLoader.LibraryController(xml, 
                 out List<string> boneNames, 
                 out Dictionary<string, Matrix4x4f> invBindPoses,
-                out List<VertexBoneData> vertexBoneData,
+                out List<BoneWeightVector4> vertexBoneData,
                 out Matrix4x4f bindShapeMatrix);
 
             // 정점과 정점 컨트롤 데이터의 갯수가 일치하는지 확인한다.

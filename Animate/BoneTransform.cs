@@ -1,6 +1,4 @@
-﻿using System;
-using Assimp;
-using OpenGL;
+﻿using OpenGL;
 using ZetaExt;
 
 namespace Animate
@@ -160,5 +158,6 @@ namespace Animate
         {
             return $"BonePose(Pos: {_position}, Rot: {_rotation}, Scale: {_scaling})";
         }
+
     }
 }

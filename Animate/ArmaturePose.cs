@@ -35,14 +35,12 @@ namespace Animate
 
         public ArmaturePose Clone()
         {
-            ArmaturePose armature = new ArmaturePose(); 
-            Dictionary<string, BoneTransform> keyValuePairs = new Dictionary<string, BoneTransform>();
-            foreach (KeyValuePair<string, BoneTransform> item in _pose)
+            ArmaturePose clone = new ArmaturePose();
+            foreach (var kvp in _pose)
             {
-                keyValuePairs.Add(item.Key, item.Value);
+                clone._pose[kvp.Key] = kvp.Value.Clone();
             }
-            armature._pose = keyValuePairs;
-            return armature;
+            return clone;
         }
     }
 }

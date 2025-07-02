@@ -101,7 +101,7 @@ namespace Animate
             //
             if (dicBones == null) return 1.0f;
 
-            // 딕셔너리 정보는 뼈이름, <시간, 행렬>로 구성되어 있다.
+            // 딕셔너리 정보는 <뼈, <시간, 행렬>>로 구성되어 있다.
             foreach (KeyValuePair<string, Dictionary<float, Matrix4x4f>> item in animationData)
             {
                 string boneName = item.Key;
@@ -367,13 +367,13 @@ namespace Animate
         public static void LibraryController(XmlDocument xml, 
             out List<string> boneNames, 
             out Dictionary<string, Matrix4x4f> invBindPoses,
-            out List<VertexBoneData> vertexBoneData,
+            out List<BoneWeightVector4> vertexBoneData,
             out Matrix4x4f bindShapeMatrix)
         {
             bindShapeMatrix = Matrix4x4f.Identity;
 
             // 초기화
-            vertexBoneData = new List<VertexBoneData>();
+            vertexBoneData = new List<BoneWeightVector4>();
 
             string jointsName = "";
             string inverseBindMatrixName = "";
@@ -565,7 +565,7 @@ namespace Animate
                             if (k == 3) weight.w = bwList[k].y;
                         }
 
-                        var boneData = new VertexBoneData(jointId, weight);
+                        var boneData = new BoneWeightVector4(jointId, weight);
                         vertexBoneData.Add(boneData);
 
                         sum += 2 * vertexCount;
@@ -590,9 +590,9 @@ namespace Animate
         /// - Without Skin, Only Armature <br/>
         /// - "3D Mesh Processing and Character Animation", p.183 Animation Retargeting
         /// </summary>
-        /// <param name="aniDae"></param>
+        /// <param name="targetAniDae"></param>
         /// <param name="motionFileName"></param>
-        public static Motion LoadMixamoMotion(AniDae aniDae, string motionFileName)
+        public static Motion LoadMixamoMotion(AniDae targetAniDae, string motionFileName)
         {
             // Dae 파일을 읽어온다.
             XmlDocument xml = new XmlDocument();
@@ -706,13 +706,13 @@ namespace Animate
             // Interpolation Pose만 0초에서 정상적 T-pose를 취하고 있어서 이 부분에서 가져와야 한다.
             if (motionName == "a-T-Pose") //Interpolation Pose
             {
-                aniDae.HipHeightScale = CalculateHipScaleRatio(animationData, aniDae.DicBones);
-                Console.WriteLine($"XmeDae HipScaled={aniDae.HipHeightScale}");
+                targetAniDae.HipHeightScale = CalculateHipScaleRatio(animationData, targetAniDae.DicBones);
+                Console.WriteLine($"XmeDae HipScaled={targetAniDae.HipHeightScale}");
             }
 
             // 애니메이션을 생성한다.
             Motion motion = new Motion(motionName, maxTimeLength);
-            if (maxTimeLength > 0 && aniDae.DicBones != null)
+            if (maxTimeLength > 0 && targetAniDae.DicBones != null)
             {
                 // 뼈마다 순회 (뼈, 시간, 로컬변환행렬)
                 foreach (KeyValuePair<string, Dictionary<float, Matrix4x4f>> item in animationData)
@@ -720,7 +720,7 @@ namespace Animate
                     string boneName = item.Key;
                     Dictionary<float, Matrix4x4f> source = item.Value;
 
-                    Bone bone = aniDae.GetBoneByName(boneName);
+                    Bone bone = targetAniDae.GetBoneByName(boneName);
                     if (bone == null) continue;
 
                     // 시간마다 순회 (시간, 로컬변환행렬)
@@ -734,7 +734,7 @@ namespace Animate
 
                         // 본포즈를 설정한다.
                         Vertex3f position = bone.IsRootArmature ?
-                            mat.Position * aniDae.HipHeightScale : bone.PivotPosition * 0.001f;
+                            mat.Position * targetAniDae.HipHeightScale : bone.PivotPosition * 0.001f;
                         ZetaExt.Quaternion q = mat.ToQuaternion();
                         q.Normalize();
                         BoneTransform boneTransform  = new BoneTransform(position, q);

@@ -212,7 +212,7 @@ namespace Animate
         /// <param name="expandValue">팽창이면 양수, 수축이면 음수를 지정한다.</param>
         /// <returns></returns>
         public static RawModel3d Expand(List<Vertex3f> lstPositions, List<Vertex2f> lstTexCoord,
-            List<VertexBoneData> vertexBoneData,
+            List<BoneWeightVector4> vertexBoneData,
             MeshTriangles meshTriangles, float expandValue = 0.0001f)
         {
             MergeOneTopology(lstPositions, meshTriangles, out List<Vertex3f> pList, out Vertex3f[] normals, out Dictionary<uint, uint> map, expandValue);

@@ -7,7 +7,7 @@ namespace Animate
     /// - 3D 애니메이션에서 본의 회전 범위를 제한하여 자연스러운 움직임 구현<br/>
     /// - X축/Z축 회전(구부리기/젖히기)과 Y축 회전(비틀기) 각도를 별도 관리
     /// </summary>
-    public class BoneAngle
+    public struct BoneAngle
     {
         Vertex4f _angle; // 제약 각도 (x축 min/max, z축 min/max)
         Vertex2f _twist; // 비틀기 각도 (y축 min/max)

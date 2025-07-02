@@ -253,14 +253,6 @@ namespace GlWindow
             Console.WriteLine(" * 지형시스템: x축 양의 방향 동쪽, y축 양의 방향 북쪽");
             Console.WriteLine("========================================================");
 
-            // GPU 정보 출력
-            string vendor = Gl.GetString(StringName.Vendor);
-            string renderer = Gl.GetString(StringName.Renderer);
-            string version = Gl.GetString(StringName.Version);
-            Console.WriteLine($"GPU 제조사: {vendor}");
-            Console.WriteLine($"렌더러: {renderer}");
-            Console.WriteLine($"OpenGL 버전: {version}");
-            Console.WriteLine("========================================================");
         }
 
         /// <summary>
