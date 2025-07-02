@@ -22,10 +22,10 @@ namespace FormTools
         AnimateShader _animateShader;
         MixamoRotMotionStorage _mixamoRotMotionStorage;
         AniDae _aniDae;
-        HumanAniModel _humanAniModel;
+        Human _humanAniModel;
         AniDae _aniDae1;
-        HumanAniModel _humanAniModel1;
-        HumanAniModel _currentHumanModel;
+        Human _humanAniModel1;
+        Human _currentHumanModel;
 
         public FormAnimation()
         {
@@ -96,11 +96,11 @@ namespace FormTools
 
             _aniDae = new AniDae(PROJECT_PATH + @"\Res\abe.dae", isLoadAnimation: false);
             AnimateEntity animateEntity = new AnimateEntity("abe", _aniDae.Models.ToArray());
-            _humanAniModel = new HumanAniModel("abe", animateEntity, _aniDae);
+            _humanAniModel = new Human("abe", animateEntity, _aniDae);
 
             _aniDae1 = new AniDae(PROJECT_PATH + @"\Res\hero1.dae", isLoadAnimation: false);
             AnimateEntity animateEntity1 = new AnimateEntity("hero1", _aniDae1.Models.ToArray());
-            _humanAniModel1 = new HumanAniModel("hero1", animateEntity1, _aniDae1);
+            _humanAniModel1 = new Human("hero1", animateEntity1, _aniDae1);
 
             // 믹사모 애니메이션 로드
             _mixamoRotMotionStorage = new MixamoRotMotionStorage();

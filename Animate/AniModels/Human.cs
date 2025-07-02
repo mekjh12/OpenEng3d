@@ -5,7 +5,7 @@ using ZetaExt;
 
 namespace Animate
 {
-    public class HumanAniModel : Primate
+    public class Human : Primate
     {
         public enum HAND_ITEM
         {
@@ -97,7 +97,7 @@ namespace Animate
             }
         }
 
-        public HumanAniModel(string name, AnimateEntity model, AniDae xmlDae) : base(name, model, xmlDae)
+        public Human(string name, AnimateEntity model, AniDae xmlDae) : base(name, model, xmlDae)
         {
            
         }
