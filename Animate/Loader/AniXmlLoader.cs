@@ -146,17 +146,21 @@ namespace Animate
 
                     string iamgeId = imageNode.Attributes["id"].Value;
                     Dictionary<TextureType, Texture> _textures = new Dictionary<TextureType, Texture>();
-                    Texture texture;
-                    if (TextureStorage.TexturesLoaded.ContainsKey(_diffuseFileName)) // 로드한 적이 있음
+
+                    Texture texture = null;
+                    // TextureStorage에 이미 로드한 적이 있는지 확인한다.
+                    if (TextureStorage.ContainsKey(_diffuseFileName))
                     {
-                        _textures[TextureType.Diffuse] = TextureStorage.TexturesLoaded[_diffuseFileName];
+                        // 이미 로드한 적이 있으면 TextureStorage에서 가져온다.
+                        _textures[TextureType.Diffuse] = TextureStorage.GetTexture(_diffuseFileName);
                         texture = _textures[TextureType.Diffuse];
                     }
-                    else  // 로드한 적이 없음
+                    else
                     {
+                        // 로드한 적이 없으면 새롭게 로드한다.
                         texture = new Texture(_diffuseFileName);
                         _textures.Add(TextureType.Diffuse, texture);
-                        TextureStorage.TexturesLoaded.Add(_diffuseFileName, texture);
+                        TextureStorage.Add(_diffuseFileName, texture);
                     }
                     textures.Add(iamgeId, texture);
                 }
@@ -986,7 +990,7 @@ namespace Animate
                 // 역바인드 포즈를 설정한다.
                 if (invBindPoses.ContainsKey(bone.Name))
                 {
-                    bone.InverseBindTransform = invBindPoses[bone.Name];
+                    bone.InverseBindPoseTransform = invBindPoses[bone.Name];
                 }
 
                 // 하위 노드를 순회한다.

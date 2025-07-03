@@ -217,7 +217,7 @@ namespace Animate
             parentBone.AddChild(cBone);
             cBone.Parent = parentBone;
             cBone.LocalBindTransform = localBindTransform;
-            cBone.InverseBindTransform = inverseBindTransform;
+            cBone.InverseBindPoseTransform = inverseBindTransform;
             _dicBones[boneName] = cBone;
 
             // 뼈대명 배열에 추가한다.
@@ -283,15 +283,26 @@ namespace Animate
                 lstPositions[i] = A0xS.Multiply(lstPositions[i]);
             }
 
-            // (7) invBindPose 행렬을 계산한다.
+            // 역바인딩포즈를 계산한다. 
+            // LibraryController에서 미리 계산된 역바인딩포즈가 있지만, 
+            // 애니메이션을 적용하기 위해서 다시 계산한다.
             Stack<Bone> bStack = new Stack<Bone>();
             bStack.Push(_rootBone);
             while (bStack.Count > 0)
             {
+                // 뼈대를 꺼내고, 
                 Bone cBone = bStack.Pop();
-                Matrix4x4f prevAnimatedMat = (cBone.Parent == null ? Matrix4x4f.Identity : cBone.Parent.AnimatedBindTransform);
-                cBone.AnimatedBindTransform = prevAnimatedMat * cBone.LocalBindTransform;
-                cBone.InverseBindTransform = cBone.AnimatedBindTransform.Inversed();
+
+                // 부모 뼈대의 애니메이션 바인드 포즈를 계산한다.
+                Matrix4x4f prevAnimatedMat = (cBone.Parent == null ? Matrix4x4f.Identity : cBone.Parent.AnimatedBindPoseTransform);
+
+                // 현재 뼈대의 애니메이션 바인드 포즈를 계산한다.
+                cBone.AnimatedBindPoseTransform = prevAnimatedMat * cBone.LocalBindTransform;
+
+                // 역바인딩포즈를 계산한다.
+                cBone.InverseBindPoseTransform = cBone.AnimatedBindPoseTransform.Inversed();
+
+                // 자식 뼈대를 스택에 추가한다.
                 foreach (Bone child in cBone.Childrens) bStack.Push(child);
             }
 

@@ -8,22 +8,33 @@ namespace Animate
 {
     public class Motion
     {
-        string _animationName;
-        float _length;
-        Dictionary<float, KeyFrame> _keyframes;
+        string _animationName; // 애니메이션 이름
+        float _length; // 애니메이션 길이(초)
+        Dictionary<float, KeyFrame> _keyframes; // 키프레임 딕셔너리 (시간 -> 키프레임)
 
+        /// <summary>첫 번째 키프레임을 반환합니다.</summary>
         public KeyFrame FirstKeyFrame => (_keyframes.Values.Count > 0) ? _keyframes.Values.ElementAt(0) : null;
 
+        /// <summary>마지막 키프레임을 반환합니다.</summary>
         public KeyFrame LastKeyFrame => (_keyframes.Values.Count > 0) ? _keyframes.Values.ElementAt(_keyframes.Count - 1) : null;
 
+        /// <summary>키프레임 딕셔너리를 반환합니다.</summary>
         public Dictionary<float, KeyFrame> Keyframes => _keyframes;
 
+        /// <summary>애니메이션 길이를 반환합니다.</summary>
         public float Length => _length;
 
+        /// <summary>애니메이션 이름을 반환합니다.</summary>
         public string Name => _animationName;
 
+        /// <summary>키프레임 개수를 반환합니다.</summary>
         public int KeyFrameCount => _keyframes.Count;
 
+        /// <summary>
+        /// Motion 객체를 생성합니다.
+        /// </summary>
+        /// <param name="name">애니메이션 이름</param>
+        /// <param name="lengthInSeconds">애니메이션 길이(초)</param>
         public Motion(string name, float lengthInSeconds)
         {
             _animationName = name;
@@ -31,20 +42,27 @@ namespace Animate
             _keyframes = new Dictionary<float, KeyFrame>();
         }
 
-
+        /// <summary>
+        /// 현재 Motion 객체의 복사본을 생성합니다.
+        /// </summary>
+        /// <returns>복사된 Motion 객체</returns>
         public Motion Clone()
         {
             Motion motion = new Motion(_animationName, _length);
-            foreach (KeyValuePair<float, KeyFrame> item in _keyframes)
+            foreach (KeyValuePair<float, KeyFrame> srcKeyFrame in _keyframes)
             {
-                KeyFrame keyFrame = item.Value.Clone();
-                motion.AddKeyFrame(keyFrame);
+                KeyFrame dstKeyFrame = srcKeyFrame.Value.Clone();
+                motion.AddKeyFrame(dstKeyFrame);
             }
 
             return motion;
         }
 
-
+        /// <summary>
+        /// 지정된 시간에 해당하는 키프레임을 복제합니다.
+        /// </summary>
+        /// <param name="time">대상 시간</param>
+        /// <returns>복제된 키프레임</returns>
         public KeyFrame CloneKeyFrame(float time)
         {
             float currentKeyFrameTime = 0.0f;
@@ -60,18 +78,31 @@ namespace Animate
             return keyFrame;
         }
 
+        /// <summary>
+        /// 인덱스로 키프레임을 가져옵니다.
+        /// </summary>
+        /// <param name="index">키프레임 인덱스</param>
+        /// <returns>해당 인덱스의 키프레임</returns>
         public KeyFrame KeyFrame(int index)
         {
             return _keyframes.Values.ElementAt(index);
         }
 
+        /// <summary>
+        /// 시간으로 키프레임을 가져옵니다.
+        /// </summary>
+        /// <param name="time">키프레임 시간</param>
+        /// <returns>해당 시간의 키프레임 또는 첫 번째 키프레임</returns>
         public KeyFrame KeyFrame(float time)
         {
             return _keyframes.ContainsKey(time) ?
                 ((_keyframes.Values.Count > 0) ? _keyframes[time] : null) : FirstKeyFrame;
         }
 
-
+        /// <summary>
+        /// 지정된 시간에 빈 키프레임을 추가합니다.
+        /// </summary>
+        /// <param name="time">키프레임 시간</param>
         public void AddKeyFrame(float time)
         {
             // 주어진 시간에 키프레임이 없으면 추가한다.
@@ -81,6 +112,10 @@ namespace Animate
             }
         }
 
+        /// <summary>
+        /// 키프레임 객체를 추가합니다.
+        /// </summary>
+        /// <param name="keyFrame">추가할 키프레임</param>
         public void AddKeyFrame(KeyFrame keyFrame)
         {
             _keyframes[keyFrame.TimeStamp] = keyFrame;
@@ -89,12 +124,13 @@ namespace Animate
         /// <summary>
         /// 현재 포즈와 시각에 대한 뼈마다의 로컬포즈행렬(부모뼈공간)을 가져온다.
         /// </summary>
-        /// <returns></returns>
+        /// <param name="motionTime">모션 시간</param>
+        /// <returns>뼈 이름별 변환 행렬 딕셔너리</returns>
         public Dictionary<string, Matrix4x4f> InterpolatePoseAtTime(float motionTime)
         {
             // 모션이 비어 있거나 키프레임이 없는 경우에는 null을 반환한다.
             if (FirstKeyFrame == null || KeyFrameCount == 0) return null;
-                    
+
             // 현재 시간(motionTime)에서 가장 근접한 사이의 두 개의 프레임을 가져온다.
             KeyFrame previousFrame = FirstKeyFrame;
             KeyFrame nextFrame = FirstKeyFrame;
@@ -145,7 +181,7 @@ namespace Animate
 
         /// <summary>
         /// 지정된 시간에 특정 뼈의 변환 정보(위치, 회전)를 키프레임으로 추가합니다.
-        /// <para>해당 시간에 키프레임이 없으면 가장 가까운 기존 키프레임을 사용합니다.</para>
+        /// 해당 시간에 키프레임이 없으면 가장 가까운 기존 키프레임을 사용합니다.
         /// </summary>
         /// <param name="time">키프레임 시간</param>
         /// <param name="boneName">대상 뼈 이름</param>
@@ -177,10 +213,10 @@ namespace Animate
         }
 
         /// <summary>
-        /// * 지정한 본에서 빈 프레임을 찾아서 앞과 뒤 프레임을 이용하여 보간한다. <br/>
-        /// * 보간하기 전에 반드시 맨 처음과 맨 마지막 프레임이 채워진 후 실행해야 한다.<br/>
+        /// 지정한 본에서 빈 프레임을 찾아서 앞과 뒤 프레임을 이용하여 보간합니다.
+        /// 보간하기 전에 반드시 맨 처음과 맨 마지막 프레임이 채워진 후 실행해야 합니다.
         /// </summary>
-        /// <param name="boneName"></param>
+        /// <param name="boneName">대상 뼈 이름</param>
         public void InterpolateEmptyFrame(string boneName)
         {
             float[] times = _keyframes.Keys.ToList().ToArray();
@@ -236,19 +272,18 @@ namespace Animate
                     }
                 }
             }
-
         }
 
         /// <summary>
-        /// 두 모션을 블렌딩한 모션을 반환한다.
+        /// 두 모션을 블렌딩하여 새로운 모션을 생성합니다.
         /// </summary>
-        /// <param name="name"></param>
-        /// <param name="prevMotion"></param>
-        /// <param name="prevTime"></param>
-        /// <param name="nextMotion"></param>
-        /// <param name="nextTime"></param>
-        /// <param name="blendingInterval"></param>
-        /// <returns></returns>
+        /// <param name="name">블렌딩된 모션의 이름</param>
+        /// <param name="prevMotion">이전 모션</param>
+        /// <param name="prevTime">이전 모션의 시간</param>
+        /// <param name="nextMotion">다음 모션</param>
+        /// <param name="nextTime">다음 모션의 시간</param>
+        /// <param name="blendingInterval">블렌딩 간격</param>
+        /// <returns>블렌딩된 새로운 모션</returns>
         public static Motion BlendMotion(string name, Motion prevMotion, float prevTime, Motion nextMotion, float nextTime, float blendingInterval)
         {
             KeyFrame k0 = prevMotion.CloneKeyFrame(prevTime);
@@ -260,6 +295,5 @@ namespace Animate
             if (k1 != null) blendMotion.AddKeyFrame(k1);
             return blendMotion;
         }
-
     }
 }

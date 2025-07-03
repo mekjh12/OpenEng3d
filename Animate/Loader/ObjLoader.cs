@@ -200,10 +200,10 @@ namespace Animate
                 mat.GetMaterialTexture(typeName, i, out str);
                 string filename = _directory + "\\" + str.FilePath;
 
-                if (TextureStorage.TexturesLoaded.ContainsKey(filename))
+                if (TextureStorage.ContainsKey(filename))
                 {
                     // 로드한 적이 있음
-                    textures.Add(TextureStorage.TexturesLoaded[filename]);
+                    textures.Add(TextureStorage.GetTexture(filename));
                 }
                 else
                 {
@@ -213,7 +213,7 @@ namespace Animate
                         Bitmap bitmap = (Bitmap)Bitmap.FromFile(filename);
                         Texture texture = new Texture(bitmap);
                         textures.Add(texture);
-                        TextureStorage.TexturesLoaded.Add(filename, texture);
+                        TextureStorage.Add(filename, texture);
                     }
                 }
             }

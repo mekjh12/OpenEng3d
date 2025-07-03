@@ -9,7 +9,7 @@ using ZetaExt;
 
 namespace Animate
 {
-    public class AniModel
+    public abstract class AniModel
     {
         protected string _name;
         protected AniDae _aniDae;
@@ -122,7 +122,11 @@ namespace Animate
         /// <returns></returns>
         public Entity GetEntity(string name) => _models[name];
 
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="motionName"></param>
+        /// <param name="nextAction"></param>
         public virtual void SetMotionOnce(string motionName, string nextAction)
         {
             Motion motion = _aniDae.Motions.GetMotion(motionName);
@@ -164,13 +168,16 @@ namespace Animate
         /// <param name="deltaTime"></param>
         public void Update(int deltaTime)
         {
+            // 애니메이션 업데이트 전에 호출할 수 있는 콜백 함수
             if (_updateBefore != null)
             {
                 _updateBefore();
             }
 
+            // 애니메이션 업데이트
             _animator.Update(0.001f * deltaTime);
 
+            // 애니메이션 업데이트 후에 호출할 수 있는 콜백 함수
             if (_updateAfter != null)
             {
                 _updateAfter();
@@ -180,7 +187,7 @@ namespace Animate
         public void Render(Camera camera, StaticShader staticShader, AnimateShader ashader, 
             bool isSkinVisible = true, bool isBoneVisible = false, bool isBoneParentCurrentVisible = false)
         {
-            Matrix4x4f[] jointMatrix = JointTransformMatrix;
+            Matrix4x4f[] finalAnimatedBoneMatrices = FinalAnimatedBoneMatrices;
 
             int index = 0;
             foreach (KeyValuePair<string, AnimateEntity> item in _models)
@@ -194,7 +201,7 @@ namespace Animate
                     Gl.Disable(EnableCap.CullFace);
                     if (_renderingMode == RenderingMode.Animation)
                     {
-                        Renderer3d.Render(ashader, _transform.Matrix4x4f, jointMatrix, entity, camera);
+                        Renderer3d.Render(ashader, _transform.Matrix4x4f, finalAnimatedBoneMatrices, entity, camera);
                     }
                     else if (_renderingMode == RenderingMode.BoneWeight)
                     {
@@ -211,7 +218,7 @@ namespace Animate
                 if (isBoneVisible)
                 {
                     int ind = 0;
-                    foreach (Matrix4x4f jointTransform in BoneAnimationTransforms)
+                    foreach (Matrix4x4f jointTransform in AnimatedTransforms)
                     {
                         if (ind >= 52) //52이상은 추가한 뼈들이다.
                         {
@@ -245,18 +252,18 @@ namespace Animate
         /// * v' = Ma(i) Md^-1(i) v (Ma 애니메이션행렬, Md 바이딩포즈행렬)<br/>
         /// * 정점들을 바인딩포즈행렬을 이용하여 뼈 공간으로 정점을 변환 후, 애니메이션 행렬을 이용하여 뼈의 캐릭터 공간으로의 변환행렬을 가져온다.<br/>
         /// </summary>
-        protected Matrix4x4f[] JointTransformMatrix
+        protected Matrix4x4f[] FinalAnimatedBoneMatrices
         {
             get
             {
-                Matrix4x4f[] jointMatrices = new Matrix4x4f[BoneCount];
+                Matrix4x4f[] finalAnimatedBoneMatrices = new Matrix4x4f[BoneCount];
                 foreach (KeyValuePair<string, Bone> item in _aniDae.DicBones)
                 {
                     Bone bone = item.Value;
                     if (bone.Index >= 0)
-                        jointMatrices[bone.Index] = bone.AnimatedTransform * bone.InverseBindTransform;
+                        finalAnimatedBoneMatrices[bone.Index] = bone.AnimatedTransform * bone.InverseBindPoseTransform;
                 }
-                return jointMatrices;
+                return finalAnimatedBoneMatrices;
             }
         }
 
@@ -264,7 +271,7 @@ namespace Animate
         /// * 애니매이션에서 뼈들의 뼈공간 ==> 캐릭터 공간으로의 변환 행렬<br/>
         /// * 뼈들의 포즈를 렌더링하기 위하여 사용할 수 있다.<br/>
         /// </summary>
-        public Matrix4x4f[] BoneAnimationTransforms
+        public Matrix4x4f[] AnimatedTransforms
         {
             get
             {
@@ -280,20 +287,21 @@ namespace Animate
         }
 
         /// <summary>
-        /// * 초기의 캐릭터공간에서의 바인드 포즈행렬을 가져온다. <br/>
-        /// - 포즈행렬이란 한 뼈공간에서의 점의 상대적 좌표를 가져오는 행렬이다.<br/>
+        /// 초기의 캐릭터공간에서의 바인딩포즈의 역행렬을 가져온다.
         /// </summary>
         public Matrix4x4f[] InverseBindPoseTransforms
         {
             get
             {
-                Matrix4x4f[] jointMatrices = new Matrix4x4f[BoneCount];
-                foreach (KeyValuePair<string, Bone> item in _aniDae.DicBones)
+                var jointMatrices = new Matrix4x4f[BoneCount];
+
+                // Dictionary의 Values를 직접 순회 (KeyValuePair 생성 오버헤드 제거)
+                foreach (Bone bone in _aniDae.DicBones.Values)
                 {
-                    Bone bone = item.Value;
                     if (bone.Index >= 0 && bone.Index < BoneCount)
-                        jointMatrices[bone.Index] = bone.InverseBindTransform;
+                        jointMatrices[bone.Index] = bone.InverseBindPoseTransform;
                 }
+
                 return jointMatrices;
             }
         }

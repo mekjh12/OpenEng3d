@@ -13,15 +13,15 @@ out vec3 pass_normals;
 out vec2 pass_textureCoords;
 out vec4 pass_weights;
 
-uniform mat4 jointTransforms[MAX_JOINTS]; // 뼈대 변환 행렬들
+uniform mat4 finalAnimatedBoneMatrix[MAX_JOINTS]; // 뼈대 변환 행렬들
 uniform mat4 proj;
 uniform mat4 view;
 uniform mat4 model;
 uniform mat4 pmodel;
 uniform vec3 lightDirection;
 
-uniform bool isOnlyOneJointWeight; // 하나의 뼈대에 가중치가 하나만 있는 경우
-uniform int jointIndex; // 하나의 뼈대에 가중치가 하나만 있는 경우의 뼈대 인덱스
+uniform bool useSingleJoint; // 하나의 뼈대에 가중치가 하나만 있는 경우
+uniform int singleJointId; // 하나의 뼈대에 가중치가 하나만 있는 경우의 뼈대 인덱스
 
 void main(void)
 {	
@@ -29,42 +29,60 @@ void main(void)
 	vec4 totalNormal = vec4(0.0);
 	
 	// 하나의 뼈대에 가중치가 하나만 있는 경우
-	if (isOnlyOneJointWeight)
+	if (useSingleJoint)
 	{
-		mat4 jointTransform = jointTransforms[jointIndex];
+		mat4 jointTransform = finalAnimatedBoneMatrix[singleJointId];
 		mat4 transform = jointTransform * pmodel;
 		mat3 T = mat3(transpose(inverse(transform)));
 
-		vec4 posePosition = transform * vec4(in_position, 1.0);
-		totalLocalPos = posePosition;
+        // 정점 변환
+        totalLocalPos = transform * vec4(in_position, 1.0);
 
-		vec4 worldNormal = vec4(T * in_normal, 0.0);
-		totalNormal = normalize(worldNormal);
+       // 법선 변환 (역전치 행렬 사용)
+        mat3 normalMatrix = mat3(transpose(inverse(transform)));
+        totalNormal = vec4(normalize(normalMatrix * in_normal), 0.0);
 	}
 	// 여러 뼈대에 가중치가 있는 경우
 	else
 	{
-		for (int i=0; i< MAX_WEIGHTS; i++)
-		{
-			int index = int(in_jointIndices[i]);
-			//if (index == 0) continue;
-			mat4 jointTransform = jointTransforms[index];
+		// 가중치 정규화 체크
+        float weightSum = 0.0;
+        for (int i = 0; i < MAX_WEIGHTS; i++)
+        {
+            weightSum += in_weights[i];
+        }
+        
+        for (int i = 0; i < MAX_WEIGHTS; i++)
+        {
+            float weight = in_weights[i];
+            if (weight > 0.0) // 0인 가중치는 스킵
+            {
+                int index = int(in_jointIndices[i]);
+                mat4 jointTransform = finalAnimatedBoneMatrix[index];
+                mat4 transform = jointTransform * pmodel;
+                
+                // 정점 변환
+                vec4 posePosition = transform * vec4(in_position, 1.0);
+                totalLocalPos += posePosition * weight;
+                
+                // 법선 변환
+                mat3 normalMatrix = mat3(transpose(inverse(transform)));
+                vec4 worldNormal = vec4(normalMatrix * in_normal, 0.0);
+                totalNormal += worldNormal * weight;
+            }
+        }
 
-			mat4 transform = jointTransform * pmodel;
-			mat3 T = mat3(transpose(inverse(transform)));
-
-			vec4 posePosition = transform * vec4(in_position, 1.0);
-			totalLocalPos += posePosition * in_weights[i];
-		
-			vec4 worldNormal = vec4(T * in_normal, 0.0);
-			totalNormal += worldNormal * in_weights[i];
-		}
+        // 가중치가 1이 아닌 경우 정규화
+        if (abs(weightSum - 1.0) > 0.001)
+        {
+            totalLocalPos /= weightSum;
+            totalNormal /= weightSum;
+        }
 	}
 
-	// 최종 위치 계산
-	gl_Position = proj * view * model * totalLocalPos;
-
-	pass_normals = totalNormal.xyz;
-	pass_textureCoords = in_textureCoords;
-	pass_weights = in_weights;
+    // 최종 변환
+    gl_Position = proj * view * model * totalLocalPos;
+    pass_normals = normalize(totalNormal.xyz);
+    pass_textureCoords = in_textureCoords;
+    pass_weights = in_weights;
 }

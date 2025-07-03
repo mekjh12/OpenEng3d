@@ -35,7 +35,7 @@ namespace Animate
         #endregion
 
         public static void Render(AnimateShader shader, Matrix4x4f bindShapeMatrix,
-            Matrix4x4f[] jointTransforms, AnimateEntity entity, Camera camera)
+            Matrix4x4f[] finalAnimatedBoneMatrices, AnimateEntity entity, Camera camera)
         {
             if (entity == null) return;
 
@@ -49,8 +49,8 @@ namespace Animate
             shader.LoadIsOnlyOneJointWeight(entity.IsOnlyOneJointWeight);
             shader.LoadJointIndex(entity.BoneIndexOnlyOneJoint);
 
-            for (int i = 0; i < jointTransforms?.Length; i++)
-                shader.PushBoneMatrix(i, jointTransforms[i]);
+            for (int i = 0; i < finalAnimatedBoneMatrices?.Length; i++)
+                shader.LoadFinalAnimatedBoneMatrix(i, finalAnimatedBoneMatrices[i]);
 
             foreach (TexturedModel model in entity.Models)
             {

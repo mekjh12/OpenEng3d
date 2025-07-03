@@ -32,10 +32,10 @@ namespace Shader
             UniformLocations("model", "view", "proj", "bind", "pmodel");
             UniformLocations("lightDirection");
             UniformLocations("diffuseMap");
-            UniformLocations("isOnlyOneJointWeight", "jointIndex");
+            UniformLocations("useSingleJoint", "singleJointId");
 
             for (int i = 0; i < MAX_JOINTS; i++)
-                UniformLocation($"jointTransforms[{i}]");
+                UniformLocation($"finalAnimatedBoneMatrix[{i}]");
         }
 
         public void LoadTexture(string textureUniformName, TextureUnit textureUnit, uint texture)
@@ -45,9 +45,9 @@ namespace Shader
             Gl.BindTexture(TextureTarget.Texture2d, texture);
         }
 
-        public void PushBoneMatrix(int index, Matrix4x4f matrix)
+        public void LoadFinalAnimatedBoneMatrix(int index, Matrix4x4f matrix)
         {
-            base.LoadMatrix(_location[$"jointTransforms[{index}]"], matrix);
+            base.LoadMatrix(_location[$"finalAnimatedBoneMatrix[{index}]"], matrix);
         }
 
         public void LoadProjMatrix(Matrix4x4f matrix)
@@ -67,12 +67,12 @@ namespace Shader
 
         public void LoadIsOnlyOneJointWeight(bool isOnlyOneJointWeight)
         {
-            base.LoadBoolean(_location["isOnlyOneJointWeight"], isOnlyOneJointWeight);
+            base.LoadBoolean(_location["useSingleJoint"], isOnlyOneJointWeight);
         }
 
         public void LoadJointIndex(int jointIndex)
         {
-            base.LoadInt(_location["jointIndex"], jointIndex);
+            base.LoadInt(_location["singleJointId"], jointIndex);
         }
 
         public void LoadBindShapeMatrix(Matrix4x4f bindShapeMatrix)

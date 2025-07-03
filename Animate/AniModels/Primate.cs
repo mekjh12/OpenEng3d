@@ -132,11 +132,14 @@ namespace Animate
         /// 손을 감싸쥔다.
         /// </summary>
         /// <param name="whereHand"></param>
-        public void FoldHand(BODY_PART whereHand)
+        public void FoldHand(BODY_PART whereHand, float intensity = 60.0f)
         {
             _updateAfter += () =>
             {
+                // 손을 가져온다.
                 Bone hand = GetBoneByName("mixamorig_" + (whereHand == BODY_PART.LeftHand ? "LeftHand" : "RightHand"));
+
+                // 손의 모든 뼈를 스택에 넣는다.
                 Stack<Bone> stack = new Stack<Bone>();
                 stack.Push(hand);
                 while (stack.Count > 0)
@@ -144,28 +147,32 @@ namespace Animate
                     Bone bone = stack.Pop();
                     if (bone.Name.IndexOf("Thumb") < 0)
                     {
-                        bone.LocalTransform = bone.LocalBindTransform * Matrix4x4f.RotatedX(60);
+                        // 엄지 손가락이 아닌 경우
+                        bone.LocalTransform = bone.LocalBindTransform * Matrix4x4f.RotatedX(intensity);
                     }
                     else
                     {
+                        // 엄지 손가락인 경우
                         if (bone.Name.IndexOf("Thumb1") >= 0)
-                            bone.LocalTransform = bone.LocalBindTransform * Matrix4x4f.RotatedY(60);
+                            bone.LocalTransform = bone.LocalBindTransform * Matrix4x4f.RotatedY(intensity);
                         if (bone.Name.IndexOf("Thumb2") >= 0)
-                            bone.LocalTransform = bone.LocalBindTransform * Matrix4x4f.RotatedX(-0);
+                            bone.LocalTransform = bone.LocalBindTransform * Matrix4x4f.RotatedX(0);
                         if (bone.Name.IndexOf("Thumb3") >= 0)
-                            bone.LocalTransform = bone.LocalBindTransform * Matrix4x4f.RotatedX(-0);
+                            bone.LocalTransform = bone.LocalBindTransform * Matrix4x4f.RotatedX(0);
                     }
                     foreach (Bone item in bone.Childrens) stack.Push(item);
                 }
-                hand.UpdateChildBone(isSelfIncluded: false);
+
+                // 손의 자식 뼈를 업데이트한다.
+                hand.UpdatePropTransform(isSelfIncluded: false);
             };
         }
 
-        public void UnfoldHand(BODY_PART dir)
+        public void UnfoldHand(BODY_PART whereHand)
         {
             _updateAfter += () =>
             {
-                Bone hand = GetBoneByName("mixamorig_" + (dir == BODY_PART.LeftHand ? "LeftHand" : "RightHand"));
+                Bone hand = GetBoneByName("mixamorig_" + (whereHand == BODY_PART.LeftHand ? "LeftHand" : "RightHand"));
                 Stack<Bone> stack = new Stack<Bone>();
                 stack.Push(hand);
                 while (stack.Count > 0)
@@ -186,7 +193,7 @@ namespace Animate
                     }
                     foreach (Bone item in bone.Childrens) stack.Push(item);
                 }
-                hand.UpdateChildBone(isSelfIncluded: false);
+                hand.UpdatePropTransform(isSelfIncluded: false);
             };
         }
 

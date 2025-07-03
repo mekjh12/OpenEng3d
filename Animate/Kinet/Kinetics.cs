@@ -30,8 +30,8 @@ namespace Animate
             Vertex3f e = endTarget - bone.PivotPosition;
             Vertex3f t = target - bone.PivotPosition;
 
-            bone.RotateBy(e.RotateBetween(t), endTarget);
-            bone.UpdateChildBone(isSelfIncluded: false);
+            //bone.RotateBy(e.RotateBetween(t), endTarget);
+            bone.UpdatePropTransform(isSelfIncluded: false);
 
             Vertex3f angleVector = EulerAngleFromRotationMatrix(bone.LocalTransform.Rot3x3f())[0];
             Matrix4x4f RotX = Matrix4x4f.RotatedX(angleVector.x);
@@ -40,7 +40,7 @@ namespace Animate
             Vertex3f pos = bone.LocalTransform.Position;
             Matrix4x4f Rot = Matrix4x4f.Translated(pos.x, pos.y, pos.z) * RotZ * RotY * RotX;
             bone.LocalTransform = Rot;
-            bone.UpdateChildBone(isSelfIncluded: true);
+            bone.UpdatePropTransform(isSelfIncluded: true);
         }
 
         public static void BoneRotate(Bone bone, float theta)
@@ -108,17 +108,17 @@ namespace Animate
                     Bone cBone = Bn[i];
                     Vertex3f P = cBone.PivotPosition;
                     Matrix4x4f RotAMat = (E - P).RotateBetween(T - P);
-                    Vertex3f newE = cBone.RotateBy(RotAMat, E);                    
-                    Vertex3f pos = T - newE;
-                    Matrix4x4f TranAMat = Matrix4x4f.Translated(pos.x, pos.y, pos.z);
-                    cBone.AnimatedTransform = TranAMat * cBone.AnimatedTransform;
+                    //Vertex3f newE = cBone.RotateBy(RotAMat, E);                    
+                    //Vertex3f pos = T - newE;
+                    //Matrix4x4f TranAMat = Matrix4x4f.Translated(pos.x, pos.y, pos.z);
+                    //cBone.AnimatedTransform = TranAMat * cBone.AnimatedTransform;
                     E = P;
                     T = cBone.PivotPosition;
                 }
 
                 // Update Local and Character Matrix.
                 for (int i = 0; i < N; i++) Bn[i].UpdateLocalTransform();
-                Bn[N - 1].UpdateChildBone(isSelfIncluded: true);
+                Bn[N - 1].UpdatePropTransform(isSelfIncluded: true);
 
                 // (2) Backward Reaching IK
                 T = RootPos;
@@ -128,16 +128,16 @@ namespace Animate
                     E = cBone.EndPosition;
                     Vertex3f P = cBone.PivotPosition;
                     Matrix4x4f RotAMat = (E - P).RotateBetween(E - T);
-                    Vertex3f newE = cBone.RotateBy(RotAMat, E);
-                    Vertex3f pos = T - P;
-                    Matrix4x4f TranAMat = Matrix4x4f.Translated(pos.x, pos.y, pos.z);
-                    cBone.AnimatedTransform = TranAMat * cBone.AnimatedTransform;
-                    T = newE + pos;
+                    //Vertex3f newE = cBone.RotateBy(RotAMat, E);
+                    //Vertex3f pos = T - P;
+                    //Matrix4x4f TranAMat = Matrix4x4f.Translated(pos.x, pos.y, pos.z);
+                    //cBone.AnimatedTransform = TranAMat * cBone.AnimatedTransform;
+                    //T = newE + pos;
                 }
 
                 // Update Local and Character Matrix.
                 for (int i = 0; i < N; i++) Bn[i].UpdateLocalTransform();
-                Bn[N - 1].UpdateChildBone(isSelfIncluded: true);
+                Bn[N - 1].UpdatePropTransform(isSelfIncluded: true);
 
                 // (3) Constraint Bone Modify.
                 for (int i = N - 1; i >= 0; i--)
@@ -153,7 +153,7 @@ namespace Animate
                     Vertex3f pos = cBone.LocalTransform.Position;
                     Matrix4x4f Rot = Matrix4x4f.Translated(pos.x, pos.y, pos.z) * RotZ * RotY * RotX;
                     cBone.LocalTransform = Rot;
-                    cBone.UpdateChildBone(isSelfIncluded: true);
+                    cBone.UpdatePropTransform(isSelfIncluded: true);
                 }
 
                 //for (int i = 0; i < N; i++) Bn[i].UpdateLocalTransform();

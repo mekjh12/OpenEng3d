@@ -20,6 +20,7 @@ namespace FormTools
 
         StaticShader _staticShader;
         AnimateShader _animateShader;
+
         MixamoRotMotionStorage _mixamoRotMotionStorage;
         Human _humanAniModel;
         Human _humanAniModel1;
@@ -201,7 +202,7 @@ namespace FormTools
         {
             if (e.KeyCode == Keys.F)
             {
-                _currentHumanModel.PolygonMode = 
+                _currentHumanModel.PolygonMode =
                     _humanAniModel.PolygonMode == PolygonMode.Fill ? PolygonMode.Line : PolygonMode.Fill;
                 Debug.PrintLine($"PolygonMode: {_humanAniModel.PolygonMode}");
             }
@@ -235,6 +236,11 @@ namespace FormTools
             {
                 _currentHumanModel = _humanAniModel2;
                 _currentHumanModel.SetMotion(ACTION.BREATHING_IDLE);
+            }
+            else if (e.KeyCode == Keys.H)
+            {
+                _currentHumanModel.FoldHand(Primate.BODY_PART.LeftHand);
+                _currentHumanModel.FoldHand(Primate.BODY_PART.RightHand);
             }
             else if (e.KeyCode == Keys.D0)
             {

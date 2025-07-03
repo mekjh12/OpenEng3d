@@ -8,6 +8,10 @@ namespace Animate
     {
         Dictionary<string, Motion> _motions = new Dictionary<string, Motion>();
 
+        /// <summary>
+        /// 모션을 추가한다.
+        /// </summary>
+        /// <param name="motion"></param>
         public void AddMotion(Motion motion)
         {
             string motionName = motion.Name;
