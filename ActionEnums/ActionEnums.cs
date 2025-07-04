@@ -21,30 +21,54 @@
 
 using System;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace AutoGenEnums
 {
     public static class Actions
     {
-        public const string A_T_POSE = "a-T-Pose";
-        public const string BREATHING_IDLE = "Breathing Idle";
-        public const string FAST_RUN = "Fast Run";
-        public const string SLOW_RUN = "Slow Run";
-        public const string WALKING = "Walking";
+        public static Dictionary<ACTION, string> ActionMap = new Dictionary<ACTION, string>()
+        {
+			{ACTION.A_T_POSE, "a-T-Pose"},
+			{ACTION.AXE_ATTACK_DOWNWARD, "Axe Attack Downward"},
+			{ACTION.AXE_STANDING_IDLE, "Axe Standing Idle"},
+			{ACTION.BREATHING_IDLE, "Breathing Idle"},
+			{ACTION.FAST_RUN, "Fast Run"},
+			{ACTION.GUNPLAY, "Gunplay"},
+			{ACTION.INTERPOLATION_POSE, "Interpolation Pose"},
+			{ACTION.JUMP, "Jump"},
+			{ACTION.LEFT_STRAFE_WALK, "Left Strafe Walk"},
+			{ACTION.RIGHT_STRAFE_WALK, "Right Strafe Walk"},
+			{ACTION.RUNNING, "Running"},
+			{ACTION.SLOW_RUN, "Slow Run"},
+			{ACTION.STANDING_IDLE, "Standing Idle"},
+			{ACTION.WALKING, "Walking"},
+			{ACTION.WALKING_BACKWARDS, "Walking Backwards"},
+		};
 
-        public static readonly string[] All = { A_T_POSE, BREATHING_IDLE, FAST_RUN, SLOW_RUN, WALKING };
-        public static bool Contains(string action) => All.Contains(action);
-        public static string Random() => All[new Random().Next(All.Length)];
-        public static int Count => 5;
+        public static string GetRandomAction() => ActionMap.Values.ElementAt(new Random().Next(ActionMap.Count));
+        public static int Count => 15;
     }
 
     public enum ACTION
     {
         A_T_POSE = 0,
-        BREATHING_IDLE = 1,
-        FAST_RUN = 2,
-        SLOW_RUN = 3,
-        WALKING = 4,
+        AXE_ATTACK_DOWNWARD = 1,
+        AXE_STANDING_IDLE = 2,
+        BREATHING_IDLE = 3,
+        FAST_RUN = 4,
+        GUNPLAY = 5,
+        INTERPOLATION_POSE = 6,
+        JUMP = 7,
+        LEFT_STRAFE_WALK = 8,
+        RIGHT_STRAFE_WALK = 9,
+        RUNNING = 10,
+        SLOW_RUN = 11,
+        STANDING_IDLE = 12,
+        WALKING = 13,
+        WALKING_BACKWARDS = 14,
+        // 추가된 액션들
+		RANDOM,
         STOP,    
 		COUNT,
     }

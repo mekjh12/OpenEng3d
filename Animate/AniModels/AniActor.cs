@@ -6,6 +6,7 @@ using Shader;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using ZetaExt;
 
 namespace Animate
@@ -22,6 +23,7 @@ namespace Animate
         Dictionary<string, AnimateEntity> _models;
         protected Bone _rootBone;
         protected Animator _animator;
+
 
         public AniRig AniRig => _aniRig;
 
@@ -114,6 +116,7 @@ namespace Animate
             _rootBone = aniRig.Armature.RootBone;
             _animator = new Animator(this);
             _transform = new Transform();
+
         }
 
         public virtual void SetMotionOnce(ACTION motion)
@@ -191,6 +194,7 @@ namespace Animate
             bool isSkinVisible = true, bool isBoneVisible = false, bool isBoneParentCurrentVisible = false)
         {
             Matrix4x4f[] finalAnimatedBoneMatrices = FinalAnimatedBoneMatrices;
+            //Matrix4x4f[] finalAnimatedBoneMatrices = _animator.AnimatedTransforms;
 
             int index = 0;
             foreach (KeyValuePair<string, AnimateEntity> item in _models)

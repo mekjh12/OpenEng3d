@@ -6,7 +6,7 @@ namespace Animate
 {
     public class Animator
     {
-        AniActor _animatedModel;
+        AniActor _aniActor;
 
         float _motionTime = 0.0f;
         bool _isPlaying = true;
@@ -18,6 +18,13 @@ namespace Animate
         float _previousTime = 0.0f; // 이전프레임 시간을 기억하는 변수
 
         Action _actionOnceFinised = null;
+
+        Matrix4x4f[] _animatedTransforms;
+
+        public Matrix4x4f[] AnimatedTransforms
+        {
+            get => _animatedTransforms;
+        }
 
         public Action OnceFinised
         {
@@ -40,10 +47,12 @@ namespace Animate
         /// <summary>
         /// 생성자
         /// </summary>
-        /// <param name="entity"></param>
-        public Animator(AniActor animatedModel)
+        /// <param name="aniActor"></param>
+        public Animator(AniActor aniActor)
         {
-            _animatedModel = animatedModel;
+            _aniActor = aniActor;
+
+            _animatedTransforms = new Matrix4x4f[_aniActor.AniRig.BoneCount];
         }
 
         /// <summary>
@@ -123,29 +132,35 @@ namespace Animate
             // 로컬 포즈행렬로부터 캐릭터공간의 포즈행렬을 얻는다.
             Stack<Bone> stack = new Stack<Bone>();
             Stack<Matrix4x4f> mStack = new Stack<Matrix4x4f>();
-            stack.Push(_animatedModel.RootBone); // 뼈대스택
+            stack.Push(_aniActor.RootBone); // 뼈대스택
             mStack.Push(Matrix4x4f.Identity);    // 행렬스택
             while (stack.Count > 0)
             {
                 Bone bone = stack.Pop();
                 Matrix4x4f parentTransform = mStack.Pop();
 
-                // 로컬포즈행렬이 없으면 기본바인딩행렬로 가져온다.
-                Matrix4x4f boneLocalTransform = Matrix4x4f.Identity;
-                
                 // 현재 포즈 딕셔너리에 뼈대의 이름이 있으면 그 행렬을 가져오고, 없으면 기본 로컬바인딩행렬을 사용한다.
                 if (currentPose != null)
                 {
-                    boneLocalTransform = (currentPose.ContainsKey(bone.Name)) ?
+                    bone.LocalTransform = (currentPose.ContainsKey(bone.Name)) ?
                         currentPose[bone.Name] : bone.LocalBindTransform;
                 }
 
-                bone.LocalTransform = boneLocalTransform;
-                bone.AnimatedTransform = parentTransform * boneLocalTransform; // 행렬곱을 누적하기 위하여, 순서는 자식부터  v' = ... P2 P1 L v
+                // 행렬곱을 누적하기 위하여, 순서는 자식부터  v' = ... P2 P1 L v
+                int boneIndex = bone.Index;
 
-                foreach (Bone childJoint in bone.Childrens) // 트리탐색을 위한 자식 스택 입력
+                Matrix4x4f animated = Matrix4x4f.Identity;
+                if (boneIndex >= 0)
                 {
-                    stack.Push(childJoint);
+                    animated = parentTransform * bone.LocalTransform;
+                    _animatedTransforms[boneIndex] = animated;
+
+                    bone.AnimatedTransform = parentTransform * bone.LocalTransform;
+                }
+
+                foreach (Bone childbone in bone.Childrens) // 트리탐색을 위한 자식 스택 입력
+                {
+                    stack.Push(childbone);
                     mStack.Push(bone.AnimatedTransform);
                 }
             }

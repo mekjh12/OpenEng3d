@@ -55,6 +55,7 @@ namespace Animate
         {
             //TransplantEye(EngineLoop.PROJECT_PATH + "\\Res\\Human\\simple_eye.dae", "mixamorig_Head");
 
+            /*
             HandGrabItem(_aniRig, "mixamorig_LeftHand_Item", "mixamorig_LeftHand",
                   Matrix4x4f.RotatedY(0), Matrix4x4f.Translated(0, 10, 3) * Matrix4x4f.Scaled(1, 1, 1));
             HandGrabItem(_aniRig, "mixamorig_RightHand_Item", "mixamorig_RightHand",
@@ -63,6 +64,7 @@ namespace Animate
                 Matrix4x4f.RotatedY(0), Matrix4x4f.Translated(0, 18.5f, 7.2f) * Matrix4x4f.Scaled(1, 1, 1));
             HandGrabItem(_aniRig, "mixamorig_Back", "mixamorig_Spine2",
                 Matrix4x4f.RotatedY(0), Matrix4x4f.Translated(0, 0, -10.0f) * Matrix4x4f.Scaled(1, 1, 1));
+            */
         }
 
         public void RemoveItem(BODY_PART hand)

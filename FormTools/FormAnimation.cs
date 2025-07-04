@@ -22,10 +22,8 @@ namespace FormTools
         AnimateShader _animateShader;
 
         MixamoRotMotionStorage _mixamoRotMotionStorage;
-        Human _humanAniModel;
         Human _humanAniModel1;
         Human _humanAniModel2;
-        Human _currentHumanModel;
 
         public FormAnimation()
         {
@@ -95,16 +93,13 @@ namespace FormTools
             _glControl3.InitGridShader(PROJECT_PATH);
 
             AniRig aniRig0 = new AniRig(PROJECT_PATH + @"\Res\abe.dae", isLoadAnimation: false);
-            AnimateEntity animateEntity = new AnimateEntity("abe", aniRig0.Models.ToArray());
-            _humanAniModel = new Human("abe", animateEntity, aniRig0);
 
-            AniRig aniRig1 = new AniRig(PROJECT_PATH + @"\Res\Guybrush_final.dae", isLoadAnimation: false);
-            AnimateEntity animateEntity1 = new AnimateEntity("Guybrush_final", aniRig1.Models.ToArray());
-            _humanAniModel1 = new Human("Guybrush_final", animateEntity1, aniRig1);
+            AnimateEntity animateEntity1 = new AnimateEntity("abe1", aniRig0.Models.ToArray());
+            _humanAniModel1 = new Human("abe1", animateEntity1, aniRig0);
+            _humanAniModel1.Transform.IncreasePosition(2, 0, 0);
 
-            AniRig aniRig2 = new AniRig(PROJECT_PATH + @"\Res\hero1.dae", isLoadAnimation: false);
-            AnimateEntity animateEntity2 = new AnimateEntity("hero1", aniRig2.Models.ToArray());
-            _humanAniModel2 = new Human("hero1", animateEntity2, aniRig2);
+            AnimateEntity animateEntity2 = new AnimateEntity("abe2", aniRig0.Models.ToArray());
+            _humanAniModel2 = new Human("abe2", animateEntity2, aniRig0);
 
             // 믹사모 애니메이션 로드
             _mixamoRotMotionStorage = new MixamoRotMotionStorage();
@@ -119,13 +114,10 @@ namespace FormTools
 
             // 애니메이션 리타겟팅
             _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig0);
-            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig1);
-            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig2);
-
-            _currentHumanModel = _humanAniModel;
 
             // 애니메이션 모델에 애니메이션 초기 지정
-            _currentHumanModel.SetMotion(ACTION.BREATHING_IDLE);
+            _humanAniModel1.SetMotion(ACTION.BREATHING_IDLE);
+            _humanAniModel2.SetMotion(ACTION.BREATHING_IDLE);
 
             // 셰이더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
@@ -144,7 +136,8 @@ namespace FormTools
             float duration = deltaTime * 0.001f;
 
             // 애니메이션 업데이트
-            _currentHumanModel.Update(deltaTime);
+            _humanAniModel1.Update(deltaTime);
+            _humanAniModel2.Update(deltaTime);
 
             // UI 정보 업데이트
             _glControl3.CLabel("cam").Text =
@@ -175,7 +168,8 @@ namespace FormTools
             // 카메라 중심점 렌더링
             Gl.Enable(EnableCap.DepthTest);
 
-            _currentHumanModel.Render(camera, _staticShader, _animateShader, isBoneVisible: true);
+            _humanAniModel1.Render(camera, _staticShader, _animateShader, isBoneVisible: true);
+            _humanAniModel2.Render(camera, _staticShader, _animateShader, isBoneVisible: true);
 
             // 폴리곤 모드 설정
             Gl.PolygonMode(MaterialFace.FrontAndBack, _glControl3.PolygonMode);
@@ -202,50 +196,34 @@ namespace FormTools
         {
             if (e.KeyCode == Keys.F)
             {
-                _currentHumanModel.PolygonMode =
-                    _humanAniModel.PolygonMode == PolygonMode.Fill ? PolygonMode.Line : PolygonMode.Fill;
-                Debug.PrintLine($"PolygonMode: {_humanAniModel.PolygonMode}");
+                _humanAniModel1.PolygonMode =
+                    _humanAniModel1.PolygonMode == PolygonMode.Fill ? PolygonMode.Line : PolygonMode.Fill;
+                Debug.PrintLine($"PolygonMode: {_humanAniModel1.PolygonMode}");
             }
             else if (e.KeyCode == Keys.D1)
             {
-                _currentHumanModel.SetMotion(ACTION.BREATHING_IDLE);
+                _humanAniModel1.SetMotion(ACTION.BREATHING_IDLE);
             }
             else if (e.KeyCode == Keys.D2)
             {
-                _currentHumanModel.SetMotion(ACTION.WALKING);
+                _humanAniModel2.SetMotion(ACTION.WALKING);
             }
             else if (e.KeyCode == Keys.D3)
             {
-                _currentHumanModel.SetMotion(ACTION.A_T_POSE);
+                _humanAniModel1.SetMotion(ACTION.A_T_POSE);
             }
             else if (e.KeyCode == Keys.D4)
             {
-                _currentHumanModel.SetMotion(ACTION.SLOW_RUN);
+                _humanAniModel1.SetMotion(ACTION.SLOW_RUN);
             }
             else if (e.KeyCode == Keys.D5)
             {
-                //_currentHumanModel.SetMotionOnce(ACTION.FAST_RUN);
-            }
-
-            else if (e.KeyCode == Keys.D7)
-            {
-                _currentHumanModel = _humanAniModel;
-                _currentHumanModel.SetMotion(ACTION.BREATHING_IDLE);
-            }
-            else if (e.KeyCode == Keys.D8)
-            {
-                _currentHumanModel = _humanAniModel1;
-                _currentHumanModel.SetMotion(ACTION.BREATHING_IDLE);
-            }
-            else if (e.KeyCode == Keys.D9)
-            {
-                _currentHumanModel = _humanAniModel2;
-                _currentHumanModel.SetMotion(ACTION.BREATHING_IDLE);
+                _humanAniModel1.SetMotion(ACTION.RANDOM);
             }
             else if (e.KeyCode == Keys.H)
             {
-                _currentHumanModel.FoldHand(Primate.BODY_PART.LeftHand);
-                _currentHumanModel.FoldHand(Primate.BODY_PART.RightHand);
+                _humanAniModel1.FoldHand(Primate.BODY_PART.LeftHand);
+                _humanAniModel1.FoldHand(Primate.BODY_PART.RightHand);
             }
             else if (e.KeyCode == Keys.D0)
             {

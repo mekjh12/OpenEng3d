@@ -157,36 +157,22 @@ namespace Animate
             _prevMotion = _curMotion;
             _curMotion = action;
 
+            // 랜덤 액션의 경우 실행하고 반환한다.
+            if (action == ACTION.RANDOM)
+            {
+                SetMotion(Actions.GetRandomAction());
+                return;
+            }
+
+            // 액션을 실행한다.
+            SetMotion(Actions.ActionMap[action]);
+
+            // 모션에 따라 손을 펼치거나 접는다.
             if (_curMotion == ACTION.BREATHING_IDLE)
             {
-                SetMotion(Actions.BREATHING_IDLE);
                 UnfoldHand(BODY_PART.LeftHand);
                 UnfoldHand(BODY_PART.RightHand);
             }
-            else if (_curMotion == ACTION.WALKING)
-            {
-                SetMotion(Actions.WALKING);
-            }
-            else if (_curMotion == ACTION.A_T_POSE)
-            {
-                SetMotion(Actions.A_T_POSE);
-            }
-            else if (_curMotion == ACTION.SLOW_RUN)
-            {
-                SetMotion(Actions.SLOW_RUN);
-            }
-
-            /*
-            else if (_curMotion == ACTION.GUN_PLAY)
-            {
-                FoldHand(BODY_PART.LeftHand);
-                FoldHand(BODY_PART.RightHand);
-                _curHandItem = HAND_ITEM.GUN;
-                SetMotionOnce("Gunplay", ACTION.STOP);
-                _rightHandEntity?.LocalBindTransform(sx: 100, sy: 100, sz: 100, rotx: 130, roty: 180, rotz: -90);
-            }
-            */
-
         }
 
         /// <summary>

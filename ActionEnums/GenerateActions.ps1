@@ -89,28 +89,27 @@ $code = @"
 
 using System;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace AutoGenEnums
 {
     public static class Actions
     {
+        public static Dictionary<ACTION, string> ActionMap = new Dictionary<ACTION, string>()
+        {`n
 "@
 
 # 상수 정의
 foreach ($action in $actions) {
-    $code += "`n        public const string $($action.Enum) = `"$($action.Original)`";"
+    $code += "`t`t`t`{ACTION.$($action.Enum), `"$($action.Original)`"`},`n"
 }
+$code += "`t`t};`n"
 
-# All 배열
-$code += "`n`n        public static readonly string[] All = { "
-$code += ($actions | ForEach-Object { $_.Enum }) -join ", "
-$code += " };"
 
 # 메서드들
 $code += @"
 
-        public static bool Contains(string action) => All.Contains(action);
-        public static string Random() => All[new Random().Next(All.Length)];
+        public static string GetRandomAction() => ActionMap.Values.ElementAt(new Random().Next(ActionMap.Count));
         public static int Count => $($actions.Count);
     }
 
@@ -126,6 +125,8 @@ for ($i = 0; $i -lt $actions.Count; $i++) {
 
 $code += @"
 
+        // 추가된 액션들
+		RANDOM,
         STOP,    
 		COUNT,
     }
