@@ -26,7 +26,7 @@ namespace Animate
     /// TODO: 표정 변화 시스템, 입 모양 변형, 헤어/털 시뮬레이션,
     /// 근육 변형 애니메이션, 걸음걸이 패턴 다양화
     /// </summary>
-    public class Primate : AniModel
+    public class Primate : AniActor
     {
         public enum BODY_PART
         {
@@ -51,17 +51,17 @@ namespace Animate
             }
         }
 
-        public Primate(string name, AnimateEntity model, AniDae xmlDae) : base(name, model, xmlDae)
+        public Primate(string name, AnimateEntity model, AniRig xmlDae) : base(name, model, xmlDae)
         {
             //TransplantEye(EngineLoop.PROJECT_PATH + "\\Res\\Human\\simple_eye.dae", "mixamorig_Head");
 
-            HandGrabItem(_aniDae, "mixamorig_LeftHand_Item", "mixamorig_LeftHand",
+            HandGrabItem(_aniRig, "mixamorig_LeftHand_Item", "mixamorig_LeftHand",
                   Matrix4x4f.RotatedY(0), Matrix4x4f.Translated(0, 10, 3) * Matrix4x4f.Scaled(1, 1, 1));
-            HandGrabItem(_aniDae, "mixamorig_RightHand_Item", "mixamorig_RightHand",
+            HandGrabItem(_aniRig, "mixamorig_RightHand_Item", "mixamorig_RightHand",
                 Matrix4x4f.RotatedY(180), Matrix4x4f.Translated(0, 10, 3) * Matrix4x4f.Scaled(1, 1, 1));
-            HandGrabItem(_aniDae, "mixamorig_Head_Item", "mixamorig_Head",
+            HandGrabItem(_aniRig, "mixamorig_Head_Item", "mixamorig_Head",
                 Matrix4x4f.RotatedY(0), Matrix4x4f.Translated(0, 18.5f, 7.2f) * Matrix4x4f.Scaled(1, 1, 1));
-            HandGrabItem(_aniDae, "mixamorig_Back", "mixamorig_Spine2",
+            HandGrabItem(_aniRig, "mixamorig_Back", "mixamorig_Spine2",
                 Matrix4x4f.RotatedY(0), Matrix4x4f.Translated(0, 0, -10.0f) * Matrix4x4f.Scaled(1, 1, 1));
         }
 
@@ -212,8 +212,8 @@ namespace Animate
 
             TexturedModel texturedModel = AniXmlLoader.LoadOnlyGeometryMesh(fileName);
             string boneName = $"mixamorig_eyeLeft";
-            Bone LEyeBone = _aniDae.AddBone(boneName, _aniDae.BoneCount, parentBoneName,
-                inverseBindTransform: Matrix4x4f.RotatedY(90).Inverse,
+            Bone LEyeBone = _aniRig.AddBone(boneName, _aniRig.BoneCount, parentBoneName,
+                inverseBindPoseTransform: Matrix4x4f.RotatedY(90).Inverse,
                 localBindTransform: Matrix4x4f.Translated(4.4f, 11.8f, 12.5f) * Matrix4x4f.Scaled(0.75f, 0.65f, 0.65f));
             LEyeBone.RestrictAngle = new BoneAngle(-30, 30, -0, 0, -60, 60);
             AnimateEntity EntityL = new AnimateEntity(boneName, texturedModel);
@@ -222,8 +222,8 @@ namespace Animate
             AddEntity(boneName, EntityL);
 
             boneName = $"mixamorig_eyeRight";
-            Bone REyeBone = _aniDae.AddBone(boneName, _aniDae.BoneCount, parentBoneName,
-                inverseBindTransform: Matrix4x4f.RotatedY(90).Inverse,
+            Bone REyeBone = _aniRig.AddBone(boneName, _aniRig.BoneCount, parentBoneName,
+                inverseBindPoseTransform: Matrix4x4f.RotatedY(90).Inverse,
                 localBindTransform: Matrix4x4f.Translated(-4.4f, 11.8f, 12.5f) * Matrix4x4f.Scaled(0.75f, 0.65f, 0.65f));
             REyeBone.RestrictAngle = new BoneAngle(-30, 30, -0, 0, -60, 60);
             AnimateEntity EntityR = new AnimateEntity(boneName, texturedModel);
@@ -241,10 +241,10 @@ namespace Animate
         /// <param name="bindTransform"> 캐릭터 공간의 invBind를 위하여 역행렬이 아닌 바인딩행렬을 지정한다.</param>
         /// <param name="localBindTransform">부모뼈공간에서의 바인딩 행렬을 지정한다.</param>
         /// <returns></returns>
-        private Bone HandGrabItem(AniDae xmlDae, string boneName, string parentBoneName, Matrix4x4f bindTransform, Matrix4x4f localBindTransform)
+        private Bone HandGrabItem(AniRig aniRig, string boneName, string parentBoneName, Matrix4x4f bindTransform, Matrix4x4f localBindTransform)
         {
-            Bone bone = xmlDae.AddBone(boneName, xmlDae.BoneCount, parentBoneName,
-                inverseBindTransform: bindTransform.Inverse,
+            Bone bone = aniRig.AddBone(boneName, aniRig.BoneCount, parentBoneName,
+                inverseBindPoseTransform: bindTransform.Inverse,
                 localBindTransform: localBindTransform);
             //bone.RestrictAngle = new BoneAngle(-0, 0, -0, 0, -0, 0);
             return bone;

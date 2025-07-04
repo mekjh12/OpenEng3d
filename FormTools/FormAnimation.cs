@@ -94,17 +94,17 @@ namespace FormTools
             // 그리드셰이더 초기화
             _glControl3.InitGridShader(PROJECT_PATH);
 
-            AniDae _aniDae = new AniDae(PROJECT_PATH + @"\Res\abe.dae", isLoadAnimation: false);
-            AnimateEntity animateEntity = new AnimateEntity("abe", _aniDae.Models.ToArray());
-            _humanAniModel = new Human("abe", animateEntity, _aniDae);
+            AniRig aniRig0 = new AniRig(PROJECT_PATH + @"\Res\abe.dae", isLoadAnimation: false);
+            AnimateEntity animateEntity = new AnimateEntity("abe", aniRig0.Models.ToArray());
+            _humanAniModel = new Human("abe", animateEntity, aniRig0);
 
-            AniDae _aniDae1 = new AniDae(PROJECT_PATH + @"\Res\Guybrush_final.dae", isLoadAnimation: false);
-            AnimateEntity animateEntity1 = new AnimateEntity("Guybrush_final", _aniDae1.Models.ToArray());
-            _humanAniModel1 = new Human("Guybrush_final", animateEntity1, _aniDae1);
+            AniRig aniRig1 = new AniRig(PROJECT_PATH + @"\Res\Guybrush_final.dae", isLoadAnimation: false);
+            AnimateEntity animateEntity1 = new AnimateEntity("Guybrush_final", aniRig1.Models.ToArray());
+            _humanAniModel1 = new Human("Guybrush_final", animateEntity1, aniRig1);
 
-            AniDae _aniDae2 = new AniDae(PROJECT_PATH + @"\Res\Peasant Girl.dae", isLoadAnimation: false);
-            AnimateEntity animateEntity2 = new AnimateEntity("Peasant Girl", _aniDae2.Models.ToArray());
-            _humanAniModel2 = new Human("Peasant Girl", animateEntity2, _aniDae2);
+            AniRig aniRig2 = new AniRig(PROJECT_PATH + @"\Res\hero1.dae", isLoadAnimation: false);
+            AnimateEntity animateEntity2 = new AnimateEntity("hero1", aniRig2.Models.ToArray());
+            _humanAniModel2 = new Human("hero1", animateEntity2, aniRig2);
 
             // 믹사모 애니메이션 로드
             _mixamoRotMotionStorage = new MixamoRotMotionStorage();
@@ -112,15 +112,15 @@ namespace FormTools
             {
                 if (Path.GetExtension(fileName).Equals(".dae"))
                 {
-                    Motion motion = AniXmlLoader.LoadMixamoMotion(_aniDae, fileName);
+                    Motion motion = AniXmlLoader.LoadMixamoMotion(aniRig0, fileName);
                     _mixamoRotMotionStorage.AddMotion(motion);
                 }
             }
 
             // 애니메이션 리타겟팅
-            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniDae: _aniDae);
-            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniDae: _aniDae1);
-            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniDae: _aniDae2);
+            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig0);
+            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig1);
+            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig2);
 
             _currentHumanModel = _humanAniModel;
 
@@ -224,15 +224,20 @@ namespace FormTools
             }
             else if (e.KeyCode == Keys.D5)
             {
+                //_currentHumanModel.SetMotionOnce(ACTION.FAST_RUN);
+            }
+
+            else if (e.KeyCode == Keys.D7)
+            {
                 _currentHumanModel = _humanAniModel;
                 _currentHumanModel.SetMotion(ACTION.BREATHING_IDLE);
             }
-            else if (e.KeyCode == Keys.D6)
+            else if (e.KeyCode == Keys.D8)
             {
                 _currentHumanModel = _humanAniModel1;
                 _currentHumanModel.SetMotion(ACTION.BREATHING_IDLE);
             }
-            else if (e.KeyCode == Keys.D7)
+            else if (e.KeyCode == Keys.D9)
             {
                 _currentHumanModel = _humanAniModel2;
                 _currentHumanModel.SetMotion(ACTION.BREATHING_IDLE);

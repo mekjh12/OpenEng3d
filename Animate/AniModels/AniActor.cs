@@ -1,4 +1,5 @@
-﻿using Common.Abstractions;
+﻿using AutoGenEnums;
+using Common.Abstractions;
 using Model3d;
 using OpenGL;
 using Shader;
@@ -9,10 +10,10 @@ using ZetaExt;
 
 namespace Animate
 {
-    public abstract class AniModel
+    public abstract class AniActor
     {
         protected string _name;
-        protected AniDae _aniDae;
+        protected AniRig _aniRig;
 
         protected Action _updateBefore;
         protected Action _updateAfter;
@@ -22,7 +23,7 @@ namespace Animate
         protected Bone _rootBone;
         protected Animator _animator;
 
-        public AniDae AniDae => _aniDae;
+        public AniRig AniRig => _aniRig;
 
         public string Name => _name;
 
@@ -38,7 +39,7 @@ namespace Animate
         float _axisLength = 10.3f;
         float _drawThick = 1.0f;
 
-        public int BoneCount => _aniDae.BoneCount;
+        public int BoneCount => _aniRig.DicBones.Count;
 
         public Motion CurrentMotion => _animator.CurrentMotion;
 
@@ -77,7 +78,7 @@ namespace Animate
         /// </summary>
         /// <param name="boneName"></param>
         /// <returns></returns>
-        public Bone GetBoneByName(string boneName) => _aniDae.GetBoneByName(boneName);
+        public Bone GetBoneByName(string boneName) => _aniRig.Armature.GetBoneByName(boneName);
 
         /// <summary>
         /// Animator를 가져온다.
@@ -103,47 +104,49 @@ namespace Animate
         /// 생성자
         /// </summary>
         /// <param name="model"></param>
-        /// <param name="aniDae"></param>
-        public AniModel(string name, AnimateEntity model, AniDae aniDae)
+        /// <param name="aniRig"></param>
+        public AniActor(string name, AnimateEntity model, AniRig aniRig)
         {
             _models = new Dictionary<string, AnimateEntity>();
             _models.Add(name, model);
 
-            _aniDae = aniDae;
-            _rootBone = aniDae.RootBone;
+            _aniRig = aniRig;
+            _rootBone = aniRig.Armature.RootBone;
             _animator = new Animator(this);
             _transform = new Transform();
         }
 
-        /// <summary>
-        /// 이름으로 Entity를 가져온다.
-        /// </summary>
-        /// <param name="name"></param>
-        /// <returns></returns>
-        public Entity GetEntity(string name) => _models[name];
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="motionName"></param>
-        /// <param name="nextAction"></param>
-        public virtual void SetMotionOnce(string motionName, string nextAction)
+        public virtual void SetMotionOnce(ACTION motion)
         {
-            Motion motion = _aniDae.Motions.GetMotion(motionName);
-            Motion nextMotion = _aniDae.Motions.GetMotion(nextAction);
+
+
+        }
+
+
+        public void SetMotionOnce(string motionName, ACTION nextAction)
+        {
+            Motion motion = _aniRig.Motions.GetMotion(nextAction);
 
             _animator.OnceFinised = () =>
             {
-                _animator.SetMotion(nextMotion);
+                if (nextAction == ACTION.STOP)
+                {
+                    _animator.Stop();
+                }
+                else
+                {
+                    //SetMotion(nextAction);
+                }
                 _animator.OnceFinised = null;
             };
 
             if (motion == null)
-                motion = _aniDae.Motions.DefaultMotion;
+                motion = _aniRig.Motions.DefaultMotion;
 
             if (motion != null)
                 _animator.SetMotion(motion);
         }
+
 
         /// <summary>
         /// 모션을 설정한다.
@@ -153,10 +156,10 @@ namespace Animate
         {
             _animator.OnceFinised = null;
 
-            Motion motion = _aniDae.Motions.GetMotion(motionName);
+            Motion motion = _aniRig.Motions.GetMotion(motionName);
 
             if (motion == null)
-                motion = _aniDae.Motions.DefaultMotion;
+                motion = _aniRig.Motions.DefaultMotion;
 
             if (motion != null)
                 _animator.SetMotion(motion);
@@ -256,8 +259,8 @@ namespace Animate
         {
             get
             {
-                Matrix4x4f[] finalAnimatedBoneMatrices = new Matrix4x4f[BoneCount];
-                foreach (KeyValuePair<string, Bone> item in _aniDae.DicBones)
+                Matrix4x4f[] finalAnimatedBoneMatrices = new Matrix4x4f[_aniRig.DicBones.Count];
+                foreach (KeyValuePair<string, Bone> item in _aniRig.DicBones)
                 {
                     Bone bone = item.Value;
                     if (bone.Index >= 0)
@@ -276,7 +279,7 @@ namespace Animate
             get
             {
                 Matrix4x4f[] jointMatrices = new Matrix4x4f[BoneCount];
-                foreach (KeyValuePair<string, Bone> item in _aniDae.DicBones)
+                foreach (KeyValuePair<string, Bone> item in _aniRig.DicBones)
                 {
                     Bone bone = item.Value;
                     if (bone.Index >= 0)
@@ -296,7 +299,7 @@ namespace Animate
                 var jointMatrices = new Matrix4x4f[BoneCount];
 
                 // Dictionary의 Values를 직접 순회 (KeyValuePair 생성 오버헤드 제거)
-                foreach (Bone bone in _aniDae.DicBones.Values)
+                foreach (Bone bone in _aniRig.DicBones.Values)
                 {
                     if (bone.Index >= 0 && bone.Index < BoneCount)
                         jointMatrices[bone.Index] = bone.InverseBindPoseTransform;
@@ -336,7 +339,7 @@ namespace Animate
         public Entity Attach(string fileName, float expandValue = 0.01f)
         {
             string name = Path.GetFileNameWithoutExtension(fileName);
-            List<TexturedModel> texturedModels = _aniDae.WearCloth(fileName, expandValue);
+            List<TexturedModel> texturedModels = _aniRig.WearCloth(fileName, expandValue);
             AnimateEntity clothEntity = new AnimateEntity("aniModel_" + name, texturedModels[0]);
             AddEntity(name, clothEntity);
             return clothEntity;

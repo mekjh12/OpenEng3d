@@ -61,7 +61,7 @@ namespace Animate
                     Vertex3f g = Vertex3f.Zero;
                     foreach (Bone bone in _children)
                     {
-                        g += bone._animatedTransform.Column3.Vertex3f();
+                        g += bone.AnimatedTransform.Column3.Vertex3f();
                     }
                     return g * (1.0f/ _children.Count);
                 }

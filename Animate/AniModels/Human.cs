@@ -37,8 +37,8 @@ namespace Animate
                 }
                 else
                 {
-                    _collider.LowerBound = _transform.Position + _aniDae.LowerCollider;
-                    _collider.UpperBound = _transform.Position + _aniDae.UpperCollider;
+                    _collider.LowerBound = _transform.Position + _aniRig.LowerCollider;
+                    _collider.UpperBound = _transform.Position + _aniRig.UpperCollider;
                 }
                 return _collider;
             }
@@ -97,14 +97,14 @@ namespace Animate
             }
         }
 
-        public Human(string name, AnimateEntity model, AniDae xmlDae) : base(name, model, xmlDae)
+        public Human(string name, AnimateEntity model, AniRig aniRig) : base(name, model, aniRig)
         {
-           
+
         }
 
         public void SetMotionOnce(string motionName, ACTION nextAction)
         {
-            Motion motion = _aniDae.Motions.GetMotion(motionName);
+            Motion motion = _aniRig.Motions.GetMotion(motionName);
 
             _animator.OnceFinised = () =>
             {
@@ -120,7 +120,7 @@ namespace Animate
             };
 
             if (motion == null)
-                motion = _aniDae.Motions.DefaultMotion;
+                motion = _aniRig.Motions.DefaultMotion;
 
             if (motion != null)
                 _animator.SetMotion(motion);
@@ -159,7 +159,7 @@ namespace Animate
 
             if (_curMotion == ACTION.BREATHING_IDLE)
             {
-                SetMotion("Breathing Idle");
+                SetMotion(Actions.BREATHING_IDLE);
                 UnfoldHand(BODY_PART.LeftHand);
                 UnfoldHand(BODY_PART.RightHand);
             }
@@ -169,7 +169,7 @@ namespace Animate
             }
             else if (_curMotion == ACTION.A_T_POSE)
             {
-                SetMotion( Actions.A_T_POSE);
+                SetMotion(Actions.A_T_POSE);
             }
             else if (_curMotion == ACTION.SLOW_RUN)
             {

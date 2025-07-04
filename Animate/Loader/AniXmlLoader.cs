@@ -579,14 +579,14 @@ namespace Animate
         }
 
         /// <summary>
-        /// AniDae클래스에 Motion를 추가한다.
+        /// Motion를 추가한다.
         /// </summary>
-        /// <param name="aniDae"></param>
+        /// <param name="aniRig"></param>
         /// <param name="motionFileName"></param>
-        public static void AttachMotion(AniDae aniDae, string motionFileName)
+        public static void AttachMotion(AniRig aniRig, string motionFileName)
         {
-            Motion motion = LoadMixamoMotion(aniDae, motionFileName);
-            aniDae.Motions.AddMotion(motion);
+            Motion motion = LoadMixamoMotion(aniRig, motionFileName);
+            aniRig.Motions.AddMotion(motion);
         }
 
         /// <summary>
@@ -594,9 +594,9 @@ namespace Animate
         /// - Without Skin, Only Armature <br/>
         /// - "3D Mesh Processing and Character Animation", p.183 Animation Retargeting
         /// </summary>
-        /// <param name="targetAniDae"></param>
+        /// <param name="targetAniRig"></param>
         /// <param name="motionFileName"></param>
-        public static Motion LoadMixamoMotion(AniDae targetAniDae, string motionFileName)
+        public static Motion LoadMixamoMotion(AniRig targetAniRig, string motionFileName)
         {
             // Dae 파일을 읽어온다.
             XmlDocument xml = new XmlDocument();
@@ -710,13 +710,13 @@ namespace Animate
             // Interpolation Pose만 0초에서 정상적 T-pose를 취하고 있어서 이 부분에서 가져와야 한다.
             if (motionName == "a-T-Pose") //Interpolation Pose
             {
-                targetAniDae.HipHeightScale = CalculateHipScaleRatio(animationData, targetAniDae.DicBones);
-                Console.WriteLine($"{targetAniDae.Name} XmeDae HipScaled={targetAniDae.HipHeightScale}");
+                targetAniRig.Armature.HipHeightScaled = CalculateHipScaleRatio(animationData, targetAniRig.DicBones);
+                Console.WriteLine($"{targetAniRig.Name} XmeDae HipScaled={targetAniRig.Armature.HipHeightScaled}");
             }
 
             // 애니메이션을 생성한다.
             Motion motion = new Motion(motionName, maxTimeLength);
-            if (maxTimeLength > 0 && targetAniDae.DicBones != null)
+            if (maxTimeLength > 0 && targetAniRig.DicBones != null)
             {
                 // 뼈마다 순회 (뼈, 시간, 로컬변환행렬)
                 foreach (KeyValuePair<string, Dictionary<float, Matrix4x4f>> item in animationData)
@@ -724,7 +724,7 @@ namespace Animate
                     string boneName = item.Key;
                     Dictionary<float, Matrix4x4f> source = item.Value;
 
-                    Bone bone = targetAniDae.GetBoneByName(boneName);
+                    Bone bone = targetAniRig.Armature.GetBoneByName(boneName);
                     if (bone == null) continue;
 
                     // 시간마다 순회 (시간, 로컬변환행렬)
@@ -738,7 +738,7 @@ namespace Animate
 
                         // 본포즈를 설정한다.
                         Vertex3f position = bone.IsRootArmature ?
-                            mat.Position * targetAniDae.HipHeightScale : bone.PivotPosition * 0.001f;
+                            mat.Position * targetAniRig.Armature.HipHeightScaled : bone.PivotPosition * 0.001f;
                         ZetaExt.Quaternion q = mat.ToQuaternion();
                         q.Normalize();
                         BoneTransform boneTransform  = new BoneTransform(position, q);
@@ -753,11 +753,11 @@ namespace Animate
         }
 
         /// <summary>
-        /// COLLADA XML 파일에서 애니메이션 라이브러리를 파싱하여 AniDae 객체에 모션 데이터를 추가하는 메서드
+        /// COLLADA XML 파일에서 애니메이션 라이브러리를 파싱하여 AniRig 객체에 모션 데이터를 추가하는 메서드
         /// </summary>
-        /// <param name="aniDae">애니메이션 데이터를 저장할 AniDae 객체</param>
+        /// <param name="aniRig">애니메이션 데이터를 저장할 AniRig 객체</param>
         /// <param name="xml">파싱할 COLLADA XML 문서</param>
-        public static void LibraryAnimations(AniDae aniDae, XmlDocument xml)
+        public static void LibraryAnimations(AniRig aniRig, XmlDocument xml)
         {
             // XML에서 library_animations 노드를 찾음
             XmlNodeList libraryAnimations = xml.GetElementsByTagName("library_animations");
@@ -908,8 +908,8 @@ namespace Animate
                     }
                 }
 
-                // 완성된 모션을 AniDae 객체의 모션 컬렉션에 추가
-                aniDae.Motions.AddMotion(motion);
+                // 완성된 모션을 aniRig 객체의 모션 컬렉션에 추가
+                aniRig.Motions.AddMotion(motion);
             }
         }
 
@@ -922,13 +922,10 @@ namespace Animate
         /// <param name="dicBones">생성한 본딕셔너리</param>
         /// <returns>루트본을 반환</returns>
         public static Bone LibraryVisualScenes(XmlDocument xml, 
-            Dictionary<string, Matrix4x4f> invBindPoses,
-            Dictionary<string, int> dicBoneIndex,
-            out Dictionary<string, Bone> dicBones)
+            Dictionary<string, Matrix4x4f> invBindPoses, ref Armature armature)
         {
             // 뼈대 구조를 읽기 위하여 준비한다.
             XmlNodeList library_visual_scenes = xml.GetElementsByTagName("library_visual_scenes");
-            dicBones = new Dictionary<string, Bone>();
             if (library_visual_scenes.Count == 0)
             {
                 Console.WriteLine($"[에러] dae파일구조에서 뼈대구조를 읽어올 수 없습니다.");
@@ -965,8 +962,7 @@ namespace Animate
                 string boneName = node.Attributes["sid"]?.Value;
 
                 // 본을 생성하고 딕셔너리에 추가한다.
-                if (boneName != null)
-                    dicBones.Add(boneName, bone);
+                if (boneName != null) armature.AddBone(boneName, bone);
 
                 // 본의 이름과 변환 행렬을 설정한다.
                 if (boneName == null)
@@ -982,7 +978,7 @@ namespace Animate
                 {
                     bone.Name = boneName;
                     bone.LocalBindTransform = mat;
-                    bone.Index = dicBoneIndex.ContainsKey(boneName) ? dicBoneIndex[boneName] : -1;
+                    bone.Index = armature.IsExistBoneIndex(boneName) ? armature.GetBoneIndex(boneName) : -1;
                 }
 
                 bone.PivotPosition = mat.Column3.Vertex3f();
@@ -992,6 +988,7 @@ namespace Animate
                 {
                     bone.InverseBindPoseTransform = invBindPoses[bone.Name];
                 }
+
 
                 // 하위 노드를 순회한다.
                 foreach (XmlNode child in node.ChildNodes)

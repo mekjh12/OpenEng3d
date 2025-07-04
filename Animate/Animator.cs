@@ -6,7 +6,7 @@ namespace Animate
 {
     public class Animator
     {
-        AniModel _animatedModel;
+        AniActor _animatedModel;
 
         float _motionTime = 0.0f;
         bool _isPlaying = true;
@@ -41,7 +41,7 @@ namespace Animate
         /// 생성자
         /// </summary>
         /// <param name="entity"></param>
-        public Animator(AniModel animatedModel)
+        public Animator(AniActor animatedModel)
         {
             _animatedModel = animatedModel;
         }

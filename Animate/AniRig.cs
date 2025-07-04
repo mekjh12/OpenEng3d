@@ -9,64 +9,41 @@ using ZetaExt;
 
 namespace Animate
 {
-    public class AniDae
+    public class AniRig
     {
-        string _filename; // dae
+        string _filename;
         readonly string _name;
+
         MotionStorage _motions;
         List<TexturedModel> _texturedModels;
-        TexturedModel _nudeBodyTexturedModel; // 모델의 나체를 지정한다.
-        Bone _rootBone;
+        Armature _armature;
 
-        Dictionary<string, Bone> _dicBones;
-        Dictionary<string, int> _dicBoneIndex;
-        float _hipHeightScaled = 1.0f; // 비율을 얻는다.
+        public Dictionary<string, Bone> DicBones => _armature.DicBones;
+
+        //TexturedModel _nudeBodyTexturedModel; // 모델의 나체를 지정한다.
+
+
         Vertex3f _lowerCollider = new Vertex3f(-0.3f, -0.3f, 0.0f);
         Vertex3f _upperCollider = new Vertex3f(0.3f, 0.3f, 1.8f);
+
+        public Armature Armature => _armature;
 
         public Vertex3f LowerCollider => _lowerCollider;
 
         public Vertex3f UpperCollider => _upperCollider;
 
-        string[] _boneNames;
         Matrix4x4f _bindShapeMatrix;
 
-        /// <summary>
-        /// 엉덩이의 지면으로부터의 상대적 높이 비율
-        /// </summary>
-        public float HipHeightScale
-        {
-            get => _hipHeightScaled;
-            set => _hipHeightScaled = value;
-        }
-
-        //RawModel3d _rawModel;
-        //List<Vertex3f> _vertices;
-        //List<Vertex4f> _boneIndices;
-        //List<Vertex4f> _boneWeights;
-        //public Dictionary<string, int> DicBoneIndex => _dicBoneIndex;
-        //public List<Vertex3f> Vertices// => _vertices;
-        //public List<Vertex4f> BoneIndices => _boneIndices;
-        //public List<Vertex4f> BoneWeights => _boneWeights;
-
-        public Bone GetBoneByName(string boneName)
-        {
-            return _dicBones.ContainsKey(boneName) ? _dicBones[boneName] : null;
-        }
 
         public MotionStorage Motions => _motions;
 
-        public Dictionary<string, Bone> DicBones => _dicBones;
+        //public Bone RootBone => _rootBone;
 
-        public Bone RootBone => _rootBone;
-
-        public int BoneCount => _boneNames.Length;
-
-        public string[] BoneNames => _boneNames;
+        public int BoneCount => _armature.BoneNames.Length;
 
         public List<TexturedModel> Models => _texturedModels;
 
-        public TexturedModel BodyWeightModels => _nudeBodyTexturedModel;
+        //public TexturedModel BodyWeightModels => _nudeBodyTexturedModel;
 
         public string Name => _name;
 
@@ -74,21 +51,23 @@ namespace Animate
         /// 생성자
         /// </summary>
         /// <param name="filename"></param>
-        public AniDae(string filename, bool isLoadAnimation = true)
+        public AniRig(string filename, bool isLoadAnimation = true)
         {
             _filename = filename;
             _name = Path.GetFileNameWithoutExtension(filename);
 
-            List<TexturedModel> models = LoadFile(filename);
-            _nudeBodyTexturedModel = models[0];
+            // 뼈대 정보를 초기화한다.
+            _armature = new Armature();
 
+            // 모델 정보를 가져온다.
+            List<TexturedModel> models = LoadFile(filename);
+            //_nudeBodyTexturedModel = models[0];
             if (_texturedModels == null)
                 _texturedModels = new List<TexturedModel>();
-
             _texturedModels.AddRange(models);
 
+            // 모션 스토리지를 초기화한다.
             _motions = new MotionStorage();
-
             _motions.AddMotion(new Motion("default", lengthInSeconds: 2.0f));
         }
 
@@ -120,9 +99,9 @@ namespace Animate
             for (int i = 0; i < clothBoneNames.Count; i++)
             {
                 string clothBoneName = clothBoneNames[i].Trim();
-                if (_dicBoneIndex.ContainsKey(clothBoneName))
+                if (_armature.IsExistBone(clothBoneName))
                 {
-                    map.Add(i, _dicBoneIndex[clothBoneName]);
+                    map.Add(i, _armature.GetBoneIndex(clothBoneName));
                 }
                 else
                 {
@@ -144,7 +123,7 @@ namespace Animate
             }
 
             // (5) source positions으로부터 
-            Matrix4x4f A0 = _rootBone.LocalBindTransform;
+            Matrix4x4f A0 = _armature.RootBone.LocalBindTransform;
             Matrix4x4f S = _bindShapeMatrix;
             Matrix4x4f A0xS = A0 * S;
             for (int i = 0; i < lstPositions.Count; i++)
@@ -185,47 +164,43 @@ namespace Animate
         /// <param name="boneName">추가할 뼈대 이름</param>
         /// <param name="boneIndex">추가할 뼈대 인덱스</param>
         /// <param name="parentBoneName">붙일 뼈대 이름</param>
-        /// <param name="inverseBindTransform">캐릭터 공간의 바인딩행렬의 역행렬을 지정한다.</param>
+        /// <param name="inverseBindPoseTransform">캐릭터 공간의 바인딩행렬의 역행렬을 지정한다.</param>
         /// <param name="localBindTransform">부모 뼈공간에서의 바인딩 행렬을 지정한다.</param>
         /// <returns></returns>
         public Bone AddBone(string boneName, int boneIndex, 
             string parentBoneName, 
-            Matrix4x4f inverseBindTransform,
+            Matrix4x4f inverseBindPoseTransform,
             Matrix4x4f localBindTransform)
         {
             // 뼈대 이름이 이미 존재하는지 확인한다.
-            if (_dicBones.ContainsKey(boneName))
+            if (_armature.IsExistBone(boneName))
             {
                 throw new Exception($"뼈대 이름({boneName})이 이미 존재합니다.");
             }
 
             // 뼈대 인덱스가 이미 존재하는지 확인한다.
-            if (_dicBoneIndex.ContainsKey(boneName))
+            if (_armature.IsExistBoneIndex(boneName))
             {
                 throw new Exception($"뼈대 인덱스({boneIndex})가 이미 존재합니다.");
             }
 
             // 부모 뼈대를 찾는다.
-            if (!_dicBoneIndex.ContainsKey(parentBoneName))
+            if (!_armature.IsExistBoneIndex(parentBoneName))
             {
                 throw new Exception($"부모 뼈대 이름({parentBoneName})이 존재하지 않습니다.");
             }
 
             // 부모 뼈대를 찾고, 새로운 뼈대를 생성한다.
-            Bone parentBone = GetBoneByName(parentBoneName);
+            Bone parentBone = _armature.GetBoneByName(parentBoneName);
             Bone cBone = new Bone(boneName, boneIndex);
             parentBone.AddChild(cBone);
             cBone.Parent = parentBone;
             cBone.LocalBindTransform = localBindTransform;
-            cBone.InverseBindPoseTransform = inverseBindTransform;
-            _dicBones[boneName] = cBone;
-
-            // 뼈대명 배열에 추가한다.
-            _boneNames = _boneNames.Append(boneName).ToArray();
+            cBone.InverseBindPoseTransform = inverseBindPoseTransform;
+            _armature.AddBone(boneName, cBone);
 
             return cBone;
         }
-
 
         public List<TexturedModel> LoadFile(string filename)
         {
@@ -260,22 +235,17 @@ namespace Animate
             _bindShapeMatrix = bindShapeMatrix;
 
             // 뼈대명 배열을 만들고 뼈대 인덱스 딕셔너리를 만든다.
-            _boneNames = new string[boneNames.Count];
-            _dicBoneIndex = new Dictionary<string, int>();
-            for (int i = 0; i < boneNames.Count; i++)
-            {
-                _boneNames[i] = boneNames[i].Trim();
-                _dicBoneIndex.Add(_boneNames[i], i);
-            }
+            _armature.SetBoneNames(boneNames.ToArray());
 
             // (4) library_animations = 애니메이션 정보
             AniXmlLoader.LibraryAnimations(this, xml);
 
             // (5) library_visual_scenes = bone hierarchy + rootBone
-            _rootBone = AniXmlLoader.LibraryVisualScenes(xml, invBindPoses, _dicBoneIndex, out _dicBones);
+            Bone rootBone = AniXmlLoader.LibraryVisualScenes(xml, invBindPoses, ref _armature);
+            _armature.SetRootBone(rootBone); 
 
             // (6) source positions으로부터 
-            Matrix4x4f A0 = _rootBone.LocalBindTransform;
+            Matrix4x4f A0 = _armature.RootBone.LocalBindTransform;
             Matrix4x4f S = _bindShapeMatrix;
             Matrix4x4f A0xS = A0 * S;
             for (int i = 0; i < lstPositions.Count; i++)
@@ -287,7 +257,7 @@ namespace Animate
             // LibraryController에서 미리 계산된 역바인딩포즈가 있지만, 
             // 애니메이션을 적용하기 위해서 다시 계산한다.
             Stack<Bone> bStack = new Stack<Bone>();
-            bStack.Push(_rootBone);
+            bStack.Push(_armature.RootBone);
             while (bStack.Count > 0)
             {
                 // 뼈대를 꺼내고, 

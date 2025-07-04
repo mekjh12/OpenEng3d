@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using AutoGenEnums;
+using System.Collections.Generic;
 
 namespace Animate
 {
@@ -26,6 +27,11 @@ namespace Animate
             {
                 _motions.Add(motionName, motion);
             }
+        }
+
+        public Motion GetMotion(ACTION motion)
+        {
+            return (_motions.ContainsKey(motion.ToString())) ? _motions[motion.ToString()] : null;
         }
 
         public Motion GetMotion(string motionName)
