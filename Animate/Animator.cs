@@ -15,12 +15,19 @@ namespace Animate
         Motion _blendMotion;
         Motion _nextMotion;
 
+        Matrix4x4f[] _animatedTransforms; // 애니메이션된 행렬들(뼈대의 개수만큼, 애니메이션이 적용된 최종 행렬들)
+
         float _previousTime = 0.0f; // 이전프레임 시간을 기억하는 변수
 
         Action _actionOnceFinised = null;
 
-        Matrix4x4f[] _animatedTransforms;
+        // 뼈대 트리 탐색을 위한 스택들
+        Stack<Bone> stack = new Stack<Bone>();
+        Stack<Matrix4x4f> mStack = new Stack<Matrix4x4f>();
 
+        /// <summary>
+        /// 애니메이션이 적용된 최종 행렬들(뼈대의 개수만큼, 애니메이션이 적용된 최종 행렬들)
+        /// </summary>
         public Matrix4x4f[] AnimatedTransforms
         {
             get => _animatedTransforms;
@@ -126,13 +133,20 @@ namespace Animate
                 if (_motionTime < 0) _motionTime = _currentMotion.Length;
             }
 
+            // 모션의 현재 시간에 맞는 애니메이션 최종 행렬을 루트본에 의하여 계층적으로 업데이트한다.
+            UpdateAnimationTransforms(_motionTime, _aniActor.RootBone);
+        }
+
+
+        private void UpdateAnimationTransforms(float motionTime, Bone rootBone)
+        {
             // 키프레임으로부터 현재의 로컬포즈행렬을 가져온다.(bone name, mat4x4f)
-            Dictionary<string, Matrix4x4f> currentPose = _currentMotion.InterpolatePoseAtTime(_motionTime);
+            Dictionary<string, Matrix4x4f> currentPose = _currentMotion.InterpolatePoseAtTime(motionTime);
 
             // 로컬 포즈행렬로부터 캐릭터공간의 포즈행렬을 얻는다.
-            Stack<Bone> stack = new Stack<Bone>();
-            Stack<Matrix4x4f> mStack = new Stack<Matrix4x4f>();
-            stack.Push(_aniActor.RootBone); // 뼈대스택
+            stack.Clear();
+            mStack.Clear();
+            stack.Push(rootBone); // 뼈대스택
             mStack.Push(Matrix4x4f.Identity);    // 행렬스택
             while (stack.Count > 0)
             {
@@ -154,17 +168,21 @@ namespace Animate
                 {
                     animated = parentTransform * bone.LocalTransform;
                     _animatedTransforms[boneIndex] = animated;
-
-                    bone.AnimatedTransform = parentTransform * bone.LocalTransform;
                 }
 
                 foreach (Bone childbone in bone.Childrens) // 트리탐색을 위한 자식 스택 입력
                 {
                     stack.Push(childbone);
-                    mStack.Push(bone.AnimatedTransform);
+                    mStack.Push(_animatedTransforms[boneIndex]);
                 }
             }
-        }
 
+            foreach (KeyValuePair<string, Bone> item in _aniActor.AniRig.Armature.DicBones)
+            {
+                Bone bone = item.Value;
+                if (bone.Index >= 0)
+                    _animatedTransforms[bone.Index] = _animatedTransforms[bone.Index] * bone.InverseBindPoseTransform;
+            }
+        }
     }
 }

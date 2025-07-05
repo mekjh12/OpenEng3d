@@ -193,8 +193,7 @@ namespace Animate
         public void Render(Camera camera, StaticShader staticShader, AnimateShader ashader, 
             bool isSkinVisible = true, bool isBoneVisible = false, bool isBoneParentCurrentVisible = false)
         {
-            Matrix4x4f[] finalAnimatedBoneMatrices = FinalAnimatedBoneMatrices;
-            //Matrix4x4f[] finalAnimatedBoneMatrices = _animator.AnimatedTransforms;
+            Matrix4x4f[] finalAnimatedBoneMatrices = _animator.AnimatedTransforms;
 
             int index = 0;
             foreach (KeyValuePair<string, AnimateEntity> item in _models)

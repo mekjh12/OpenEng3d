@@ -202,23 +202,11 @@ namespace FormTools
             }
             else if (e.KeyCode == Keys.D1)
             {
-                _humanAniModel1.SetMotion(ACTION.BREATHING_IDLE);
+                _humanAniModel1.SetMotion(ACTION.RANDOM);
             }
             else if (e.KeyCode == Keys.D2)
             {
-                _humanAniModel2.SetMotion(ACTION.WALKING);
-            }
-            else if (e.KeyCode == Keys.D3)
-            {
-                _humanAniModel1.SetMotion(ACTION.A_T_POSE);
-            }
-            else if (e.KeyCode == Keys.D4)
-            {
-                _humanAniModel1.SetMotion(ACTION.SLOW_RUN);
-            }
-            else if (e.KeyCode == Keys.D5)
-            {
-                _humanAniModel1.SetMotion(ACTION.RANDOM);
+                _humanAniModel2.SetMotion(ACTION.RANDOM);
             }
             else if (e.KeyCode == Keys.H)
             {
