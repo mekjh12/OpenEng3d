@@ -4,6 +4,7 @@ using OpenGL;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Policy;
 using System.Xml;
 using ZetaExt;
 
@@ -724,7 +725,7 @@ namespace Animate
                     string boneName = item.Key;
                     Dictionary<float, Matrix4x4f> source = item.Value;
 
-                    Bone bone = targetAniRig.Armature.GetBoneByName(boneName);
+                    Bone bone = targetAniRig.Armature[boneName];
                     if (bone == null) continue;
 
                     // 시간마다 순회 (시간, 로컬변환행렬)
@@ -928,41 +929,45 @@ namespace Animate
             XmlNodeList library_visual_scenes = xml.GetElementsByTagName("library_visual_scenes");
             if (library_visual_scenes.Count == 0)
             {
-                Console.WriteLine($"[에러] dae파일구조에서 뼈대구조를 읽어올 수 없습니다.");
+                Console.WriteLine($"[주의] 파일구조에서 뼈대구조가 없습니다.");
                 return null;
             }
 
             // 뼈대 구조를 읽기 위해 스택을 준비한다.
-            Stack<XmlNode> nStack = new Stack<XmlNode>();
-            Stack<Bone> bStack = new Stack<Bone>();
+            Stack<(XmlNode, Bone)> nStack = new Stack<(XmlNode, Bone)>();
             XmlNode nodes = library_visual_scenes[0]["visual_scene"];
             XmlNode rootNode = null;
 
             // Armature 노드를 찾는다.
             foreach (XmlNode item in nodes)
+            {
                 if (item.Attributes["id"].Value == "Armature") rootNode = item;
-            if (rootNode == null) return null; // Armature 노드가 없으면 null 반환
+            }
 
-            nStack.Push(rootNode);
+            // Armature 노드가 없으면 경고 메시지를 출력하고 null을 반환한다.
+            if (rootNode == null)
+            {
+                Console.WriteLine("Armature 노드가 없어 뼈대구조를 읽어올 수 없습니다.");
+                return null;
+            }
+
+            // 루트 본을 생성하고 스택에 추가한다.
             Bone rootBone = new Bone("Armature", 0);
-            bStack.Push(rootBone);
+            nStack.Push((rootNode, rootBone));
 
             while (nStack.Count > 0)
             {
-                XmlNode node = nStack.Pop();
-                Bone bone = bStack.Pop();
+                // 스택에서 노드와 본을 꺼낸다.
+                (XmlNode node, Bone bone) = nStack.Pop();
 
                 // 노드의 변환 행렬을 읽어온다.
-                string[] value = node["matrix"].InnerText.Split(' ');
-                float[] items = new float[value.Length];
-                for (int i = 0; i < value.Length; i++) items[i] = float.Parse(value[i]);
-                Matrix4x4f mat = new Matrix4x4f(items).Transposed;
+                Matrix4x4f mat = node["matrix"].InnerText.ParseToMatrix4x4f(transposed: true);
 
                 // 본 이름을 읽어온다.
                 string boneName = node.Attributes["sid"]?.Value;
 
                 // 본을 생성하고 딕셔너리에 추가한다.
-                if (boneName != null) armature.AddBone(boneName, bone);
+                if (boneName != null && boneName != "") armature.AddBone(boneName, bone);
 
                 // 본의 이름과 변환 행렬을 설정한다.
                 if (boneName == null)
@@ -989,22 +994,18 @@ namespace Animate
                     bone.InverseBindPoseTransform = invBindPoses[bone.Name];
                 }
 
-
                 // 하위 노드를 순회한다.
                 foreach (XmlNode child in node.ChildNodes)
                 {
                     if (child.Name != "node") continue;
-                    nStack.Push(child);
                     Bone childBone = new Bone("", 0);
                     childBone.Parent = bone;
                     bone.AddChild(childBone);
-                    bStack.Push(childBone);
+                    nStack.Push((child, childBone));
                 }
             }
 
             return rootBone;
         }
-
-
     }
 }

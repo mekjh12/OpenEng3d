@@ -67,9 +67,9 @@
     <Compile Include="AnimateEntity.cs" />
     <Compile Include="Animator.cs" />
     <Compile Include="AniModels\AniActor.cs" />
-    <Compile Include="Armature.cs" />
+    <Compile Include="Armature\Armature.cs" />
     <Compile Include="Loader\AniXmlLoader.cs" />
-    <Compile Include="Motion\Bone.cs" />
+    <Compile Include="Armature\Bone.cs" />
     <Compile Include="Core\BoneAngle.cs" />
     <Compile Include="Core\BoneTransform.cs" />
     <Compile Include="Kinet\Clothes.cs" />

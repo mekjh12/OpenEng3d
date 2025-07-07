@@ -11,6 +11,25 @@ namespace ZetaExt
         public const float RAD_180 = (float)Math.PI;
         public const float RAD_270 = 3.0f * RAD_90;
 
+        /// <summary>
+        /// 문자열을 식별문자를 이용하여 Matrix4x4f로 변환한다.
+        /// </summary>
+        /// <param name="txt"></param>
+        /// <param name="splitChar"></param>
+        /// <param name="transposed"></param>
+        /// <returns></returns>
+        public static Matrix4x4f ParseToMatrix4x4f(this string txt, char splitChar = ' ',  bool transposed = false)
+        {
+            string[] value = txt.Trim().Split(splitChar);
+            float[] items = new float[value.Length];
+            for (int i = 0; i < value.Length; i++)
+            {
+                items[i] = float.Parse(value[i].Trim());
+            }
+
+            Matrix4x4f mat = new Matrix4x4f(items);
+            return transposed ? mat.Transposed : mat;
+        }
 
         /// <summary>
         /// Quaternions for Computer Graphics by John Vince. p199 참고

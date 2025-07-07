@@ -6,7 +6,6 @@ using Shader;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using ZetaExt;
 
 namespace Animate
@@ -24,20 +23,17 @@ namespace Animate
         protected Bone _rootBone;
         protected Animator _animator;
 
-
         public AniRig AniRig => _aniRig;
 
         public string Name => _name;
 
         public Transform Transform => _transform;
 
-        /// <summary>
-        /// Rendering Part 
-        /// </summary>
+        #region 디버깅용
         public enum RenderingMode { Animation, BoneWeight, Static, None, Count };
         PolygonMode _polygonMode = PolygonMode.Fill;
         RenderingMode _renderingMode = RenderingMode.Animation;
-        int _boneIndex = 0;
+        int _selectedBoneIndex = 0;
         float _axisLength = 10.3f;
         float _drawThick = 1.0f;
 
@@ -47,8 +43,8 @@ namespace Animate
 
         public int SelectedBoneIndex
         {
-            get => _boneIndex;
-            set => _boneIndex = value;
+            get => _selectedBoneIndex;
+            set => _selectedBoneIndex = value;
         }
 
         public PolygonMode PolygonMode
@@ -74,13 +70,14 @@ namespace Animate
             _renderingMode++;
             if (_renderingMode == RenderingMode.Count - 1) _renderingMode = 0;
         }
+        #endregion
 
         /// <summary>
         /// 본이름으로부터 본을 가져온다.
         /// </summary>
         /// <param name="boneName"></param>
         /// <returns></returns>
-        public Bone GetBoneByName(string boneName) => _aniRig.Armature.GetBoneByName(boneName);
+        public Bone GetBoneByName(string boneName) => _aniRig.Armature[boneName];
 
         /// <summary>
         /// Animator를 가져온다.
@@ -253,27 +250,6 @@ namespace Animate
         }
 
         /// <summary>
-        /// * bone.AnimatedTransform * bone.InverseBindTransform<br/>
-        /// * 캐릭터 공간에서의 애니메이션을 포즈행렬을 최종적으로 가져온다.<br/>
-        /// * v' = Ma(i) Md^-1(i) v (Ma 애니메이션행렬, Md 바이딩포즈행렬)<br/>
-        /// * 정점들을 바인딩포즈행렬을 이용하여 뼈 공간으로 정점을 변환 후, 애니메이션 행렬을 이용하여 뼈의 캐릭터 공간으로의 변환행렬을 가져온다.<br/>
-        /// </summary>
-        protected Matrix4x4f[] FinalAnimatedBoneMatrices
-        {
-            get
-            {
-                Matrix4x4f[] finalAnimatedBoneMatrices = new Matrix4x4f[_aniRig.DicBones.Count];
-                foreach (KeyValuePair<string, Bone> item in _aniRig.DicBones)
-                {
-                    Bone bone = item.Value;
-                    if (bone.Index >= 0)
-                        finalAnimatedBoneMatrices[bone.Index] = bone.AnimatedTransform * bone.InverseBindPoseTransform;
-                }
-                return finalAnimatedBoneMatrices;
-            }
-        }
-
-        /// <summary>
         /// * 애니매이션에서 뼈들의 뼈공간 ==> 캐릭터 공간으로의 변환 행렬<br/>
         /// * 뼈들의 포즈를 렌더링하기 위하여 사용할 수 있다.<br/>
         /// </summary>
@@ -288,26 +264,6 @@ namespace Animate
                     if (bone.Index >= 0)
                         jointMatrices[bone.Index] = bone.AnimatedTransform;
                 }
-                return jointMatrices;
-            }
-        }
-
-        /// <summary>
-        /// 초기의 캐릭터공간에서의 바인딩포즈의 역행렬을 가져온다.
-        /// </summary>
-        public Matrix4x4f[] InverseBindPoseTransforms
-        {
-            get
-            {
-                var jointMatrices = new Matrix4x4f[BoneCount];
-
-                // Dictionary의 Values를 직접 순회 (KeyValuePair 생성 오버헤드 제거)
-                foreach (Bone bone in _aniRig.DicBones.Values)
-                {
-                    if (bone.Index >= 0 && bone.Index < BoneCount)
-                        jointMatrices[bone.Index] = bone.InverseBindPoseTransform;
-                }
-
                 return jointMatrices;
             }
         }

@@ -191,7 +191,7 @@ namespace Animate
             }
 
             // 부모 뼈대를 찾고, 새로운 뼈대를 생성한다.
-            Bone parentBone = _armature.GetBoneByName(parentBoneName);
+            Bone parentBone = _armature[parentBoneName];
             Bone cBone = new Bone(boneName, boneIndex);
             parentBone.AddChild(cBone);
             cBone.Parent = parentBone;
@@ -235,7 +235,7 @@ namespace Animate
             _bindShapeMatrix = bindShapeMatrix;
 
             // 뼈대명 배열을 만들고 뼈대 인덱스 딕셔너리를 만든다.
-            _armature.SetBoneNames(boneNames.ToArray());
+            _armature.SetupBoneMapping(boneNames.ToArray());
 
             // (4) library_animations = 애니메이션 정보
             AniXmlLoader.LibraryAnimations(this, xml);

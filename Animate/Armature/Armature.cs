@@ -6,7 +6,6 @@ namespace Animate
 {
     public class Armature
     {
-        bool _isInitialized = false;
         Bone _rootBone;
         float _hipHeightScaled = 1.0f; // 비율을 얻는다.
 
@@ -14,43 +13,56 @@ namespace Animate
         Dictionary<string, int> _dicBoneIndex;
         string[] _boneNames;
 
-        public Bone GetBoneByName(string boneName)
+        public float HipHeightScaled
         {
-            return _dicBones.ContainsKey(boneName) ? _dicBones[boneName] : null;
+            get => _hipHeightScaled;
+            set => _hipHeightScaled = value;
         }
 
-        public void SetBoneNames(string[] boneNames)
-        {
-            if (_dicBoneIndex == null)
-            {
-                _dicBoneIndex = new Dictionary<string, int>();
-            }
+        public string[] BoneNames => _dicBoneIndex.Keys.ToArray();
+        public Bone RootBone => _rootBone;
+        public Dictionary<string, Bone> DicBones => _dicBones;
 
+        public Armature()
+        {
+            _dicBones = new Dictionary<string, Bone>();
+            _dicBoneIndex = new Dictionary<string, int>();
+        }
+
+        public Bone this[string boneName]
+        {
+            get
+            {
+                if (_dicBones == null) return null;
+                return _dicBones.ContainsKey(boneName) ? _dicBones[boneName] : null;
+            }
+        }
+
+        /// <summary>
+        /// 본(Bone) 이름 배열을 설정하고 이름-인덱스 매핑을 생성합니다.
+        /// </summary>
+        /// <param name="boneNames">설정할 본 이름들의 배열</param>
+        public void SetupBoneMapping(string[] boneNames)
+        {
+            // 본 이름 배열 초기화
             _boneNames = new string[boneNames.Length];
-            for (int i = 0; i < _boneNames.Length; i++)
+
+            // 본 이름-인덱스 딕셔너리 초기화 (기존 데이터 제거)
+            _dicBoneIndex.Clear();
+
+            // 각 본 이름을 배열에 저장하고 딕셔너리에 인덱스 매핑 추가
+            for (int i = 0; i < boneNames.Length; i++)
             {
                 _boneNames[i] = boneNames[i];
-                _dicBoneIndex.Add(_boneNames[i], i);
+                _dicBoneIndex.Add(boneNames[i], i);
             }
-
-            _isInitialized = true;
         }
 
         public void AddBone(string boneName, Bone bone)
         {
-            if (!_isInitialized)
-            {
-                throw new ArgumentException("_boneNames을 먼저 초기화해야 합니다.");
-            }
-
             if (bone == null)
             {
                 throw new ArgumentNullException(nameof(bone));
-            }
-
-            if (_dicBones == null)
-            {
-                _dicBones = new Dictionary<string, Bone>();
             }
 
             if (_dicBones.ContainsKey(boneName))
@@ -72,33 +84,6 @@ namespace Animate
             return _dicBoneIndex[boneName];
         }
 
-        public string[] BoneNames
-        {
-            get => _dicBoneIndex.Keys.ToArray<string>();
-        }
-
-        public float HipHeightScaled
-        {
-            get => _hipHeightScaled;
-            set => _hipHeightScaled = value;
-        }
-
-
-        public Bone RootBone
-        {
-            get => _rootBone;
-        }
-
-        public Dictionary<string, Bone> DicBones
-        {
-            get => _dicBones;
-        }
-
-        public Armature()
-        {
-
-        }
-
         public bool IsExistBoneIndex(string boneName)
         {
             if (_dicBoneIndex == null)
@@ -114,6 +99,7 @@ namespace Animate
             {
                 return false;
             }
+
             return _dicBones.ContainsKey(boneName);
         }
 
