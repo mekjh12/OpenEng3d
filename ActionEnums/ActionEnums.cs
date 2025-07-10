@@ -69,7 +69,8 @@ namespace AutoGenEnums
         WALKING_BACKWARDS = 14,
         // 추가된 액션들
 		RANDOM,
-        STOP,    
+        STOP,
+		NONE,
 		COUNT,
     }
 }

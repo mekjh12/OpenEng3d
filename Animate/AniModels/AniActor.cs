@@ -6,14 +6,17 @@ using Shader;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using ZetaExt;
 
 namespace Animate
 {
     public abstract class AniActor
     {
+        protected ACTION _prevMotion = ACTION.BREATHING_IDLE;
+        protected ACTION _curMotion = ACTION.BREATHING_IDLE;
+
         protected string _name;
         protected AniRig _aniRig;
+        protected Animator _animator;
 
         protected Action _updateBefore;
         protected Action _updateAfter;
@@ -21,7 +24,9 @@ namespace Animate
 
         Dictionary<string, AnimateEntity> _models;
         protected Bone _rootBone;
-        protected Animator _animator;
+
+        // 컴포넌트들
+        protected AnimationComponent _animationComponent;
 
         public AniRig AniRig => _aniRig;
 
@@ -116,35 +121,19 @@ namespace Animate
 
         }
 
-        public virtual void SetMotionOnce(ACTION motion)
+        public void SetMotionOnce(string motionName)
         {
-
-
-        }
-
-
-        public void SetMotionOnce(string motionName, ACTION nextAction)
-        {
-            Motion motion = _aniRig.Motions.GetMotion(nextAction);
+            Motion curMotion = _aniRig.Motions.GetMotion(Actions.ActionMap[_curMotion]);
+            Motion nextMotion = _aniRig.Motions.GetMotion(motionName);
+            if (nextMotion == null) nextMotion = _aniRig.Motions.DefaultMotion;
 
             _animator.OnceFinised = () =>
             {
-                if (nextAction == ACTION.STOP)
-                {
-                    _animator.Stop();
-                }
-                else
-                {
-                    //SetMotion(nextAction);
-                }
+                _animator.SetMotion(curMotion);
                 _animator.OnceFinised = null;
             };
 
-            if (motion == null)
-                motion = _aniRig.Motions.DefaultMotion;
-
-            if (motion != null)
-                _animator.SetMotion(motion);
+            _animator.SetMotion(nextMotion);
         }
 
 
@@ -152,17 +141,21 @@ namespace Animate
         /// 모션을 설정한다.
         /// </summary>
         /// <param name="motionName"></param>
-        protected void SetMotion(string motionName)
+        /// <param name="blendingInterval"></param>
+        protected void SetMotion(string motionName, float blendingInterval = 0.2f)
         {
             _animator.OnceFinised = null;
 
             Motion motion = _aniRig.Motions.GetMotion(motionName);
 
             if (motion == null)
+            {
                 motion = _aniRig.Motions.DefaultMotion;
-
-            if (motion != null)
-                _animator.SetMotion(motion);
+            }
+            else
+            {
+                _animator.SetMotion(motion, blendingInterval);
+            }
         }
 
         /// <summary>

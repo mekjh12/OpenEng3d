@@ -5,7 +5,10 @@ using GlWindow;
 using OpenGL;
 using Shader;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
+using System.Security.Cryptography;
 using System.Windows.Forms;
 using ZetaExt;
 
@@ -22,8 +25,7 @@ namespace FormTools
         AnimateShader _animateShader;
 
         MixamoRotMotionStorage _mixamoRotMotionStorage;
-        Human _humanAniModel1;
-        Human _humanAniModel2;
+        List<Human> _humans = new List<Human>();
 
         public FormAnimation()
         {
@@ -92,14 +94,14 @@ namespace FormTools
             // 그리드셰이더 초기화
             _glControl3.InitGridShader(PROJECT_PATH);
 
-            AniRig aniRig0 = new AniRig(PROJECT_PATH + @"\Res\abe.dae", isLoadAnimation: false);
+            AniRig aniRig = new AniRig(PROJECT_PATH + @"\Res\abe.dae", isLoadAnimation: false);
+            AniRig aniRig2 = new AniRig(PROJECT_PATH + @"\Res\Guybrush_final.dae", isLoadAnimation: false);
 
-            AnimateEntity animateEntity1 = new AnimateEntity("abe1", aniRig0.Models.ToArray());
-            _humanAniModel1 = new Human("abe1", animateEntity1, aniRig0);
-            _humanAniModel1.Transform.IncreasePosition(2, 0, 0);
+            _humans.Add(new Human($"abe", new AnimateEntity($"abe", aniRig.Models.ToArray()), aniRig));
+            _humans[0].Transform.IncreasePosition(0, 0, 0);
 
-            AnimateEntity animateEntity2 = new AnimateEntity("abe2", aniRig0.Models.ToArray());
-            _humanAniModel2 = new Human("abe2", animateEntity2, aniRig0);
+            _humans.Add(new Human($"Guybrush_final", new AnimateEntity($"Guybrush_final", aniRig2.Models.ToArray()), aniRig2));
+            _humans[1].Transform.IncreasePosition(2, 0, 0);
 
             // 믹사모 애니메이션 로드
             _mixamoRotMotionStorage = new MixamoRotMotionStorage();
@@ -107,17 +109,20 @@ namespace FormTools
             {
                 if (Path.GetExtension(fileName).Equals(".dae"))
                 {
-                    Motion motion = AniXmlLoader.LoadMixamoMotion(aniRig0, fileName);
+                    Motion motion = AniXmlLoader.LoadMixamoMotion(aniRig, fileName);
                     _mixamoRotMotionStorage.AddMotion(motion);
                 }
             }
 
             // 애니메이션 리타겟팅
-            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig0);
+            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig);
+            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig2);
 
             // 애니메이션 모델에 애니메이션 초기 지정
-            _humanAniModel1.SetMotion(ACTION.BREATHING_IDLE);
-            _humanAniModel2.SetMotion(ACTION.BREATHING_IDLE);
+            foreach (Human human in _humans)
+            {
+                human.SetMotion(ACTION.RANDOM);
+            }
 
             // 셰이더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
@@ -136,8 +141,10 @@ namespace FormTools
             float duration = deltaTime * 0.001f;
 
             // 애니메이션 업데이트
-            _humanAniModel1.Update(deltaTime);
-            _humanAniModel2.Update(deltaTime);
+            foreach (Human human in _humans)
+            {
+                human.Update(deltaTime);
+            }
 
             // UI 정보 업데이트
             _glControl3.CLabel("cam").Text =
@@ -168,8 +175,10 @@ namespace FormTools
             // 카메라 중심점 렌더링
             Gl.Enable(EnableCap.DepthTest);
 
-            _humanAniModel1.Render(camera, _staticShader, _animateShader, isBoneVisible: true);
-            _humanAniModel2.Render(camera, _staticShader, _animateShader, isBoneVisible: true);
+            foreach (Human human in _humans)
+            {
+                human.Render(camera, _staticShader, _animateShader, isBoneVisible: true);
+            }
 
             // 폴리곤 모드 설정
             Gl.PolygonMode(MaterialFace.FrontAndBack, _glControl3.PolygonMode);
@@ -196,22 +205,27 @@ namespace FormTools
         {
             if (e.KeyCode == Keys.F)
             {
-                _humanAniModel1.PolygonMode =
-                    _humanAniModel1.PolygonMode == PolygonMode.Fill ? PolygonMode.Line : PolygonMode.Fill;
-                Debug.PrintLine($"PolygonMode: {_humanAniModel1.PolygonMode}");
+                //_humanAniModel1.PolygonMode = _humanAniModel1.PolygonMode == PolygonMode.Fill ? PolygonMode.Line : PolygonMode.Fill;
+                //Debug.PrintLine($"PolygonMode: {_humanAniModel1.PolygonMode}");
             }
             else if (e.KeyCode == Keys.D1)
             {
-                _humanAniModel1.SetMotion(ACTION.RANDOM);
+                _humans[Rand.NextInt(0,_humans.Count-1)].SetMotion(ACTION.RANDOM); 
             }
             else if (e.KeyCode == Keys.D2)
             {
-                _humanAniModel2.SetMotion(ACTION.RANDOM);
+                _humans[Rand.NextInt(0, _humans.Count - 1)].SetMotionOnce(ACTION.RANDOM);
+            }
+            else if (e.KeyCode == Keys.D3)
+            {
+                _humans[Rand.NextInt(0, _humans.Count - 1)].SetMotionImmediately(ACTION.RANDOM);
             }
             else if (e.KeyCode == Keys.H)
             {
-                _humanAniModel1.FoldHand(Primate.BODY_PART.LeftHand);
-                _humanAniModel1.FoldHand(Primate.BODY_PART.RightHand);
+                foreach (Human human in _humans)
+                {
+                    human.FoldHand(Primate.BODY_PART.LeftHand);
+                }
             }
             else if (e.KeyCode == Keys.D0)
             {

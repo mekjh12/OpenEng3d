@@ -11,7 +11,16 @@ namespace ZetaExt
         public const float RAD_180 = (float)Math.PI;
         public const float RAD_270 = 3.0f * RAD_90;
 
-        public static Vertex3f Position3f(this Matrix4x4f mat) => mat.Column3.Vertex3f();
+        /// <summary>
+        /// 행렬이 유효한지 검사한다. 
+        /// </summary>
+        /// <param name="matrix"></param>
+        /// <returns></returns>
+        public static bool IsValidMatrix(this Matrix4x4f matrix)
+        {
+            float determinant = matrix.Determinant;
+            return !float.IsNaN(determinant) && !float.IsInfinity(determinant);
+        }
 
         /// <summary>
         /// 문자열을 식별문자를 이용하여 Matrix4x4f로 변환한다.

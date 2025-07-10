@@ -62,12 +62,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AniModels\AnimationComponent.cs" />
     <Compile Include="AniRig.cs" />
     <Compile Include="AnimateComponent.cs" />
     <Compile Include="AnimateEntity.cs" />
     <Compile Include="Animator.cs" />
     <Compile Include="AniModels\AniActor.cs" />
     <Compile Include="Armature\Armature.cs" />
+    <Compile Include="Core\IComponent.cs" />
     <Compile Include="Loader\AniXmlLoader.cs" />
     <Compile Include="Armature\Bone.cs" />
     <Compile Include="Core\BoneAngle.cs" />

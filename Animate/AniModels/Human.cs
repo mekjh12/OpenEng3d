@@ -21,8 +21,6 @@ namespace Animate
             set => _curHandItem = value;
         }
 
-        ACTION _prevMotion = ACTION.BREATHING_IDLE;
-        ACTION _curMotion = ACTION.BREATHING_IDLE;
         HAND_ITEM _curHandItem = HAND_ITEM.NONE;
 
         AABB _collider;
@@ -43,8 +41,6 @@ namespace Animate
                 return _collider;
             }
         }
-
-
 
         public Vertex3f HipPosition
         {
@@ -102,30 +98,6 @@ namespace Animate
 
         }
 
-        public void SetMotionOnce(string motionName, ACTION nextAction)
-        {
-            Motion motion = _aniRig.Motions.GetMotion(motionName);
-
-            _animator.OnceFinised = () =>
-            {
-                if (nextAction == ACTION.STOP)
-                {
-                    _animator.Stop();
-                }
-                else
-                {
-                    SetMotion(nextAction);
-                }
-                _animator.OnceFinised = null;
-            };
-
-            if (motion == null)
-                motion = _aniRig.Motions.DefaultMotion;
-
-            if (motion != null)
-                _animator.SetMotion(motion);
-        }
-
         public void HandAction()
         {
             switch (_curHandItem)
@@ -140,11 +112,25 @@ namespace Animate
             }
         }
 
+        /// <summary>
+        /// 랜덤한 모션을 지정해 준다.
+        /// </summary>
+        public ACTION RandomAction => (ACTION)Rand.NextInt(0, (int)(ACTION.RANDOM - 1));
+
+        /// <summary>
+        /// 즉시 캐릭터의 모션을 지정해 준다.
+        /// </summary>
+        /// <param name="action"></param>
         public void SetMotionImmediately(ACTION action)
         {
+            if (action == ACTION.RANDOM) action = RandomAction;
+
             _animator.Play();
             _prevMotion = _curMotion;
             _curMotion = action;
+
+            // 모션을 지정해 준다.
+            SetMotion(Actions.ActionMap[action], blendingInterval: 0.0f);
         }
 
         /// <summary>
@@ -153,35 +139,26 @@ namespace Animate
         /// <param name="action"></param>
         public void SetMotion(ACTION action)
         {
+            if (action == ACTION.RANDOM) action = RandomAction;
+
             _animator.Play();
+
             _prevMotion = _curMotion;
             _curMotion = action;
 
-            // 랜덤 액션의 경우 실행하고 반환한다.
-            if (action == ACTION.RANDOM)
-            {
-                SetMotion(Actions.GetRandomAction());
-                return;
-            }
-
-            // 액션을 실행한다.
+            // 모션을 지정해 준다.
             SetMotion(Actions.ActionMap[action]);
-
-            // 모션에 따라 손을 펼치거나 접는다.
-            if (_curMotion == ACTION.BREATHING_IDLE)
-            {
-                UnfoldHand(BODY_PART.LeftHand);
-                UnfoldHand(BODY_PART.RightHand);
-            }
         }
 
         /// <summary>
-        /// 캐릭터가 이전에 행동한 모션으로 지정해 준다.
+        /// 다음 모션을 한번만 하고 이후에는 이전 모션으로 돌아간다.
         /// </summary>
-        public void SetPrevMotion()
+        /// <param name="action"></param>
+        public void SetMotionOnce(ACTION action)
         {
-            SetMotion(_prevMotion);
+            if (action == ACTION.RANDOM) action = RandomAction;
+            _animator.Play();
+            SetMotionOnce(Actions.ActionMap[action]);
         }
-
     }
 }

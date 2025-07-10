@@ -11,6 +11,9 @@ namespace Animate
         string _animationName; // 애니메이션 이름
         float _length; // 애니메이션 길이(초)
         Dictionary<float, KeyFrame> _keyframes; // 키프레임 딕셔너리 (시간 -> 키프레임)
+        
+        // ## 최적화를 위한 부분
+        Dictionary<string, Matrix4x4f> _currentPose = new Dictionary<string, Matrix4x4f>(128); // 재사용이 가능하도록 사용시 사전을 비우도록 하고 초기 용량을 128로 설정
 
         /// <summary>첫 번째 키프레임을 반환합니다.</summary>
         public KeyFrame FirstKeyFrame => (_keyframes.Values.Count > 0) ? _keyframes.Values.ElementAt(0) : null;
@@ -149,35 +152,41 @@ namespace Animate
             //_previousTime = previousFrame.TimeStamp;
             float totalTime = nextFrame.TimeStamp - previousFrame.TimeStamp;
             float currentTime = motionTime - previousFrame.TimeStamp;
-            float progression = currentTime / totalTime;
+            float progression = (totalTime > 0) ? (currentTime / totalTime) : 0f;
 
             // 두 키프레임 사이의 보간된 포즈를 딕셔러리로 가져온다.
-            Dictionary<string, Matrix4x4f> currentPose = new Dictionary<string, Matrix4x4f>();
+            _currentPose.Clear();
             foreach (string jointName in previousFrame.BoneNames)
             {
                 BoneTransform previousTransform = previousFrame[jointName];
                 BoneTransform nextTransform = nextFrame[jointName];
                 BoneTransform currentTransform = BoneTransform.InterpolateSlerp(previousTransform, nextTransform, progression);
-                currentPose[jointName] = currentTransform.LocalTransform;
+                _currentPose[jointName] = currentTransform.LocalTransform;
 
-                // 아래는 쿼터니온 에러로 인한 NaN인 경우에 대체 포즈로 강제 지정(좋은 코드는 아님)
-                if (currentTransform.LocalTransform.Determinant.ToString() == "NaN")
+                // 보간된 변환이 유효한지 확인하고, 유효하지 않으면 이전 또는 다음 키프레임을 사용하여 보간한다.
+                if (!currentTransform.LocalTransform.IsValidMatrix())
                 {
-                    if (previousTransform.LocalTransform.Determinant.ToString() == "NaN")
+                    // 이전 키프레임이 유효하면 이전 것 사용
+                    if (previousTransform.LocalTransform.IsValidMatrix())
                     {
-                        currentTransform = BoneTransform.InterpolateSlerp(nextTransform, nextTransform, 0);
-                        currentPose[jointName] = currentTransform.LocalTransform;
+                        currentTransform = previousTransform;
                     }
-                    if (nextTransform.LocalTransform.Determinant.ToString() == "NaN")
+                    // 다음 키프레임이 유효하면 다음 것 사용
+                    else if (nextTransform.LocalTransform.IsValidMatrix())
                     {
-                        currentTransform = BoneTransform.InterpolateSlerp(previousTransform, previousTransform, 0);
-                        currentPose[jointName] = currentTransform.LocalTransform;
+                        currentTransform = nextTransform;
+                    }
+                    // 둘 다 유효하지 않으면 Identity 사용
+                    else
+                    {
+                        currentTransform = BoneTransform.Identity;
                     }
                 }
             }
 
-            return currentPose;
+            return _currentPose;
         }
+
 
         /// <summary>
         /// 지정된 시간에 특정 뼈의 변환 정보(위치, 회전)를 키프레임으로 추가합니다.
