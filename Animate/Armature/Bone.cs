@@ -54,29 +54,36 @@ namespace Animate
                 if (_children.Count == 0)
                 {
                     Matrix4x4f a = _animatedTransform * Matrix4x4f.Translated(0, 15, 0);
-                    return a.Column3.Vertex3f();
+                    return a.Position;
                 }
                 else
                 {
                     Vertex3f g = Vertex3f.Zero;
                     foreach (Bone bone in _children)
                     {
-                        g += bone.AnimatedTransform.Column3.Vertex3f();
+                        g += bone.AnimatedTransform.Position;
                     }
-                    return g * (1.0f/ _children.Count);
+                    return g * (1.0f / _children.Count);
                 }
             }
         }
 
         public Bone Parent
         {
-            get => _parent; 
+            get => _parent;
             set => _parent = value;
         }
 
         public bool IsArmature => (_parent == null);
 
-        public bool IsRootArmature => (_parent.Parent == null);
+        public bool IsRootArmature 
+        {
+            get
+            {
+                return _name == "mixamorig_Hips";
+                return (_parent.Parent == null);
+            }
+        }
         
         public int Index
         {
@@ -95,7 +102,7 @@ namespace Animate
         /// </summary>
         public Vertex3f PivotPosition
         {
-            get => _animatedTransform.Column3.Vertex3f();
+            get => _animatedTransform.Position;
             set
             {
                 _animatedTransform[3, 0] = value.x;
@@ -235,7 +242,16 @@ namespace Animate
                 txt += $"{Cut(m[0, i])} {Cut(m[1, i])} {Cut(m[2, i])} {Cut(m[3, i])}"
                     + ((i < 3) ? " / " : "");
             }
-            return $"[{_index},{_name}] BindMatrix {txt}";
+
+            string invBind = "";
+            Matrix4x4f n = _inverseBindPoseTransform;
+            for (uint i = 0; i < 4; i++)
+            {
+                invBind += $"{Cut(n[0, i])} {Cut(n[1, i])} {Cut(n[2, i])} {Cut(n[3, i])}"
+                    + ((i < 3) ? " / " : "");
+            }
+
+            return $"[{_index},{_name}] Parent={_parent?.Name}, BindMatrix {txt} InvBindMatrix {invBind}";
 
             float Cut(float a) => ((float)Math.Abs(a) < 0.000001f) ? 0.0f : a;
         }

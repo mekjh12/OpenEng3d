@@ -7,6 +7,7 @@ using System.IO;
 using System.Security.Policy;
 using System.Xml;
 using ZetaExt;
+using static Khronos.Platform;
 
 namespace Animate
 {
@@ -111,7 +112,7 @@ namespace Animate
                 if (!dicBones.ContainsKey(boneName)) continue;
 
                 Bone bone = dicBones[boneName];
-                if (bone.IsRootArmature && timeFrames.ContainsKey(0.0f))
+                if (bone.IsRootArmature && timeFrames.ContainsKey(0.0f)) //
                 {
                     float dstSize = bone.PivotPosition.Norm();
                     float srcSize = timeFrames[0.0f].Position.Norm();
@@ -921,8 +922,7 @@ namespace Animate
         /// <param name="invBindPoses">역바인드 포즈 딕셔너리</param>
         /// <param name="dicBoneIndex">본익덱스 딕셔너리</param>
         /// <param name="dicBones">생성한 본딕셔너리</param>
-        /// <returns>루트본을 반환</returns>
-        public static Bone LibraryVisualScenes(XmlDocument xml, 
+        public static void LibraryVisualScenes(XmlDocument xml, 
             Dictionary<string, Matrix4x4f> invBindPoses, ref Armature armature)
         {
             // 뼈대 구조를 읽기 위하여 준비한다.
@@ -930,7 +930,7 @@ namespace Animate
             if (library_visual_scenes.Count == 0)
             {
                 Console.WriteLine($"[주의] 파일구조에서 뼈대구조가 없습니다.");
-                return null;
+                return;
             }
 
             // 뼈대 구조를 읽기 위해 스택을 준비한다.
@@ -939,73 +939,69 @@ namespace Animate
             XmlNode rootNode = null;
 
             // Armature 노드를 찾는다.
-            foreach (XmlNode item in nodes)
+            foreach ((XmlNode parent, XmlNode node) in nodes.TraverseXmlNodesWithParent())
             {
-                if (item.Attributes["id"].Value == "Armature") rootNode = item;
+                if (node.Attributes["id"].Value == "Armature")
+                {
+                    rootNode = node;
+                    break;
+                }
             }
 
             // Armature 노드가 없으면 경고 메시지를 출력하고 null을 반환한다.
             if (rootNode == null)
             {
                 Console.WriteLine("Armature 노드가 없어 뼈대구조를 읽어올 수 없습니다.");
-                return null;
+                return;
             }
 
-            // 루트 본을 생성하고 스택에 추가한다.
-            Bone rootBone = new Bone("Armature", 0);
-            nStack.Push((rootNode, rootBone));
-
-            while (nStack.Count > 0)
+            // XML노드들을 순회하며 본을 생성한다. 확장메소드의 내부 로직으로 스택을 사용하지 않고 자식노드를 순회한다. 
+            Dictionary<string, Bone> boneDics = new Dictionary<string, Bone>();
+            foreach ((XmlNode parentNode, XmlNode node) in nodes.TraverseXmlNodesWithParent())
             {
-                // 스택에서 노드와 본을 꺼낸다.
-                (XmlNode node, Bone bone) = nStack.Pop();
+                // 노드가 "node" 또는 "JOINT" 타입인지 확인한다.
+                if (!node.HasAttribute("type")) continue;
+                string nodeType = node.Attributes["type"].Value;
+                if (nodeType != "JOINT" && nodeType != "NODE") continue;
+                if (nodeType == "NODE" && node.Attributes["id"]?.Value != "Armature") continue;
 
-                // 노드의 변환 행렬을 읽어온다.
+                // 본 이름과 변환 행렬을 읽어온다.
                 Matrix4x4f mat = node["matrix"].InnerText.ParseToMatrix4x4f(transposed: true);
+                string boneName = node.Attributes["id"]?.Value.Replace("Armature_", "");
+                string parentName = parentNode.Attributes["id"]?.Value.Replace("Armature_", "");
+                int boneIndex = armature.IsExistBoneIndex(boneName) ? armature.GetBoneIndex(boneName) : -1;
 
-                // 본 이름을 읽어온다.
-                string boneName = node.Attributes["sid"]?.Value;
-
-                // 본을 생성하고 딕셔너리에 추가한다.
-                if (boneName != null && boneName != "") armature.AddBone(boneName, bone);
-
-                // 본의 이름과 변환 행렬을 설정한다.
-                if (boneName == null)
+                Bone bone = new Bone(boneName, 0)
                 {
-                    if (node.Attributes["name"].Value == "Armature")
-                    {
-                        bone.Name = "Armature";
-                        bone.LocalBindTransform = mat;
-                        bone.Index = 0;
-                    }
-                }
-                else
-                {
-                    bone.Name = boneName;
-                    bone.LocalBindTransform = mat;
-                    bone.Index = armature.IsExistBoneIndex(boneName) ? armature.GetBoneIndex(boneName) : -1;
-                }
-
-                bone.PivotPosition = mat.Column3.Vertex3f();
+                    LocalBindTransform = mat,
+                    PivotPosition = mat.Position,
+                    Index = boneIndex 
+                };
 
                 // 역바인드 포즈를 설정한다.
-                if (invBindPoses.ContainsKey(bone.Name))
+                if (invBindPoses.ContainsKey(boneName))
                 {
-                    bone.InverseBindPoseTransform = invBindPoses[bone.Name];
+                    bone.InverseBindPoseTransform = invBindPoses[boneName];
                 }
 
-                // 하위 노드를 순회한다.
-                foreach (XmlNode child in node.ChildNodes)
+                armature.AddBone(bone);
+                boneDics[boneName] = bone;
+
+                if (boneDics.ContainsKey(parentName))
                 {
-                    if (child.Name != "node") continue;
-                    Bone childBone = new Bone("", 0);
-                    childBone.Parent = bone;
-                    bone.AddChild(childBone);
-                    nStack.Push((child, childBone));
+                    Bone parentBone = boneDics[parentName];
+                    parentBone.AddChild(bone);
+                    bone.Parent = parentBone;
+                }
+
+                if (boneName == "Armature")
+                {
+                    armature.SetRootBone(bone);
+                    bone.Index = 0;                   
                 }
             }
 
-            return rootBone;
+            return;
         }
     }
 }

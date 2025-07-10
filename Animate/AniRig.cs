@@ -241,8 +241,7 @@ namespace Animate
             AniXmlLoader.LibraryAnimations(this, xml);
 
             // (5) library_visual_scenes = bone hierarchy + rootBone
-            Bone rootBone = AniXmlLoader.LibraryVisualScenes(xml, invBindPoses, ref _armature);
-            _armature.SetRootBone(rootBone); 
+            AniXmlLoader.LibraryVisualScenes(xml, invBindPoses, ref _armature); 
 
             // (6) source positions으로부터 
             Matrix4x4f A0 = _armature.RootBone.LocalBindTransform;

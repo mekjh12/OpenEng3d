@@ -225,12 +225,12 @@ namespace Animate
                     {
                         if (ind >= 52) //52이상은 추가한 뼈들이다.
                         {
-                            Renderer3d.RenderLocalAxis(staticShader, camera, size: jointTransform.Column3.Vertex3f().Norm() * _axisLength,
+                            Renderer3d.RenderLocalAxis(staticShader, camera, size: jointTransform.Position.Norm() * _axisLength,
                                 thick: 5.0f*_drawThick, _transform.Matrix4x4f * modelMatrix * jointTransform);
                         }
                         else
                         {
-                            Renderer3d.RenderLocalAxis(staticShader, camera, size: jointTransform.Column3.Vertex3f().Norm() * _axisLength,
+                            Renderer3d.RenderLocalAxis(staticShader, camera, size: jointTransform.Position.Norm() * _axisLength,
                                 thick: _drawThick, _transform.Matrix4x4f * modelMatrix * jointTransform);
                         }
                         ind++;

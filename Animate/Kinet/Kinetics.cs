@@ -217,7 +217,7 @@ namespace Animate
             }
 
             List<Vertex3f> points = new List<Vertex3f>();
-            points.Add(bone.AnimatedTransform.Column3.Vertex3f());
+            points.Add(bone.AnimatedTransform.Position);
             points.Add(Bn[0].EndPosition);
 
             return (err, points.ToArray());
@@ -225,7 +225,7 @@ namespace Animate
 
         public static void LookAt(Bone bone, Vertex3f target)
         {
-            Vertex3f bz = bone.AnimatedTransform.Column3.Vertex3f();
+            Vertex3f bz = bone.AnimatedTransform.Position;
             // 추후 구현할 부분
             //ModifyChildBoneAnimatedTransform
         }

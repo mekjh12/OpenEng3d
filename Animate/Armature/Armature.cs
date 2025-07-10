@@ -58,6 +58,19 @@ namespace Animate
             }
         }
 
+        public void AddBone(Bone bone)
+        {
+            string boneName = bone.Name;
+
+            if (_dicBones.ContainsKey(boneName))
+            {
+                throw new ArgumentException($"Bone with name {boneName} already exists.");
+            }
+
+            _dicBones[boneName] = bone;
+        }
+
+
         public void AddBone(string boneName, Bone bone)
         {
             if (bone == null)
