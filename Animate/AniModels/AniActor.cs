@@ -1,15 +1,17 @@
 ﻿using AutoGenEnums;
 using Common.Abstractions;
+using Common.Mathematics;
 using Model3d;
 using OpenGL;
 using Shader;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Animate
 {
-    public abstract class AniActor
+    public abstract class AniActor: ITransformable
     {
         protected ACTION _prevMotion = ACTION.BREATHING_IDLE;
         protected ACTION _curMotion = ACTION.BREATHING_IDLE;
@@ -22,11 +24,12 @@ namespace Animate
         protected Action _updateAfter;
         protected Transform _transform;
 
-        Dictionary<string, AnimateEntity> _models;
+        Dictionary<string, List<TexturedModel>> _models;
         protected Bone _rootBone;
 
         // 컴포넌트들
         protected AnimationComponent _animationComponent;
+        protected TransformComponent _transformComponent;
 
         public AniRig AniRig => _aniRig;
 
@@ -97,7 +100,7 @@ namespace Animate
         /// <summary>
         /// Entity들을 모두 가져온다.
         /// </summary>
-        public Dictionary<string, AnimateEntity> Entities => _models;
+        public Dictionary<string, List<TexturedModel>> texturedModels => _models;
 
         /// <summary>
         /// 루트본을 가져온다.
@@ -109,14 +112,14 @@ namespace Animate
         /// </summary>
         /// <param name="model"></param>
         /// <param name="aniRig"></param>
-        public AniActor(string name, AnimateEntity model, AniRig aniRig)
+        public AniActor(string name, AniRig aniRig)
         {
-            _models = new Dictionary<string, AnimateEntity>();
-            _models.Add(name, model);
+            _models = new Dictionary<string, List<TexturedModel>>();
+            _models.Add(name, aniRig.Models);
 
             _aniRig = aniRig;
             _rootBone = aniRig.Armature.RootBone;
-            _animator = new Animator(this);
+            _animator = new Animator(_rootBone);
             _transform = new Transform();
 
         }
@@ -184,12 +187,12 @@ namespace Animate
             bool isSkinVisible = true, bool isBoneVisible = false, bool isBoneParentCurrentVisible = false)
         {
             Matrix4x4f[] finalAnimatedBoneMatrices = _animator.AnimatedTransforms;
+            Matrix4x4f modelMatrix = _transform.Matrix4x4f;
 
             int index = 0;
-            foreach (KeyValuePair<string, AnimateEntity> item in _models)
+            foreach (KeyValuePair<string, List<TexturedModel>> item in _models)
             {
-                AnimateEntity entity = item.Value;
-                Matrix4x4f modelMatrix = entity.ModelMatrix;
+                List<TexturedModel> model = item.Value;
 
                 if (isSkinVisible) // 스킨
                 {
@@ -197,7 +200,7 @@ namespace Animate
                     Gl.Disable(EnableCap.CullFace);
                     if (_renderingMode == RenderingMode.Animation)
                     {
-                        Renderer3d.Render(ashader, _transform.Matrix4x4f, finalAnimatedBoneMatrices, entity, camera);
+                        Renderer3d.Render(ashader, Matrix4x4f.Identity, modelMatrix, Matrix4x4f.Identity, model, finalAnimatedBoneMatrices, camera);
                     }
                     else if (_renderingMode == RenderingMode.BoneWeight)
                     {
@@ -210,6 +213,7 @@ namespace Animate
                     Gl.Enable(EnableCap.CullFace);
                 }
 
+                /*
                 // 애니메이션 뼈대 렌더링
                 if (isBoneVisible)
                 {
@@ -231,6 +235,7 @@ namespace Animate
                 }
 
                 Renderer3d.RenderLocalAxis(staticShader, camera, size: 100.0f, thick: _drawThick, _rootBone.AnimatedTransform * _transform.Matrix4x4f);
+                */
 
                 // 정지 뼈대
                 //foreach (Matrix4x4f jointTransform in _aniModel.InverseBindPoseTransforms)
@@ -261,17 +266,33 @@ namespace Animate
             }
         }
 
-        protected void AddEntity(string name, AnimateEntity entity)
+        public Matrix4x4f LocalBindMatrix => ((ITransformable)_transformComponent).LocalBindMatrix;
+
+        public Vertex3f Size { get => ((ITransformable)_transformComponent).Size; set => ((ITransformable)_transformComponent).Size = value; }
+        public Vertex3f Position { get => ((ITransformable)_transformComponent).Position; set => ((ITransformable)_transformComponent).Position = value; }
+
+        public Matrix4x4f ModelMatrix => ((ITransformable)_transformComponent).ModelMatrix;
+
+        public bool IsMoved { get => ((ITransformable)_transformComponent).IsMoved; set => ((ITransformable)_transformComponent).IsMoved = value; }
+
+        public Pose Pose => ((ITransformable)_transformComponent).Pose;
+
+        protected void AddEntity(string name, List<TexturedModel> models)
         {
             if (_models.ContainsKey(name))
             {
                 _models.Remove(name);
-                _models.Add(name, entity);
+                _models.Add(name, models);
             }
             else
             {
-                _models.Add(name, entity);
+                _models.Add(name, models);
             }
+        }
+
+        protected void AddEntity(string name, TexturedModel model)
+        {
+            AddEntity(name, new List<TexturedModel>() { model });
         }
 
         protected void Remove(string name)
@@ -292,17 +313,50 @@ namespace Animate
         {
             string name = Path.GetFileNameWithoutExtension(fileName);
             List<TexturedModel> texturedModels = _aniRig.WearCloth(fileName, expandValue);
-            AnimateEntity clothEntity = new AnimateEntity("aniModel_" + name, texturedModels[0]);
-            AddEntity(name, clothEntity);
-            return clothEntity;
+            //AnimateEntity clothEntity = new AnimateEntity("aniModel_" + name, texturedModels[0]);
+            AddEntity(name, texturedModels);
+            //return clothEntity;
+            return null;
         }
 
-        public Entity Attach(string name, TexturedModel texturedModel)
+        public void Attach(string name, TexturedModel texturedModel)
         {
-            AnimateEntity clothEntity = new AnimateEntity(name, texturedModel);
-            AddEntity(name, clothEntity);
-            return clothEntity;
+            AddEntity(name, texturedModel);
         }
 
+        public void LocalBindTransform(float sx = 1, float sy = 1, float sz = 1, float rotx = 0, float roty = 0, float rotz = 0, float x = 0, float y = 0, float z = 0)
+        {
+            ((ITransformable)_transformComponent).LocalBindTransform(sx, sy, sz, rotx, roty, rotz, x, y, z);
+        }
+
+        public void Scale(float scaleX, float scaleY, float scaleZ)
+        {
+            ((ITransformable)_transformComponent).Scale(scaleX, scaleY, scaleZ);
+        }
+
+        public void Translate(float dx, float dy, float dz)
+        {
+            ((ITransformable)_transformComponent).Translate(dx, dy, dz);
+        }
+
+        public void SetRollPitchAngle(float pitch, float yaw, float roll)
+        {
+            ((ITransformable)_transformComponent).SetRollPitchAngle(pitch, yaw, roll);
+        }
+
+        public void Yaw(float deltaDegree)
+        {
+            ((ITransformable)_transformComponent).Yaw(deltaDegree);
+        }
+
+        public void Roll(float deltaDegree)
+        {
+            ((ITransformable)_transformComponent).Roll(deltaDegree);
+        }
+
+        public void Pitch(float deltaDegree)
+        {
+            ((ITransformable)_transformComponent).Pitch(deltaDegree);
+        }
     }
 }

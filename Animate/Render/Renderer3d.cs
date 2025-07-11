@@ -34,25 +34,19 @@ namespace Animate
         public static RawModel3d Cylinder = Loader3d.LoadPrism(12, 1, 1, 1, Matrix4x4f.Identity);
         #endregion
 
-        public static void Render(AnimateShader shader, Matrix4x4f bindShapeMatrix,
-            Matrix4x4f[] finalAnimatedBoneMatrices, AnimateEntity entity, Camera camera)
+        public static void Render(AnimateShader shader, Matrix4x4f bindShapeMatrix, Matrix4x4f modelMatrix, Matrix4x4f localTransformMatrix, List<TexturedModel> models,
+            Matrix4x4f[] finalAnimatedBoneMatrices, Camera camera)
         {
-            if (entity == null) return;
-
             shader.Bind();
-            shader.LoadPosModel(entity.LocalBindMatrix);
-            shader.LoadModelMatrix(bindShapeMatrix * entity.ModelMatrix);
+            shader.LoadPosModel(localTransformMatrix);
+            shader.LoadModelMatrix(bindShapeMatrix * modelMatrix);
             shader.LoadViewMatrix(camera.ViewMatrix);
             shader.LoadProjMatrix(camera.ProjectiveMatrix);
-
-            // 하나의 뼈에만 작용하는 애니메이션인 경우
-            shader.LoadIsOnlyOneJointWeight(entity.IsOnlyOneJointWeight);
-            shader.LoadJointIndex(entity.BoneIndexOnlyOneJoint);
 
             for (int i = 0; i < finalAnimatedBoneMatrices?.Length; i++)
                 shader.LoadFinalAnimatedBoneMatrix(i, finalAnimatedBoneMatrices[i]);
 
-            foreach (TexturedModel model in entity.Models)
+            foreach (TexturedModel model in models)
             {
                 Gl.BindVertexArray(model.VAO);
                 Gl.EnableVertexAttribArray(0);

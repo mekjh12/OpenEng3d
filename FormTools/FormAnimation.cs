@@ -97,11 +97,14 @@ namespace FormTools
             AniRig aniRig = new AniRig(PROJECT_PATH + @"\Res\abe.dae", isLoadAnimation: false);
             AniRig aniRig2 = new AniRig(PROJECT_PATH + @"\Res\Guybrush_final.dae", isLoadAnimation: false);
 
-            _humans.Add(new Human($"abe", new AnimateEntity($"abe", aniRig.Models.ToArray()), aniRig));
+            _humans.Add(new Human($"abe",  aniRig));
             _humans[0].Transform.IncreasePosition(0, 0, 0);
 
-            _humans.Add(new Human($"Guybrush_final", new AnimateEntity($"Guybrush_final", aniRig2.Models.ToArray()), aniRig2));
+            _humans.Add(new Human($"Guybrush_final", aniRig2));
             _humans[1].Transform.IncreasePosition(2, 0, 0);
+
+            _humans.Add(new Human($"abe2", aniRig));
+            _humans[2].Transform.IncreasePosition(-2, 0, 0);
 
             // 믹사모 애니메이션 로드
             _mixamoRotMotionStorage = new MixamoRotMotionStorage();

@@ -63,10 +63,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AniModels\AnimationComponent.cs" />
-    <Compile Include="AniRig.cs" />
-    <Compile Include="AnimateComponent.cs" />
-    <Compile Include="AnimateEntity.cs" />
-    <Compile Include="Animator.cs" />
+    <Compile Include="AniModels\AniRig.cs" />
+    <Compile Include="AniModels\Animator.cs" />
     <Compile Include="AniModels\AniActor.cs" />
     <Compile Include="Armature\Armature.cs" />
     <Compile Include="Core\IComponent.cs" />
@@ -131,7 +129,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Entity.cd" />
     <None Include="packages.config" />
     <None Include="README.md" />
   </ItemGroup>

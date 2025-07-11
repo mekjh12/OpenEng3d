@@ -6,17 +6,18 @@ namespace Animate
 {
     public class Animator
     {
+        private const int MAX_BONES_COUNT = 128;
+
         // 멤버 변수
-        Matrix4x4f[] _animatedTransforms; // 애니메이션된 행렬들(뼈대의 개수만큼, 애니메이션이 적용된 최종 행렬들)
-
-        AniActor _aniActor;
-
+        Matrix4x4f[] _animatedTransforms = new Matrix4x4f[MAX_BONES_COUNT];  // 애니메이션된 행렬      
         float _motionTime = 0.0f;
         bool _isPlaying = true;
 
         Motion _currentMotion;
         Motion _blendMotion;
         Motion _nextMotion;
+
+        Bone _rootBone;
 
         // 클래스내 처리 변수
         float _previousTime = 0.0f; // 이전프레임 시간을 기억하는 변수
@@ -52,12 +53,10 @@ namespace Animate
         /// <summary>
         /// 생성자
         /// </summary>
-        /// <param name="aniActor"></param>
-        public Animator(AniActor aniActor)
+        /// <param name="rootBone"></param>
+        public Animator(Bone rootBone)
         {
-            _aniActor = aniActor;
-
-            _animatedTransforms = new Matrix4x4f[_aniActor.AniRig.BoneCount];
+            _rootBone = rootBone;
         }
 
         /// <summary>
@@ -130,7 +129,7 @@ namespace Animate
             }
 
             // 모션의 현재 시간에 맞는 애니메이션 최종 행렬을 루트본에 의하여 계층적으로 업데이트한다.
-            UpdateAnimationTransforms(_motionTime, _aniActor.RootBone);
+            UpdateAnimationTransforms(_motionTime, _rootBone);
         }
 
 

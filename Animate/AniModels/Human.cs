@@ -93,7 +93,7 @@ namespace Animate
             }
         }
 
-        public Human(string name, AnimateEntity model, AniRig aniRig) : base(name, model, aniRig)
+        public Human(string name, AniRig aniRig) : base(name, aniRig)
         {
 
         }

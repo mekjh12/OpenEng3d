@@ -51,7 +51,7 @@ namespace Animate
             }
         }
 
-        public Primate(string name, AnimateEntity model, AniRig xmlDae) : base(name, model, xmlDae)
+        public Primate(string name, AniRig aniRig) : base(name, aniRig)
         {
             //TransplantEye(EngineLoop.PROJECT_PATH + "\\Res\\Human\\simple_eye.dae", "mixamorig_Head");
             /*
@@ -89,34 +89,9 @@ namespace Animate
             }
         }
 
-        public void Attach(BODY_PART hand, AnimateEntity entity)
+        public void Attach(BODY_PART hand)
         {
-            entity.IsOnlyOneJointWeight = true;
-            switch (hand)
-            {
-                case BODY_PART.LeftHand:
-                    entity.BoneIndexOnlyOneJoint = GetBoneByName("mixamorig_LeftHand_Item").Index;
-                    AddEntity(entity.Name, entity);
-                    _leftHandEntity = entity;
-                    break;
-                case BODY_PART.RightHand:
-                    entity.BoneIndexOnlyOneJoint = GetBoneByName("mixamorig_RightHand_Item").Index;
-                    //entity.GenBoxOccluder();
-                    AddEntity(entity.Name, entity);
-                    _rightHandEntity = entity;
-                    break;
-                case BODY_PART.Head:
-                    entity.BoneIndexOnlyOneJoint = GetBoneByName("mixamorig_Head_Item").Index;
-                    AddEntity(entity.Name, entity);
-                    _headEntity = entity;
-                    break;
-                case BODY_PART.Back:
-                    break;
-                case BODY_PART.Count:
-                    break;
-                default:
-                    break;
-            }
+            
         }
 
         public void LootAtEye(Vertex3f worldPosition)
@@ -217,20 +192,14 @@ namespace Animate
                 inverseBindPoseTransform: Matrix4x4f.RotatedY(90).Inverse,
                 localBindTransform: Matrix4x4f.Translated(4.4f, 11.8f, 12.5f) * Matrix4x4f.Scaled(0.75f, 0.65f, 0.65f));
             LEyeBone.RestrictAngle = new BoneAngle(-30, 30, -0, 0, -60, 60);
-            AnimateEntity EntityL = new AnimateEntity(boneName, texturedModel);
-            //EntityL.IsOnlyOneJointWeight = true;
-            //EntityL.BoneIndexOnlyOneJoint = LEyeBone.Index;
-            AddEntity(boneName, EntityL);
+            AddEntity(boneName, texturedModel);
 
             boneName = $"mixamorig_eyeRight";
             Bone REyeBone = _aniRig.AddBone(boneName, _aniRig.BoneCount, parentBoneName,
                 inverseBindPoseTransform: Matrix4x4f.RotatedY(90).Inverse,
                 localBindTransform: Matrix4x4f.Translated(-4.4f, 11.8f, 12.5f) * Matrix4x4f.Scaled(0.75f, 0.65f, 0.65f));
             REyeBone.RestrictAngle = new BoneAngle(-30, 30, -0, 0, -60, 60);
-            AnimateEntity EntityR = new AnimateEntity(boneName, texturedModel);
-            //EntityR.IsOnlyOneJointWeight = true;
-            //EntityR.BoneIndexOnlyOneJoint = REyeBone.Index;
-            AddEntity(boneName, EntityR);
+            AddEntity(boneName, texturedModel);
         }
 
         /// <summary>

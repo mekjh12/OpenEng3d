@@ -1,5 +1,4 @@
 ﻿using AutoGenEnums;
-using System;
 
 namespace Animate
 {
@@ -14,13 +13,15 @@ namespace Animate
         public Motion CurrentMotion => _animator.CurrentMotion;
         public float MotionTime => _animator.MotionTime;
 
-        public AnimationComponent(AniRig aniRig, AniActor owner)
+        public AnimationComponent(AniRig aniRig, Bone rootBone)
         {
             _aniRig = aniRig;
-            _animator = new Animator(owner);
+            _animator = new Animator(rootBone); 
         }
 
         public void Initialize() { }
+
+        public void Dispose() { }
 
         public void Update(float deltaTime)
         {
@@ -57,6 +58,5 @@ namespace Animate
             _animator.SetMotion(nextMotion);
         }
 
-        public void Dispose() { }
     }
 }

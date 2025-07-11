@@ -65,16 +65,6 @@ namespace Shader
             base.LoadMatrix(_location["model"], matrix);
         }
 
-        public void LoadIsOnlyOneJointWeight(bool isOnlyOneJointWeight)
-        {
-            base.LoadBoolean(_location["useSingleJoint"], isOnlyOneJointWeight);
-        }
-
-        public void LoadJointIndex(int jointIndex)
-        {
-            base.LoadInt(_location["singleJointId"], jointIndex);
-        }
-
         public void LoadBindShapeMatrix(Matrix4x4f bindShapeMatrix)
         {
             base.LoadMatrix(_location["bind"], bindShapeMatrix);
