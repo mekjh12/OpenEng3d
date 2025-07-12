@@ -25,7 +25,7 @@ void main(void)
 	vec4 totalLocalPos = vec4(0.0);
 	vec4 totalNormal = vec4(0.0);
 	
-	    // 가중치 정규화 체크
+    // 가중치 정규화 체크
     float weightSum = 0.0;
     for (int i = 0; i < MAX_WEIGHTS; i++)
     {
@@ -39,7 +39,7 @@ void main(void)
         {
             int index = int(in_jointIndices[i]);
             mat4 jointTransform = finalAnimatedBoneMatrix[index];
-            mat4 transform = jointTransform * pmodel;
+            mat4 transform = jointTransform;
         
             // 정점 변환
             vec4 posePosition = transform * vec4(in_position, 1.0);

@@ -124,19 +124,19 @@ namespace Animate
                     if (bone.Name.IndexOf("Thumb") < 0)
                     {
                         // 엄지 손가락이 아닌 경우
-                        bone.LocalTransform = bone.LocalBindTransform * Matrix4x4f.RotatedX(intensity);
+                        bone.BoneTransforms.LocalTransform = bone.BoneTransforms.LocalBindTransform * Matrix4x4f.RotatedX(intensity);
                     }
                     else
                     {
                         // 엄지 손가락인 경우
                         if (bone.Name.IndexOf("Thumb1") >= 0)
-                            bone.LocalTransform = bone.LocalBindTransform * Matrix4x4f.RotatedY(intensity);
+                            bone.BoneTransforms.LocalTransform = bone.BoneTransforms.LocalBindTransform * Matrix4x4f.RotatedY(intensity);
                         if (bone.Name.IndexOf("Thumb2") >= 0)
-                            bone.LocalTransform = bone.LocalBindTransform * Matrix4x4f.RotatedX(0);
+                            bone.BoneTransforms.LocalTransform = bone.BoneTransforms.LocalBindTransform * Matrix4x4f.RotatedX(0);
                         if (bone.Name.IndexOf("Thumb3") >= 0)
-                            bone.LocalTransform = bone.LocalBindTransform * Matrix4x4f.RotatedX(0);
+                            bone.BoneTransforms.LocalTransform = bone.BoneTransforms.LocalBindTransform * Matrix4x4f.RotatedX(0);
                     }
-                    foreach (Bone item in bone.Childrens) stack.Push(item);
+                    foreach (Bone item in bone.Children) stack.Push(item);
                 }
 
                 // 손의 자식 뼈를 업데이트한다.
@@ -156,18 +156,18 @@ namespace Animate
                     Bone bone = stack.Pop();
                     if (bone.Name.IndexOf("Thumb") < 0)
                     {
-                        bone.LocalTransform = bone.LocalBindTransform * Matrix4x4f.RotatedX(0);
+                        bone.BoneTransforms.LocalTransform = bone.BoneTransforms.LocalBindTransform * Matrix4x4f.RotatedX(0);
                     }
                     else
                     {
                         if (bone.Name.IndexOf("Thumb1") >= 0)
-                            bone.LocalTransform = bone.LocalBindTransform * Matrix4x4f.RotatedY(0);
+                            bone.BoneTransforms.LocalTransform = bone.BoneTransforms.LocalBindTransform * Matrix4x4f.RotatedY(0);
                         if (bone.Name.IndexOf("Thumb2") >= 0)
-                            bone.LocalTransform = bone.LocalBindTransform * Matrix4x4f.RotatedX(0);
+                            bone.BoneTransforms.LocalTransform = bone.BoneTransforms.LocalBindTransform * Matrix4x4f.RotatedX(0);
                         if (bone.Name.IndexOf("Thumb3") >= 0)
-                            bone.LocalTransform = bone.LocalBindTransform * Matrix4x4f.RotatedX(0);
+                            bone.BoneTransforms.LocalTransform = bone.BoneTransforms.LocalBindTransform * Matrix4x4f.RotatedX(0);
                     }
-                    foreach (Bone item in bone.Childrens) stack.Push(item);
+                    foreach (Bone item in bone.Children) stack.Push(item);
                 }
                 hand.UpdatePropTransform(isSelfIncluded: false);
             };

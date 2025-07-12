@@ -77,6 +77,11 @@ namespace Animate
             _transform = Matrix4x4f.Identity;
         }
 
+        public void GoFoward(float delta)
+        {
+            SetPosition(Position + Forward.Normalized * delta);
+        }
+
         /// <summary>전진 방향을 설정하여 로컬 좌표계 재구성</summary>
         public void SetForward(Vertex3f forward)
         {

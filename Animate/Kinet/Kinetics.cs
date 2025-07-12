@@ -33,13 +33,13 @@ namespace Animate
             //bone.RotateBy(e.RotateBetween(t), endTarget);
             bone.UpdatePropTransform(isSelfIncluded: false);
 
-            Vertex3f angleVector = EulerAngleFromRotationMatrix(bone.LocalTransform.Rot3x3f())[0];
+            Vertex3f angleVector = EulerAngleFromRotationMatrix(bone.BoneTransforms.LocalTransform.Rot3x3f())[0];
             Matrix4x4f RotX = Matrix4x4f.RotatedX(angleVector.x);
             Matrix4x4f RotY = Matrix4x4f.RotatedY(angleVector.y);
             Matrix4x4f RotZ = Matrix4x4f.RotatedZ(angleVector.z);
-            Vertex3f pos = bone.LocalTransform.Position;
+            Vertex3f pos = bone.BoneTransforms.LocalTransform.Position;
             Matrix4x4f Rot = Matrix4x4f.Translated(pos.x, pos.y, pos.z) * RotZ * RotY * RotX;
-            bone.LocalTransform = Rot;
+            bone.BoneTransforms.LocalTransform = Rot;
             bone.UpdatePropTransform(isSelfIncluded: true);
         }
 
@@ -52,7 +52,7 @@ namespace Animate
             //Matrix4x4f RotY = Matrix4x4f.RotatedY(angleVector.y.Clamp(bone.RestrictAngle.YMin, bone.RestrictAngle.YMax));
             //Matrix4x4f RotZ = Matrix4x4f.RotatedZ(angleVector.z.Clamp(bone.RestrictAngle.ZMin, bone.RestrictAngle.ZMax));
 
-            Vertex3f pos = bone.LocalTransform.Position;
+            Vertex3f pos = bone.BoneTransforms.LocalTransform.Position;
             //Matrix4x4f Rot = Matrix4x4f.Translated(pos.x, pos.y, pos.z) * RotZ * RotY * RotX;
             //bone.LocalTransform = Rot;
             //bone.UpdateChildBone(isSelfIncluded: true);
@@ -101,7 +101,7 @@ namespace Animate
             {
                 // (1) Forward Reaching IK
                 Vertex3f T = target;
-                Vertex3f E = Bn[0].EndPosition;
+                Vertex3f E = Bn[0].TipPosition;
 
                 for (int i = 0; i < N; i++)
                 {
@@ -125,7 +125,7 @@ namespace Animate
                 for (int i = N - 1; i >= 0; i--)
                 {
                     Bone cBone = Bn[i];
-                    E = cBone.EndPosition;
+                    E = cBone.TipPosition;
                     Vertex3f P = cBone.PivotPosition;
                     Matrix4x4f RotAMat = (E - P).RotateBetween(E - T);
                     //Vertex3f newE = cBone.RotateBy(RotAMat, E);
@@ -143,25 +143,25 @@ namespace Animate
                 for (int i = N - 1; i >= 0; i--)
                 {
                     Bone cBone = Bn[i];
-                    Vertex3f angleVector = EulerAngleFromRotationMatrixZYX(cBone.LocalTransform.Rot3x3f())[0];
+                    Vertex3f angleVector = EulerAngleFromRotationMatrixZYX(cBone.BoneTransforms.LocalTransform.Rot3x3f())[0];
                     angleVector.x = angleVector.x.Clamp(cBone.RestrictAngle.ConstraintAngle.x, cBone.RestrictAngle.ConstraintAngle.y);
                     angleVector.y = angleVector.y.Clamp(cBone.RestrictAngle.TwistAngle.x, cBone.RestrictAngle.TwistAngle.y);
                     angleVector.z = angleVector.z.Clamp(cBone.RestrictAngle.ConstraintAngle.z, cBone.RestrictAngle.ConstraintAngle.w);
                     Matrix4x4f RotX = Matrix4x4f.RotatedX(angleVector.x);
                     Matrix4x4f RotY = Matrix4x4f.RotatedY(angleVector.y);
                     Matrix4x4f RotZ = Matrix4x4f.RotatedZ(angleVector.z);
-                    Vertex3f pos = cBone.LocalTransform.Position;
+                    Vertex3f pos = cBone.BoneTransforms.LocalTransform.Position;
                     Matrix4x4f Rot = Matrix4x4f.Translated(pos.x, pos.y, pos.z) * RotZ * RotY * RotX;
-                    cBone.LocalTransform = Rot;
+                    cBone.BoneTransforms.LocalTransform = Rot;
                     cBone.UpdatePropTransform(isSelfIncluded: true);
                 }
 
                 //for (int i = 0; i < N; i++) Bn[i].UpdateLocalTransform();
                 //Bn[N - 1].UpdateChildBone(isSelfIncluded: true);
 
-                points.Add(new ColorPoint(Bn[0].EndPosition, 0, 0.1f* iter, 0, 0.01f));
+                points.Add(new ColorPoint(Bn[0].TipPosition, 0, 0.1f* iter, 0, 0.01f));
 
-                err = (Bn[0].EndPosition - T).Norm();
+                err = (Bn[0].TipPosition - T).Norm();
                 iter++;
             }
             return points.ToArray();
@@ -206,26 +206,26 @@ namespace Animate
                 // 최말단뼈부터 시작하여 최상위 뼈까지 회전을 적용한다.
                 for (int i = 0; i < N; i++)
                 {
-                    IKBoneRotate(Bn[i], target, Bn[0].EndPosition);
+                    IKBoneRotate(Bn[i], target, Bn[0].TipPosition);
                 }
 
                 // 최종적으로 최말단뼈의 회전을 적용한다.
-                IKBoneRotate(Bn[0], target, Bn[0].EndPosition);
-                err = (Bn[0].EndPosition - target).Norm();
+                IKBoneRotate(Bn[0], target, Bn[0].TipPosition);
+                err = (Bn[0].TipPosition - target).Norm();
 
                 iter++;
             }
 
             List<Vertex3f> points = new List<Vertex3f>();
-            points.Add(bone.AnimatedTransform.Position);
-            points.Add(Bn[0].EndPosition);
+            points.Add(bone.BoneTransforms.AnimatedTransform.Position);
+            points.Add(Bn[0].TipPosition);
 
             return (err, points.ToArray());
         }
 
         public static void LookAt(Bone bone, Vertex3f target)
         {
-            Vertex3f bz = bone.AnimatedTransform.Position;
+            Vertex3f bz = bone.BoneTransforms.AnimatedTransform.Position;
             // 추후 구현할 부분
             //ModifyChildBoneAnimatedTransform
         }

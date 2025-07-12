@@ -112,7 +112,7 @@ namespace Animate
                 if (!dicBones.ContainsKey(boneName)) continue;
 
                 Bone bone = dicBones[boneName];
-                if (bone.IsRootArmature && timeFrames.ContainsKey(0.0f)) //
+                if (bone.IsHipBone && timeFrames.ContainsKey(0.0f)) //
                 {
                     float dstSize = bone.PivotPosition.Norm();
                     float srcSize = timeFrames[0.0f].Position.Norm();
@@ -739,7 +739,7 @@ namespace Animate
                         motion.AddKeyFrame(time);
 
                         // 본포즈를 설정한다.
-                        Vertex3f position = bone.IsRootArmature ?
+                        Vertex3f position = bone.IsHipBone ?
                             mat.Position * targetAniRig.Armature.HipHeightScaled : bone.PivotPosition * 0.001f;
                         ZetaExt.Quaternion q = mat.ToQuaternion();
                         q.Normalize();
@@ -972,16 +972,16 @@ namespace Animate
                 int boneIndex = armature.IsExistBoneIndex(boneName) ? armature.GetBoneIndex(boneName) : -1;
 
                 Bone bone = new Bone(boneName, 0)
-                {
-                    LocalBindTransform = mat,
-                    PivotPosition = mat.Position,
+                {                    
                     Index = boneIndex 
                 };
+                bone.BoneTransforms.LocalBindTransform = mat;
+                bone.PivotPosition = mat.Position;
 
                 // 역바인드 포즈를 설정한다.
                 if (invBindPoses.ContainsKey(boneName))
                 {
-                    bone.InverseBindPoseTransform = invBindPoses[boneName];
+                    bone.BoneTransforms.InverseBindPoseTransform = invBindPoses[boneName];
                 }
 
                 armature.AddBone(bone);

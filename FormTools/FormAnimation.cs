@@ -223,6 +223,10 @@ namespace FormTools
             {
                 _humans[Rand.NextInt(0, _humans.Count - 1)].SetMotionImmediately(ACTION.RANDOM);
             }
+            else if (e.KeyCode == Keys.D4)
+            {
+                _humans[0].Transform.GoFoward(0.1f);
+            }
             else if (e.KeyCode == Keys.H)
             {
                 foreach (Human human in _humans)

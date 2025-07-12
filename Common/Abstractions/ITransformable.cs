@@ -1,6 +1,5 @@
 ﻿using Common.Mathematics;
 using OpenGL;
-using System;
 
 namespace Common.Abstractions
 {

@@ -123,7 +123,7 @@ namespace Animate
             }
 
             // (5) source positions으로부터 
-            Matrix4x4f A0 = _armature.RootBone.LocalBindTransform;
+            Matrix4x4f A0 = _armature.RootBone.BoneTransforms.LocalBindTransform;
             Matrix4x4f S = _bindShapeMatrix;
             Matrix4x4f A0xS = A0 * S;
             for (int i = 0; i < lstPositions.Count; i++)
@@ -195,8 +195,8 @@ namespace Animate
             Bone cBone = new Bone(boneName, boneIndex);
             parentBone.AddChild(cBone);
             cBone.Parent = parentBone;
-            cBone.LocalBindTransform = localBindTransform;
-            cBone.InverseBindPoseTransform = inverseBindPoseTransform;
+            cBone.BoneTransforms.LocalBindTransform = localBindTransform;
+            cBone.BoneTransforms.InverseBindPoseTransform = inverseBindPoseTransform;
             _armature.AddBone(boneName, cBone);
 
             return cBone;
@@ -244,7 +244,7 @@ namespace Animate
             AniXmlLoader.LibraryVisualScenes(xml, invBindPoses, ref _armature); 
 
             // (6) source positions으로부터 
-            Matrix4x4f A0 = _armature.RootBone.LocalBindTransform;
+            Matrix4x4f A0 = _armature.RootBone.BoneTransforms.LocalBindTransform;
             Matrix4x4f S = _bindShapeMatrix;
             Matrix4x4f A0xS = A0 * S;
             for (int i = 0; i < lstPositions.Count; i++)
@@ -263,16 +263,16 @@ namespace Animate
                 Bone cBone = bStack.Pop();
 
                 // 부모 뼈대의 애니메이션 바인드 포즈를 계산한다.
-                Matrix4x4f prevAnimatedMat = (cBone.Parent == null ? Matrix4x4f.Identity : cBone.Parent.AnimatedBindPoseTransform);
+                Matrix4x4f prevAnimatedMat = (cBone.Parent == null ? Matrix4x4f.Identity : cBone.Parent.BoneTransforms.AnimatedBindPoseTransform);
 
                 // 현재 뼈대의 애니메이션 바인드 포즈를 계산한다.
-                cBone.AnimatedBindPoseTransform = prevAnimatedMat * cBone.LocalBindTransform;
+                cBone.BoneTransforms.AnimatedBindPoseTransform = prevAnimatedMat * cBone.BoneTransforms.LocalBindTransform;
 
                 // 역바인딩포즈를 계산한다.
-                cBone.InverseBindPoseTransform = cBone.AnimatedBindPoseTransform.Inversed();
+                cBone.BoneTransforms.InverseBindPoseTransform = cBone.BoneTransforms.AnimatedBindPoseTransform.Inversed();
 
                 // 자식 뼈대를 스택에 추가한다.
-                foreach (Bone child in cBone.Childrens) bStack.Push(child);
+                foreach (Bone child in cBone.Children) bStack.Push(child);
             }
 
             // lstPositions, lstTexCoord, lstNormals, lstBoneIndex, lstBoneWeight를 이용하여 RawModel3d를 생성한다.

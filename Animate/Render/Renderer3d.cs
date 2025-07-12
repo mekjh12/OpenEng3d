@@ -34,17 +34,17 @@ namespace Animate
         public static RawModel3d Cylinder = Loader3d.LoadPrism(12, 1, 1, 1, Matrix4x4f.Identity);
         #endregion
 
-        public static void Render(AnimateShader shader, Matrix4x4f bindShapeMatrix, Matrix4x4f modelMatrix, Matrix4x4f localTransformMatrix, List<TexturedModel> models,
-            Matrix4x4f[] finalAnimatedBoneMatrices, Camera camera)
+        public static void Render(AnimateShader shader, Matrix4x4f modelMatrix, List<TexturedModel> models,   Matrix4x4f[] finalAnimatedBoneMatrices, Camera camera)
         {
             shader.Bind();
-            shader.LoadPosModel(localTransformMatrix);
-            shader.LoadModelMatrix(bindShapeMatrix * modelMatrix);
-            shader.LoadViewMatrix(camera.ViewMatrix);
-            shader.LoadProjMatrix(camera.ProjectiveMatrix);
+            shader.LoadUniform(AnimateShader.UNIFORM_NAME.model,  modelMatrix);
+            shader.LoadUniform(AnimateShader.UNIFORM_NAME.view, camera.ViewMatrix);
+            shader.LoadUniform(AnimateShader.UNIFORM_NAME.proj, camera.ProjectiveMatrix);
 
             for (int i = 0; i < finalAnimatedBoneMatrices?.Length; i++)
+            {
                 shader.LoadFinalAnimatedBoneMatrix(i, finalAnimatedBoneMatrices[i]);
+            }
 
             foreach (TexturedModel model in models)
             {
@@ -58,7 +58,9 @@ namespace Animate
                 if (model is TexturedModel)
                 {
                     if (model.Texture != null)
-                        shader.LoadTexture("diffuseMap", TextureUnit.Texture0, model.Texture.TextureID);
+                    {
+                        shader.LoadTexture(AnimateShader.UNIFORM_NAME.diffuseMap, TextureUnit.Texture0, model.Texture.TextureID);
+                    }
                 }
 
                 if (model.IsDrawElement)

@@ -3,8 +3,21 @@ using OpenGL;
 
 namespace Shader
 {
-    public class AnimateShader : ShaderProgram<UnlitShader.UNIFORM_NAME>
+    public class AnimateShader : ShaderProgram<AnimateShader.UNIFORM_NAME>
     {
+        public enum UNIFORM_NAME
+        {
+            // 변환 행렬 유니폼
+            model,              // 모델 변환 행렬
+            view,               // 뷰 변환 행렬
+            proj,               // 투영 변환 행렬
+
+            diffuseMap,         // 텍스처맵
+
+            // 총 유니폼 개수
+            Count
+        }
+
         private static int MAX_JOINTS = 128;
         const string VERTEX_FILE = @"\Shader\AnimateShader\ani.vert";
         const string FRAGMENT_FILE = @"\Shader\AnimateShader\ani.frag";
@@ -27,62 +40,23 @@ namespace Shader
             base.BindAttribute(5, "in_weights");
         }
 
-        protected override void GetAllUniformLocations()
-        {
-            UniformLocations("model", "view", "proj", "bind", "pmodel");
-            UniformLocations("lightDirection");
-            UniformLocations("diffuseMap");
-            UniformLocations("useSingleJoint", "singleJointId");
-
-            for (int i = 0; i < MAX_JOINTS; i++)
-                UniformLocation($"finalAnimatedBoneMatrix[{i}]");
-        }
-
-        public void LoadTexture(string textureUniformName, TextureUnit textureUnit, uint texture)
-        {
-            base.LoadInt(_location[textureUniformName], textureUnit - TextureUnit.Texture0);
-            Gl.ActiveTexture(textureUnit);
-            Gl.BindTexture(TextureTarget.Texture2d, texture);
-        }
-
         public void LoadFinalAnimatedBoneMatrix(int index, Matrix4x4f matrix)
         {
             base.LoadMatrix(_location[$"finalAnimatedBoneMatrix[{index}]"], matrix);
         }
 
-        public void LoadProjMatrix(Matrix4x4f matrix)
+        protected override void GetAllUniformLocations()
         {
-            base.LoadMatrix(_location["proj"], matrix);
-        }
+            // 유니폼 변수 이름을 이용하여 위치 찾기
+            for (int i = 0; i < (int)UNIFORM_NAME.Count; i++)
+            {
+                UniformLocation(((UNIFORM_NAME)i).ToString());
+            }
 
-        public void LoadViewMatrix(Matrix4x4f matrix)
-        {
-            base.LoadMatrix(_location["view"], matrix);
+            for (int i = 0; i < MAX_JOINTS; i++)
+            {
+                UniformLocation($"finalAnimatedBoneMatrix[{i}]");
+            }
         }
-
-        public void LoadModelMatrix(Matrix4x4f matrix)
-        {
-            base.LoadMatrix(_location["model"], matrix);
-        }
-
-        public void LoadBindShapeMatrix(Matrix4x4f bindShapeMatrix)
-        {
-            base.LoadMatrix(_location["bind"], bindShapeMatrix);
-        }
-
-        public void LoadLight(Vertex3f lightDirection)
-        {
-            base.LoadVector(_location["lightDirection"], lightDirection);
-        }
-
-        /// <summary>
-        /// GPU position.xyz를 제일 처음 직접 변환하는 행렬를 넘겨준다.
-        /// </summary>
-        /// <param name="pmodel"></param>
-        public void LoadPosModel(Matrix4x4f pmodel)
-        {
-            base.LoadMatrix(_location["pmodel"], pmodel);
-        }
-
     }
 }

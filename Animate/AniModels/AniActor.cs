@@ -200,7 +200,7 @@ namespace Animate
                     Gl.Disable(EnableCap.CullFace);
                     if (_renderingMode == RenderingMode.Animation)
                     {
-                        Renderer3d.Render(ashader, Matrix4x4f.Identity, modelMatrix, Matrix4x4f.Identity, model, finalAnimatedBoneMatrices, camera);
+                        Renderer3d.Render(ashader, modelMatrix, model, finalAnimatedBoneMatrices, camera);
                     }
                     else if (_renderingMode == RenderingMode.BoneWeight)
                     {
@@ -260,7 +260,7 @@ namespace Animate
                 {
                     Bone bone = item.Value;
                     if (bone.Index >= 0)
-                        jointMatrices[bone.Index] = bone.AnimatedTransform;
+                        jointMatrices[bone.Index] = bone.BoneTransforms.AnimatedTransform;
                 }
                 return jointMatrices;
             }

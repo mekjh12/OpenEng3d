@@ -6,91 +6,42 @@ using ZetaExt;
 namespace Animate
 {
     /// <summary>
-    /// Bone과 동일하게 뼈로서 부모와 자식을 연결하여 Armature를 구성하는 요소이다.
+    /// 3D 애니메이션 시스템의 뼈대(Bone) 클래스
+    /// 캐릭터의 골격을 구성하는 기본 요소로, 계층 구조를 형성하여 애니메이션을 구현한다.
     /// </summary>
     public class Bone
     {
-        int _index;
-        string _name;
-        List<Bone> _children;
-        Bone _parent;
+        /// <summary>
+        /// 자식이 없는 뼈대의 기본 길이 (Y축 방향)
+        /// </summary>
+        private const float DEFAULT_BONE_LENGTH = 15.0f;
 
-        // 애니메이션 변환 행렬를 구성하는 요소들
-        // _localTransform이 변경되면 UpdatePropTransform()를 통해 _animatedTransform이 업데이트됨
-        Matrix4x4f _localTransform = Matrix4x4f.Identity; // 부모뼈 공간에서의 변환 행렬
-        Matrix4x4f _animatedTransform = Matrix4x4f.Identity; // 캐릭터 공간에서의 애니메이션 변환 행렬
+        // 기본 정보
+        private int _index;
+        private string _name;
 
-        // 바인딩 포즈 행렬을 구성하는 요소들
-        Matrix4x4f _localBindTransform = Matrix4x4f.Identity; // 부모뼈 공간에서의 바인딩 포즈 행렬
-        Matrix4x4f _animatedBindPoseTransform = Matrix4x4f.Identity; // 캐릭터 공간에서의 바인딩 포즈 애니메이션 변환 행렬
-        Matrix4x4f _inverseBindPoseTransform = Matrix4x4f.Identity; // 캐릭터 공간에서의 바인딩 포즈의 역행렬
+        // 계층 구조
+        private List<Bone> _children;
+        private Bone _parent;
 
-        BoneAngle _restrictAngle;
+        private BoneTransforms _boneTransforms;
+        public BoneTransforms BoneTransforms => _boneTransforms;
+
+        // 회전 제한
+        private BoneAngle _restrictAngle;
 
         /// <summary>
-        /// 캐릭터 공간에서의 바인딩 포즈 애니메이션 변환 행렬
+        /// 뼈대의 고유 인덱스
         /// </summary>
-        public Matrix4x4f AnimatedBindPoseTransform
-        {
-            get => _animatedBindPoseTransform;
-            set => _animatedBindPoseTransform = value;
-        }
-
-        public BoneAngle RestrictAngle
-        {
-            get => _restrictAngle;
-            set => _restrictAngle = value;
-        }
-
-        public bool IsLeaf => _children.Count == 0;
-
-        /// <summary>
-        ///  캐릭터 공간의 뼈의 끝부분 위치를 가져온다. 만약, 자식이 없으면 15의 값으로 지정된다.
-        /// </summary>
-        public Vertex3f EndPosition
-        {
-            get
-            {
-                if (_children.Count == 0)
-                {
-                    Matrix4x4f a = _animatedTransform * Matrix4x4f.Translated(0, 15, 0);
-                    return a.Position;
-                }
-                else
-                {
-                    Vertex3f g = Vertex3f.Zero;
-                    foreach (Bone bone in _children)
-                    {
-                        g += bone.AnimatedTransform.Position;
-                    }
-                    return g * (1.0f / _children.Count);
-                }
-            }
-        }
-
-        public Bone Parent
-        {
-            get => _parent;
-            set => _parent = value;
-        }
-
-        public bool IsArmature => (_parent == null);
-
-        public bool IsRootArmature 
-        {
-            get
-            {
-                return _name == "mixamorig_Hips";
-                return (_parent.Parent == null);
-            }
-        }
-        
         public int Index
         {
             get => _index;
             set => _index = value;
         }
 
+        /// <summary>
+        /// 뼈대의 이름
+        /// </summary>
         public string Name
         {
             get => _name;
@@ -98,95 +49,205 @@ namespace Animate
         }
 
         /// <summary>
-        /// 캐릭터 공간에서의 뼈의 시작 위치, 즉 피봇의 위치를 가져오거나 설정한다.
+        /// 부모 뼈대 (null이면 루트 뼈대)
+        /// </summary>
+        public Bone Parent
+        {
+            get => _parent;
+            set => _parent = value;
+        }
+
+        /// <summary>
+        /// 자식 뼈대들의 리스트 (읽기 전용)
+        /// </summary>
+        public IReadOnlyList<Bone> Children => _children.AsReadOnly();
+
+        /// <summary>
+        /// 회전 각도 제한 설정
+        /// </summary>
+        public BoneAngle RestrictAngle
+        {
+            get => _restrictAngle;
+            set => _restrictAngle = value;
+        }
+
+        /// <summary>
+        /// 자식이 없는 말단 뼈대인지 여부
+        /// </summary>
+        public bool IsLeaf => _children.Count == 0;
+
+        /// <summary>
+        /// 루트 뼈대인지 여부 (부모가 없는 뼈대)
+        /// </summary>
+        public bool IsRoot => _parent == null;
+
+        /// <summary>
+        /// Mixamo 리그의 엉덩이(Hips) 뼈대인지 여부
+        /// </summary>
+        public bool IsHipBone => _name == "mixamorig_Hips";
+
+        /// <summary>
+        /// 캐릭터 공간에서의 뼈대 시작점(피봇) 위치
         /// </summary>
         public Vertex3f PivotPosition
         {
-            get => _animatedTransform.Position;
+            get => BoneTransforms.AnimatedTransform.Position;
             set
             {
-                _animatedTransform[3, 0] = value.x;
-                _animatedTransform[3, 1] = value.y;
-                _animatedTransform[3, 2] = value.z;
+                Matrix4x4f mat = BoneTransforms.AnimatedTransform;
+
+                mat[3, 0] = value.x;
+                mat[3, 1] = value.y;
+                mat[3, 2] = value.z;
+
+                BoneTransforms.AnimatedTransform = mat;
             }
         }
 
-        public List<Bone> Childrens => _children;
-
         /// <summary>
-        /// 캐릭터 공간에서의 애니메이션 변환 행렬
+        /// 캐릭터 공간에서의 뼈대 끝점 위치
+        /// 자식이 없으면 기본 길이만큼 Y축으로 연장된 위치를 반환
+        /// 자식이 있으면 자식들의 평균 위치를 반환
         /// </summary>
-        public Matrix4x4f AnimatedTransform
+        public Vertex3f TipPosition
         {
-            get => _animatedTransform;
-            set => _animatedTransform = value;
+            get
+            {
+                if (IsLeaf)
+                {
+                    Matrix4x4f extendedTransform = _boneTransforms.AnimatedTransform * Matrix4x4f.Translated(0, DEFAULT_BONE_LENGTH, 0);
+                    return extendedTransform.Position;
+                }
+                else
+                {
+                    Vertex3f averagePosition = Vertex3f.Zero;
+                    foreach (Bone child in _children)
+                    {
+                        averagePosition += child.BoneTransforms.AnimatedTransform.Position;
+                    }
+                    return averagePosition * (1.0f / _children.Count);
+                }
+            }
         }
 
         /// <summary>
-        /// 부모 뼈공간에서의 변환행렬
+        /// 새로운 뼈대를 생성한다
         /// </summary>
-        public Matrix4x4f LocalTransform
-        {
-            get => _localTransform;
-            set => _localTransform = value;
-        }
-
-        /// <summary>
-        /// 캐릭터 공간에서의 바인딩 포즈의 역행렬
-        /// </summary>
-        public Matrix4x4f InverseBindPoseTransform
-        {
-            get => _inverseBindPoseTransform;
-            set => _inverseBindPoseTransform = value;
-        }
-
-        /// <summary>
-        /// 바인딩 포즈의 변환행렬
-        /// </summary>
-        public Matrix4x4f LocalBindTransform
-        {
-            get => _localBindTransform;
-            set => _localBindTransform = value;
-        }
-
-        /// <summary>
-        /// 뼈대이름과 인덱스를 지정하여 뼈대를 생성한다.
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="index"></param>
+        /// <param name="name">뼈대 이름</param>
+        /// <param name="index">뼈대 인덱스</param>
+        /// <exception cref="ArgumentException">이름이 null 또는 빈 문자열인 경우</exception>
+        /// <exception cref="ArgumentOutOfRangeException">인덱스가 음수인 경우</exception>
         public Bone(string name, int index)
         {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("뼈대 이름은 null이거나 빈 문자열일 수 없습니다.", nameof(name));
+
+            if (index < 0)
+                throw new ArgumentOutOfRangeException(nameof(index), "뼈대 인덱스는 0 이상이어야 합니다.");
+
             _children = new List<Bone>();
             _name = name;
             _index = index;
+            _boneTransforms = new BoneTransforms();
+
+            // 기본 회전 제한 설정 (Pitch: -180~180, Yaw: -180~180, Roll: -90~90)
             _restrictAngle = new BoneAngle(-180, 180, -180, 180, -90, 90);
         }
 
         /// <summary>
-        /// 자식 뼈대를 추가한다.
+        /// 자식 뼈대를 추가한다
+        /// 부모-자식 관계를 양방향으로 설정한다
         /// </summary>
-        /// <param name="child"></param>
+        /// <param name="child">추가할 자식 뼈대</param>
+        /// <exception cref="ArgumentNullException">자식 뼈대가 null인 경우</exception>
+        /// <exception cref="InvalidOperationException">자식 뼈대가 이미 다른 부모를 가진 경우</exception>
         public void AddChild(Bone child)
         {
-            _children.Add(child);
+            if (child == null)
+                throw new ArgumentNullException(nameof(child));
+
+            if (child.Parent != null && child.Parent != this)
+                throw new InvalidOperationException("자식 뼈대가 이미 다른 부모를 가지고 있습니다.");
+
+            if (!_children.Contains(child))
+            {
+                _children.Add(child);
+                child.Parent = this;
+            }
         }
 
+        /// <summary>
+        /// 자식 뼈대를 제거한다
+        /// </summary>
+        /// <param name="child">제거할 자식 뼈대</param>
+        /// <returns>성공적으로 제거되었으면 true, 그렇지 않으면 false</returns>
+        public bool RemoveChild(Bone child)
+        {
+            if (child == null) return false;
+
+            if (_children.Remove(child))
+            {
+                child.Parent = null;
+                return true;
+            }
+            return false;
+        }
 
         /// <summary>
-        /// 애니메이션 변환 행렬로부터 로컬 변환 행렬을 역계산하여 업데이트한다.
-        /// (캐릭터 공간 → 부모 뼈공간 변환)
+        /// 애니메이션 변환 행렬로부터 로컬 변환 행렬을 역계산하여 업데이트한다
+        /// (캐릭터 공간 → 부모 뼈대 공간 변환)
         /// </summary>
         public void UpdateLocalTransform()
         {
             if (_parent != null)
             {
-                // 로컬 변환 = 부모의 역변환 * 현재 애니메이션 변환
-                _localTransform = _parent._animatedTransform.Inversed() * _animatedTransform;
+                // 로컬 변환 = 부모의 역변환 × 현재 애니메이션 변환
+                _boneTransforms.LocalTransform = _parent._boneTransforms.AnimatedTransform.Inversed() * _boneTransforms.AnimatedTransform;
             }
             else
             {
                 // 루트 뼈대의 경우 애니메이션 변환이 곧 로컬 변환
-                _localTransform = _animatedTransform;
+                _boneTransforms.LocalTransform = _boneTransforms.AnimatedTransform;
+            }
+        }
+
+        /// <summary>
+        /// 로컬 변환 행렬로부터 캐릭터 공간의 애니메이션 변환 행렬을 계산하고 자식 뼈대들에게 전파한다
+        /// 깊이 우선 탐색(DFS) 방식으로 모든 하위 뼈대를 순회한다
+        /// </summary>
+        /// <param name="includeSelf">현재 뼈대부터 업데이트할지 여부</param>
+        /// <param name="excludeBone">업데이트에서 제외할 뼈대 (null이면 모든 뼈대 업데이트)</param>
+        public void PropagateTransform(bool includeSelf = false, Bone excludeBone = null)
+        {
+            var stack = new Stack<Bone>();
+
+            // 시작점 설정
+            if (includeSelf)
+            {
+                stack.Push(this);
+            }
+            else
+            {
+                foreach (Bone child in _children)
+                    stack.Push(child);
+            }
+
+            // 깊이 우선 탐색으로 모든 하위 뼈대 순회
+            while (stack.Count > 0)
+            {
+                Bone currentBone = stack.Pop();
+
+                // 제외 대상은 건너뛰기
+                if (currentBone == excludeBone) continue;
+
+                // 애니메이션 변환 계산: Parent.AnimatedTransform × LocalTransform
+                currentBone.BoneTransforms.AnimatedTransform = currentBone.Parent == null
+                    ? currentBone.BoneTransforms.LocalTransform
+                    : currentBone.Parent.BoneTransforms.AnimatedTransform * currentBone.BoneTransforms.LocalTransform;
+
+                // 자식들을 스택에 추가
+                foreach (Bone child in currentBone._children)
+                    stack.Push(child);
             }
         }
 
@@ -223,174 +284,14 @@ namespace Animate
                 // 애니메이션 변환 행렬 계산: LocalTransform을 부모의 월드 변환과 결합
                 // 공식: AnimatedTransform = Parent.AnimatedTransform * LocalTransform
                 // 루트 뼈대의 경우 부모가 없으므로 LocalTransform을 그대로 사용
-                currentBone.AnimatedTransform = currentBone.Parent == null
-                    ? currentBone.LocalTransform
-                    : currentBone.Parent.AnimatedTransform * currentBone.LocalTransform;
+                currentBone.BoneTransforms.AnimatedTransform = currentBone.Parent == null
+                    ? currentBone.BoneTransforms.LocalTransform
+                    : currentBone.Parent.BoneTransforms.AnimatedTransform * currentBone.BoneTransforms.LocalTransform;
 
                 // 현재 뼈대의 모든 자식들을 스택에 추가하여 계속 순회
-                foreach (Bone childBone in currentBone.Childrens)
+                foreach (Bone childBone in currentBone.Children)
                     stack.Push(childBone);
             }
         }
-
-        public override string ToString()
-        {
-            string txt = "";
-            Matrix4x4f m = _localBindTransform;
-            for (uint i = 0; i < 4; i++)
-            {
-                txt += $"{Cut(m[0, i])} {Cut(m[1, i])} {Cut(m[2, i])} {Cut(m[3, i])}"
-                    + ((i < 3) ? " / " : "");
-            }
-
-            string invBind = "";
-            Matrix4x4f n = _inverseBindPoseTransform;
-            for (uint i = 0; i < 4; i++)
-            {
-                invBind += $"{Cut(n[0, i])} {Cut(n[1, i])} {Cut(n[2, i])} {Cut(n[3, i])}"
-                    + ((i < 3) ? " / " : "");
-            }
-
-            return $"[{_index},{_name}] Parent={_parent?.Name}, BindMatrix {txt} InvBindMatrix {invBind}";
-
-            float Cut(float a) => ((float)Math.Abs(a) < 0.000001f) ? 0.0f : a;
-        }
-
-        public void ModifyPitch(float phi)
-        {
-            if (phi < _restrictAngle.ConstraintAngle.x )
-            {
-                Matrix4x4f localMat = _localTransform;
-                Vertex3f lowerYAxis = localMat.Column1.Vertex3f();
-                lowerYAxis.y = 0;
-                lowerYAxis = lowerYAxis.Normalized * -Math.Sin(_restrictAngle.ConstraintAngle.x.ToRadian());
-                lowerYAxis.y = (float)Math.Cos(_restrictAngle.ConstraintAngle.x.ToRadian());
-                Matrix4x4f localRotMat = localMat.Column1.Vertex3f().RotateBetween(lowerYAxis);
-                _localTransform = localMat * localRotMat;
-                UpdatePropTransform(isSelfIncluded: true);
-            }            
-            else if (phi > _restrictAngle.ConstraintAngle.y)
-            {
-                Matrix4x4f localMat = _localTransform;
-                Vertex3f lowerYAxis = localMat.Column1.Vertex3f();
-                lowerYAxis.y = 0;
-                lowerYAxis = lowerYAxis.Normalized * Math.Sin(_restrictAngle.ConstraintAngle.y.ToRadian());
-                lowerYAxis.y = (float)Math.Cos(_restrictAngle.ConstraintAngle.y.ToRadian());
-                Matrix4x4f localRotMat = localMat.Column1.Vertex3f().RotateBetween(lowerYAxis);
-                _localTransform = localMat * localRotMat;
-                UpdatePropTransform(isSelfIncluded: true);
-            }
-        }
-
-        public void ModifyYaw(float phi)
-        {
-            if (phi < _restrictAngle.ConstraintAngle.z)
-            {
-                Matrix4x4f localMat = _localTransform;
-                Vertex3f lowerZAxis = localMat.Column2.Vertex3f();
-                lowerZAxis.z = 0;
-                lowerZAxis = lowerZAxis.Normalized * -Math.Sin(_restrictAngle.ConstraintAngle.z.ToRadian());
-                lowerZAxis.y = (float)Math.Cos(_restrictAngle.ConstraintAngle.z.ToRadian());
-                Matrix4x4f localRotMat = localMat.Column2.Vertex3f().RotateBetween(lowerZAxis);
-                _localTransform = localMat * localRotMat;
-                UpdatePropTransform(isSelfIncluded: true);
-            }
-            else if (phi > _restrictAngle.ConstraintAngle.w)
-            {
-                Matrix4x4f localMat = _localTransform;
-                Vertex3f lowerZAxis = localMat.Column2.Vertex3f();
-                lowerZAxis.z = 0;
-                lowerZAxis = lowerZAxis.Normalized * Math.Sin(_restrictAngle.ConstraintAngle.w.ToRadian());
-                lowerZAxis.z = (float)Math.Cos(_restrictAngle.ConstraintAngle.w.ToRadian());
-                Matrix4x4f localRotMat = localMat.Column2.Vertex3f().RotateBetween(lowerZAxis);
-                _localTransform = localMat * localRotMat;
-                UpdatePropTransform(isSelfIncluded: true);
-            }
-        }
-
-        public void ModifyRoll(float phi)
-        {
-            if (phi < _restrictAngle.TwistAngle.x)
-            {
-                Matrix4x4f localMat = _localTransform;
-                Vertex3f lowerZAxis = localMat.Column2.Vertex3f();
-                lowerZAxis.z = 0;
-                lowerZAxis = lowerZAxis.Normalized * -Math.Sin(_restrictAngle.ConstraintAngle.z.ToRadian());
-                lowerZAxis.y = (float)Math.Cos(_restrictAngle.ConstraintAngle.z.ToRadian());
-                Matrix4x4f localRotMat = localMat.Column2.Vertex3f().RotateBetween(lowerZAxis);
-                _localTransform = localMat * localRotMat;
-                UpdatePropTransform(isSelfIncluded: true);
-            }
-            else if (phi > _restrictAngle.TwistAngle.y)
-            {
-                Matrix4x4f localMat = _localTransform;
-                Vertex3f lowerZAxis = localMat.Column2.Vertex3f();
-                lowerZAxis.z = 0;
-                lowerZAxis = lowerZAxis.Normalized * Math.Sin(_restrictAngle.ConstraintAngle.w.ToRadian());
-                lowerZAxis.z = (float)Math.Cos(_restrictAngle.ConstraintAngle.w.ToRadian());
-                Matrix4x4f localRotMat = localMat.Column2.Vertex3f().RotateBetween(lowerZAxis);
-                _localTransform = localMat * localRotMat;
-                UpdatePropTransform(isSelfIncluded: true);
-            }
-        }
-
-
-        /// <summary>
-        /// 피봇의 위치로부터 보는 곳의 위치로 좌표프레임을 변환한다.
-        /// </summary>
-        /// <param name="pivotPosition">피봇의 월드 위치</param>
-        /// <param name="lookAt">보는 곳의 월드 위치</param>
-        /// <param name="upVector">Vertex3f.UnitZ를 기본 사용 권장</param>
-        public void ApplyCoordinateFrame(Vertex3f pivotPosition, Vertex3f lookAt, Vertex3f upVector, bool isRestrictAngle = true)
-        {
-            Vertex3f eyePos = _animatedTransform.Position + pivotPosition; // 캐릭터의 월드 공간 위치에 뼈의 위치를 더한다.
-
-            Vertex3f z = (lookAt - eyePos).Normalized;
-            Vertex3f x = upVector.Cross(z).Normalized;
-            Vertex3f y = z.Cross(x).Normalized;
-
-            Matrix4x4f loc = _localBindTransform;
-
-            Matrix3x3f frame = Matrix3x3f.Identity.Frame(x, y, z) * _localBindTransform.Rot3x3f();
-            Vertex3f pos = _animatedTransform.Position;
-            _animatedTransform = frame.ToMat4x4f(pos);
-            UpdateLocalTransform();
-
-            // 제한된 각도를 벗어나면 제한된 각도로 회귀한다.
-            if (isRestrictAngle)
-            {
-                Vertex3f angleVector = Kinetics.EulerAngleFromRotationMatrixZYX(_localTransform.Rot3x3f())[0]; // 오일러 각을 가져온다.
-                angleVector.x = angleVector.x.Clamp(this.RestrictAngle.ConstraintAngle.x, this.RestrictAngle.ConstraintAngle.y);
-                angleVector.y = angleVector.y.Clamp(this.RestrictAngle.TwistAngle.x, this.RestrictAngle.TwistAngle.y);
-                angleVector.z = angleVector.z.Clamp(this.RestrictAngle.ConstraintAngle.z, this.RestrictAngle.ConstraintAngle.w);
-                Matrix4x4f RotX = Matrix4x4f.RotatedX(angleVector.x);
-                Matrix4x4f RotY = Matrix4x4f.RotatedY(angleVector.y);
-                Matrix4x4f RotZ = Matrix4x4f.RotatedZ(angleVector.z); // 회전을 계산한다.
-                pos = _localTransform.Position;
-                Matrix4x4f Rot = Matrix4x4f.Translated(pos.x, pos.y, pos.z) * RotZ * RotY * RotX; // 회전과 이동을 계산한다.
-                float sx = _localTransform.Column0.Vertex3f().Norm();
-                float sy = _localTransform.Column1.Vertex3f().Norm();
-                float sz = _localTransform.Column2.Vertex3f().Norm();
-                _localTransform = Rot * Matrix4x4f.Scaled(sx, sy, sz) * 100f; // 원본의 행렬의 열벡터의 크기를 가져온다.
-                UpdatePropTransform(isSelfIncluded: true);
-            }
-        }
-
-        /// <summary>
-        /// 현재 뼈에 캐릭터 공간 회전행렬을 적용하여 부모뻐로부터의 뒤틀림(twist) 회전각을 가져온다.
-        /// </summary>
-        /// <param name="rotAMat"></param>
-        /// <returns></returns>
-        public float TwistAngle(Matrix4x4f rotAMat)
-        {
-            Matrix4x4f BrAMat = _animatedTransform;
-            BrAMat = _parent.AnimatedTransform.Inverse * rotAMat * BrAMat;
-            Vertex3f nX = BrAMat.Column0.Vertex3f().Normalized;
-            float theta = (float)Math.Acos(Vertex3f.UnitX.Dot(nX)) * 180.0f / 3.141502f;
-            theta = nX.z < 0 ? theta : -theta;
-            return theta;
-        }
-
-
     }
 }

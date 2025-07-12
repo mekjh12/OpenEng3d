@@ -4,6 +4,9 @@ using System.Linq;
 
 namespace Animate
 {
+    /// <summary>
+    /// 골격
+    /// </summary>
     public class Armature
     {
         Bone _rootBone;

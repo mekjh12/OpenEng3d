@@ -148,22 +148,22 @@ namespace Animate
                 var (bone, parentTransform) = _boneStack.Pop();
 
                 // 현재 포즈 딕셔너리에 뼈대의 이름이 있으면 그 행렬을 가져오고, 없으면 기본 로컬바인딩행렬을 사용한다.
-                bone.LocalTransform = 
+                bone.BoneTransforms.LocalTransform = 
                     (currentPose != null && currentPose.TryGetValue(bone.Name, out Matrix4x4f poseTransform)) ?
-                    poseTransform : bone.LocalBindTransform;
+                    poseTransform : bone.BoneTransforms.LocalBindTransform;
 
                 // 뼈대의 인덱스가 유효한지 확인한다.
                 int boneIndex = bone.Index;
                 if (boneIndex < 0) continue;
 
                 // 부모 행렬과 로컬 변환 행렬을 곱하여 애니메이션된 행렬을 계산한다.
-                Matrix4x4f animated = parentTransform * bone.LocalTransform;
+                Matrix4x4f animated = parentTransform * bone.BoneTransforms.LocalTransform;
 
                 // 애니메이션된 행렬에 역바인드포즈를 적용한다.
-                _animatedTransforms[boneIndex] = animated * bone.InverseBindPoseTransform;
+                _animatedTransforms[boneIndex] = animated * bone.BoneTransforms.InverseBindPoseTransform;
 
                 // 자식 뼈대가 있다면 스택에 추가한다.
-                foreach (Bone childbone in bone.Childrens) _boneStack.Push((childbone, animated));
+                foreach (Bone childbone in bone.Children) _boneStack.Push((childbone, animated));
             }
         }
     }
