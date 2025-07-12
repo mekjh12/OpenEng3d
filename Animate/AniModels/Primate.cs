@@ -191,14 +191,14 @@ namespace Animate
             Bone LEyeBone = _aniRig.AddBone(boneName, _aniRig.BoneCount, parentBoneName,
                 inverseBindPoseTransform: Matrix4x4f.RotatedY(90).Inverse,
                 localBindTransform: Matrix4x4f.Translated(4.4f, 11.8f, 12.5f) * Matrix4x4f.Scaled(0.75f, 0.65f, 0.65f));
-            LEyeBone.RestrictAngle = new BoneAngle(-30, 30, -0, 0, -60, 60);
+            LEyeBone.BoneKinematics.RestrictAngle = new BoneAngle(-30, 30, -0, 0, -60, 60);
             AddEntity(boneName, texturedModel);
 
             boneName = $"mixamorig_eyeRight";
             Bone REyeBone = _aniRig.AddBone(boneName, _aniRig.BoneCount, parentBoneName,
                 inverseBindPoseTransform: Matrix4x4f.RotatedY(90).Inverse,
                 localBindTransform: Matrix4x4f.Translated(-4.4f, 11.8f, 12.5f) * Matrix4x4f.Scaled(0.75f, 0.65f, 0.65f));
-            REyeBone.RestrictAngle = new BoneAngle(-30, 30, -0, 0, -60, 60);
+            REyeBone.BoneKinematics.RestrictAngle = new BoneAngle(-30, 30, -0, 0, -60, 60);
             AddEntity(boneName, texturedModel);
         }
 

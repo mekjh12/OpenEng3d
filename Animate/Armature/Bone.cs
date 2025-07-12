@@ -11,10 +11,8 @@ namespace Animate
     /// </summary>
     public class Bone
     {
-        /// <summary>
-        /// 자식이 없는 뼈대의 기본 길이 (Y축 방향)
-        /// </summary>
-        private const float DEFAULT_BONE_LENGTH = 15.0f;
+        private const float DEFAULT_BONE_LENGTH = 15.0f;            // 자식이 없는 뼈대의 기본 길이 (Y축 방향)
+        private const string ARMATURE_HIPS_NAME = "mixamorig_Hips"; // Mixamo 리그에서 엉덩이(Hips) 뼈대의 이름
 
         // 기본 정보
         private int _index;
@@ -24,11 +22,18 @@ namespace Animate
         private List<Bone> _children;
         private Bone _parent;
 
-        private BoneTransforms _boneTransforms;
-        public BoneTransforms BoneTransforms => _boneTransforms;
+        private BoneTransforms _boneTransforms; // 뼈대의 변환 정보 (애니메이션 및 바인딩 포즈 변환 행렬들)
+        private BoneKinematics _boneKinematics; // 뼈대의 운동학 정보 (추가 기능)
 
-        // 회전 제한
-        private BoneAngle _restrictAngle;
+        /// <summary>
+        /// 뼈대의 운동학 정보를 포함하는 객체
+        /// </summary>
+        public BoneKinematics BoneKinematics => _boneKinematics;
+
+        /// <summary>
+        /// 뼈대의 변환 정보를 포함하는 객체
+        /// </summary>
+        public BoneTransforms BoneTransforms => _boneTransforms;
 
         /// <summary>
         /// 뼈대의 고유 인덱스
@@ -63,15 +68,6 @@ namespace Animate
         public IReadOnlyList<Bone> Children => _children.AsReadOnly();
 
         /// <summary>
-        /// 회전 각도 제한 설정
-        /// </summary>
-        public BoneAngle RestrictAngle
-        {
-            get => _restrictAngle;
-            set => _restrictAngle = value;
-        }
-
-        /// <summary>
         /// 자식이 없는 말단 뼈대인지 여부
         /// </summary>
         public bool IsLeaf => _children.Count == 0;
@@ -84,7 +80,7 @@ namespace Animate
         /// <summary>
         /// Mixamo 리그의 엉덩이(Hips) 뼈대인지 여부
         /// </summary>
-        public bool IsHipBone => _name == "mixamorig_Hips";
+        public bool IsHipBone => _name == ARMATURE_HIPS_NAME;
 
         /// <summary>
         /// 캐릭터 공간에서의 뼈대 시작점(피봇) 위치
@@ -149,9 +145,8 @@ namespace Animate
             _name = name;
             _index = index;
             _boneTransforms = new BoneTransforms();
+            _boneKinematics = new BoneKinematics(); // 뼈대의 운동학 정보 초기화
 
-            // 기본 회전 제한 설정 (Pitch: -180~180, Yaw: -180~180, Roll: -90~90)
-            _restrictAngle = new BoneAngle(-180, 180, -180, 180, -90, 90);
         }
 
         /// <summary>

@@ -51,24 +51,24 @@ namespace Animate
 
         public static void ModifyPitch(this Bone bone, float phi)
         {
-            if (phi < bone.RestrictAngle.ConstraintAngle.x)
+            if (phi < bone.BoneKinematics.RestrictAngle.ConstraintAngle.x)
             {
                 Matrix4x4f localMat = bone.BoneTransforms.LocalTransform;
                 Vertex3f lowerYAxis = localMat.Column1.Vertex3f();
                 lowerYAxis.y = 0;
-                lowerYAxis = lowerYAxis.Normalized * -Math.Sin(bone.RestrictAngle.ConstraintAngle.x.ToRadian());
-                lowerYAxis.y = (float)Math.Cos(bone.RestrictAngle.ConstraintAngle.x.ToRadian());
+                lowerYAxis = lowerYAxis.Normalized * -Math.Sin(bone.BoneKinematics.RestrictAngle.ConstraintAngle.x.ToRadian());
+                lowerYAxis.y = (float)Math.Cos(bone.BoneKinematics.RestrictAngle.ConstraintAngle.x.ToRadian());
                 Matrix4x4f localRotMat = localMat.Column1.Vertex3f().RotateBetween(lowerYAxis);
                 bone.BoneTransforms.LocalTransform = localMat * localRotMat;
                 bone.UpdatePropTransform(isSelfIncluded: true);
             }
-            else if (phi > bone.RestrictAngle.ConstraintAngle.y)
+            else if (phi > bone.BoneKinematics.RestrictAngle.ConstraintAngle.y)
             {
                 Matrix4x4f localMat = bone.BoneTransforms.LocalTransform;
                 Vertex3f lowerYAxis = localMat.Column1.Vertex3f();
                 lowerYAxis.y = 0;
-                lowerYAxis = lowerYAxis.Normalized * Math.Sin(bone.RestrictAngle.ConstraintAngle.y.ToRadian());
-                lowerYAxis.y = (float)Math.Cos(bone.RestrictAngle.ConstraintAngle.y.ToRadian());
+                lowerYAxis = lowerYAxis.Normalized * Math.Sin(bone.BoneKinematics.RestrictAngle.ConstraintAngle.y.ToRadian());
+                lowerYAxis.y = (float)Math.Cos(bone.BoneKinematics.RestrictAngle.ConstraintAngle.y.ToRadian());
                 Matrix4x4f localRotMat = localMat.Column1.Vertex3f().RotateBetween(lowerYAxis);
                 bone.BoneTransforms.LocalTransform = localMat * localRotMat;
                 bone.UpdatePropTransform(isSelfIncluded: true);
@@ -77,24 +77,24 @@ namespace Animate
 
         public static void ModifyYaw(this Bone bone, float phi)
         {
-            if (phi < bone.RestrictAngle.ConstraintAngle.z)
+            if (phi < bone.BoneKinematics.RestrictAngle.ConstraintAngle.z)
             {
                 Matrix4x4f localMat = bone.BoneTransforms.LocalTransform;
                 Vertex3f lowerZAxis = localMat.Column2.Vertex3f();
                 lowerZAxis.z = 0;
-                lowerZAxis = lowerZAxis.Normalized * -Math.Sin(bone.RestrictAngle.ConstraintAngle.z.ToRadian());
-                lowerZAxis.y = (float)Math.Cos(bone.RestrictAngle.ConstraintAngle.z.ToRadian());
+                lowerZAxis = lowerZAxis.Normalized * -Math.Sin(bone.BoneKinematics.RestrictAngle.ConstraintAngle.z.ToRadian());
+                lowerZAxis.y = (float)Math.Cos(bone.BoneKinematics.RestrictAngle.ConstraintAngle.z.ToRadian());
                 Matrix4x4f localRotMat = localMat.Column2.Vertex3f().RotateBetween(lowerZAxis);
                 bone.BoneTransforms.LocalTransform = localMat * localRotMat;
                 bone.UpdatePropTransform(isSelfIncluded: true);
             }
-            else if (phi > bone.RestrictAngle.ConstraintAngle.w)
+            else if (phi > bone.BoneKinematics.RestrictAngle.ConstraintAngle.w)
             {
                 Matrix4x4f localMat = bone.BoneTransforms.LocalTransform;
                 Vertex3f lowerZAxis = localMat.Column2.Vertex3f();
                 lowerZAxis.z = 0;
-                lowerZAxis = lowerZAxis.Normalized * Math.Sin(bone.RestrictAngle.ConstraintAngle.w.ToRadian());
-                lowerZAxis.z = (float)Math.Cos(bone.RestrictAngle.ConstraintAngle.w.ToRadian());
+                lowerZAxis = lowerZAxis.Normalized * Math.Sin(bone.BoneKinematics.RestrictAngle.ConstraintAngle.w.ToRadian());
+                lowerZAxis.z = (float)Math.Cos(bone.BoneKinematics.RestrictAngle.ConstraintAngle.w.ToRadian());
                 Matrix4x4f localRotMat = localMat.Column2.Vertex3f().RotateBetween(lowerZAxis);
                 bone.BoneTransforms.LocalTransform = localMat * localRotMat;
                 bone.UpdatePropTransform(isSelfIncluded: true);
@@ -103,24 +103,24 @@ namespace Animate
 
         public static void ModifyRoll(this Bone bone, float phi)
         {
-            if (phi < bone.RestrictAngle.TwistAngle.x)
+            if (phi < bone.BoneKinematics.RestrictAngle.TwistAngle.x)
             {
                 Matrix4x4f localMat = bone.BoneTransforms.LocalTransform;
                 Vertex3f lowerZAxis = localMat.Column2.Vertex3f();
                 lowerZAxis.z = 0;
-                lowerZAxis = lowerZAxis.Normalized * -Math.Sin(bone.RestrictAngle.ConstraintAngle.z.ToRadian());
-                lowerZAxis.y = (float)Math.Cos(bone.RestrictAngle.ConstraintAngle.z.ToRadian());
+                lowerZAxis = lowerZAxis.Normalized * -Math.Sin(bone.BoneKinematics.RestrictAngle.ConstraintAngle.z.ToRadian());
+                lowerZAxis.y = (float)Math.Cos(bone.BoneKinematics.RestrictAngle.ConstraintAngle.z.ToRadian());
                 Matrix4x4f localRotMat = localMat.Column2.Vertex3f().RotateBetween(lowerZAxis);
                 bone.BoneTransforms.LocalTransform = localMat * localRotMat;
                 bone.UpdatePropTransform(isSelfIncluded: true);
             }
-            else if (phi > bone.RestrictAngle.TwistAngle.y)
+            else if (phi > bone.BoneKinematics.RestrictAngle.TwistAngle.y)
             {
                 Matrix4x4f localMat = bone.BoneTransforms.LocalTransform;
                 Vertex3f lowerZAxis = localMat.Column2.Vertex3f();
                 lowerZAxis.z = 0;
-                lowerZAxis = lowerZAxis.Normalized * Math.Sin(bone.RestrictAngle.ConstraintAngle.w.ToRadian());
-                lowerZAxis.z = (float)Math.Cos(bone.RestrictAngle.ConstraintAngle.w.ToRadian());
+                lowerZAxis = lowerZAxis.Normalized * Math.Sin(bone.BoneKinematics.RestrictAngle.ConstraintAngle.w.ToRadian());
+                lowerZAxis.z = (float)Math.Cos(bone.BoneKinematics.RestrictAngle.ConstraintAngle.w.ToRadian());
                 Matrix4x4f localRotMat = localMat.Column2.Vertex3f().RotateBetween(lowerZAxis);
                 bone.BoneTransforms.LocalTransform = localMat * localRotMat;
                 bone.UpdatePropTransform(isSelfIncluded: true);
@@ -153,9 +153,9 @@ namespace Animate
             if (isRestrictAngle)
             {
                 Vertex3f angleVector = Kinetics.EulerAngleFromRotationMatrixZYX(bone.BoneTransforms.LocalBindTransform.Rot3x3f())[0]; // 오일러 각을 가져온다.
-                angleVector.x = angleVector.x.Clamp(bone.RestrictAngle.ConstraintAngle.x, bone.RestrictAngle.ConstraintAngle.y);
-                angleVector.y = angleVector.y.Clamp(bone.RestrictAngle.TwistAngle.x, bone.RestrictAngle.TwistAngle.y);
-                angleVector.z = angleVector.z.Clamp(bone.RestrictAngle.ConstraintAngle.z, bone.RestrictAngle.ConstraintAngle.w);
+                angleVector.x = angleVector.x.Clamp(bone.BoneKinematics.RestrictAngle.ConstraintAngle.x, bone.BoneKinematics.RestrictAngle.ConstraintAngle.y);
+                angleVector.y = angleVector.y.Clamp(bone.BoneKinematics.RestrictAngle.TwistAngle.x, bone.BoneKinematics.RestrictAngle.TwistAngle.y);
+                angleVector.z = angleVector.z.Clamp(bone.BoneKinematics.RestrictAngle.ConstraintAngle.z, bone.BoneKinematics.RestrictAngle.ConstraintAngle.w);
                 Matrix4x4f RotX = Matrix4x4f.RotatedX(angleVector.x);
                 Matrix4x4f RotY = Matrix4x4f.RotatedY(angleVector.y);
                 Matrix4x4f RotZ = Matrix4x4f.RotatedZ(angleVector.z); // 회전을 계산한다.

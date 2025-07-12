@@ -68,6 +68,7 @@
     <Compile Include="AniModels\AniActor.cs" />
     <Compile Include="Armature\Armature.cs" />
     <Compile Include="Armature\BoneExtension.cs" />
+    <Compile Include="Armature\BoneKinematics.cs" />
     <Compile Include="Armature\BoneTransform.cs" />
     <Compile Include="Core\IComponent.cs" />
     <Compile Include="Loader\AniXmlLoader.cs" />
