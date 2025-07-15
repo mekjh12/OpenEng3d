@@ -757,10 +757,11 @@ namespace Animate
         /// <summary>
         /// COLLADA XML 파일에서 애니메이션 라이브러리를 파싱하여 AniRig 객체에 모션 데이터를 추가하는 메서드
         /// </summary>
-        /// <param name="aniRig">애니메이션 데이터를 저장할 AniRig 객체</param>
         /// <param name="xml">파싱할 COLLADA XML 문서</param>
-        public static void LibraryAnimations(AniRig aniRig, XmlDocument xml)
+        public static void LibraryAnimations(XmlDocument xml)
         {
+            MotionStorage motions = new MotionStorage();
+
             // XML에서 library_animations 노드를 찾음
             XmlNodeList libraryAnimations = xml.GetElementsByTagName("library_animations");
             if (libraryAnimations.Count == 0)
@@ -911,7 +912,7 @@ namespace Animate
                 }
 
                 // 완성된 모션을 aniRig 객체의 모션 컬렉션에 추가
-                aniRig.Motions.AddMotion(motion);
+                motions.AddMotion(motion);
             }
         }
 

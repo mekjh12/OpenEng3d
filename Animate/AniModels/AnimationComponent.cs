@@ -30,7 +30,7 @@ namespace Animate
 
         public void SetMotion(string motionName, float blendingInterval = 0.2f)
         {
-            _animator.OnceFinised = null;
+            _animator.OnceFinished = null;
             Motion motion = _aniRig.Motions.GetMotion(motionName);
 
             if (motion == null)
@@ -49,10 +49,10 @@ namespace Animate
             Motion nextMotion = _aniRig.Motions.GetMotion(motionName);
             if (nextMotion == null) nextMotion = _aniRig.Motions.DefaultMotion;
 
-            _animator.OnceFinised = () =>
+            _animator.OnceFinished = () =>
             {
                 _animator.SetMotion(curMotion);
-                _animator.OnceFinised = null;
+                _animator.OnceFinished = null;
             };
 
             _animator.SetMotion(nextMotion);

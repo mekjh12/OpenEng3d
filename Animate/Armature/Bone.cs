@@ -189,69 +189,11 @@ namespace Animate
         }
 
         /// <summary>
-        /// 애니메이션 변환 행렬로부터 로컬 변환 행렬을 역계산하여 업데이트한다
-        /// (캐릭터 공간 → 부모 뼈대 공간 변환)
-        /// </summary>
-        public void UpdateLocalTransform()
-        {
-            if (_parent != null)
-            {
-                // 로컬 변환 = 부모의 역변환 × 현재 애니메이션 변환
-                _boneTransforms.LocalTransform = _parent._boneTransforms.AnimatedTransform.Inversed() * _boneTransforms.AnimatedTransform;
-            }
-            else
-            {
-                // 루트 뼈대의 경우 애니메이션 변환이 곧 로컬 변환
-                _boneTransforms.LocalTransform = _boneTransforms.AnimatedTransform;
-            }
-        }
-
-        /// <summary>
-        /// 로컬 변환 행렬로부터 캐릭터 공간의 애니메이션 변환 행렬을 계산하고 자식 뼈대들에게 전파한다
-        /// 깊이 우선 탐색(DFS) 방식으로 모든 하위 뼈대를 순회한다
-        /// </summary>
-        /// <param name="includeSelf">현재 뼈대부터 업데이트할지 여부</param>
-        /// <param name="excludeBone">업데이트에서 제외할 뼈대 (null이면 모든 뼈대 업데이트)</param>
-        public void PropagateTransform(bool includeSelf = false, Bone excludeBone = null)
-        {
-            var stack = new Stack<Bone>();
-
-            // 시작점 설정
-            if (includeSelf)
-            {
-                stack.Push(this);
-            }
-            else
-            {
-                foreach (Bone child in _children)
-                    stack.Push(child);
-            }
-
-            // 깊이 우선 탐색으로 모든 하위 뼈대 순회
-            while (stack.Count > 0)
-            {
-                Bone currentBone = stack.Pop();
-
-                // 제외 대상은 건너뛰기
-                if (currentBone == excludeBone) continue;
-
-                // 애니메이션 변환 계산: Parent.AnimatedTransform × LocalTransform
-                currentBone.BoneTransforms.AnimatedTransform = currentBone.Parent == null
-                    ? currentBone.BoneTransforms.LocalTransform
-                    : currentBone.Parent.BoneTransforms.AnimatedTransform * currentBone.BoneTransforms.LocalTransform;
-
-                // 자식들을 스택에 추가
-                foreach (Bone child in currentBone._children)
-                    stack.Push(child);
-            }
-        }
-
-        /// <summary>
         /// 로컬 변환 행렬로부터 캐릭터 공간의 애니메이션 변환 행렬을 계산하고 자식 뼈대들에게 전파한다.
         /// </summary>
         /// <param name="isSelfIncluded">현재 뼈대부터 업데이트할지 여부 (true: 자신 포함, false: 자식들만)</param>
         /// <param name="exceptBone">업데이트에서 제외할 뼈대 (null이면 모든 뼈대 업데이트)</param>
-        public void UpdatePropTransform(bool isSelfIncluded = false, Bone exceptBone = null)
+        public void UpdatePropagateTransform(bool isSelfIncluded = false, Bone exceptBone = null)
         {
             // 깊이 우선 탐색(DFS)을 위한 스택 생성
             Stack<Bone> stack = new Stack<Bone>();

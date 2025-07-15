@@ -66,29 +66,6 @@ namespace Animate
             */
         }
 
-        public void RemoveItem(BODY_PART hand)
-        {
-            switch (hand)
-            {
-                case BODY_PART.LeftHand:
-                    if (_leftHandEntity != null) Remove(_leftHandEntity.Name);
-                    break;
-                case BODY_PART.RightHand:
-                    if (_rightHandEntity != null) Remove(_rightHandEntity.Name);
-                    break;
-                case BODY_PART.Head:
-                    if (_headEntity != null) Remove(_headEntity.Name);
-                    break;
-                case BODY_PART.Back:
-                    if (_backEntity != null) Remove(_backEntity.Name);
-                    break;
-                case BODY_PART.Count:
-                    break;
-                default:
-                    break;
-            }
-        }
-
         public void Attach(BODY_PART hand)
         {
             
@@ -140,7 +117,7 @@ namespace Animate
                 }
 
                 // 손의 자식 뼈를 업데이트한다.
-                hand.UpdatePropTransform(isSelfIncluded: false);
+                hand.UpdatePropagateTransform(isSelfIncluded: false);
             };
         }
 
@@ -169,7 +146,7 @@ namespace Animate
                     }
                     foreach (Bone item in bone.Children) stack.Push(item);
                 }
-                hand.UpdatePropTransform(isSelfIncluded: false);
+                hand.UpdatePropagateTransform(isSelfIncluded: false);
             };
         }
 

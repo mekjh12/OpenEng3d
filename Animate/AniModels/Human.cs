@@ -23,24 +23,6 @@ namespace Animate
 
         HAND_ITEM _curHandItem = HAND_ITEM.NONE;
 
-        AABB _collider;
-
-        public AABB Collider
-        {
-            get
-            {
-                if (_collider == null)
-                {
-                    _collider = new AABB();
-                }
-                else
-                {
-                    _collider.LowerBound = _transform.Position + _aniRig.LowerCollider;
-                    _collider.UpperBound = _transform.Position + _aniRig.UpperCollider;
-                }
-                return _collider;
-            }
-        }
 
         public Vertex3f HipPosition
         {

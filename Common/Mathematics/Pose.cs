@@ -5,7 +5,10 @@ namespace Common.Mathematics
 {
     /// <summary>
     /// 3D 공간에서 객체의 위치와 방향을 나타내는 포즈(Pose) 클래스
-    /// 쿼터니온(Quaternion)을 사용하여 회전을 표현하고, 3차원 벡터로 위치를 표현한다.
+    /// <code>
+    /// 쿼터니온(Quaternion)을 사용하여 회전을 표현하고, 
+    /// 3차원 벡터로 위치를 표현한다.
+    /// </code>
     /// </summary>
     public struct Pose
     {

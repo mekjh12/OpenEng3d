@@ -2,12 +2,100 @@
 using OpenGL;
 using System;
 using System.Collections.Generic;
+using System.Xml;
 using ZetaExt;
 
 namespace Animate
 {
     class Clothes
     {
+
+
+        public List<TexturedModel> WearCloth(string fileName, float expandValue = 0.00005f)
+        {
+            /*
+            XmlDocument xml = new XmlDocument();
+            xml.Load(fileName);
+
+            // (1) library_images = textures
+            Dictionary<string, Texture> textures = AniXmlLoader.LibraryImages(fileName, xml);
+            Dictionary<string, string> materialToEffect = AniXmlLoader.LoadMaterials(xml);
+            Dictionary<string, string> effectToImage = AniXmlLoader.LoadEffect(xml);
+
+            // (2) library_geometries = position, normal, texcoord, color
+            List<MeshTriangles> meshes = AniXmlLoader.LibraryGeometris(xml,
+                out List<Vertex3f> lstPositions, out List<Vertex2f> lstTexCoord, out List<Vertex3f> lstNormals);
+
+            // (3) library_controllers = boneIndex, boneWeight, bindShapeMatrix
+            AniXmlLoader.LibraryController(xml,
+                out List<string> clothBoneNames,
+                out Dictionary<string, Matrix4x4f> invBindPoses,
+                out List<BoneWeightVector4> vertexBoneData,
+                out Matrix4x4f bindShapeMatrix);
+            _bindShapeMatrix = bindShapeMatrix;
+
+            // (4-1) boneName, boneIndexDictionary
+            Dictionary<int, int> map = new Dictionary<int, int>();
+            for (int i = 0; i < clothBoneNames.Count; i++)
+            {
+                string clothBoneName = clothBoneNames[i].Trim();
+                if (_armature.IsExistBone(clothBoneName))
+                {
+                    map.Add(i, _armature.GetBoneIndex(clothBoneName));
+                }
+                else
+                {
+                    Console.WriteLine($"현재 뼈대에 매칭되는 본({clothBoneName})이 없습니다. ");
+                }
+            }
+
+            // (4-2) bone-index modify.
+            for (int i = 0; i < vertexBoneData.Count; i++)
+            {
+                var current = vertexBoneData[i];
+                var newIndices = new Vertex4i(
+                    map[current.BoneIndices.x],
+                    map[current.BoneIndices.y],
+                    map[current.BoneIndices.z],
+                    map[current.BoneIndices.w]
+                );
+                vertexBoneData[i] = current.WithBoneIndices(newIndices);
+            }
+
+            // (5) source positions으로부터 
+            Matrix4x4f A0 = _armature.RootBone.BoneTransforms.LocalBindTransform;
+            Matrix4x4f S = _bindShapeMatrix;
+            Matrix4x4f A0xS = A0 * S;
+            for (int i = 0; i < lstPositions.Count; i++)
+            {
+                lstPositions[i] = A0xS.Multiply(lstPositions[i]);
+            }
+
+            // (6) 읽어온 정보의 인덱스를 이용하여 배열을 만든다.
+            List<TexturedModel> texturedModels = new List<TexturedModel>();
+            foreach (MeshTriangles meshTriangles in meshes)
+            {
+                RawModel3d _rawModel = Clothes.Expand(lstPositions, lstTexCoord,
+                    vertexBoneData, meshTriangles, expandValue);
+
+                string effect = materialToEffect[meshTriangles.Material].Replace("#", "");
+                string imageName = (effectToImage[effect]);
+
+                if (textures.ContainsKey(imageName))
+                {
+                    TexturedModel texturedModel = new TexturedModel(_rawModel, textures[imageName]);
+                    texturedModel.IsDrawElement = _rawModel.IsDrawElement;
+                    texturedModel.VertexCount = _rawModel.VertexCount;
+                    texturedModels.Add(texturedModel);
+                }
+            }
+
+            return texturedModels;
+            */
+
+            return null;
+        }
+
         public static TexturedModel WearAssignWeightTransfer(TexturedModel skinModel, string clothFileName)
         {
             TexturedModel texturedModel = AniXmlLoader.LoadOnlyGeometryMesh(clothFileName);
