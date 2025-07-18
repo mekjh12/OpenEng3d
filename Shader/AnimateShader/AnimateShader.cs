@@ -11,8 +11,12 @@ namespace Shader
             model,              // 모델 변환 행렬
             view,               // 뷰 변환 행렬
             proj,               // 투영 변환 행렬
+            mvp,                // 모델-뷰-투영 변환 행렬
 
             diffuseMap,         // 텍스처맵
+
+            isSkinningEnabled,  // 스키닝 활성화 여부
+            rigidBoneIndex,     // 강체 본 인덱스
 
             // 총 유니폼 개수
             Count

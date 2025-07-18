@@ -461,7 +461,7 @@ namespace GlWindow
             Gl.ClearColor(_backColor.x, _backColor.y, _backColor.z, 1.0f);
             Gl.Enable(EnableCap.DepthTest);
             Gl.Viewport(0, 0, Width, Height);
-            Gl.PolygonMode(MaterialFace.Front, _polygonMode);
+            Gl.PolygonMode(MaterialFace.FrontAndBack, _polygonMode);
 
             // 3d렌더링
             if (_render != null)

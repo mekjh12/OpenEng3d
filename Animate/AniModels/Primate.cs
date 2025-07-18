@@ -75,8 +75,8 @@ namespace Animate
         {
             _updateAfter += () =>
             {
-                GetBoneByName("mixamorig_eyeLeft")?.ApplyCoordinateFrame(_transform.Matrix4x4f.Position, worldPosition, Vertex3f.UnitZ);
-                GetBoneByName("mixamorig_eyeRight")?.ApplyCoordinateFrame(_transform.Matrix4x4f.Position, worldPosition, Vertex3f.UnitZ);
+                AniRig.Armature["mixamorig_eyeLeft"]?.ApplyCoordinateFrame(_transform.Matrix4x4f.Position, worldPosition, Vertex3f.UnitZ);
+                AniRig.Armature["mixamorig_eyeRight"]?.ApplyCoordinateFrame(_transform.Matrix4x4f.Position, worldPosition, Vertex3f.UnitZ);
             };
         }
 
@@ -90,7 +90,7 @@ namespace Animate
             _updateAfter += () =>
             {
                 // 손을 가져온다.
-                Bone hand = GetBoneByName("mixamorig_" + (whereHand == BODY_PART.LeftHand ? "LeftHand" : "RightHand"));
+                Bone hand = AniRig.Armature["mixamorig_" + (whereHand == BODY_PART.LeftHand ? "LeftHand" : "RightHand")];
 
                 // 손의 모든 뼈를 스택에 넣는다.
                 Stack<Bone> stack = new Stack<Bone>();
@@ -125,7 +125,7 @@ namespace Animate
         {
             _updateAfter += () =>
             {
-                Bone hand = GetBoneByName("mixamorig_" + (whereHand == BODY_PART.LeftHand ? "LeftHand" : "RightHand"));
+                Bone hand = AniRig.Armature["mixamorig_" + (whereHand == BODY_PART.LeftHand ? "LeftHand" : "RightHand")];
                 Stack<Bone> stack = new Stack<Bone>();
                 stack.Push(hand);
                 while (stack.Count > 0)
@@ -169,14 +169,14 @@ namespace Animate
                 inverseBindPoseTransform: Matrix4x4f.RotatedY(90).Inverse,
                 localBindTransform: Matrix4x4f.Translated(4.4f, 11.8f, 12.5f) * Matrix4x4f.Scaled(0.75f, 0.65f, 0.65f));
             LEyeBone.BoneKinematics.RestrictAngle = new BoneAngle(-30, 30, -0, 0, -60, 60);
-            AddEntity(boneName, texturedModel);
+            //AddEntity(boneName, texturedModel);
 
             boneName = $"mixamorig_eyeRight";
             Bone REyeBone = _aniRig.AddBone(boneName, _aniRig.BoneCount, parentBoneName,
                 inverseBindPoseTransform: Matrix4x4f.RotatedY(90).Inverse,
                 localBindTransform: Matrix4x4f.Translated(-4.4f, 11.8f, 12.5f) * Matrix4x4f.Scaled(0.75f, 0.65f, 0.65f));
             REyeBone.BoneKinematics.RestrictAngle = new BoneAngle(-30, 30, -0, 0, -60, 60);
-            AddEntity(boneName, texturedModel);
+            //AddEntity(boneName, texturedModel);
         }
 
         /// <summary>

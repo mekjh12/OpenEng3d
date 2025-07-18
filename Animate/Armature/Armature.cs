@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenGL;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -17,7 +18,6 @@ namespace Animate
         // 본 관리 데이터
         private Dictionary<string, Bone> _dicBones;     // 본 이름 -> 본 객체 매핑
         private Dictionary<string, int> _dicBoneIndex;  // 본 이름 -> 인덱스 매핑
-        private string[] _boneNames;                    // 본 이름 배열
 
         /// <summary>
         /// 엉덩이 높이 비율을 가져오거나 설정한다.
@@ -61,16 +61,12 @@ namespace Animate
         /// <param name="boneNames">설정할 본 이름들의 배열</param>
         public void SetupBoneMapping(string[] boneNames)
         {
-            // 본 이름 배열 복사
-            _boneNames = new string[boneNames.Length];
-
             // 기존 인덱스 매핑 초기화
             _dicBoneIndex.Clear();
 
             // 본 이름과 인덱스 매핑 생성
             for (int i = 0; i < boneNames.Length; i++)
             {
-                _boneNames[i] = boneNames[i];
                 _dicBoneIndex.Add(boneNames[i], i);
             }
         }
@@ -96,9 +92,48 @@ namespace Animate
                 throw new ArgumentException($"Bone with name {boneName} already exists.");
             }
 
-            // 본 추가 및 이름 배열 갱신
+            // 본 추가
             _dicBones[boneName] = bone;
-            _boneNames = _boneNames.Append(boneName).ToArray();
+        }
+
+        /// <summary>
+        /// 지정된 부모 본에 새로운 본을 연결한다.
+        /// </summary>
+        /// <param name="parentBoneName">부모 본의 이름</param>
+        /// <param name="boneName">새로 생성할 본의 이름</param>
+        /// <param name="localTransform">새 본의 로컬 변환 행렬</param>
+        /// <exception cref="ArgumentException">부모 본이 존재하지 않거나 본 이름이 이미 존재할 때</exception>
+        /// <exception cref="ArgumentNullException">본 이름이 null이거나 빈 문자열일 때</exception>
+        public void AttachBone(string parentBoneName, string boneName, Matrix4x4f localTransform)
+        {            
+            // 부모 본 존재 확인
+            if (!_dicBones.ContainsKey(parentBoneName))
+                throw new ArgumentException($"부모 본 '{parentBoneName}'이 존재하지 않습니다.", nameof(parentBoneName));
+
+            // 중복 본 이름 확인
+            if (_dicBones.ContainsKey(boneName))
+                throw new ArgumentException($"본 이름 '{boneName}'이 이미 존재합니다.", nameof(boneName));
+
+            // 부모-자식 관계 설정
+            Bone parentBone = _dicBones[parentBoneName];
+
+            // 새로운 본 인덱스 계산
+            int newBoneIndex = _dicBoneIndex.Count > 0 ? _dicBoneIndex.Values.Max() + 1 : 0;
+
+            // 새로운 본 생성
+            Bone newBone = new Bone(boneName, newBoneIndex);
+
+            // 변환 행렬 설정
+            newBone.BoneTransforms.LocalBindTransform = localTransform;
+            newBone.BoneTransforms.InverseBindPoseTransform = Matrix4x4f.Identity;
+            parentBone.AddChild(newBone);
+
+            // 딕셔너리에 새 본 추가
+            _dicBones[boneName] = newBone;
+            _dicBoneIndex[boneName] = newBoneIndex;
+
+            // 애니메이션 변환 행렬 업데이트
+            newBone.UpdatePropagateTransform(isSelfIncluded: true);
         }
 
         /// <summary>

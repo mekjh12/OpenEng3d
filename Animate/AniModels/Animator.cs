@@ -23,17 +23,18 @@ namespace Animate
         private const float MIN_MOTION_TIME = 0.0f;
 
         // 멤버 변수
-        private Matrix4x4f[] _animatedTransforms = new Matrix4x4f[MAX_BONES_COUNT]; // 애니메이션된 행렬      
+        private Matrix4x4f[] _animatedTransforms = new Matrix4x4f[MAX_BONES_COUNT]; // 애니메이션된 행렬
+        private Matrix4x4f[] _boneCharacterTransforms = new Matrix4x4f[MAX_BONES_COUNT]; // 뼈대의 캐릭터공간 변환 행렬들
+
+
         private float _motionTime = 0.0f; // 현재 모션 시간
         private bool _isPlaying = true; // 재생 상태
 
         // 모션 관련 변수
+        private AnimationState _animationState = AnimationState.Normal; // 현재 애니메이션 상태
         private Motion _currentMotion; // 현재 모션
         private Motion _blendMotion; // 블렌딩 모션
         private Motion _nextMotion; // 다음 모션
-        private AnimationState _animationState = AnimationState.Normal; // 현재 애니메이션 상태
-
-
         private Bone _rootBone; // 루트 본
 
         // 클래스내 처리 변수
@@ -47,6 +48,11 @@ namespace Animate
         public Matrix4x4f[] AnimatedTransforms => _animatedTransforms;
 
         /// <summary>
+        /// 캐릭터 공간으로 변환된 뼈대의 애니메이션 바인딩 변환 행렬들.
+        /// </summary>
+        public Matrix4x4f[] BoneCharacterTransforms => _boneCharacterTransforms;
+
+        /// <summary>
         /// 한번 실행 완료 시 호출될 콜백 액션을 설정한다.
         /// </summary>
         public Action OnceFinished
@@ -54,14 +60,7 @@ namespace Animate
             set => _actionOnceFinished = value;
         }
 
-        /// <summary>
-        /// 현재 실행 중인 모션을 가져온다.
-        /// </summary>
         public Motion CurrentMotion => _currentMotion;
-
-        /// <summary>
-        /// 애니메이션 재생 상태를 가져온다.
-        /// </summary>
         public bool IsPlaying => _isPlaying;
 
         /// <summary>
@@ -226,14 +225,14 @@ namespace Animate
                 if (boneIndex < 0) continue;
 
                 // 부모 행렬과 로컬 변환 행렬을 곱하여 애니메이션된 행렬을 계산한다.
-                Matrix4x4f animated = parentTransform * bone.BoneTransforms.LocalTransform;
+                _boneCharacterTransforms[boneIndex] = parentTransform * bone.BoneTransforms.LocalTransform;
 
                 // 애니메이션된 행렬에 역바인드포즈를 적용한다.
-                _animatedTransforms[boneIndex] = animated * bone.BoneTransforms.InverseBindPoseTransform;
+                _animatedTransforms[boneIndex] = _boneCharacterTransforms[boneIndex] * bone.BoneTransforms.InverseBindPoseTransform;
 
                 // 자식 뼈대가 있다면 스택에 추가한다.
                 foreach (Bone childbone in bone.Children)
-                    _boneStack.Push((childbone, animated));
+                    _boneStack.Push((childbone, _boneCharacterTransforms[boneIndex]));
             }
         }
     }

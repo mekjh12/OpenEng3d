@@ -28,7 +28,7 @@ namespace Animate
         {
             get
             {
-                int index = GetBoneByName("mixamorig_Hip").Index;
+                int index = AniRig.Armature["mixamorig_Hip"].Index;
                 Matrix4x4f m = _transform.Matrix4x4f * AnimatedTransforms[index];
                 return m.Column3.xyz();
             }
@@ -39,7 +39,7 @@ namespace Animate
         {
             get
             {
-                int index = GetBoneByName("mixamorig_RightHand").Index;
+                int index = AniRig.Armature["mixamorig_RightHand"].Index;
                 Matrix4x4f m = _transform.Matrix4x4f * AnimatedTransforms[index];
                 return m.Column3.xyz();
             }
@@ -49,7 +49,7 @@ namespace Animate
         {
             get
             {
-                int index = GetBoneByName("mixamorig_Head").Index;
+                int index = AniRig.Armature["mixamorig_Head"].Index;
                 Matrix4x4f m = _transform.Matrix4x4f * AnimatedTransforms[index];
                 return m.Column3.xyz();
             }
@@ -59,7 +59,7 @@ namespace Animate
         {
             get
             {
-                int index = GetBoneByName("mixamorig_LeftFoot").Index;
+                int index = AniRig.Armature["mixamorig_LeftFoot"].Index;
                 Matrix4x4f m = _transform.Matrix4x4f * AnimatedTransforms[index];
                 return m.Column3.xyz();
             }
@@ -69,7 +69,7 @@ namespace Animate
         {
             get
             {
-                int index = GetBoneByName("mixamorig_RightFoot").Index;
+                int index = AniRig.Armature["mixamorig_RightFoot"].Index;
                 Matrix4x4f m = _transform.Matrix4x4f * AnimatedTransforms[index];
                 return m.Column3.xyz();
             }

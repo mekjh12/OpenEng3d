@@ -2,13 +2,12 @@
 using AutoGenEnums;
 using Common.Abstractions;
 using GlWindow;
+using Model3d;
 using OpenGL;
 using Shader;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
-using System.Security.Cryptography;
 using System.Windows.Forms;
 using ZetaExt;
 
@@ -23,9 +22,11 @@ namespace FormTools
 
         StaticShader _staticShader;
         AnimateShader _animateShader;
+        AxisShader _axisShader;
 
         MixamoRotMotionStorage _mixamoRotMotionStorage;
         List<Human> _humans = new List<Human>();
+        TexturedModel _sword;
 
         public FormAnimation()
         {
@@ -74,6 +75,7 @@ namespace FormTools
             // 셰이더 초기화
             if (_staticShader == null) _staticShader = new StaticShader(PROJECT_PATH);
             if (_animateShader == null) _animateShader = new AnimateShader(PROJECT_PATH);
+            if (_axisShader == null) _axisShader = new AxisShader(PROJECT_PATH);
         }
 
         private void Init2d(int w, int h)
@@ -84,9 +86,6 @@ namespace FormTools
             _glControl3.AddLabel("ocs", "ocs", align: Ui2d.Control.CONTROL_ALIGN.ADJOINT_TOP, foreColor: new Vertex3f(1, 1, 0));
             _glControl3.IsVisibleDebug = bool.Parse(IniFile.GetPrivateProfileString("sysInfo", "visibleDebugWindow", "False"));
             _glControl3.IsVisibleGrid = bool.Parse(IniFile.GetPrivateProfileString("sysInfo", "visibleGrid", "False"));
-
-            // 전체 화면 여부 
-            //if (Screen.PrimaryScreen.DeviceName.IndexOf("DISPLAY") > 0) _glControl3.FullScreen(true);
         }
 
         private void Init3d(int w, int h)
@@ -96,6 +95,7 @@ namespace FormTools
 
             AniRig aniRig = new AniRig(PROJECT_PATH + @"\Res\abe.dae", isLoadAnimation: false);
             AniRig aniRig2 = new AniRig(PROJECT_PATH + @"\Res\Guybrush_final.dae", isLoadAnimation: false);
+            aniRig.Armature.AttachBone("mixamorig_Head", "mixamorig_Head_top", Matrix4x4f.Translated(0, 20, 0));
 
             _humans.Add(new Human($"abe",  aniRig));
             _humans[0].Transform.IncreasePosition(0, 0, 0);
@@ -126,6 +126,13 @@ namespace FormTools
             {
                 human.SetMotion(ACTION.RANDOM);
             }
+
+            // 아이템 장착
+            int boneIndex = _humans[0].AniRig.Armature.GetBoneIndex("mixamorig_Head_top");
+            Model3d.TextureStorage.NullTextureFileName = PROJECT_PATH + "\\Res\\debug.jpg";
+            _sword = LoadModel(PROJECT_PATH + @"\Res\AxePickaxe.obj")[0];
+            _humans[0].EquipItem("sword0", "sword", _sword, boneIndex);
+            _humans[1].EquipItem("sword1", "sword", _sword, boneIndex);
 
             // 셰이더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
@@ -166,9 +173,7 @@ namespace FormTools
             int h = _glControl3.Height;
 
             // 백그라운드 컬러 설정
-            float r = _glControl3.BackClearColor.x;
-            float g = _glControl3.BackClearColor.y;
-            float b = _glControl3.BackClearColor.z;
+            Vertex3f backColor = _glControl3.BackClearColor;
 
             // 기본 프레임버퍼로 전환 및 초기화
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
@@ -178,14 +183,20 @@ namespace FormTools
             // 카메라 중심점 렌더링
             Gl.Enable(EnableCap.DepthTest);
 
+            Matrix4x4f vp = camera.VPMatrix;
+
             foreach (Human human in _humans)
             {
-                human.Render(camera, _staticShader, _animateShader, isBoneVisible: true);
+                human.Render(camera, vp, _animateShader, isBoneVisible: true);
+            }
+
+            foreach (Human human in _humans)
+            {
+               _axisShader.RenderAxes(human.Transform.Matrix4x4f, human.Animator.BoneCharacterTransforms, vp);
             }
 
             // 폴리곤 모드 설정
             Gl.PolygonMode(MaterialFace.FrontAndBack, _glControl3.PolygonMode);
-
         }
 
         public void MouseDnEvent(object sender, MouseEventArgs e)
@@ -208,8 +219,10 @@ namespace FormTools
         {
             if (e.KeyCode == Keys.F)
             {
-                //_humanAniModel1.PolygonMode = _humanAniModel1.PolygonMode == PolygonMode.Fill ? PolygonMode.Line : PolygonMode.Fill;
-                //Debug.PrintLine($"PolygonMode: {_humanAniModel1.PolygonMode}");
+                foreach (Human human in _humans)
+                {
+                    human.PolygonMode = human.PolygonMode == PolygonMode.Fill ? PolygonMode.Line : PolygonMode.Fill;
+                }
             }
             else if (e.KeyCode == Keys.D1)
             {
@@ -247,6 +260,22 @@ namespace FormTools
         private void FormCloud_Load(object sender, EventArgs e)
         {
 
+        }
+
+        public TexturedModel[] LoadModel(string modelFileName)
+        {
+            string materialFileName = modelFileName.Replace(".obj", ".mtl");
+
+            // 텍스쳐모델을 읽어온다.
+            List<TexturedModel> texturedModels = ObjLoader.LoadObj(modelFileName);
+
+            // 모델에 맞는 원래 모양의 바운딩 박스를 만든다.
+            foreach (TexturedModel texturedModel in texturedModels)
+            {
+                texturedModel.GenerateBoundingBox();
+            }
+
+            return texturedModels.ToArray();
         }
     }
 }

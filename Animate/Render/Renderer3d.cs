@@ -1,10 +1,10 @@
-﻿using Camera3d;
+﻿using Animate.AniModels;
+using Camera3d;
 using Common.Abstractions;
 using Model3d;
 using OpenGL;
 using Shader;
 using System.Collections.Generic;
-using ZetaExt;
 
 namespace Animate
 {
@@ -34,12 +34,69 @@ namespace Animate
         public static RawModel3d Cylinder = Loader3d.LoadPrism(12, 1, 1, 1, Matrix4x4f.Identity);
         #endregion
 
-        public static void Render(AnimateShader shader, Matrix4x4f modelMatrix, List<TexturedModel> models,   Matrix4x4f[] finalAnimatedBoneMatrices, Camera camera)
+        public static void RenderRigidBody(AnimateShader shader, Matrix4x4f modelMatrix, 
+            Matrix4x4f rigidLocalTransform,
+            List<ItemAttachment> items, 
+            Matrix4x4f[] finalAnimatedBoneMatrices, 
+            Camera camera)
         {
             shader.Bind();
-            shader.LoadUniform(AnimateShader.UNIFORM_NAME.model,  modelMatrix);
+            shader.LoadUniform(AnimateShader.UNIFORM_NAME.model, modelMatrix);
             shader.LoadUniform(AnimateShader.UNIFORM_NAME.view, camera.ViewMatrix);
             shader.LoadUniform(AnimateShader.UNIFORM_NAME.proj, camera.ProjectiveMatrix);
+
+            shader.LoadUniform(AnimateShader.UNIFORM_NAME.isSkinningEnabled, false);
+
+            for (int i = 0; i < finalAnimatedBoneMatrices?.Length; i++)
+            {
+                shader.LoadFinalAnimatedBoneMatrix(i, finalAnimatedBoneMatrices[i]);
+            }
+
+            foreach (ItemAttachment item in items)
+            {
+                shader.LoadUniform(AnimateShader.UNIFORM_NAME.rigidBoneIndex, item.BoneIndex);
+
+                Gl.BindVertexArray(item.Model.VAO);
+                Gl.EnableVertexAttribArray(0);
+                Gl.EnableVertexAttribArray(1);
+                Gl.EnableVertexAttribArray(2);
+                Gl.EnableVertexAttribArray(4);
+                Gl.EnableVertexAttribArray(5);
+
+                if (item.Model is TexturedModel)
+                {
+                    if (item.Model.Texture != null)
+                    {
+                        shader.LoadTexture(AnimateShader.UNIFORM_NAME.diffuseMap, TextureUnit.Texture0, item.Model.Texture.TextureID);
+                    }
+                }
+
+                if (item.Model.IsDrawElement)
+                {
+                    Gl.DrawElements(PrimitiveType.Triangles, item.Model.VertexCount, DrawElementsType.UnsignedInt, System.IntPtr.Zero);
+                }
+                else
+                {
+                    Gl.DrawArrays(PrimitiveType.Triangles, 0, item.Model.VertexCount);
+                }
+
+                Gl.DisableVertexAttribArray(0);
+                Gl.DisableVertexAttribArray(1);
+                Gl.DisableVertexAttribArray(2);
+                Gl.DisableVertexAttribArray(4);
+                Gl.DisableVertexAttribArray(5);
+                Gl.BindVertexArray(0);
+            }
+
+            shader.Unbind();
+        }
+
+        public static void RenderSkinning(AnimateShader shader, Matrix4x4f mvp, List<TexturedModel> models, Matrix4x4f[] finalAnimatedBoneMatrices)
+        {
+            shader.Bind();
+            shader.LoadUniform(AnimateShader.UNIFORM_NAME.mvp, mvp);
+
+            shader.LoadUniform(AnimateShader.UNIFORM_NAME.isSkinningEnabled, true);
 
             for (int i = 0; i < finalAnimatedBoneMatrices?.Length; i++)
             {
@@ -81,6 +138,35 @@ namespace Animate
             }
 
             shader.Unbind();
+        }
+
+        public static void RenderLocalAxis(ColorShader shader, Matrix4x4f mat, Matrix4x4f vp, float thick = 1.0f)
+        {
+            Gl.Disable(EnableCap.DepthTest);
+            shader.Bind();
+            Gl.LineWidth(thick);
+            Gl.BindVertexArray(Renderer3d.Line.VAO);
+            Gl.EnableVertexAttribArray(0);
+
+            Matrix4x4f mvp = vp * mat * Matrix4x4f.Scaled(10, 10, 10);
+
+            shader.LoadUniform(ColorShader.UNIFORM_NAME.mvp, mvp);
+            shader.LoadUniform(ColorShader.UNIFORM_NAME.color, new Vertex4f(1, 0, 0, 1)); // red
+            Gl.DrawArrays(PrimitiveType.Lines, 0, Renderer3d.Line.VertexCount);
+
+            shader.LoadUniform(ColorShader.UNIFORM_NAME.mvp, mvp * Matrix4x4f.RotatedZ(90));
+            shader.LoadUniform(ColorShader.UNIFORM_NAME.color, new Vertex4f(0, 1, 0, 1)); // green
+            Gl.DrawArrays(PrimitiveType.Lines, 0, Renderer3d.Line.VertexCount);
+
+            shader.LoadUniform(ColorShader.UNIFORM_NAME.mvp, mvp * Matrix4x4f.RotatedY(-90));
+            shader.LoadUniform(ColorShader.UNIFORM_NAME.color, new Vertex4f(0, 0, 1, 1)); // blue
+            Gl.DrawArrays(PrimitiveType.Lines, 0, Renderer3d.Line.VertexCount);
+
+            Gl.DisableVertexAttribArray(0);
+            Gl.BindVertexArray(0);
+            shader.Unbind();
+            Gl.Enable(EnableCap.DepthTest);
+            Gl.LineWidth(1.0f);
         }
 
 
@@ -141,7 +227,7 @@ namespace Animate
             Gl.EnableVertexAttribArray(2);
 
             Matrix4x4f mat = (Matrix4x4f)localModel;
-            Matrix4x4f scaled = Matrix4x4f.Scaled(0.3f * size, size, 0.5f * size);
+            Matrix4x4f scaled = Matrix4x4f.Scaled(10.3f * size, size, 10.5f * size);
 
             Gl.LineWidth(thick);
             shader.LoadUniform(StaticShader.UNIFORM_NAME.model, mat * scaled);

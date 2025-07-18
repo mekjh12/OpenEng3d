@@ -1,117 +1,66 @@
-﻿using AutoGenEnums;
+﻿using Animate.AniModels;
+using AutoGenEnums;
 using Common.Abstractions;
-using Common.Mathematics;
-using Geometry;
 using Model3d;
 using OpenGL;
 using Shader;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http.Headers;
 
 namespace Animate
 {
-    public abstract class AniActor: ITransformable
+    public abstract partial class AniActor
     {
-        protected ACTION _prevMotion = ACTION.BREATHING_IDLE;
-        protected ACTION _curMotion = ACTION.BREATHING_IDLE;
+        protected ACTION _prevMotion = ACTION.BREATHING_IDLE; // 이전 모션 상태
+        protected ACTION _curMotion = ACTION.BREATHING_IDLE; // 현재 모션 상태
 
-        protected string _name;
-        protected AniRig _aniRig;
-        protected Animator _animator;
+        protected string _name; // 액터 이름
+        protected AniRig _aniRig; // 애니메이션 리그
+        protected Animator _animator; // 애니메이터
 
-        protected Action _updateBefore;
-        protected Action _updateAfter;
-        protected Transform _transform;
+        protected Action _updateBefore; // 업데이트 전 콜백
+        protected Action _updateAfter; // 업데이트 후 콜백
+        protected Transform _transform; // 트랜스폼
 
-        List<TexturedModel> _items; // 애니리그에 부착할 텍스쳐 모델 리스트(아이템으로 모자, 옷 등을 부착할 수 있다.)
-
+        // 아이템은 하나의 뼈대에 부착할 수 있는 텍스쳐 모델들이다.
+        // 애니리그에 부착할 텍스쳐 모델 리스트(아이템으로 모자, 옷 등을 부착할 수 있다.)
+        // 개선된 아이템 시스템: 아이템 이름을 키로 하고 ItemAttachment를 값으로 하는 딕셔너리
+        Dictionary<string, ItemAttachment> _items;
         // 컴포넌트들
-        protected AnimationComponent _animationComponent;
-        protected TransformComponent _transformComponent;
+        protected AnimationComponent _animationComponent; // 애니메이션 컴포넌트
+        protected TransformComponent _transformComponent; // 트랜스폼 컴포넌트
 
-        public AniRig AniRig => _aniRig;
-
+        // 속성
         public string Name => _name;
-
-        public Transform Transform => _transform;
-
-        #region 디버깅용
-        public enum RenderingMode { Animation, BoneWeight, Static, None, Count };
-        PolygonMode _polygonMode = PolygonMode.Fill;
-        RenderingMode _renderingMode = RenderingMode.Animation;
-        int _selectedBoneIndex = 0;
-        float _axisLength = 10.3f;
-        float _drawThick = 1.0f;
-
-        public int BoneCount => _aniRig.DicBones.Count;
-
-        public Motion CurrentMotion => _animator.CurrentMotion;
-
-        public int SelectedBoneIndex
-        {
-            get => _selectedBoneIndex;
-            set => _selectedBoneIndex = value;
-        }
-
-        public PolygonMode PolygonMode
-        {
-            get => _polygonMode;
-            set => _polygonMode = value;
-        }
-
-        public RenderingMode RenderMode
-        {
-            get => _renderingMode;
-            set => _renderingMode = value;
-        }
-
-        public void PopPolygonMode()
-        {
-            _polygonMode++;
-            if (_polygonMode >= (PolygonMode)6915) _polygonMode = (PolygonMode)6912;
-        }
-
-        public void PopPolygonModeMode()
-        {
-            _renderingMode++;
-            if (_renderingMode == RenderingMode.Count - 1) _renderingMode = 0;
-        }
-        #endregion
-
-        /// <summary>
-        /// 본이름으로부터 본을 가져온다.
-        /// </summary>
-        /// <param name="boneName"></param>
-        /// <returns></returns>
-        public Bone GetBoneByName(string boneName) => _aniRig.Armature[boneName];
-
-        /// <summary>
-        /// Animator를 가져온다.
-        /// </summary>
+        public AniRig AniRig => _aniRig;
         public Animator Animator => _animator;
-
-        /// <summary>
-        /// 모션의 총 시간 길이를 가져온다.
-        /// </summary>
+        public Transform Transform => _transform;
         public float MotionTime => _animator.MotionTime;
+        public Motion CurrentMotion => _animator.CurrentMotion;
+        public Matrix4x4f[] AnimatedTransforms => _animator.AnimatedTransforms;
 
         /// <summary>
         /// 생성자
         /// </summary>
-        /// <param name="model"></param>
-        /// <param name="aniRig"></param>
+        /// <param name="name">액터 이름</param>
+        /// <param name="aniRig">애니메이션 리그</param>
         public AniActor(string name, AniRig aniRig)
         {
-            _items = new List<TexturedModel>();
+            _items = new Dictionary<string, ItemAttachment>();
             _items.Clear();
 
             _aniRig = aniRig;
 
             _animator = new Animator(aniRig.Armature.RootBone);
             _transform = new Transform();
-
         }
 
+        /// <summary>
+        /// 지정한 모션을 한 번만 실행하고 모션을 복귀한다.
+        /// </summary>
+        /// <param name="motionName">모션 이름</param>
         public void SetMotionOnce(string motionName)
         {
             Motion curMotion = _aniRig.Motions.GetMotion(Actions.ActionMap[_curMotion]);
@@ -127,12 +76,11 @@ namespace Animate
             _animator.SetMotion(nextMotion);
         }
 
-
         /// <summary>
-        /// 모션을 설정한다.
+        /// 모션을 전환한다.
         /// </summary>
-        /// <param name="motionName"></param>
-        /// <param name="blendingInterval"></param>
+        /// <param name="motionName">모션 이름</param>
+        /// <param name="blendingInterval">블렌딩 간격</param>
         protected void SetMotion(string motionName, float blendingInterval = 0.2f)
         {
             _animator.OnceFinished = null;
@@ -150,9 +98,35 @@ namespace Animate
         }
 
         /// <summary>
+        /// 아이템을 장착한다.
+        /// </summary>
+        /// <param name="itemUniqueName">아이템의 고유이름</param>
+        /// <param name="itemName">아이템 이름 (예: "axe", "shield" 등)</param>
+        /// <param name="model">텍스쳐 모델</param>
+        /// <param name="boneIndex">부착할 뼈대 인덱스</param>
+        /// <param name="localTransform">아이템 로컬 변환 행렬</param>
+        public void EquipItem(string itemUniqueName, string itemName, TexturedModel model,
+            int boneIndex, Matrix4x4f? localTransform = null)
+        {
+            if (localTransform == null) localTransform = Matrix4x4f.Identity;
+            var itemAttachment = new ItemAttachment(model, itemName, boneIndex, (Matrix4x4f)localTransform);
+            _items[itemUniqueName] = itemAttachment; // 딕셔너리는 키가 존재하면 업데이트, 없으면 추가
+        }
+
+        /// <summary>
+        /// 아이템을 장착해제한다.
+        /// </summary>
+        /// <param name="name">아이템 이름</param>
+        /// <returns>장착해제 성공 여부</returns>
+        protected bool UnequipItem(string name)
+        {
+            return _items.Remove(name);
+        }
+
+        /// <summary>
         /// 업데이트를 통하여 애니메이션 행렬을 업데이트한다.
         /// </summary>
-        /// <param name="deltaTime"></param>
+        /// <param name="deltaTime">델타 시간</param>
         public void Update(int deltaTime)
         {
             // 애니메이션 업데이트 전에 호출할 수 있는 콜백 함수
@@ -171,20 +145,21 @@ namespace Animate
             }
         }
 
-        public void Render(Camera camera, StaticShader staticShader, AnimateShader ashader, 
+        /// <summary>
+        /// 렌더링을 수행한다.
+        /// </summary>
+        public void Render(Camera camera,  Matrix4x4f vp, AnimateShader ashader,
             bool isSkinVisible = true, bool isBoneVisible = false, bool isBoneParentCurrentVisible = false)
         {
-            Matrix4x4f[] finalAnimatedBoneMatrices = _animator.AnimatedTransforms;
-            Matrix4x4f modelMatrix = _transform.Matrix4x4f;
+            Matrix4x4f mvp = vp * _transform.Matrix4x4f;
 
-            if (isSkinVisible) // 스킨
+            if (isSkinVisible)
             {
                 Gl.PolygonMode(MaterialFace.FrontAndBack, _polygonMode);
                 Gl.Disable(EnableCap.CullFace);
                 if (_renderingMode == RenderingMode.Animation)
                 {
-                    Renderer3d.Render(ashader, modelMatrix, _items, finalAnimatedBoneMatrices, camera);
-                    Renderer3d.Render(ashader, modelMatrix, _aniRig.TexturedModels, finalAnimatedBoneMatrices, camera);
+                    Renderer3d.RenderSkinning(ashader, mvp, _aniRig.TexturedModels, _animator.AnimatedTransforms);
                 }
                 else if (_renderingMode == RenderingMode.BoneWeight)
                 {
@@ -196,132 +171,7 @@ namespace Animate
                 }
                 Gl.Enable(EnableCap.CullFace);
             }
-
-            /*
-            // 애니메이션 뼈대 렌더링
-            if (isBoneVisible)
-            {
-                int ind = 0;
-                foreach (Matrix4x4f jointTransform in AnimatedTransforms)
-                {
-                    if (ind >= 52) //52이상은 추가한 뼈들이다.
-                    {
-                        Renderer3d.RenderLocalAxis(staticShader, camera, size: jointTransform.Position.Norm() * _axisLength,
-                            thick: 5.0f*_drawThick, _transform.Matrix4x4f * modelMatrix * jointTransform);
-                    }
-                    else
-                    {
-                        Renderer3d.RenderLocalAxis(staticShader, camera, size: jointTransform.Position.Norm() * _axisLength,
-                            thick: _drawThick, _transform.Matrix4x4f * modelMatrix * jointTransform);
-                    }
-                    ind++;
-                }
-            }
-
-            Renderer3d.RenderLocalAxis(staticShader, camera, size: 100.0f, thick: _drawThick, _rootBone.AnimatedTransform * _transform.Matrix4x4f);
-            */
-
-            // 정지 뼈대
-            //foreach (Matrix4x4f jointTransform in _aniModel.InverseBindPoseTransforms)
-            {
-                //Renderer.RenderLocalAxis(_shader, camera, size: _axisLength, thick: _drawThick, entityModel * jointTransform.Inverse);
-            }
         }
 
-        /// <summary>
-        /// * 애니매이션에서 뼈들의 뼈공간 ==> 캐릭터 공간으로의 변환 행렬<br/>
-        /// * 뼈들의 포즈를 렌더링하기 위하여 사용할 수 있다.<br/>
-        /// </summary>
-        public Matrix4x4f[] AnimatedTransforms
-        {
-            get
-            {
-                Matrix4x4f[] jointMatrices = new Matrix4x4f[BoneCount];
-                foreach (KeyValuePair<string, Bone> item in _aniRig.DicBones)
-                {
-                    Bone bone = item.Value;
-                    if (bone.Index >= 0)
-                        jointMatrices[bone.Index] = bone.BoneTransforms.AnimatedTransform;
-                }
-                return jointMatrices;
-            }
-        }
-
-        public Matrix4x4f LocalBindMatrix => ((ITransformable)_transformComponent).LocalBindMatrix;
-
-        public Vertex3f Size { get => ((ITransformable)_transformComponent).Size; set => ((ITransformable)_transformComponent).Size = value; }
-        public Vertex3f Position { get => ((ITransformable)_transformComponent).Position; set => ((ITransformable)_transformComponent).Position = value; }
-
-        public Matrix4x4f ModelMatrix => ((ITransformable)_transformComponent).ModelMatrix;
-
-        public bool IsMoved { get => ((ITransformable)_transformComponent).IsMoved; set => ((ITransformable)_transformComponent).IsMoved = value; }
-
-        public Pose Pose => ((ITransformable)_transformComponent).Pose;
-
-        protected void AddEntity(List<TexturedModel> models)
-        {
-            _items.AddRange(models);
-        }
-
-        protected void AddEntity(string name, TexturedModel model)
-        {
-            AddEntity(new List<TexturedModel>() { model });
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="fileName"></param>
-        /// <param name="expandValue"></param>
-        /// <returns></returns>
-        public Entity Attach(string fileName, float expandValue = 0.01f)
-        {
-            //string name = Path.GetFileNameWithoutExtension(fileName);
-            //List<TexturedModel> texturedModels = _aniRig.WearCloth(fileName, expandValue);
-            //AnimateEntity clothEntity = new AnimateEntity("aniModel_" + name, texturedModels[0]);
-            //AddEntity(name, texturedModels);
-            //return clothEntity;
-            return null;
-        }
-
-        public void Attach(string name, TexturedModel texturedModel)
-        {
-            AddEntity(name, texturedModel);
-        }
-
-        public void LocalBindTransform(float sx = 1, float sy = 1, float sz = 1, float rotx = 0, float roty = 0, float rotz = 0, float x = 0, float y = 0, float z = 0)
-        {
-            ((ITransformable)_transformComponent).LocalBindTransform(sx, sy, sz, rotx, roty, rotz, x, y, z);
-        }
-
-        public void Scale(float scaleX, float scaleY, float scaleZ)
-        {
-            ((ITransformable)_transformComponent).Scale(scaleX, scaleY, scaleZ);
-        }
-
-        public void Translate(float dx, float dy, float dz)
-        {
-            ((ITransformable)_transformComponent).Translate(dx, dy, dz);
-        }
-
-        public void SetRollPitchAngle(float pitch, float yaw, float roll)
-        {
-            ((ITransformable)_transformComponent).SetRollPitchAngle(pitch, yaw, roll);
-        }
-
-        public void Yaw(float deltaDegree)
-        {
-            ((ITransformable)_transformComponent).Yaw(deltaDegree);
-        }
-
-        public void Roll(float deltaDegree)
-        {
-            ((ITransformable)_transformComponent).Roll(deltaDegree);
-        }
-
-        public void Pitch(float deltaDegree)
-        {
-            ((ITransformable)_transformComponent).Pitch(deltaDegree);
-        }
     }
 }

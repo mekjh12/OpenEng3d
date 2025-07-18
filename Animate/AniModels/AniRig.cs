@@ -37,6 +37,7 @@ namespace Animate
         /// <param name="isLoadAnimation">애니메이션 로드 여부</param>
         public AniRig(string filename, bool isLoadAnimation = true)
         {
+            // 파일명과 이름 설정
             _filename = filename;
             _name = Path.GetFileNameWithoutExtension(filename);
 

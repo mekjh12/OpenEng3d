@@ -67,6 +67,7 @@
     <Compile Include="AniModels\Animator.cs" />
     <Compile Include="AniModels\AniActor.cs" />
     <Compile Include="AniModels\AniRigLoader.cs" />
+    <Compile Include="AniModels\ItemAttachment.cs" />
     <Compile Include="Armature\Armature.cs" />
     <Compile Include="Armature\BoneExtension.cs" />
     <Compile Include="Armature\BoneKinematics.cs" />
@@ -132,6 +133,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AniModels\AniActor.Debug.cs" />
     <None Include="packages.config" />
     <None Include="README.md" />
   </ItemGroup>
