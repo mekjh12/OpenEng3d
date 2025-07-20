@@ -101,10 +101,10 @@ namespace Animate
         /// </summary>
         /// <param name="parentBoneName">부모 본의 이름</param>
         /// <param name="boneName">새로 생성할 본의 이름</param>
-        /// <param name="localTransform">새 본의 로컬 변환 행렬</param>
+        /// <param name="localBindTransform">새 본의 로컬 바인딩 변환 행렬</param>
         /// <exception cref="ArgumentException">부모 본이 존재하지 않거나 본 이름이 이미 존재할 때</exception>
         /// <exception cref="ArgumentNullException">본 이름이 null이거나 빈 문자열일 때</exception>
-        public void AttachBone(string parentBoneName, string boneName, Matrix4x4f localTransform)
+        public void AttachBone(string parentBoneName, string boneName, Matrix4x4f localBindTransform)
         {            
             // 부모 본 존재 확인
             if (!_dicBones.ContainsKey(parentBoneName))
@@ -124,7 +124,8 @@ namespace Animate
             Bone newBone = new Bone(boneName, newBoneIndex);
 
             // 변환 행렬 설정
-            newBone.BoneTransforms.LocalBindTransform = localTransform;
+            newBone.BoneTransforms.LocalBindTransform = localBindTransform;
+            newBone.BoneTransforms.LocalTransform = localBindTransform;
             newBone.BoneTransforms.InverseBindPoseTransform = Matrix4x4f.Identity;
             parentBone.AddChild(newBone);
 

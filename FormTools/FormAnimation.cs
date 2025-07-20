@@ -16,7 +16,7 @@ namespace FormTools
     public partial class FormAnimation : Form
     {
 
-        private string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
+        private readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
 
         private GlControl3 _glControl3;
 
@@ -26,7 +26,6 @@ namespace FormTools
 
         MixamoRotMotionStorage _mixamoRotMotionStorage;
         List<Human> _humans = new List<Human>();
-        TexturedModel _sword;
 
         public FormAnimation()
         {
@@ -59,7 +58,6 @@ namespace FormTools
 
             // 파일 해시 초기화
             FileHashManager.ROOT_FILE_PATH = PROJECT_PATH;
-
         }
 
         private void FormUi2d_Load(object sender, EventArgs e)
@@ -96,6 +94,7 @@ namespace FormTools
             AniRig aniRig = new AniRig(PROJECT_PATH + @"\Res\abe.dae", isLoadAnimation: false);
             AniRig aniRig2 = new AniRig(PROJECT_PATH + @"\Res\Guybrush_final.dae", isLoadAnimation: false);
             aniRig.Armature.AttachBone("mixamorig_Head", "mixamorig_Head_top", Matrix4x4f.Translated(0, 20, 0));
+            aniRig2.Armature.AttachBone("mixamorig_Head", "mixamorig_Head_top", Matrix4x4f.Translated(0, 20, 0));
 
             _humans.Add(new Human($"abe",  aniRig));
             _humans[0].Transform.IncreasePosition(0, 0, 0);
@@ -124,15 +123,15 @@ namespace FormTools
             // 애니메이션 모델에 애니메이션 초기 지정
             foreach (Human human in _humans)
             {
-                human.SetMotion(ACTION.RANDOM);
+                human.SetMotion(ACTION.A_T_POSE);
             }
 
             // 아이템 장착
-            int boneIndex = _humans[0].AniRig.Armature.GetBoneIndex("mixamorig_Head_top");
             Model3d.TextureStorage.NullTextureFileName = PROJECT_PATH + "\\Res\\debug.jpg";
-            _sword = LoadModel(PROJECT_PATH + @"\Res\AxePickaxe.obj")[0];
-            _humans[0].EquipItem("sword0", "sword", _sword, boneIndex);
-            _humans[1].EquipItem("sword1", "sword", _sword, boneIndex);
+            TexturedModel sword = LoadModel(PROJECT_PATH + @"\Res\Items\Merchant_Hat.dae")[0];
+            _humans[0].EquipItem("sword0", "sword", sword, _humans[0].AniRig.Armature.GetBoneIndex("mixamorig_Head_top"), 200.0f);
+            _humans[1].EquipItem("sword1", "sword", sword, _humans[1].AniRig.Armature.GetBoneIndex("mixamorig_Head_top"), 200.0f);
+            _humans[2].EquipItem("sword2", "sword", sword, _humans[2].AniRig.Armature.GetBoneIndex("mixamorig_Head_top"), 100.0f);
 
             // 셰이더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
@@ -187,12 +186,12 @@ namespace FormTools
 
             foreach (Human human in _humans)
             {
-                human.Render(camera, vp, _animateShader, isBoneVisible: true);
+                human.Render(camera, vp, _animateShader, _staticShader, isBoneVisible: true);
             }
 
             foreach (Human human in _humans)
             {
-               _axisShader.RenderAxes(human.Transform.Matrix4x4f, human.Animator.BoneCharacterTransforms, vp);
+               _axisShader.RenderAxes(human.ModelMatrix, human.Animator.BoneCharacterTransforms, vp);
             }
 
             // 폴리곤 모드 설정
@@ -255,11 +254,6 @@ namespace FormTools
 
         public void KeyDownEvent(object sender, KeyEventArgs e)
         {
-        }
-
-        private void FormCloud_Load(object sender, EventArgs e)
-        {
-
         }
 
         public TexturedModel[] LoadModel(string modelFileName)

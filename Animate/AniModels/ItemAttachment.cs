@@ -18,7 +18,6 @@ namespace Animate.AniModels
         /// </summary>
         /// <param name="model">텍스쳐 모델</param>
         /// <param name="name">아이템 이름 (예: "axe", "helmet" 등)</param>
-        /// <param name="isRigid">강체 여부</param>
         /// <param name="boneIndex">부착할 뼈대 인덱스</param>
         /// <param name="localTransform">아이템 로컬 변환 행렬</param>
         public ItemAttachment(TexturedModel model, string name, int boneIndex, Matrix4x4f localTransform)

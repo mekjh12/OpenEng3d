@@ -5,6 +5,7 @@ using Model3d;
 using OpenGL;
 using Shader;
 using System.Collections.Generic;
+using ZetaExt;
 
 namespace Animate
 {
@@ -34,34 +35,53 @@ namespace Animate
         public static RawModel3d Cylinder = Loader3d.LoadPrism(12, 1, 1, 1, Matrix4x4f.Identity);
         #endregion
 
-        public static void RenderRigidBody(AnimateShader shader, Matrix4x4f modelMatrix, 
-            Matrix4x4f rigidLocalTransform,
-            List<ItemAttachment> items, 
-            Matrix4x4f[] finalAnimatedBoneMatrices, 
-            Camera camera)
+        // 1단계: 아이템 대신 간단한 큐브로 테스트
+        public static void TestRenderSimpleCube(AnimateShader shader, Matrix4x4f model, Matrix4x4f vp,
+            Matrix4x4f[] boneTransforms, int testBoneIndex)
         {
             shader.Bind();
-            shader.LoadUniform(AnimateShader.UNIFORM_NAME.model, modelMatrix);
-            shader.LoadUniform(AnimateShader.UNIFORM_NAME.view, camera.ViewMatrix);
-            shader.LoadUniform(AnimateShader.UNIFORM_NAME.proj, camera.ProjectiveMatrix);
-
             shader.LoadUniform(AnimateShader.UNIFORM_NAME.isSkinningEnabled, false);
 
-            for (int i = 0; i < finalAnimatedBoneMatrices?.Length; i++)
-            {
-                shader.LoadFinalAnimatedBoneMatrix(i, finalAnimatedBoneMatrices[i]);
-            }
+            shader.LoadUniform(AnimateShader.UNIFORM_NAME.vp, vp);
+            shader.LoadUniform(AnimateShader.UNIFORM_NAME.model, model);
+
+
+            // 테스트용: 특정 본 위치에 간단한 형태 렌더링
+            Matrix4x4f testScale = Matrix4x4f.Scaled(10.1f, 10.1f, 10.1f); // 작은 크기로 테스트
+
+
+            Matrix4x4f testTransform = boneTransforms[52];
+            shader.LoadPMatrix(testTransform * testScale);
+
+            // 기본 큐브 렌더링 (텍스처 없이)
+            Gl.BindVertexArray(Renderer3d.Cube.VAO);
+            Gl.EnableVertexAttribArray(0);
+
+            Gl.DrawArrays(PrimitiveType.Triangles, 0, Renderer3d.Cube.VertexCount);
+
+            Gl.DisableVertexAttribArray(0);
+            Gl.BindVertexArray(0);
+            shader.Unbind();
+        }
+
+        public static void RenderRigidBody(AnimateShader shader, Matrix4x4f model, Matrix4x4f vp, 
+            List<ItemAttachment> items, Matrix4x4f[] boneTransforms)
+        {
+            // GC 압박을 줄이기 위하여 model과 vp는 GPU에서 계산한다.
+            shader.Bind();
+            shader.LoadUniform(AnimateShader.UNIFORM_NAME.vp, vp);
+            shader.LoadUniform(AnimateShader.UNIFORM_NAME.model, model);
+            shader.LoadUniform(AnimateShader.UNIFORM_NAME.isSkinningEnabled, false);
 
             foreach (ItemAttachment item in items)
             {
-                shader.LoadUniform(AnimateShader.UNIFORM_NAME.rigidBoneIndex, item.BoneIndex);
+                Matrix4x4f testTransform = boneTransforms[item.BoneIndex] * item.LocalTransform;
+                shader.LoadPMatrix(testTransform);
 
                 Gl.BindVertexArray(item.Model.VAO);
                 Gl.EnableVertexAttribArray(0);
                 Gl.EnableVertexAttribArray(1);
                 Gl.EnableVertexAttribArray(2);
-                Gl.EnableVertexAttribArray(4);
-                Gl.EnableVertexAttribArray(5);
 
                 if (item.Model is TexturedModel)
                 {
@@ -83,19 +103,18 @@ namespace Animate
                 Gl.DisableVertexAttribArray(0);
                 Gl.DisableVertexAttribArray(1);
                 Gl.DisableVertexAttribArray(2);
-                Gl.DisableVertexAttribArray(4);
-                Gl.DisableVertexAttribArray(5);
                 Gl.BindVertexArray(0);
             }
 
             shader.Unbind();
         }
 
-        public static void RenderSkinning(AnimateShader shader, Matrix4x4f mvp, List<TexturedModel> models, Matrix4x4f[] finalAnimatedBoneMatrices)
+        public static void RenderSkinning(AnimateShader shader, Matrix4x4f model, Matrix4x4f vp, List<TexturedModel> models, Matrix4x4f[] finalAnimatedBoneMatrices)
         {
+            // GC 압박을 줄이기 위하여 model과 vp는 GPU에서 계산한다.
             shader.Bind();
-            shader.LoadUniform(AnimateShader.UNIFORM_NAME.mvp, mvp);
-
+            shader.LoadUniform(AnimateShader.UNIFORM_NAME.vp, vp);
+            shader.LoadUniform(AnimateShader.UNIFORM_NAME.model, model);
             shader.LoadUniform(AnimateShader.UNIFORM_NAME.isSkinningEnabled, true);
 
             for (int i = 0; i < finalAnimatedBoneMatrices?.Length; i++)
@@ -103,30 +122,30 @@ namespace Animate
                 shader.LoadFinalAnimatedBoneMatrix(i, finalAnimatedBoneMatrices[i]);
             }
 
-            foreach (TexturedModel model in models)
+            foreach (TexturedModel texturedModel in models)
             {
-                Gl.BindVertexArray(model.VAO);
+                Gl.BindVertexArray(texturedModel.VAO);
                 Gl.EnableVertexAttribArray(0);
                 Gl.EnableVertexAttribArray(1);
                 Gl.EnableVertexAttribArray(2);
                 Gl.EnableVertexAttribArray(4);
                 Gl.EnableVertexAttribArray(5);
 
-                if (model is TexturedModel)
+                if (texturedModel is TexturedModel)
                 {
-                    if (model.Texture != null)
+                    if (texturedModel.Texture != null)
                     {
-                        shader.LoadTexture(AnimateShader.UNIFORM_NAME.diffuseMap, TextureUnit.Texture0, model.Texture.TextureID);
+                        shader.LoadTexture(AnimateShader.UNIFORM_NAME.diffuseMap, TextureUnit.Texture0, texturedModel.Texture.TextureID);
                     }
                 }
 
-                if (model.IsDrawElement)
+                if (texturedModel.IsDrawElement)
                 {
-                    Gl.DrawElements(PrimitiveType.Triangles, model.VertexCount, DrawElementsType.UnsignedInt, System.IntPtr.Zero);
+                    Gl.DrawElements(PrimitiveType.Triangles, texturedModel.VertexCount, DrawElementsType.UnsignedInt, System.IntPtr.Zero);
                 }
                 else
                 {
-                    Gl.DrawArrays(PrimitiveType.Triangles, 0, model.VertexCount);
+                    Gl.DrawArrays(PrimitiveType.Triangles, 0, texturedModel.VertexCount);
                 }
 
                 Gl.DisableVertexAttribArray(0);

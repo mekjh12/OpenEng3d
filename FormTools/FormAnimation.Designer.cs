@@ -35,8 +35,9 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(894, 558);
+            this.Location = new System.Drawing.Point(200, 200);
             this.Name = "FormAnimation";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "FormUi2d";
             this.Load += new System.EventHandler(this.FormUi2d_Load);
             this.ResumeLayout(false);

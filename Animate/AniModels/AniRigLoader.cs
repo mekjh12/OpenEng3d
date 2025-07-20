@@ -54,6 +54,8 @@ namespace Animate
             Matrix4x4f A0 = armature.RootBone.BoneTransforms.LocalBindTransform;
             Matrix4x4f S = bindShapeMatrix;
             Matrix4x4f A0xS = A0 * S;
+
+            // 모든 꼭지점에 바이딩세이프를 적용한다.
             for (int i = 0; i < lstPositions.Count; i++)
             {
                 lstPositions[i] = A0xS.Multiply(lstPositions[i]);

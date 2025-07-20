@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
+using System.Net.Mail;
 
 namespace Animate
 {
@@ -40,6 +41,7 @@ namespace Animate
         public float MotionTime => _animator.MotionTime;
         public Motion CurrentMotion => _animator.CurrentMotion;
         public Matrix4x4f[] AnimatedTransforms => _animator.AnimatedTransforms;
+        public Matrix4x4f ModelMatrix => _transform.Matrix4x4f;
 
         /// <summary>
         /// 생성자
@@ -98,32 +100,6 @@ namespace Animate
         }
 
         /// <summary>
-        /// 아이템을 장착한다.
-        /// </summary>
-        /// <param name="itemUniqueName">아이템의 고유이름</param>
-        /// <param name="itemName">아이템 이름 (예: "axe", "shield" 등)</param>
-        /// <param name="model">텍스쳐 모델</param>
-        /// <param name="boneIndex">부착할 뼈대 인덱스</param>
-        /// <param name="localTransform">아이템 로컬 변환 행렬</param>
-        public void EquipItem(string itemUniqueName, string itemName, TexturedModel model,
-            int boneIndex, Matrix4x4f? localTransform = null)
-        {
-            if (localTransform == null) localTransform = Matrix4x4f.Identity;
-            var itemAttachment = new ItemAttachment(model, itemName, boneIndex, (Matrix4x4f)localTransform);
-            _items[itemUniqueName] = itemAttachment; // 딕셔너리는 키가 존재하면 업데이트, 없으면 추가
-        }
-
-        /// <summary>
-        /// 아이템을 장착해제한다.
-        /// </summary>
-        /// <param name="name">아이템 이름</param>
-        /// <returns>장착해제 성공 여부</returns>
-        protected bool UnequipItem(string name)
-        {
-            return _items.Remove(name);
-        }
-
-        /// <summary>
         /// 업데이트를 통하여 애니메이션 행렬을 업데이트한다.
         /// </summary>
         /// <param name="deltaTime">델타 시간</param>
@@ -148,18 +124,17 @@ namespace Animate
         /// <summary>
         /// 렌더링을 수행한다.
         /// </summary>
-        public void Render(Camera camera,  Matrix4x4f vp, AnimateShader ashader,
+        public void Render(Camera camera, Matrix4x4f vp, AnimateShader ashader, StaticShader sshader,
             bool isSkinVisible = true, bool isBoneVisible = false, bool isBoneParentCurrentVisible = false)
         {
-            Matrix4x4f mvp = vp * _transform.Matrix4x4f;
-
             if (isSkinVisible)
             {
                 Gl.PolygonMode(MaterialFace.FrontAndBack, _polygonMode);
                 Gl.Disable(EnableCap.CullFace);
                 if (_renderingMode == RenderingMode.Animation)
                 {
-                    Renderer3d.RenderSkinning(ashader, mvp, _aniRig.TexturedModels, _animator.AnimatedTransforms);
+                    Renderer3d.RenderSkinning(ashader, ModelMatrix, vp, _aniRig.TexturedModels, _animator.AnimatedTransforms);
+                    Renderer3d.RenderRigidBody(ashader, ModelMatrix, vp, _items.Values.ToList(),  _animator.BoneCharacterTransforms);
                 }
                 else if (_renderingMode == RenderingMode.BoneWeight)
                 {

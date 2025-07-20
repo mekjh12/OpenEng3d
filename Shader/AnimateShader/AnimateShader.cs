@@ -8,15 +8,13 @@ namespace Shader
         public enum UNIFORM_NAME
         {
             // 변환 행렬 유니폼
-            model,              // 모델 변환 행렬
-            view,               // 뷰 변환 행렬
-            proj,               // 투영 변환 행렬
-            mvp,                // 모델-뷰-투영 변환 행렬
-
+            vp,                 // 뷰-투영 변환 행렬
+            model,              // 모델 행렬
             diffuseMap,         // 텍스처맵
 
             isSkinningEnabled,  // 스키닝 활성화 여부
             rigidBoneIndex,     // 강체 본 인덱스
+            pmodel, 
 
             // 총 유니폼 개수
             Count
@@ -49,6 +47,11 @@ namespace Shader
             base.LoadMatrix(_location[$"finalAnimatedBoneMatrix[{index}]"], matrix);
         }
 
+        public void LoadPMatrix(Matrix4x4f matrix)
+        {
+            base.LoadMatrix(_location[$"pmodel"], matrix);
+        }
+
         protected override void GetAllUniformLocations()
         {
             // 유니폼 변수 이름을 이용하여 위치 찾기
@@ -61,6 +64,8 @@ namespace Shader
             {
                 UniformLocation($"finalAnimatedBoneMatrix[{i}]");
             }
+
+            UniformLocation("pmodel");
         }
     }
 }

@@ -62,6 +62,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AniModels\AniActor.Equip.cs" />
     <Compile Include="AniModels\AnimationComponent.cs" />
     <Compile Include="AniModels\AniRig.cs" />
     <Compile Include="AniModels\Animator.cs" />

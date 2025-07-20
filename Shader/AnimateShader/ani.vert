@@ -18,20 +18,20 @@ out vec4 pass_weights;         // 프래그먼트 셰이더로 전달할 가중�
 
 // 유니폼 변수
 uniform mat4 finalAnimatedBoneMatrix[MAX_JOINTS]; // 애니메이션된 뼈대 변환 행렬들
-uniform mat4 proj;             // 투영 행렬
-uniform mat4 view;             // 뷰 행렬
-uniform mat4 model;            // 모델 행렬
-uniform mat4 mvp;               // 모델-뷰-투영 행렬
-uniform vec3 lightDirection;   // 조명 방향
+uniform mat4 vp;				// 뷰-투영 행렬
+uniform mat4 model;				// 모델 행렬
+
+uniform mat4 pmodel;
 uniform bool isSkinningEnabled; // 스키닝 활성화 여부
-uniform int rigidBoneIndex;     // 강체 본 인덱스 (스키닝 비활성화 시 사용)
+
+uniform vec3 lightDirection;   // 조명 방향
 
 void main(void)
 {	
     vec4 totalLocalPos = vec4(0.0);  // 최종 변환된 정점 위치
     vec4 totalNormal = vec4(0.0);    // 최종 변환된 법선
-    
-    if (isSkinningEnabled)
+        
+	if (isSkinningEnabled)
     {
         // ---------------------------------------------------------------
         // 스키닝 활성화: 가중치 기반 다중 본 변환
@@ -76,20 +76,17 @@ void main(void)
     {
         // ---------------------------------------------------------------
         // 스키닝 비활성화: 단일 강체 본 변환
-        // ---------------------------------------------------------------
-        mat4 jointTransform = finalAnimatedBoneMatrix[rigidBoneIndex];
-        mat4 transform = jointTransform;
-        
+        // ---------------------------------------------------------------        
         // 정점 위치 변환
-        totalLocalPos = transform * vec4(in_position, 1.0);
+        totalLocalPos = pmodel * vec4(in_position, 1.0);
         
         // 법선 변환 (역전치 행렬 사용)
-        mat3 normalMatrix = mat3(transpose(inverse(transform)));
+        mat3 normalMatrix = mat3(transpose(inverse(pmodel)));
         totalNormal = vec4(normalMatrix * in_normal, 0.0);
     }
     
     // 최종 변환: 모델-뷰-투영 변환 적용
-    gl_Position = mvp * totalLocalPos;
+    gl_Position = vp * model * totalLocalPos;
     
     // 프래그먼트 셰이더로 데이터 전달
     pass_normals = normalize(totalNormal.xyz);

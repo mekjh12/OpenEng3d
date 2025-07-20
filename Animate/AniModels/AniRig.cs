@@ -114,6 +114,7 @@ namespace Animate
 
             // 변환 행렬 설정
             newBone.BoneTransforms.LocalBindTransform = localBindTransform;
+            newBone.BoneTransforms.LocalTransform = localBindTransform;
             newBone.BoneTransforms.InverseBindPoseTransform = inverseBindPoseTransform;
 
             // 골격에 뼈대 추가
