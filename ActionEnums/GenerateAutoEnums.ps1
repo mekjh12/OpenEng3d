@@ -95,13 +95,13 @@ namespace AutoGenEnums
 {
     public static class Actions
     {
-        public static Dictionary<ACTION, string> ActionMap = new Dictionary<ACTION, string>()
+        public static Dictionary<HUMAN_ACTION, string> ActionMap = new Dictionary<HUMAN_ACTION, string>()
         {`n
 "@
 
 # 상수 정의
 foreach ($action in $actions) {
-    $code += "`t`t`t`{ACTION.$($action.Enum), `"$($action.Original)`"`},`n"
+    $code += "`t`t`t`{HUMAN_ACTION.$($action.Enum), `"$($action.Original)`"`},`n"
 }
 $code += "`t`t};`n"
 
@@ -113,7 +113,7 @@ $code += @"
         public static int Count => $($actions.Count);
     }
 
-    public enum ACTION
+    public enum HUMAN_ACTION
     {
 "@
 

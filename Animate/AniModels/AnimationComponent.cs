@@ -6,8 +6,8 @@ namespace Animate
     {
         private Animator _animator;
         private AniRig _aniRig;
-        private ACTION _prevMotion = ACTION.BREATHING_IDLE;
-        private ACTION _curMotion = ACTION.BREATHING_IDLE;
+        private HUMAN_ACTION _prevMotion = HUMAN_ACTION.BREATHING_IDLE;
+        private HUMAN_ACTION _curMotion = HUMAN_ACTION.BREATHING_IDLE;
 
         public Animator Animator => _animator;
         public Motion CurrentMotion => _animator.CurrentMotion;
@@ -43,7 +43,7 @@ namespace Animate
             }
         }
 
-        public void SetMotionOnce(string motionName, ACTION returnMotion)
+        public void SetMotionOnce(string motionName, HUMAN_ACTION returnMotion)
         {
             Motion curMotion = _aniRig.Motions.GetMotion(Actions.ActionMap[_curMotion]);
             Motion nextMotion = _aniRig.Motions.GetMotion(motionName);

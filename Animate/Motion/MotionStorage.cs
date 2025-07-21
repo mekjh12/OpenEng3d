@@ -29,7 +29,7 @@ namespace Animate
             }
         }
 
-        public Motion GetMotion(ACTION motion)
+        public Motion GetMotion(HUMAN_ACTION motion)
         {
             return (_motions.ContainsKey(motion.ToString())) ? _motions[motion.ToString()] : null;
         }

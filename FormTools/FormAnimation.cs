@@ -91,12 +91,10 @@ namespace FormTools
             // 그리드셰이더 초기화
             _glControl3.InitGridShader(PROJECT_PATH);
 
-            AniRig aniRig = new AniRig(PROJECT_PATH + @"\Res\abe.dae", isLoadAnimation: false);
-            AniRig aniRig2 = new AniRig(PROJECT_PATH + @"\Res\Guybrush_final.dae", isLoadAnimation: false);
-            aniRig.Armature.AttachBone("mixamorig_Head", "mixamorig_Head_top", Matrix4x4f.Translated(0, 20, 0));
-            aniRig2.Armature.AttachBone("mixamorig_Head", "mixamorig_Head_top", Matrix4x4f.Translated(0, 20, 0));
+            PrimateRig aniRig = new PrimateRig(PROJECT_PATH + @"\Res\abe.dae", isLoadAnimation: false);
+            PrimateRig aniRig2 = new PrimateRig(PROJECT_PATH + @"\Res\Guybrush_final.dae", isLoadAnimation: false);
 
-            _humans.Add(new Human($"abe",  aniRig));
+            _humans.Add(new Human($"abe", aniRig));
             _humans[0].Transform.IncreasePosition(0, 0, 0);
 
             _humans.Add(new Human($"Guybrush_final", aniRig2));
@@ -123,15 +121,15 @@ namespace FormTools
             // 애니메이션 모델에 애니메이션 초기 지정
             foreach (Human human in _humans)
             {
-                human.SetMotion(ACTION.A_T_POSE);
+                human.SetMotion(HUMAN_ACTION.A_T_POSE);
             }
 
             // 아이템 장착
             Model3d.TextureStorage.NullTextureFileName = PROJECT_PATH + "\\Res\\debug.jpg";
             TexturedModel sword = LoadModel(PROJECT_PATH + @"\Res\Items\Merchant_Hat.dae")[0];
+
+            int idx = _humans[0].AniRig.Armature.GetBoneIndex("mixamorig_Head_top");
             _humans[0].EquipItem("sword0", "sword", sword, _humans[0].AniRig.Armature.GetBoneIndex("mixamorig_Head_top"), 200.0f);
-            _humans[1].EquipItem("sword1", "sword", sword, _humans[1].AniRig.Armature.GetBoneIndex("mixamorig_Head_top"), 200.0f);
-            _humans[2].EquipItem("sword2", "sword", sword, _humans[2].AniRig.Armature.GetBoneIndex("mixamorig_Head_top"), 100.0f);
 
             // 셰이더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
@@ -225,15 +223,15 @@ namespace FormTools
             }
             else if (e.KeyCode == Keys.D1)
             {
-                _humans[Rand.NextInt(0,_humans.Count-1)].SetMotion(ACTION.RANDOM); 
+                _humans[Rand.NextInt(0,_humans.Count-1)].SetMotion(HUMAN_ACTION.RANDOM); 
             }
             else if (e.KeyCode == Keys.D2)
             {
-                _humans[Rand.NextInt(0, _humans.Count - 1)].SetMotionOnce(ACTION.RANDOM);
+                _humans[Rand.NextInt(0, _humans.Count - 1)].SetMotionOnce(HUMAN_ACTION.RANDOM);
             }
             else if (e.KeyCode == Keys.D3)
             {
-                _humans[Rand.NextInt(0, _humans.Count - 1)].SetMotionImmediately(ACTION.RANDOM);
+                _humans[Rand.NextInt(0, _humans.Count - 1)].SetMotionImmediately(HUMAN_ACTION.RANDOM);
             }
             else if (e.KeyCode == Keys.D4)
             {

@@ -39,7 +39,7 @@ namespace Model3d
             get
             {
                 Matrix4x4f S = Matrix4x4F.Scaled(_size);
-                Matrix4x4f R = _pose.Matrix4x4f;
+                Matrix4x4f R = (Matrix4x4f)_pose;
                 Matrix4x4f T = Matrix4x4f.Translated(_pose.Position.x, _pose.Position.y, _pose.Position.z);
                 return T * R * S; // [순서 중요] 연산순서는 S->R->T순
             }
@@ -94,30 +94,31 @@ namespace Model3d
 
         public void Yaw(float deltaDegree)
         {
-            Vertex3f up = -_pose.Matrix4x4f.Column2.Vertex3f(); // z 오른손 법칙
+            Vertex3f up =  -((Matrix4x4f)_pose).Column2.Vertex3f(); // z 오른손 법칙
             Quaternion4 q = new Quaternion4(up, -deltaDegree);
             _pose.Quaternion = q * _pose.Quaternion;
         }
 
         public void Roll(float deltaDegree)
         {
-            Vertex3f forward = _pose.Matrix4x4f.Column0.Vertex3f(); // y
+            Vertex3f forward = ((Matrix4x4f)_pose).Column0.Vertex3f(); // y
             Quaternion4 q = new Quaternion4(forward, deltaDegree);
             _pose.Quaternion = q * _pose.Quaternion;
         }
 
         public void Pitch(float deltaDegree)
         {
-            Vertex3f right = _pose.Matrix4x4f.Column1.Vertex3f(); // x
+            Vertex3f right = ((Matrix4x4f)_pose).Column1.Vertex3f(); // x
             Quaternion4 q = new Quaternion4(right, deltaDegree);
             _pose.Quaternion = q * _pose.Quaternion;
         }
 
         public void SetRollPitchAngle(float pitch, float yaw, float roll)
         {
-            Vertex3f right = _pose.Matrix4x4f.Column1.Vertex3f();
-            Vertex3f up = -_pose.Matrix4x4f.Column2.Vertex3f(); // z 오른손 법칙
-            Vertex3f forward = _pose.Matrix4x4f.Column0.Vertex3f();
+            Matrix4x4f transform = (Matrix4x4f)_pose;
+            Vertex3f right = transform.Column1.Vertex3f();
+            Vertex3f up = -transform.Column2.Vertex3f(); // z 오른손 법칙
+            Vertex3f forward = transform.Column0.Vertex3f();
 
             Quaternion4 q1 = new Quaternion4(right, pitch);
             Quaternion4 q2 = new Quaternion4(up, yaw);

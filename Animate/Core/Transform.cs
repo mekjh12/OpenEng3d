@@ -43,16 +43,20 @@ namespace Animate
         protected Matrix4x4f _transform; // 4x4 변환 행렬
 
         public Matrix4x4f Matrix4x4f => _transform;
-
         public Vertex3f Up => _transform.Column2.xyz();
-
         public Vertex3f Forward => -_transform.Column1.xyz();
-
         public Vertex3f Right => -_transform.Column0.xyz();
-
         public Vertex3f Left => _transform.Column0.xyz();
-
         public Vertex3f Position => _transform.Column3.xyz();
+        public Matrix4x4f InverseMatrix => _transform.Inversed();
+
+        /// <summary>
+        /// 생성자
+        /// </summary>
+        public Transform()
+        {
+            _transform = Matrix4x4f.Identity;
+        }
 
         /// <summary>
         /// 바닥면에 맞춰 정렬된 전진 방향<br/>
@@ -67,14 +71,6 @@ namespace Animate
                 goForward.Normalize();
                 return goForward;
             }
-        }
-
-        /// <summary>
-        /// 생성자
-        /// </summary>
-        public Transform()
-        {
-            _transform = Matrix4x4f.Identity;
         }
 
         public void GoFoward(float delta)
@@ -94,7 +90,7 @@ namespace Animate
             _transform = mat;
         }
 
-        public void SetPosition(Vertex3f pos)
+        private void SetPosition(Vertex3f pos)
         {
             _transform[3, 0] = pos.x;
             _transform[3, 1] = pos.y;
@@ -149,9 +145,6 @@ namespace Animate
         {
             _transform = Matrix4x4f.Identity;
         }
-
-        /// <summary>현재 변환의 역변환 행렬 반환</summary>
-        public Matrix4x4f InverseMatrix => _transform.Inversed();
 
         public override string ToString()
         {

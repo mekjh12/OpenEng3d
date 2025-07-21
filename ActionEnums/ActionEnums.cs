@@ -27,30 +27,30 @@ namespace AutoGenEnums
 {
     public static class Actions
     {
-        public static Dictionary<ACTION, string> ActionMap = new Dictionary<ACTION, string>()
+        public static Dictionary<HUMAN_ACTION, string> ActionMap = new Dictionary<HUMAN_ACTION, string>()
         {
-			{ACTION.A_T_POSE, "a-T-Pose"},
-			{ACTION.AXE_ATTACK_DOWNWARD, "Axe Attack Downward"},
-			{ACTION.AXE_STANDING_IDLE, "Axe Standing Idle"},
-			{ACTION.BREATHING_IDLE, "Breathing Idle"},
-			{ACTION.FAST_RUN, "Fast Run"},
-			{ACTION.GUNPLAY, "Gunplay"},
-			{ACTION.INTERPOLATION_POSE, "Interpolation Pose"},
-			{ACTION.JUMP, "Jump"},
-			{ACTION.LEFT_STRAFE_WALK, "Left Strafe Walk"},
-			{ACTION.RIGHT_STRAFE_WALK, "Right Strafe Walk"},
-			{ACTION.RUNNING, "Running"},
-			{ACTION.SLOW_RUN, "Slow Run"},
-			{ACTION.STANDING_IDLE, "Standing Idle"},
-			{ACTION.WALKING, "Walking"},
-			{ACTION.WALKING_BACKWARDS, "Walking Backwards"},
+			{HUMAN_ACTION.A_T_POSE, "a-T-Pose"},
+			{HUMAN_ACTION.AXE_ATTACK_DOWNWARD, "Axe Attack Downward"},
+			{HUMAN_ACTION.AXE_STANDING_IDLE, "Axe Standing Idle"},
+			{HUMAN_ACTION.BREATHING_IDLE, "Breathing Idle"},
+			{HUMAN_ACTION.FAST_RUN, "Fast Run"},
+			{HUMAN_ACTION.GUNPLAY, "Gunplay"},
+			{HUMAN_ACTION.INTERPOLATION_POSE, "Interpolation Pose"},
+			{HUMAN_ACTION.JUMP, "Jump"},
+			{HUMAN_ACTION.LEFT_STRAFE_WALK, "Left Strafe Walk"},
+			{HUMAN_ACTION.RIGHT_STRAFE_WALK, "Right Strafe Walk"},
+			{HUMAN_ACTION.RUNNING, "Running"},
+			{HUMAN_ACTION.SLOW_RUN, "Slow Run"},
+			{HUMAN_ACTION.STANDING_IDLE, "Standing Idle"},
+			{HUMAN_ACTION.WALKING, "Walking"},
+			{HUMAN_ACTION.WALKING_BACKWARDS, "Walking Backwards"},
 		};
 
         public static string GetRandomAction() => ActionMap.Values.ElementAt(new Random().Next(ActionMap.Count));
         public static int Count => 15;
     }
 
-    public enum ACTION
+    public enum HUMAN_ACTION
     {
         A_T_POSE = 0,
         AXE_ATTACK_DOWNWARD = 1,

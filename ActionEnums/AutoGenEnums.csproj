@@ -45,12 +45,12 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="GenerateActions.ps1" />
+    <None Include="GenerateAutoEnums.ps1" />
   </ItemGroup>
   <!-- PowerShell 스크립트로 ActionEnums.cs 생성 -->
   <Target Name="GenerateActionEnums" BeforeTargets="CoreCompile">
     <Message Text="🎬 Generating ActionEnums.cs..." Importance="high" />
-    <Exec Command="powershell.exe -ExecutionPolicy Bypass -File &quot;$(MSBuildThisFileDirectory)GenerateActions.ps1&quot;" ContinueOnError="false" />
+    <Exec Command="powershell.exe -ExecutionPolicy Bypass -File &quot;$(MSBuildThisFileDirectory)GenerateAutoEnums.ps1&quot;" ContinueOnError="false" />
     <Message Text="✅ ActionEnums.cs generated" Importance="high" />
   </Target>
   <!-- Clean 시 생성된 파일 삭제 -->

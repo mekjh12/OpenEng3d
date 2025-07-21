@@ -20,6 +20,8 @@ namespace FormTools
     /// </summary>
     public partial class FormPhysics : Form, IRenderer
     {
+        private readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
+
         // 시뮬레이션 및 렌더링 설정을 위한 상수
         private const int RANDOM_SEED = 500;    // 시뮬레이션의 일관성을 위한 랜덤 시드값
         private const float FAR_PLANE = 20000f; // 원거리 시야 제한 평면 거리
@@ -38,6 +40,9 @@ namespace FormTools
         // 폼 생성자
         public FormPhysics()
         {
+            // 파일 해시 초기화
+            FileHashManager.ROOT_FILE_PATH = PROJECT_PATH;
+
             InitializeComponent();
             InitializeGlControl();
         }
@@ -57,6 +62,7 @@ namespace FormTools
                 MessageBox.Show($"초기화 중 오류 발생: {ex.Message}", "오류",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+
         }
 
         // OpenGL 컨트롤 초기화 및 설정
@@ -136,8 +142,8 @@ namespace FormTools
             _ocs = new OcclusionCullingSystem(Resources.PROJECT_PATH);
 
             // 물체 초기화
-            _ocs.AddRawModel(@"FormTools\bin\Debug\Res\Big_rock1.obj");
-            _ocs.AddEntity(entityName: $"Big_rock", modelName: "Big_rock1", new Vertex3f(1, 1, 0), yaw: 0, roll: 0, size: Vertex3f.One);
+            //_ocs.AddRawModel(@"FormTools\bin\Debug\Res\Big_rock1.obj");
+            //_ocs.AddEntity(entityName: $"Big_rock", modelName: "Big_rock1", new Vertex3f(1, 1, 0), yaw: 0, roll: 0, size: Vertex3f.One);
 
             // 물리엔진 강체 추가
             _physicEngine.AddRigidBody(new RigidCube(Matter.Tree) { Position = new Vertex3f(0, 0, 2) });

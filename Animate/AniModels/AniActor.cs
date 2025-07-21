@@ -7,15 +7,13 @@ using Shader;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http.Headers;
-using System.Net.Mail;
 
 namespace Animate
 {
     public abstract partial class AniActor
     {
-        protected ACTION _prevMotion = ACTION.BREATHING_IDLE; // 이전 모션 상태
-        protected ACTION _curMotion = ACTION.BREATHING_IDLE; // 현재 모션 상태
+        protected HUMAN_ACTION _prevMotion = HUMAN_ACTION.BREATHING_IDLE; // 이전 모션 상태
+        protected HUMAN_ACTION _curMotion = HUMAN_ACTION.BREATHING_IDLE; // 현재 모션 상태
 
         protected string _name; // 액터 이름
         protected AniRig _aniRig; // 애니메이션 리그
@@ -76,6 +74,7 @@ namespace Animate
             };
 
             _animator.SetMotion(nextMotion);
+            _animator.Play();
         }
 
         /// <summary>
@@ -97,6 +96,8 @@ namespace Animate
             {
                 _animator.SetMotion(motion, blendingInterval);
             }
+
+            _animator.Play();
         }
 
         /// <summary>

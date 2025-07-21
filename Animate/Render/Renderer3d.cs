@@ -75,6 +75,8 @@ namespace Animate
 
             foreach (ItemAttachment item in items)
             {
+                if (item.BoneIndex < 0) continue;
+
                 Matrix4x4f testTransform = boneTransforms[item.BoneIndex] * item.LocalTransform;
                 shader.LoadPMatrix(testTransform);
 

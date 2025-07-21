@@ -27,41 +27,41 @@ namespace Common.Mathematics
             set => _q = value;
         }
 
+
         /// <summary>
-        /// 포즈의 회전과 위치 정보를 4x4 변환 행렬로 변환
+        /// Pose를 4x4 변환 행렬로 명시적 변환
         /// 회전축이 주축(X, Y, Z)일 경우 해당하는 회전 행렬을 반환하고,
         /// 임의의 축일 경우 쿼터니온을 행렬로 변환하여 반환한다.
         /// </summary>
+        /// <param name="pose">변환할 Pose 객체</param>
         /// <returns>
         /// 포즈의 변환을 표현하는 4x4 행렬
         /// - 주축 회전의 경우: RotatedX, RotatedY, RotatedZ 행렬
         /// - 임의 축 회전의 경우: 쿼터니온으로부터 계산된 회전 행렬
         /// </returns>
-        public Matrix4x4f Matrix4x4f
+        public static explicit operator Matrix4x4f(Pose pose)
         {
-            get
+            float angle = pose._q.RotationAngle;
+
+            // X축 회전 검사
+            if (pose._q.RotationVector.Normalized == Vertex3f.UnitX)
             {
-                float angle = _q.RotationAngle;
-                // X축 회전 검사
-                if (_q.RotationVector.Normalized == Vertex3f.UnitX)
-                {
-                    return Matrix4x4f.RotatedX(angle);
-                }
-                // Y축 회전 검사
-                else if (_q.RotationVector.Normalized == Vertex3f.UnitY)
-                {
-                    return Matrix4x4f.RotatedY(angle);
-                }
-                // Z축 회전 검사
-                else if (_q.RotationVector.Normalized == Vertex3f.UnitZ)
-                {
-                    return Matrix4x4f.RotatedZ(angle);
-                }
-                // 임의의 축 회전
-                else
-                {
-                    return (Matrix4x4f)_q;
-                }
+                return Matrix4x4f.RotatedX(angle);
+            }
+            // Y축 회전 검사
+            else if (pose._q.RotationVector.Normalized == Vertex3f.UnitY)
+            {
+                return Matrix4x4f.RotatedY(angle);
+            }
+            // Z축 회전 검사
+            else if (pose._q.RotationVector.Normalized == Vertex3f.UnitZ)
+            {
+                return Matrix4x4f.RotatedZ(angle);
+            }
+            // 임의의 축 회전
+            else
+            {
+                return (Matrix4x4f)pose._q;
             }
         }
 

@@ -4,12 +4,13 @@ using OpenGL;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using ZetaExt;
 
 namespace Animate
 {
     /// <summary>
     /// 영장류 클래스 - 인간, 원숭이, 유인원 등을 포함하는 포유류 목
-    /// 
+    /// <code>
     /// 영장류의 주요 특징:
     /// - 발달된 뇌와 높은 지능, 복잡한 사회 구조
     /// - 정교한 손가락 움직임과 엄지손가락 대립 가능
@@ -25,9 +26,18 @@ namespace Animate
     /// 
     /// TODO: 표정 변화 시스템, 입 모양 변형, 헤어/털 시뮬레이션,
     /// 근육 변형 애니메이션, 걸음걸이 패턴 다양화
+    /// </code>
     /// </summary>
-    public class Primate : AniActor
+    public abstract class Primate : AniActor
     {
+        public Vertex3f HipPosition => (_transform.Matrix4x4f * AnimatedTransforms[((PrimateRig)_aniRig).HipIndex]).Column3.xyz();
+        public Vertex3f RightHandPosition => (_transform.Matrix4x4f * AnimatedTransforms[((PrimateRig)_aniRig).RightHandIndex]).Column3.xyz();
+        public Vertex3f LeftHandPosition => (_transform.Matrix4x4f * AnimatedTransforms[((PrimateRig)_aniRig).LeftHandIndex]).Column3.xyz();
+        public Vertex3f HeadPosition => (_transform.Matrix4x4f * AnimatedTransforms[((PrimateRig)_aniRig).HeadIndex]).Column3.xyz();
+        public Vertex3f LeftFootPosition => (_transform.Matrix4x4f * AnimatedTransforms[((PrimateRig)_aniRig).LeftFootIndex]).Column3.xyz();
+        public Vertex3f RightFootPosition => (_transform.Matrix4x4f * AnimatedTransforms[((PrimateRig)_aniRig).RightHandIndex]).Column3.xyz();
+
+
         public enum BODY_PART
         {
             LeftHand, RightHand, Head, Back, Count
@@ -53,6 +63,7 @@ namespace Animate
 
         public Primate(string name, AniRig aniRig) : base(name, aniRig)
         {
+            
             //TransplantEye(EngineLoop.PROJECT_PATH + "\\Res\\Human\\simple_eye.dae", "mixamorig_Head");
             /*
             HandGrabItem(_aniRig, "mixamorig_LeftHand_Item", "mixamorig_LeftHand",
@@ -79,7 +90,6 @@ namespace Animate
                 AniRig.Armature["mixamorig_eyeRight"]?.ApplyCoordinateFrame(_transform.Matrix4x4f.Position, worldPosition, Vertex3f.UnitZ);
             };
         }
-
 
         /// <summary>
         /// 손을 감싸쥔다.

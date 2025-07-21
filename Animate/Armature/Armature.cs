@@ -105,7 +105,10 @@ namespace Animate
         /// <exception cref="ArgumentException">부모 본이 존재하지 않거나 본 이름이 이미 존재할 때</exception>
         /// <exception cref="ArgumentNullException">본 이름이 null이거나 빈 문자열일 때</exception>
         public void AttachBone(string parentBoneName, string boneName, Matrix4x4f localBindTransform)
-        {            
+        {
+            // 이미 추가된 본이면 추가할 필요가 없다.
+            if (_dicBones.ContainsKey(boneName)) return;
+
             // 부모 본 존재 확인
             if (!_dicBones.ContainsKey(parentBoneName))
                 throw new ArgumentException($"부모 본 '{parentBoneName}'이 존재하지 않습니다.", nameof(parentBoneName));

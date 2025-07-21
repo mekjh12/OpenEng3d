@@ -64,10 +64,11 @@
   <ItemGroup>
     <Compile Include="AniModels\AniActor.Equip.cs" />
     <Compile Include="AniModels\AnimationComponent.cs" />
-    <Compile Include="AniModels\AniRig.cs" />
+    <Compile Include="AniModels\Rig\AniRig.cs" />
     <Compile Include="AniModels\Animator.cs" />
     <Compile Include="AniModels\AniActor.cs" />
-    <Compile Include="AniModels\AniRigLoader.cs" />
+    <Compile Include="AniModels\Rig\AniRigLoader.cs" />
+    <Compile Include="AniModels\Rig\PrimateRig.cs" />
     <Compile Include="AniModels\ItemAttachment.cs" />
     <Compile Include="Armature\Armature.cs" />
     <Compile Include="Armature\BoneExtension.cs" />
