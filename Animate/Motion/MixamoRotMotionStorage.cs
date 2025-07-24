@@ -60,7 +60,8 @@ namespace Animate
                             if (targetAniRig.DicBones.ContainsKey(boneNames[i]))
                             {
                                 // 각 본의 위치를 믹사모에서 가져온 길이로 설정
-                                float destBoneLength = targetAniRig.DicBones[boneNames[i]].PivotPosition.Norm();
+                                Bone b = targetAniRig.DicBones[boneNames[i]];
+                                float destBoneLength = b.BoneTransforms.LocalPivot.Norm();
                                 BoneTransform dstBonePose = keyframe[boneNames[i]];
 
                                 // 새로운 위치로 BoneTransform 생성하여 다시 할당

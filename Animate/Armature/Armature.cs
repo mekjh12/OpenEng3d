@@ -96,6 +96,11 @@ namespace Animate
             _dicBones[boneName] = bone;
         }
 
+        public int AttachBone(string parentBoneName, ATTACHMENT_SLOT boneName, Matrix4x4f localBindTransform)
+        {
+            return AttachBone(parentBoneName, boneName.ToString(), localBindTransform);
+        }
+
         /// <summary>
         /// 지정된 부모 본에 새로운 본을 연결한다.
         /// </summary>
@@ -104,10 +109,10 @@ namespace Animate
         /// <param name="localBindTransform">새 본의 로컬 바인딩 변환 행렬</param>
         /// <exception cref="ArgumentException">부모 본이 존재하지 않거나 본 이름이 이미 존재할 때</exception>
         /// <exception cref="ArgumentNullException">본 이름이 null이거나 빈 문자열일 때</exception>
-        public void AttachBone(string parentBoneName, string boneName, Matrix4x4f localBindTransform)
+        public int AttachBone(string parentBoneName, string boneName, Matrix4x4f localBindTransform)
         {
             // 이미 추가된 본이면 추가할 필요가 없다.
-            if (_dicBones.ContainsKey(boneName)) return;
+            if (_dicBones.ContainsKey(boneName)) return _dicBoneIndex[boneName];
 
             // 부모 본 존재 확인
             if (!_dicBones.ContainsKey(parentBoneName))
@@ -136,8 +141,7 @@ namespace Animate
             _dicBones[boneName] = newBone;
             _dicBoneIndex[boneName] = newBoneIndex;
 
-            // 애니메이션 변환 행렬 업데이트
-            //newBone.UpdateRootTransforms(_animator, isSelfIncluded: true);
+            return newBoneIndex;
         }
 
         /// <summary>

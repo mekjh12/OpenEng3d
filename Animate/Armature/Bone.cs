@@ -25,6 +25,10 @@ namespace Animate
         private BoneTransforms _boneTransforms; // 뼈대의 변환 정보 (애니메이션 및 바인딩 포즈 변환 행렬들)
         private BoneKinematics _boneKinematics; // 뼈대의 운동학 정보 (추가 기능)
 
+        // 성능 향상을 위한 캐릭터 공간 변환 행렬들
+        Matrix4x4f _rootTransform;
+        Matrix4x4f _parentRootTransform;
+
         /// <summary>
         /// 뼈대의 운동학 정보를 포함하는 객체
         /// </summary>
@@ -60,50 +64,6 @@ namespace Animate
         {
             get => _parent;
             set => _parent = value;
-        }
-
-        /// <summary>
-        /// 캐릭터 공간에서의 뼈대 시작점(피봇) 위치
-        /// </summary>
-        public Vertex3f PivotPosition
-        {
-            get => BoneTransforms.RootTransform.Position;
-            set
-            {
-                Matrix4x4f mat = BoneTransforms.RootTransform;
-
-                mat[3, 0] = value.x;
-                mat[3, 1] = value.y;
-                mat[3, 2] = value.z;
-
-                BoneTransforms.RootTransform = mat;
-            }
-        }
-
-        /// <summary>
-        /// 캐릭터 공간에서의 뼈대 끝점 위치
-        /// 자식이 없으면 기본 길이만큼 Y축으로 연장된 위치를 반환
-        /// 자식이 있으면 자식들의 평균 위치를 반환
-        /// </summary>
-        public Vertex3f TipPosition
-        {
-            get
-            {
-                if (IsLeaf)
-                {
-                    Matrix4x4f extendedTransform = _boneTransforms.RootTransform * Matrix4x4f.Translated(0, DEFAULT_BONE_LENGTH, 0);
-                    return extendedTransform.Position;
-                }
-                else
-                {
-                    Vertex3f averagePosition = Vertex3f.Zero;
-                    foreach (Bone child in _children)
-                    {
-                        averagePosition += child.BoneTransforms.RootTransform.Position;
-                    }
-                    return averagePosition * (1.0f / _children.Count);
-                }
-            }
         }
 
         /// <summary>
@@ -197,23 +157,24 @@ namespace Animate
             foreach (Bone bone in this.ToBFSList(isSelfIncluded ? null: this))
             {
                 int index = bone.Index;
-                if (index < 0) continue; // 인덱스가 유효하지 않으면 건너뜀
 
-                // 애니메이션 변환 행렬 계산: LocalTransform을 부모의 월드 변환과 결합
+                // 부모와 자신의 본 변환 행렬을 가져온다
+                _parentRootTransform = animator.GetRootTransform(bone.Parent);
+                _rootTransform = animator.GetRootTransform(bone);
 
+                // 자신의 본 변환 행렬을 계산한다
                 if (bone.Parent == null)
                 {
-                    // 루트 뼈대의 경우 부모가 없으므로 LocalTransform을 그대로 사용
                     animator.SetRootTransform(index, Matrix4x4f.Identity);
                 }
                 else
                 {
-                    // 공식: AnimatedTransform = Parent.AnimatedTransform * LocalTransform
-                    //bone.BoneTransforms.UpdateRootTransformFromLocal(bone.Parent.BoneTransforms.RootTransform);
-                    animator.SetRootTransform(index, animator.GetRootTransform(bone.Parent) * bone.BoneTransforms.LocalTransform);
+                    animator.SetRootTransform(index, _parentRootTransform * bone.BoneTransforms.LocalTransform);
                 }
 
-                animator.SetAnimatedTransform(index, animator.GetRootTransform(bone) * bone.BoneTransforms.InverseBindPoseTransform);
+                // 자신의 애니메이션 변환 행렬을 계산한다
+                _rootTransform = animator.GetRootTransform(bone);
+                animator.SetAnimatedTransform(index, _rootTransform * bone.BoneTransforms.InverseBindPoseTransform);
             }
         }
 

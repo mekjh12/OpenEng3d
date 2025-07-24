@@ -68,6 +68,7 @@
     <Compile Include="AniModels\Animator.cs" />
     <Compile Include="AniModels\AniActor.cs" />
     <Compile Include="AniModels\Rig\AniRigLoader.cs" />
+    <Compile Include="AniModels\Rig\ATTACHMENT_SLOT .cs" />
     <Compile Include="AniModels\Rig\PrimateRig.cs" />
     <Compile Include="AniModels\ItemAttachment.cs" />
     <Compile Include="Armature\Armature.cs" />

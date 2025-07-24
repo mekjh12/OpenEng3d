@@ -1,4 +1,5 @@
 ﻿using OpenGL;
+using System.Collections.Generic;
 
 namespace Animate
 {
@@ -9,8 +10,7 @@ namespace Animate
         public int LeftHandIndex { get; private set; }
         public int HeadIndex { get; private set; }
         public int LeftFootIndex { get; private set; }
-        public int RightFootIndex { get; private set; }
-
+        public int RightFootIndex { get; private set; }        
 
         public PrimateRig(string filename, bool isLoadAnimation = true) : base(filename, isLoadAnimation)
         {
@@ -21,7 +21,13 @@ namespace Animate
             LeftFootIndex = Armature["mixamorig_LeftFoot"].Index;
             RightFootIndex = Armature["mixamorig_RightFoot"].Index;
 
-            Armature.AttachBone("mixamorig_Head", "mixamorig_Head_top", Matrix4x4f.Translated(0, 20, 0));
+            int index = 0;
+            index = Armature.AttachBone("mixamorig_Head", ATTACHMENT_SLOT.Head, Matrix4x4f.Translated(0, 20, 0));
+            _dicIndices.Add(ATTACHMENT_SLOT.Head, index);
+            index = Armature.AttachBone("mixamorig_LeftHand", ATTACHMENT_SLOT.LeftHand, Matrix4x4f.Translated(0, 5, 2));
+            _dicIndices.Add(ATTACHMENT_SLOT.LeftHand, index);
+            index = Armature.AttachBone("mixamorig_RightHand", ATTACHMENT_SLOT.RightHand, Matrix4x4f.Translated(0, 5, 2));
+            _dicIndices.Add(ATTACHMENT_SLOT.RightHand, index);
         }
     }
 }

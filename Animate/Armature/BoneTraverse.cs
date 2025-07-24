@@ -64,8 +64,10 @@ namespace Animate
                 Bone current = _queue.Dequeue();
 
                 // 제외 대상 뼈대가 아닌 경우에만 결과에 추가
-                if (current != exceptBone)
+                if (current != exceptBone && current.Index>=0)
+                {
                     result.Add(current);
+                }
 
                 // 현재 뼈대의 모든 자식들을 큐에 추가 (제외 뼈대의 자식들도 순회)
                 foreach (Bone child in current.Children)

@@ -234,7 +234,7 @@ namespace Animate
 
                 // 부모 행렬과 로컬 변환 행렬을 곱하여 애니메이션된 행렬을 계산한다.
                 _rootTransforms[boneIndex] = parentTransform * bone.BoneTransforms.LocalTransform;
-                bone.BoneTransforms.RootTransform = _rootTransforms[boneIndex];
+                //bone.BoneTransforms.RootTransform = _rootTransforms[boneIndex];
 
                 // 애니메이션된 행렬에 역바인드포즈를 적용한다.
                 _animatedTransforms[boneIndex] = _rootTransforms[boneIndex] * bone.BoneTransforms.InverseBindPoseTransform;

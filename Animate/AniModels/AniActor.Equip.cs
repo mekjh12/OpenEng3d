@@ -6,13 +6,29 @@ namespace Animate
 {
 	public abstract partial class AniActor
 	{
+        public void EquipItem(
+            ATTACHMENT_SLOT where, 
+            string itemUniqueName, 
+            string itemName, 
+            TexturedModel model,
+            float size = 1.0f,
+            float positionX = 0.0f, float positionY = 0.0f, float positionZ = 0.0f,
+            float pitch = 0.0f, float yaw = 0.0f, float roll = 0.0f)
+        {
+            int boneIndex = ((PrimateRig)_aniRig)[where];
+            EquipItem(boneIndex, itemUniqueName, itemName, model, size,
+                     positionX, positionY, positionZ,
+                     pitch, yaw, roll);
+        }
+
+
         /// <summary>
         /// 아이템을 장착한다.
         /// </summary>
+        /// <param name="boneIndex">아이템을 부착할 뼈대 인덱스</param>
         /// <param name="itemUniqueName">아이템의 고유 식별자</param>
         /// <param name="itemName">아이템 타입 이름</param>
         /// <param name="model">아이템의 3D 모델</param>
-        /// <param name="boneIndex">아이템을 부착할 뼈대 인덱스</param>
         /// <param name="size">아이템 크기 (균등 스케일링)</param>
         /// <param name="positionX">X축 위치 오프셋</param>
         /// <param name="positionY">Y축 위치 오프셋</param>
@@ -20,8 +36,8 @@ namespace Animate
         /// <param name="pitch">X축 회전 (피치, 도 단위)</param>
         /// <param name="yaw">Y축 회전 (요, 도 단위)</param>
         /// <param name="roll">Z축 회전 (롤, 도 단위)</param>
-        public void EquipItem(string itemUniqueName, string itemName, TexturedModel model,
-            int boneIndex, float size = 1.0f,
+        public void EquipItem(int boneIndex, string itemUniqueName, string itemName, TexturedModel model,
+            float size = 1.0f,
             float positionX = 0.0f, float positionY = 0.0f, float positionZ = 0.0f,
             float pitch = 0.0f, float yaw = 0.0f, float roll = 0.0f)
         {
@@ -52,7 +68,7 @@ namespace Animate
         public void EquipItem(string itemUniqueName, string itemName, TexturedModel model,
             int boneIndex, float size, Vertex3f position, Vertex3f rotation)
         {
-            EquipItem(itemUniqueName, itemName, model, boneIndex, size,
+            EquipItem(boneIndex, itemUniqueName, itemName, model, size,
                      position.x, position.y, position.z,
                      rotation.x, rotation.y, rotation.z);
         }

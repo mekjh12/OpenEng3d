@@ -114,7 +114,7 @@ namespace Animate
                 Bone bone = dicBones[boneName];
                 if (bone.IsHipBone && timeFrames.ContainsKey(0.0f)) //
                 {
-                    float dstSize = bone.PivotPosition.Norm();
+                    float dstSize = bone.BoneTransforms.Pivot.Norm();//.BoneTransforms.InverseBindPoseTransform.Inversed().Position.Norm();
                     float srcSize = timeFrames[0.0f].Position.Norm();
                     return dstSize / srcSize; // 찾으면 즉시 반환
                 }
@@ -735,17 +735,17 @@ namespace Animate
                         float time = subsource.Key;
                         Matrix4x4f mat = subsource.Value;
 
-                        // 키프레임을 추가한다.
-                        motion.AddKeyFrame(time);
-
                         // 본포즈를 설정한다.
                         Vertex3f position = bone.IsHipBone ?
-                            mat.Position * targetAniRig.Armature.HipHeightScaled : bone.PivotPosition * 0.001f;
+                            mat.Position * targetAniRig.Armature.HipHeightScaled :
+                            bone.BoneTransforms.LocalPivot;
+
                         ZetaExt.Quaternion q = mat.ToQuaternion();
                         q.Normalize();
                         BoneTransform boneTransform  = new BoneTransform(position, q);
 
-                        // 시간에 본포즈를 추가한다.
+                        // 키프레임을 추가하고 본포즈를 추가한다.
+                        motion.AddKeyFrame(time);
                         motion.KeyFrame(time).AddBoneTransform(boneName, boneTransform);
                     }
                 }
@@ -977,7 +977,6 @@ namespace Animate
                     Index = boneIndex 
                 };
                 bone.BoneTransforms.LocalBindTransform = mat;
-                bone.PivotPosition = mat.Position;
 
                 // 역바인드 포즈를 설정한다.
                 if (invBindPoses.ContainsKey(boneName))

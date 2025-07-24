@@ -1,4 +1,4 @@
-﻿using Geometry;
+﻿using Microsoft.SqlServer.Server;
 using Model3d;
 using OpenGL;
 using System;
@@ -30,40 +30,12 @@ namespace Animate
     /// </summary>
     public abstract class Primate : AniActor
     {
-        public Vertex3f HipPosition => (_transform.Matrix4x4f * AnimatedTransforms[((PrimateRig)_aniRig).HipIndex]).Column3.xyz();
-        public Vertex3f RightHandPosition => (_transform.Matrix4x4f * AnimatedTransforms[((PrimateRig)_aniRig).RightHandIndex]).Column3.xyz();
-        public Vertex3f LeftHandPosition => (_transform.Matrix4x4f * AnimatedTransforms[((PrimateRig)_aniRig).LeftHandIndex]).Column3.xyz();
-        public Vertex3f HeadPosition => (_transform.Matrix4x4f * AnimatedTransforms[((PrimateRig)_aniRig).HeadIndex]).Column3.xyz();
-        public Vertex3f LeftFootPosition => (_transform.Matrix4x4f * AnimatedTransforms[((PrimateRig)_aniRig).LeftFootIndex]).Column3.xyz();
-        public Vertex3f RightFootPosition => (_transform.Matrix4x4f * AnimatedTransforms[((PrimateRig)_aniRig).RightHandIndex]).Column3.xyz();
-
-
-        public enum BODY_PART
-        {
-            LeftHand, RightHand, Head, Back, Count
-        }
-
-        protected Entity _leftHandEntity;
-        protected Entity _rightHandEntity;
-        protected Entity _headEntity;
-        protected Entity _backEntity;
-
-        public Entity LeftHandEntity => _leftHandEntity;
-
-        public Entity RightHandEntity => _rightHandEntity;
-
-        public OBB RightHandItemEntityOBB
-        {
-            get
-            {
-
-                return null;
-            }
-        }
+        Dictionary<string, Action> _actions;
 
         public Primate(string name, AniRig aniRig) : base(name, aniRig)
         {
-            
+            _actions = new Dictionary<string, Action>();
+
             //TransplantEye(EngineLoop.PROJECT_PATH + "\\Res\\Human\\simple_eye.dae", "mixamorig_Head");
             /*
             HandGrabItem(_aniRig, "mixamorig_LeftHand_Item", "mixamorig_LeftHand",
@@ -77,7 +49,7 @@ namespace Animate
             */
         }
 
-        public void Attach(BODY_PART hand)
+        public void Attach(ATTACHMENT_SLOT hand)
         {
             
         }
@@ -95,55 +67,43 @@ namespace Animate
         /// 손을 감싸쥔다.
         /// </summary>
         /// <param name="whereHand"></param>
-        public void FoldHand(BODY_PART whereHand, float intensity = 60.0f)
+        public void FoldHand(bool isLeft, float intensity = 60.0f)
         {
-            _updateAfter += () =>
+            string handName = (isLeft ? "LeftHand" : "RightHand");
+
+            if (!_actions.ContainsKey("fold"+ handName))
             {
-                // 손을 가져온다.
-                Bone hand = AniRig.Armature["mixamorig_" + (whereHand == BODY_PART.LeftHand ? "LeftHand" : "RightHand")];
-
-                foreach (Bone bone in hand.ToBFSList(exceptBone: hand))
+                Action action = () =>
                 {
-                    // 엄지 손가락이 아닌 경우
-                    if (bone.Name.IndexOf("Thumb") < 0)
-                    {
-                        bone.BoneTransforms.LocalTransform = bone.BoneTransforms.LocalBindTransform * Matrix4x4f.RotatedX(40);
-                    }
-                }
+                    // 손을 가져온다.
+                    Bone hand = AniRig.Armature["mixamorig_" + handName];
 
-                // 손의 모든 자식본을 업데이트한다.
-                hand.UpdateAnimatorTransforms(_animator, isSelfIncluded: false);
-            };
+                    foreach (Bone bone in hand.ToBFSList(exceptBone: hand))
+                    {
+                        // 엄지 손가락이 아닌 경우
+                        if (bone.Name.IndexOf("Thumb") < 0)
+                        {
+                            bone.BoneTransforms.LocalTransform = bone.BoneTransforms.LocalBindTransform * Matrix4x4f.RotatedX(40);
+                        }
+                    }
+
+                    // 손의 모든 자식본을 업데이트한다.
+                    hand.UpdateAnimatorTransforms(_animator, isSelfIncluded: false);
+                };
+
+                if (isLeft) _actions["fold" + handName] = action;
+                if (!isLeft) _actions["fold" + handName] = action;
+
+                _updateAfter += action;
+            }
         }
 
-        public void UnfoldHand(BODY_PART whereHand)
+        public void UnfoldHand(bool isLeft)
         {
-            _updateAfter += () =>
-            {
-                Bone hand = AniRig.Armature["mixamorig_" + (whereHand == BODY_PART.LeftHand ? "LeftHand" : "RightHand")];
-                Stack<Bone> stack = new Stack<Bone>();
-                stack.Push(hand);
-                while (stack.Count > 0)
-                {
-                    Bone bone = stack.Pop();
-                    if (bone.Name.IndexOf("Thumb") < 0)
-                    {
-                        bone.BoneTransforms.LocalTransform = bone.BoneTransforms.LocalBindTransform * Matrix4x4f.RotatedX(0);
-                    }
-                    else
-                    {
-                        if (bone.Name.IndexOf("Thumb1") >= 0)
-                            bone.BoneTransforms.LocalTransform = bone.BoneTransforms.LocalBindTransform * Matrix4x4f.RotatedY(0);
-                        if (bone.Name.IndexOf("Thumb2") >= 0)
-                            bone.BoneTransforms.LocalTransform = bone.BoneTransforms.LocalBindTransform * Matrix4x4f.RotatedX(0);
-                        if (bone.Name.IndexOf("Thumb3") >= 0)
-                            bone.BoneTransforms.LocalTransform = bone.BoneTransforms.LocalBindTransform * Matrix4x4f.RotatedX(0);
-                    }
-                    foreach (Bone item in bone.Children) stack.Push(item);
-                }
-
-                hand.UpdateAnimatorTransforms(_animator, isSelfIncluded: false);
-            };
+            string keyName = "fold" + (isLeft ? "Left" : "Right") + "Hand";
+            Action action = _actions[keyName];
+            _updateAfter -= action;
+            _actions.Remove(keyName);
         }
 
         /// <summary>

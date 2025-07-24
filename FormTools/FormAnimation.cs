@@ -8,7 +8,6 @@ using Shader;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Security.Cryptography;
 using System.Windows.Forms;
 using ZetaExt;
 
@@ -93,12 +92,12 @@ namespace FormTools
             _glControl3.InitGridShader(PROJECT_PATH);
 
             PrimateRig aniRig = new PrimateRig(PROJECT_PATH + @"\Res\abe.dae", isLoadAnimation: false);
-            PrimateRig aniRig2 = new PrimateRig(PROJECT_PATH + @"\Res\Kachujin G Rosales.dae", isLoadAnimation: false);
+            PrimateRig aniRig2 = new PrimateRig(PROJECT_PATH + @"\Res\Guybrush_final.dae", isLoadAnimation: false);
 
             _humans.Add(new Human($"abe", aniRig));
             _humans[0].Transform.IncreasePosition(0, 0, 0);
 
-            _humans.Add(new Human($"Kachujin G Rosales", aniRig2));
+            _humans.Add(new Human($"Guybrush_final", aniRig2));
             _humans[1].Transform.IncreasePosition(2, 0, 0);
 
             _humans.Add(new Human($"abe2", aniRig));
@@ -127,10 +126,11 @@ namespace FormTools
 
             // 아이템 장착
             Model3d.TextureStorage.NullTextureFileName = PROJECT_PATH + "\\Res\\debug.jpg";
-            TexturedModel sword = LoadModel(PROJECT_PATH + @"\Res\Items\Merchant_Hat.dae")[0];
+            TexturedModel hat = LoadModel(PROJECT_PATH + @"\Res\Items\Merchant_Hat.dae")[0];
+            TexturedModel sword = LoadModel(PROJECT_PATH + @"\Res\Items\sword1.dae")[0];
 
-            int idx = _humans[0].AniRig.Armature.GetBoneIndex("mixamorig_Head_top");
-            _humans[0].EquipItem("sword0", "sword", sword, idx, 200.0f, positionY: -6.0f, pitch:-20);
+            _humans[0].EquipItem(ATTACHMENT_SLOT.Head,"hat0", "hat", hat, 200.0f, positionY: -6.0f, pitch:-20);
+            _humans[0].EquipItem(ATTACHMENT_SLOT.LeftHand, "sword0", "sword", sword, 5.0f, yaw: 90);
 
             // 셰이더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
@@ -236,7 +236,11 @@ namespace FormTools
             }
             else if (e.KeyCode == Keys.H)
             {
-                _humans[0].FoldHand(Primate.BODY_PART.LeftHand);
+                _humans[0].FoldHand(true);
+            }
+            else if (e.KeyCode == Keys.J)
+            {
+                _humans[0].UnfoldHand(true);
             }
             else if (e.KeyCode == Keys.D0)
             {
