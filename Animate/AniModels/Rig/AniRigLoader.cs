@@ -61,28 +61,27 @@ namespace Animate
                 lstPositions[i] = A0xS.Multiply(lstPositions[i]);
             }
 
+            Dictionary<string, Matrix4x4f> boneDict = new Dictionary<string, Matrix4x4f>();
+
             // 역바인딩포즈를 계산한다. 
             // LibraryController에서 미리 계산된 역바인딩포즈가 있지만, 
             // 애니메이션을 적용하기 위해서 다시 계산한다.
-            Stack<Bone> bStack = new Stack<Bone>();
-            bStack.Push(armature.RootBone);
-            while (bStack.Count > 0)
+            foreach (Bone cBone in armature.RootBone.ToBFSList())
             {
-                // 뼈대를 꺼내고, 
-                Bone cBone = bStack.Pop();
-
                 // 부모 뼈대의 애니메이션 바인드 포즈를 계산한다.
-                Matrix4x4f prevAnimatedMat = (cBone.Parent == null ? Matrix4x4f.Identity : cBone.Parent.BoneTransforms.AnimatedBindPoseTransform);
+                Matrix4x4f prevAnimatedMat = Matrix4x4f.Identity;
+
+                if (cBone.Parent != null)
+                {
+                    prevAnimatedMat = boneDict[cBone.Parent.Name];
+                }
 
                 // 현재 뼈대의 애니메이션 바인드 포즈를 계산한다.
-                cBone.BoneTransforms.AnimatedBindPoseTransform = prevAnimatedMat * cBone.BoneTransforms.LocalBindTransform;
+                boneDict[cBone.Name] = prevAnimatedMat * cBone.BoneTransforms.LocalBindTransform;
 
                 // 역바인딩포즈를 계산한다.
-                cBone.BoneTransforms.InverseBindPoseTransform = cBone.BoneTransforms.AnimatedBindPoseTransform.Inversed();
-
-                // 자식 뼈대를 스택에 추가한다.
-                foreach (Bone child in cBone.Children) bStack.Push(child);
-            }
+                cBone.BoneTransforms.InverseBindPoseTransform = boneDict[cBone.Name].Inversed();
+            }           
 
             // lstPositions, lstTexCoord, lstNormals, lstBoneIndex, lstBoneWeight를 이용하여 RawModel3d를 생성한다.
             // 읽어온 정보의 MeshTriangles를 이용하여 GPU에 폴리곤 정보 데이터를 전송한다.

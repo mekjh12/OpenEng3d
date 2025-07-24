@@ -102,32 +102,17 @@ namespace Animate
                 // 손을 가져온다.
                 Bone hand = AniRig.Armature["mixamorig_" + (whereHand == BODY_PART.LeftHand ? "LeftHand" : "RightHand")];
 
-                // 손의 모든 뼈를 스택에 넣는다.
-                Stack<Bone> stack = new Stack<Bone>();
-                stack.Push(hand);
-                while (stack.Count > 0)
+                foreach (Bone bone in hand.ToBFSList(exceptBone: hand))
                 {
-                    Bone bone = stack.Pop();
+                    // 엄지 손가락이 아닌 경우
                     if (bone.Name.IndexOf("Thumb") < 0)
                     {
-                        // 엄지 손가락이 아닌 경우
-                        bone.BoneTransforms.LocalTransform = bone.BoneTransforms.LocalBindTransform * Matrix4x4f.RotatedX(intensity);
+                        bone.BoneTransforms.LocalTransform = bone.BoneTransforms.LocalBindTransform * Matrix4x4f.RotatedX(40);
                     }
-                    else
-                    {
-                        // 엄지 손가락인 경우
-                        if (bone.Name.IndexOf("Thumb1") >= 0)
-                            bone.BoneTransforms.LocalTransform = bone.BoneTransforms.LocalBindTransform * Matrix4x4f.RotatedY(intensity);
-                        if (bone.Name.IndexOf("Thumb2") >= 0)
-                            bone.BoneTransforms.LocalTransform = bone.BoneTransforms.LocalBindTransform * Matrix4x4f.RotatedX(0);
-                        if (bone.Name.IndexOf("Thumb3") >= 0)
-                            bone.BoneTransforms.LocalTransform = bone.BoneTransforms.LocalBindTransform * Matrix4x4f.RotatedX(0);
-                    }
-                    foreach (Bone item in bone.Children) stack.Push(item);
                 }
 
-                // 손의 자식 뼈를 업데이트한다.
-                hand.UpdatePropagateTransform(isSelfIncluded: false);
+                // 손의 모든 자식본을 업데이트한다.
+                hand.UpdateAnimatorTransforms(_animator, isSelfIncluded: false);
             };
         }
 
@@ -156,7 +141,8 @@ namespace Animate
                     }
                     foreach (Bone item in bone.Children) stack.Push(item);
                 }
-                hand.UpdatePropagateTransform(isSelfIncluded: false);
+
+                hand.UpdateAnimatorTransforms(_animator, isSelfIncluded: false);
             };
         }
 

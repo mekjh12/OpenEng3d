@@ -63,6 +63,50 @@ namespace Animate
         }
 
         /// <summary>
+        /// 캐릭터 공간에서의 뼈대 시작점(피봇) 위치
+        /// </summary>
+        public Vertex3f PivotPosition
+        {
+            get => BoneTransforms.RootTransform.Position;
+            set
+            {
+                Matrix4x4f mat = BoneTransforms.RootTransform;
+
+                mat[3, 0] = value.x;
+                mat[3, 1] = value.y;
+                mat[3, 2] = value.z;
+
+                BoneTransforms.RootTransform = mat;
+            }
+        }
+
+        /// <summary>
+        /// 캐릭터 공간에서의 뼈대 끝점 위치
+        /// 자식이 없으면 기본 길이만큼 Y축으로 연장된 위치를 반환
+        /// 자식이 있으면 자식들의 평균 위치를 반환
+        /// </summary>
+        public Vertex3f TipPosition
+        {
+            get
+            {
+                if (IsLeaf)
+                {
+                    Matrix4x4f extendedTransform = _boneTransforms.RootTransform * Matrix4x4f.Translated(0, DEFAULT_BONE_LENGTH, 0);
+                    return extendedTransform.Position;
+                }
+                else
+                {
+                    Vertex3f averagePosition = Vertex3f.Zero;
+                    foreach (Bone child in _children)
+                    {
+                        averagePosition += child.BoneTransforms.RootTransform.Position;
+                    }
+                    return averagePosition * (1.0f / _children.Count);
+                }
+            }
+        }
+
+        /// <summary>
         /// 자식 뼈대들의 리스트 (읽기 전용)
         /// </summary>
         public IReadOnlyList<Bone> Children => _children.AsReadOnly();
@@ -81,50 +125,6 @@ namespace Animate
         /// Mixamo 리그의 엉덩이(Hips) 뼈대인지 여부
         /// </summary>
         public bool IsHipBone => _name == ARMATURE_HIPS_NAME;
-
-        /// <summary>
-        /// 캐릭터 공간에서의 뼈대 시작점(피봇) 위치
-        /// </summary>
-        public Vertex3f PivotPosition
-        {
-            get => BoneTransforms.AnimatedTransform.Position;
-            set
-            {
-                Matrix4x4f mat = BoneTransforms.AnimatedTransform;
-
-                mat[3, 0] = value.x;
-                mat[3, 1] = value.y;
-                mat[3, 2] = value.z;
-
-                BoneTransforms.AnimatedTransform = mat;
-            }
-        }
-
-        /// <summary>
-        /// 캐릭터 공간에서의 뼈대 끝점 위치
-        /// 자식이 없으면 기본 길이만큼 Y축으로 연장된 위치를 반환
-        /// 자식이 있으면 자식들의 평균 위치를 반환
-        /// </summary>
-        public Vertex3f TipPosition
-        {
-            get
-            {
-                if (IsLeaf)
-                {
-                    Matrix4x4f extendedTransform = _boneTransforms.AnimatedTransform * Matrix4x4f.Translated(0, DEFAULT_BONE_LENGTH, 0);
-                    return extendedTransform.Position;
-                }
-                else
-                {
-                    Vertex3f averagePosition = Vertex3f.Zero;
-                    foreach (Bone child in _children)
-                    {
-                        averagePosition += child.BoneTransforms.AnimatedTransform.Position;
-                    }
-                    return averagePosition * (1.0f / _children.Count);
-                }
-            }
-        }
 
         /// <summary>
         /// 새로운 뼈대를 생성한다
@@ -192,43 +192,31 @@ namespace Animate
         /// 로컬 변환 행렬로부터 캐릭터 공간의 애니메이션 변환 행렬을 계산하고 자식 뼈대들에게 전파한다.
         /// </summary>
         /// <param name="isSelfIncluded">현재 뼈대부터 업데이트할지 여부 (true: 자신 포함, false: 자식들만)</param>
-        /// <param name="exceptBone">업데이트에서 제외할 뼈대 (null이면 모든 뼈대 업데이트)</param>
-        public void UpdatePropagateTransform(bool isSelfIncluded = false, Bone exceptBone = null)
+        public void UpdateAnimatorTransforms(Animator animator, bool isSelfIncluded = false)
         {
-            // 깊이 우선 탐색(DFS)을 위한 스택 생성
-            Stack<Bone> stack = new Stack<Bone>();
-
-            // 시작점 설정: 자신 포함 여부에 따라 초기 스택 구성
-            if (isSelfIncluded)
+            foreach (Bone bone in this.ToBFSList(isSelfIncluded ? null: this))
             {
-                stack.Push(this); // 현재 뼈대부터 시작
-            }
-            else
-            {
-                // 현재 뼈대는 제외하고 직계 자식들부터 시작
-                foreach (Bone childBone in _children)
-                    stack.Push(childBone);
-            }
-
-            // 스택 기반 반복으로 모든 하위 뼈대 순회
-            while (stack.Count > 0)
-            {
-                Bone currentBone = stack.Pop();
-
-                // 제외 대상 뼈대는 건너뛰기
-                if (currentBone == exceptBone) continue;
+                int index = bone.Index;
+                if (index < 0) continue; // 인덱스가 유효하지 않으면 건너뜀
 
                 // 애니메이션 변환 행렬 계산: LocalTransform을 부모의 월드 변환과 결합
-                // 공식: AnimatedTransform = Parent.AnimatedTransform * LocalTransform
-                // 루트 뼈대의 경우 부모가 없으므로 LocalTransform을 그대로 사용
-                currentBone.BoneTransforms.AnimatedTransform = currentBone.Parent == null
-                    ? currentBone.BoneTransforms.LocalTransform
-                    : currentBone.Parent.BoneTransforms.AnimatedTransform * currentBone.BoneTransforms.LocalTransform;
 
-                // 현재 뼈대의 모든 자식들을 스택에 추가하여 계속 순회
-                foreach (Bone childBone in currentBone.Children)
-                    stack.Push(childBone);
+                if (bone.Parent == null)
+                {
+                    // 루트 뼈대의 경우 부모가 없으므로 LocalTransform을 그대로 사용
+                    animator.SetRootTransform(index, Matrix4x4f.Identity);
+                }
+                else
+                {
+                    // 공식: AnimatedTransform = Parent.AnimatedTransform * LocalTransform
+                    //bone.BoneTransforms.UpdateRootTransformFromLocal(bone.Parent.BoneTransforms.RootTransform);
+                    animator.SetRootTransform(index, animator.GetRootTransform(bone.Parent) * bone.BoneTransforms.LocalTransform);
+                }
+
+                animator.SetAnimatedTransform(index, animator.GetRootTransform(bone) * bone.BoneTransforms.InverseBindPoseTransform);
             }
         }
+
+
     }
 }

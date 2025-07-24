@@ -74,6 +74,7 @@
     <Compile Include="Armature\BoneExtension.cs" />
     <Compile Include="Armature\BoneKinematics.cs" />
     <Compile Include="Armature\BoneTransforms.cs" />
+    <Compile Include="Armature\BoneTraverse.cs" />
     <Compile Include="Core\IComponent.cs" />
     <Compile Include="Loader\AniXmlLoader.cs" />
     <Compile Include="Armature\Bone.cs" />

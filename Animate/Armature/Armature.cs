@@ -137,7 +137,7 @@ namespace Animate
             _dicBoneIndex[boneName] = newBoneIndex;
 
             // 애니메이션 변환 행렬 업데이트
-            newBone.UpdatePropagateTransform(isSelfIncluded: true);
+            //newBone.UpdateRootTransforms(_animator, isSelfIncluded: true);
         }
 
         /// <summary>

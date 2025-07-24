@@ -27,6 +27,7 @@ namespace Animate
         // 애니리그에 부착할 텍스쳐 모델 리스트(아이템으로 모자, 옷 등을 부착할 수 있다.)
         // 개선된 아이템 시스템: 아이템 이름을 키로 하고 ItemAttachment를 값으로 하는 딕셔너리
         Dictionary<string, ItemAttachment> _items;
+
         // 컴포넌트들
         protected AnimationComponent _animationComponent; // 애니메이션 컴포넌트
         protected TransformComponent _transformComponent; // 트랜스폼 컴포넌트
@@ -135,7 +136,7 @@ namespace Animate
                 if (_renderingMode == RenderingMode.Animation)
                 {
                     Renderer3d.RenderSkinning(ashader, ModelMatrix, vp, _aniRig.TexturedModels, _animator.AnimatedTransforms);
-                    Renderer3d.RenderRigidBody(ashader, ModelMatrix, vp, _items.Values.ToList(),  _animator.BoneCharacterTransforms);
+                    Renderer3d.RenderRigidBody(ashader, ModelMatrix, vp, _items.Values.ToList(),  _animator.RootTransforms);
                 }
                 else if (_renderingMode == RenderingMode.BoneWeight)
                 {
