@@ -101,9 +101,12 @@ namespace Animate
         public void UnfoldHand(bool isLeft)
         {
             string keyName = "fold" + (isLeft ? "Left" : "Right") + "Hand";
-            Action action = _actions[keyName];
-            _updateAfter -= action;
-            _actions.Remove(keyName);
+            if (_actions.ContainsKey(keyName))
+            {
+                Action action = _actions[keyName];
+                _updateAfter -= action;
+                _actions.Remove(keyName);
+            }
         }
 
         /// <summary>

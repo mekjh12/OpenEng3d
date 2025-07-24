@@ -11,15 +11,56 @@ namespace Animate
         string _animationName; // 애니메이션 이름
         float _length; // 애니메이션 길이(초)
         Dictionary<float, KeyFrame> _keyframes; // 키프레임 딕셔너리 (시간 -> 키프레임)
-        
+
         // ## 최적화를 위한 부분
-        Dictionary<string, Matrix4x4f> _currentPose = new Dictionary<string, Matrix4x4f>(128); // 재사용이 가능하도록 사용시 사전을 비우도록 하고 초기 용량을 128로 설정
+        // 재사용이 가능하도록 사용시 사전을 비우도록 하고 초기 용량을 128로 설정
+        readonly Dictionary<string, Matrix4x4f> _currentPose = new Dictionary<string, Matrix4x4f>(128);
+
+        // [추가] 시간순 정렬된 키프레임 캐시 - ElementAt() 제거용
+        private KeyFrame[] _sortedKeyframes;
+        private bool _cacheValid = false;
+
+        // [추가] 캐시 생성 및 유효성 확인
+        private void EnsureCacheValid()
+        {
+            if (!_cacheValid || _sortedKeyframes?.Length != _keyframes.Count)
+            {
+                // 시간순으로 정렬하여 배열 생성
+                _sortedKeyframes = _keyframes
+                    .OrderBy(kvp => kvp.Key)
+                    .Select(kvp => kvp.Value)
+                    .ToArray();
+                _cacheValid = true;
+            }
+        }
+
+        // [추가] 캐시 무효화
+        private void InvalidateCache()
+        {
+            _cacheValid = false;
+        }
 
         /// <summary>첫 번째 키프레임을 반환합니다.</summary>
-        public KeyFrame FirstKeyFrame => (_keyframes.Values.Count > 0) ? _keyframes.Values.ElementAt(0) : null;
+        public KeyFrame FirstKeyFrame
+        {
+            get
+            {
+                if (_keyframes.Count == 0) return null;
+                EnsureCacheValid();
+                return _sortedKeyframes[0];
+            }
+        }
 
         /// <summary>마지막 키프레임을 반환합니다.</summary>
-        public KeyFrame LastKeyFrame => (_keyframes.Values.Count > 0) ? _keyframes.Values.ElementAt(_keyframes.Count - 1) : null;
+        public KeyFrame LastKeyFrame
+        {
+            get
+            {
+                if (_keyframes.Count == 0) return null;
+                EnsureCacheValid();
+                return _sortedKeyframes[_keyframes.Count - 1];
+            }
+        }
 
         /// <summary>키프레임 딕셔너리를 반환합니다.</summary>
         public Dictionary<float, KeyFrame> Keyframes => _keyframes;
@@ -88,7 +129,9 @@ namespace Animate
         /// <returns>해당 인덱스의 키프레임</returns>
         public KeyFrame KeyFrame(int index)
         {
-            return _keyframes.Values.ElementAt(index);
+            if (index < 0 || index >= _keyframes.Count) return null;
+            EnsureCacheValid();
+            return _sortedKeyframes[index];
         }
 
         /// <summary>
@@ -112,6 +155,7 @@ namespace Animate
             if (!_keyframes.ContainsKey(time))
             {
                 _keyframes[time] = new KeyFrame(time);
+                InvalidateCache(); // [추가] 캐시 무효화
             }
         }
 
@@ -122,6 +166,7 @@ namespace Animate
         public void AddKeyFrame(KeyFrame keyFrame)
         {
             _keyframes[keyFrame.TimeStamp] = keyFrame;
+            InvalidateCache(); // [추가] 캐시 무효화
         }
 
         /// <summary>
@@ -134,27 +179,29 @@ namespace Animate
             // 모션이 비어 있거나 키프레임이 없는 경우에는 null을 반환한다.
             if (FirstKeyFrame == null || KeyFrameCount == 0) return null;
 
-            // 현재 시간(motionTime)에서 가장 근접한 사이의 두 개의 프레임을 가져온다.
-            KeyFrame previousFrame = FirstKeyFrame;
-            KeyFrame nextFrame = FirstKeyFrame;
-            float firstTime = FirstKeyFrame.TimeStamp;
-            for (int i = 1; i < KeyFrameCount; i++)
+            // [최적화] 캐시된 배열을 사용한 효율적인 검색
+            EnsureCacheValid();
+
+            KeyFrame previousFrame = _sortedKeyframes[0];
+            KeyFrame nextFrame = _sortedKeyframes[0];
+
+            // 선형 검색으로 키프레임 찾기 (키프레임 수가 적으면 바이너리 서치보다 빠름)
+            for (int i = 1; i < _sortedKeyframes.Length; i++)
             {
-                nextFrame = KeyFrame(i);
-                if (nextFrame.TimeStamp >= motionTime - firstTime)
+                nextFrame = _sortedKeyframes[i];
+                if (nextFrame.TimeStamp >= motionTime)
                 {
                     break;
                 }
-                previousFrame = KeyFrame(i);
+                previousFrame = _sortedKeyframes[i];
             }
 
             // 현재 진행률을 계산한다.
-            //_previousTime = previousFrame.TimeStamp;
             float totalTime = nextFrame.TimeStamp - previousFrame.TimeStamp;
             float currentTime = motionTime - previousFrame.TimeStamp;
             float progression = (totalTime > 0) ? (currentTime / totalTime) : 0f;
 
-            // 두 키프레임 사이의 보간된 포즈를 딕셔러리로 가져온다.
+            // 두 키프레임 사이의 보간된 포즈를 딕셔너리로 가져온다.
             _currentPose.Clear();
             foreach (string jointName in previousFrame.BoneNames)
             {
@@ -186,7 +233,6 @@ namespace Animate
 
             return _currentPose;
         }
-
 
         /// <summary>
         /// 지정된 시간에 특정 뼈의 변환 정보(위치, 회전)를 키프레임으로 추가합니다.
@@ -228,7 +274,8 @@ namespace Animate
         /// <param name="boneName">대상 뼈 이름</param>
         public void InterpolateEmptyFrame(string boneName)
         {
-            float[] times = _keyframes.Keys.ToList().ToArray();
+            // [최적화] ToList().ToArray() 제거하고 캐시 사용
+            EnsureCacheValid();
 
             // 첫번째, 마지막은 보장한다.
             KeyFrame previousKeyFrame = FirstKeyFrame;
@@ -240,24 +287,24 @@ namespace Animate
             }
 
             // 길이가 1이상인 경우에만 실행한다.
-            if (times.Length > 1)
+            if (_sortedKeyframes.Length > 1)
             {
                 // 매 타임을 순회하면서 빈 프레임을 찾아 보간한다.
-                for (int i = 1; i < times.Length; i++)
+                for (int i = 1; i < _sortedKeyframes.Length; i++)
                 {
-                    float time = times[i];
-                    KeyFrame keyFrame = _keyframes[time];
+                    KeyFrame keyFrame = _sortedKeyframes[i];
+                    float time = keyFrame.TimeStamp;
 
                     // 프레임이 비어 있다면
                     if (!keyFrame.ContainsKey(boneName))
                     {
                         // 비어 있지 않는 다음 프레임을 찾는다.
                         nextKeyFrame = keyFrame;
-                        for (int j = i; j < times.Length; j++)
+                        for (int j = i; j < _sortedKeyframes.Length; j++)
                         {
-                            if (_keyframes[times[j]].ContainsKey(boneName))
+                            if (_sortedKeyframes[j].ContainsKey(boneName))
                             {
-                                nextKeyFrame = _keyframes[times[j]];
+                                nextKeyFrame = _sortedKeyframes[j];
                                 break;
                             }
                         }

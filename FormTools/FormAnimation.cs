@@ -84,6 +84,9 @@ namespace FormTools
             _glControl3.AddLabel("ocs", "ocs", align: Ui2d.Control.CONTROL_ALIGN.ADJOINT_TOP, foreColor: new Vertex3f(1, 1, 0));
             _glControl3.IsVisibleDebug = bool.Parse(IniFile.GetPrivateProfileString("sysInfo", "visibleDebugWindow", "False"));
             _glControl3.IsVisibleGrid = bool.Parse(IniFile.GetPrivateProfileString("sysInfo", "visibleGrid", "False"));
+
+            // 전체 화면 여부 
+            //if (Screen.PrimaryScreen.DeviceName.IndexOf("DISPLAY") > 0) _glControl3.FullScreen(true);
         }
 
         private void Init3d(int w, int h)
@@ -94,14 +97,20 @@ namespace FormTools
             PrimateRig aniRig = new PrimateRig(PROJECT_PATH + @"\Res\abe.dae", isLoadAnimation: false);
             PrimateRig aniRig2 = new PrimateRig(PROJECT_PATH + @"\Res\Guybrush_final.dae", isLoadAnimation: false);
 
-            _humans.Add(new Human($"abe", aniRig));
-            _humans[0].Transform.IncreasePosition(0, 0, 0);
+            //_humans.Add(new Human($"abe", aniRig));
+            //_humans[0].Transform.IncreasePosition(0, 0, 0);
 
-            _humans.Add(new Human($"Guybrush_final", aniRig2));
-            _humans[1].Transform.IncreasePosition(2, 0, 0);
+            //_humans.Add(new Human($"Guybrush_final", aniRig2));
+           // _humans[1].Transform.IncreasePosition(2, 0, 0);
 
-            _humans.Add(new Human($"abe2", aniRig));
-            _humans[2].Transform.IncreasePosition(-2, 0, 0);
+            for (int i = 0; i < 5; i++)
+            {
+                for (int j = 0; j < 5; j++)
+                {
+                    _humans.Add(new Human($"abe{i}x{j}", aniRig));
+                    _humans[5 * i + j].Transform.IncreasePosition(i * 2, j * 2, 0);
+                }
+            }
 
             // 믹사모 애니메이션 로드
             _mixamoRotMotionStorage = new MixamoRotMotionStorage();
@@ -121,7 +130,7 @@ namespace FormTools
             // 애니메이션 모델에 애니메이션 초기 지정
             foreach (Human human in _humans)
             {
-                human.SetMotion(HUMAN_ACTION.A_T_POSE);
+                human.SetMotion(HUMAN_ACTION.RANDOM);
             }
 
             // 아이템 장착
@@ -190,7 +199,7 @@ namespace FormTools
 
             foreach (Human human in _humans)
             {
-               _axisShader.RenderAxes(human.ModelMatrix, human.Animator.RootTransforms, vp);
+               //_axisShader.RenderAxes(human.ModelMatrix, human.Animator.RootTransforms, vp);
             }
 
             // 폴리곤 모드 설정

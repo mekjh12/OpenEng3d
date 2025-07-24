@@ -7,12 +7,17 @@ namespace Animate
     {
         Dictionary<string, Motion> _motions = new Dictionary<string, Motion>();
 
+        // [수정] DefaultMotion - List 생성 없이 첫 번째 요소 반환
         public Motion DefaultMotion
         {
             get
             {
-                List<Motion> list = new List<Motion>(_motions.Values);
-                return _motions.Count > 0 ? list[0] : null;
+                // 가장 빠른 방법: foreach로 첫 번째 요소만 가져오기
+                foreach (Motion motion in _motions.Values)
+                {
+                    return motion; // 첫 번째 요소 즉시 반환
+                }
+                return null; // 모션이 없으면 null 반환
             }
         }
 

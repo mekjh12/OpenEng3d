@@ -38,7 +38,13 @@ namespace Animate
 
         // 클래스내 처리 변수
         private Action _actionOnceFinished = null; // 한번 실행 완료 콜백
-        private Queue<(Bone, Matrix4x4f)> _boneStack = new Queue<(Bone bone, Matrix4x4f parentTransform)>(); // 뼈대트리탐색용 스택
+
+        // [추가] 튜플 대신 분리된 큐들 사용
+        private Queue<Bone> _boneQueue = new Queue<Bone>();
+        private Queue<Matrix4x4f> _transformQueue = new Queue<Matrix4x4f>();
+
+        // 최적화용 변수
+        Dictionary<string, Matrix4x4f> _currentPose;
 
         /// <summary>
         /// 애니메이션이 적용된 최종 행렬로서 스키닝행렬이다. 
@@ -80,6 +86,8 @@ namespace Animate
         public Animator(Bone rootBone)
         {
             _rootBone = rootBone ?? throw new ArgumentNullException(nameof(rootBone));
+
+            _currentPose = new Dictionary<string, Matrix4x4f>();
         }
 
         public Matrix4x4f GetRootTransform(Bone bone)
@@ -211,17 +219,22 @@ namespace Animate
         private void UpdateAnimationTransforms(float motionTime, Bone rootBone)
         {
             // 키프레임으로부터 현재의 **로컬**포즈행렬을 가져온다.(bone name, mat4x4f)
-            Dictionary<string, Matrix4x4f> currentPose = _currentMotion.InterpolatePoseAtTime(motionTime);
+            _currentPose.Clear();
+            _currentPose = _currentMotion.InterpolatePoseAtTime(motionTime);
 
-            // 로컬 포즈행렬로부터 캐릭터공간의 포즈행렬을 얻는다.
-            if (_boneStack.Count > 0) _boneStack.Clear();
-            _boneStack.Enqueue((rootBone, Matrix4x4f.Identity));
+            // [수정] 두 개의 큐를 클리어하고 초기값 설정
+            if (_boneQueue.Count > 0) _boneQueue.Clear();
+            if (_transformQueue.Count > 0) _transformQueue.Clear();
+
+            _boneQueue.Enqueue(rootBone);
+            _transformQueue.Enqueue(Matrix4x4f.Identity);
 
             // 큐를 이용하여 너비우선 탐색으로 뼈대 트리를 탐색
-            while (_boneStack.Count > 0)
+            while (_boneQueue.Count > 0)
             {
-                // 스택에서 뼈대를 꺼내고, 부모 행렬을 꺼낸다.
-                var (bone, parentTransform) = _boneStack.Dequeue();
+                // [수정] 분리된 큐에서 각각 꺼내기 - 튜플 할당 없음
+                Bone bone = _boneQueue.Dequeue();
+                Matrix4x4f parentTransform = _transformQueue.Dequeue();
 
                 // 뼈대의 인덱스가 유효한지 확인한다.
                 int boneIndex = bone.Index;
@@ -229,7 +242,7 @@ namespace Animate
 
                 // 현재 포즈 딕셔너리에 뼈대의 이름이 있으면 그 행렬을 가져오고, 없으면 **기본로컬바인딩행렬**을 사용한다.
                 bone.BoneTransforms.LocalTransform =
-                    (currentPose != null && currentPose.TryGetValue(bone.Name, out Matrix4x4f poseTransform)) ?
+                    (_currentPose != null && _currentPose.TryGetValue(bone.Name, out Matrix4x4f poseTransform)) ?
                     poseTransform : bone.BoneTransforms.LocalBindTransform;
 
                 // 부모 행렬과 로컬 변환 행렬을 곱하여 애니메이션된 행렬을 계산한다.
@@ -239,9 +252,12 @@ namespace Animate
                 // 애니메이션된 행렬에 역바인드포즈를 적용한다.
                 _animatedTransforms[boneIndex] = _rootTransforms[boneIndex] * bone.BoneTransforms.InverseBindPoseTransform;
 
-                // 자식 뼈대가 있다면 스택에 추가한다.
+                // [수정] 자식 뼈대가 있다면 분리된 큐에 추가 - 튜플 할당 없음
                 foreach (Bone childbone in bone.Children)
-                    _boneStack.Enqueue((childbone, _rootTransforms[boneIndex]));
+                {
+                    _boneQueue.Enqueue(childbone);
+                    _transformQueue.Enqueue(_rootTransforms[boneIndex]);
+                }
             }
         }
     }
