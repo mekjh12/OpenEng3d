@@ -17,10 +17,11 @@ namespace Ui2d
 		float _height = 0.0f;
 
 		TextVAO _textMeshVAO;
+        TextMesh _textMesh;
 
-		#region 속성
+        #region 속성
 
-		public int NumberOfLines
+        public int NumberOfLines
 		{
 			get =>_numberOfLines;
 			set => _numberOfLines = value;
@@ -94,10 +95,10 @@ namespace Ui2d
             _textContent = txt.Replace("<br>", " <br>");
 			
 			// 텍스트의 VAO, Width, Height를 설정한다.
-            TextMesh textMesh = _fontFamily.LoadMesh(this, lineSpacing, maxLineWidth);
-            _textMeshVAO = LoadToFontVertexArray(textMesh.VertexPositions, textMesh.TextureCoords);
-			_height = textMesh.Height;
-            _width = textMesh.Width; //_height * UIEngine.Aspect; //
+            _textMesh = _fontFamily.LoadMesh(this, lineSpacing, maxLineWidth);
+            _textMeshVAO = LoadToFontVertexArray(_textMesh.VertexPositions, _textMesh.TextureCoords);
+			_height = _textMesh.Height;
+            _width = _textMesh.Width; //_height * UIEngine.Aspect; //
 
             return isOverWrited;
 		}

@@ -154,7 +154,10 @@ namespace Ui2d
                 if (_txt != value)
                 {
                     _txt = value.Trim();
-                    _numOfLine = _txt.NumOfLine(UI2.NewLine);
+                    if (_txt.IndexOf(UI2.NewLine) > 0)
+                    {
+                        _numOfLine = _txt.NumOfLine(UI2.NewLine);
+                    }
                     SetTextMesh(_txt);
                 }
             }
@@ -352,11 +355,6 @@ namespace Ui2d
                 _height = cHeight / pHeight; //상대높이
             }
 
-            //renderingPosition2 = renderingPosition1 + new Vertex2f(cWidth, cHeight);
-            //renderingPaddingY = cPadding;
-            //renderingPaddingX = cPadding;
-            //renderingWidth = cWidth;
-            //renderingHeight = cHeight;
         }
     }
 }

@@ -18,12 +18,13 @@ namespace Ui2d
         {
             _rootPannel = new Panel($"{_name}_RootPannel")
             {
-                IsRendeable = true,
+                IsRendeable = false,
                 IsVisible = true,
-                Alpha = 0,
+                Alpha = 1,
                 Location = new Vertex2f(0.0f, 0.0f),
                 Width = 1.0f,
                 Height = 1.0f,
+                BackColor = Vertex3f.UnitZ
             };
             RegistryControl(_rootPannel);
         }

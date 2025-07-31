@@ -430,7 +430,9 @@ namespace Ui2d
             set => _isMouseDown = value;
         }
 
-
+        /// <summary>
+        /// 하위 컨트롤도 모두 보이지 않는다.
+        /// </summary>
         public bool IsVisible
         {
             get => _isVisible; 
@@ -711,8 +713,6 @@ namespace Ui2d
             // calculate a absolutly position of child from position of parent.
             Vertex2f delta = Vertex2f.Zero;
             float aspect = UIEngine.Aspect;
-
-            return;
 
             // 최상위 컨트롤이 아닌 경우에
             if (Parent != null)

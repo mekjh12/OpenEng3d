@@ -94,6 +94,7 @@ namespace GlWindow
         private bool _isFullscreen = false;
 
         Ui2d.Control _lastControl;
+        Ui2d.Label _fpsCtrl;
 
         private Vertex2f _cameraPrevAngle = Vertex2f.Zero;
 
@@ -180,10 +181,12 @@ namespace GlWindow
             get => _isMouseVisible;
         }
 
+        private bool _isVisibleDebug = false;
+
         public bool IsVisibleDebug
         {
-            get => CLabel("debug") == null ? false : CLabel("debug").IsVisible;
-            set => CLabel("debug").IsVisible = value;
+            get => _isVisibleDebug;
+            set => _isVisibleDebug = value;
         }
 
         public MOUSE_GAME_MODE MouseMode
@@ -478,7 +481,7 @@ namespace GlWindow
             // UI렌더링
             if (IsVisibleUi2d)
             {
-                Gl.PolygonMode(MaterialFace.Front, PolygonMode.Fill);
+                Gl.PolygonMode( MaterialFace.Front, PolygonMode.Fill);
                 UIEngine.RenderFrame(deltaTime);
             }
         }
@@ -493,10 +496,29 @@ namespace GlWindow
             int glLeftMargin = Parent.Width - this.Width;
             int glTopMargin = Parent.Height - this.Height;
 
-            //CLabel("fps").Text = "프레임율(" + FramePerSecond.FPS + $"FPS {_tick}) {_camera.Direction}";
-            //CLabel("debug").Text = Debug.Text;
+            if (_tick % 60 == 0) // 10틱마다 업데이트
+            {
+                // FPS 텍스트 업데이트
+                if (_fpsCtrl == null)
+                {
+                    _fpsCtrl = CLabel("centerFps");
+                }
+                else
+                {
+                    _fpsCtrl.Text = "프레임율(" + FramePerSecond.FPS + $"FPS {_tick}) {_camera.Direction}";
+                }
+            }
 
+            // 디버깅 텍스트 업데이트
+            if (_isVisibleDebug)
+            { 
+                CLabel("debug").Text = Debug.Text;
+            }
+
+            // 마우스 위치 업데이트
             UIEngine.MouseUpdateFrame(Parent.Left + glLeftMargin, Parent.Top + glTopMargin, Width, Height, mouseWheelValue);
+
+            // UI2d 컨트롤 업데이트
             UIEngine.UpdateFrame(deltaTime);
         }
 
@@ -609,8 +631,9 @@ namespace GlWindow
                 }
                 else if (e.KeyCode == Keys.F2)
                 {
-                    IsVisibleDebug = !IsVisibleDebug;
-                    IniFile.WritePrivateProfileString("sysInfo", "visibleDebugWindow", IsVisibleDebug.ToString());
+                    _isVisibleDebug = !_isVisibleDebug;
+                    CLabel("debug").IsVisible = _isVisibleDebug;
+                    IniFile.WritePrivateProfileString("sysInfo", "visibleDebugWindow", _isVisibleDebug.ToString());
                 }
                 else if (e.KeyCode == Keys.P)
                 {
@@ -701,21 +724,22 @@ namespace GlWindow
 
             UIEngine.DesignInit += (w1, h1) =>
             {
-                UIEngine.AddControl("sysInfo", new Ui2d.Label("fps", FontFamilySet.연성체)
+                // InitGlControl 끝부분에 추가
+                var centerTestLabel = new Ui2d.Label("centerFps", FontFamilySet.연성체)
                 {
-                    Align = Ui2d.Control.CONTROL_ALIGN.ROOT_TC,
-                    IsCenter = true,
-                    Margin = 0.2f,
-                    Padding = 0.1f,
-                    FontSize = 1.3f,
-                    Alpha = 0.9f,
-                    ForeColor = new Vertex3f(1, 1, 1),
-                    BackColor = new Vertex3f(0, 0, 0),
-                    BorderColor = new Vertex3f(1, 0, 0),
-                    BorderWidth = 1.0f,
+                    Align = Ui2d.Control.CONTROL_ALIGN.NONE,
+                    Position = new Vertex2f(0.4f, 0.15f), // 화면 중앙 근처
+                    FontSize = 1.0f, // 매우 크게
+                    Alpha = 0.0f,
+                    ForeColor = new Vertex3f(1, 0, 0), // 빨간색
+                    Text = "FPS0",
+                    AutoSize = true,
                     IsBorder = false,
-                });
+                    AlphaText = 1.0f,
+                };
+                UIEngine.AddControl("sysInfo", centerTestLabel);
 
+                /*
                 UIEngine.AddControl("sysInfo", new Ui2d.Label("debug", FontFamilySet.연성체)
                 {
                     Align = Ui2d.Control.CONTROL_ALIGN.NONE,
@@ -727,7 +751,7 @@ namespace GlWindow
                     Margin = 0.0f,
                     Alpha = 0.3f,
                     ForeColor = new Vertex3f(1, 1, 1),
-                    BackColor = new Vertex3f(0, 0, 0),
+                    BackColor = new Vertex3f(1, 0, 0),
                     BorderColor = new Vertex3f(0, 0, 0),
                     BorderWidth = 1.0f,
                     IsBorder = true,
@@ -735,8 +759,9 @@ namespace GlWindow
                     MaxNumOfLine = 45,
                     AutoSize = false,
                 });
+                */
 
-                _lastControl = Ctrl("fps");
+                _lastControl = Ctrl("centerFps");
             };
             UIEngine.InitFrame(Width, Height);
             UIEngine.StartFrame();

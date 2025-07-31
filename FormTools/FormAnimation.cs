@@ -41,7 +41,7 @@ namespace FormTools
                 IsVisibleGrid = true,
                 PolygonMode = PolygonMode.Fill,
                 BackClearColor = new Vertex3f(0, 0, 0),
-                IsVisibleUi2d = false,
+                IsVisibleUi2d = true,
             };
 
             _glControl3.Init += (w, h) => Init(w, h);
@@ -81,9 +81,9 @@ namespace FormTools
         private void Init2d(int w, int h)
         {
             // 화면 구성요소 초기화
-            _glControl3.AddLabel("resolution", $"resolution={w >> 2}x{h >> 2}", align: Ui2d.Control.CONTROL_ALIGN.ADJOINT_BOTTOM, foreColor: new Vertex3f(1, 0, 0));
             _glControl3.AddLabel("cam", "camera position, yaw, pitch", align: Ui2d.Control.CONTROL_ALIGN.ROOT_BL, foreColor: new Vertex3f(1, 1, 0));
             _glControl3.AddLabel("ocs", "ocs", align: Ui2d.Control.CONTROL_ALIGN.ADJOINT_TOP, foreColor: new Vertex3f(1, 1, 0));
+            _glControl3.AddLabel("resolution", $"resolution={w >> 2}x{h >> 2}", align: Ui2d.Control.CONTROL_ALIGN.ADJOINT_TOP, foreColor: new Vertex3f(1, 0, 0));
             _glControl3.IsVisibleDebug = bool.Parse(IniFile.GetPrivateProfileString("sysInfo", "visibleDebugWindow", "False"));
             _glControl3.IsVisibleGrid = bool.Parse(IniFile.GetPrivateProfileString("sysInfo", "visibleGrid", "False"));
         }
@@ -104,10 +104,18 @@ namespace FormTools
 
             // [테스트] 캐릭터 수를 점진적으로 증가
             int TEST_CHARACTER_COUNT = 5; // 이 값을 변경하면서 테스트
+            int yDelta = 0;
+            int xDelta = 0;
             for (int i = 0; i < TEST_CHARACTER_COUNT; i++)
             {
                 _humans.Add(new Human($"test{i}", aniRig2));
-                _humans[i].Transform.IncreasePosition(i * 2, 0, 0);
+                xDelta += 2; // X 위치를 증가
+                if (i % 20 == 0 && i != 0)
+                {
+                    xDelta = 0; // 20개마다 X 위치를 초기화
+                    yDelta += 2; // Y 위치를 증가
+                }
+                _humans[i].Transform.IncreasePosition(xDelta, yDelta, 0);
             }
 
             // 믹사모 애니메이션 로드
@@ -168,13 +176,11 @@ namespace FormTools
                 human.Update(deltaTime);
             }
 
-            /*
-            _glControl3.CLabel("cam").Text =
+            _glControl3.CLabel("cam").Text = 
                 $"CamPos={camera.Position}, " +
                 $"CameraPitch={camera.CameraPitch}, " +
                 $"CameraYaw={camera.CameraYaw}, " +
                 $"Dist={camera.Distance}";
-            */
 
             MemoryProfiler.CheckFrameGC();
         }

@@ -10,9 +10,10 @@
         static int lastFrame = 0;
 
         static float fps = 0.0f;
+
         static int prevDeltaTime;
         static float weightedValueTime = 0.005f;
-
+        
         public static int DeltaTime => deltaTime;
 
         public static int GlobalTick => globalTick;

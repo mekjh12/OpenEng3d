@@ -115,7 +115,7 @@ namespace Ui2d
 
         public static List<Control> ControlList => _controlList.Values.ToList();
 
-        
+
 
         /// <summary>
         /// 전역 컨트롤 리스트에서 이름으로 컨트롤를 가져온다.
@@ -124,21 +124,12 @@ namespace Ui2d
         /// <returns></returns>
         public static Control Controls(string name)
         {
-            if (_controlList.ContainsKey(name))
+            if (_controlList.TryGetValue(name, out var value) && value is Control control)
             {
-                if (_controlList[name] is Control)
-                {
-                    return (Control)_controlList[name];
-                }
-                else
-                {
-                    return null;
-                }
+                return control;
             }
-            else
-            {
-                return null;
-            }
+
+            return null;
         }
 
         // -------------------------------------------------------------------------------------------
