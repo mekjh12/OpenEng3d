@@ -251,7 +251,7 @@ namespace Animate
                         {
                             // 소스텍스트로부터 실수 배열을 만든다.
                             string sourcesId = node.Attributes["id"].Value.Replace(" ", "");
-                            string[] value = node["float_array"].InnerText.Split(' ');
+                            string[] value = node["float_array"].InnerText.Trim().Replace("\n", " ").Split(' ');
                             float[] items = new float[value.Length];
                             for (int i = 0; i < value.Length; i++)
                                 items[i] = float.Parse(value[i]);
@@ -434,7 +434,7 @@ namespace Animate
                                     // BoneName 읽어오기
                                     if (source["Name_array"] != null)
                                     {
-                                        string[] value = source["Name_array"].InnerText.Split(' ');
+                                        string[] value = source["Name_array"].InnerText.Trim().Replace("\n", " ").Split(' ');
                                         if ("#" + sourcesId == jointsName)
                                         {
                                             boneNames.Clear();
@@ -445,7 +445,7 @@ namespace Animate
                                     // INV_BIND_MATRIX 읽어오기
                                     if (source["float_array"] != null)
                                     {
-                                        string[] value = source["float_array"].InnerText.Split(' ');
+                                        string[] value = source["float_array"].InnerText.Trim().Replace("\n", " ").Split(' ');
                                         float[] items = new float[value.Length];
                                         for (int i = 0; i < value.Length; i++)
                                             items[i] = float.Parse(value[i]);
@@ -484,7 +484,7 @@ namespace Animate
                                     string sourcesId = source.Attributes["id"].Value;
                                     if (source["float_array"] != null)
                                     {
-                                        string[] value = source["float_array"].InnerText.Split(' ');
+                                        string[] value = source["float_array"].InnerText.Trim().Replace("\n", " ").Split(' ');
                                         float[] items = new float[value.Length];
                                         for (int i = 0; i < value.Length; i++)
                                             items[i] = float.Parse(value[i]);

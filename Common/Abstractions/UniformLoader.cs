@@ -36,6 +36,11 @@ namespace Common
         public void LoadUniform(TEnum uniform, Matrix4x4f mat) => LoadMatrix(_location[uniform.ToString()], mat);
         public void LoadUniform(TEnum uniform, Matrix3x3f mat) => LoadMatrix(_location[uniform.ToString()], mat);
 
+
+        public void LoadUniform(string uniform, Matrix4x4f mat) => LoadMatrix(_location[uniform.ToString()], mat);
+        public void LoadUniform(string uniform, bool value) => LoadBoolean(_location[uniform.ToString()], value);
+
+
         // ShaderProgram의 기존 메서드들은 protected virtual로 선언
 
         protected virtual void LoadFloat(int location, float value)

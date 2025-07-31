@@ -23,8 +23,8 @@ namespace Animate
         private const float MIN_MOTION_TIME = 0.0f;
 
         // 멤버 변수 (Update함수를 통해서 행렬이 업데이트된다.)
-        private Matrix4x4f[] _animatedTransforms = new Matrix4x4f[MAX_BONES_COUNT]; // 애니메이션된 행렬
-        private Matrix4x4f[] _rootTransforms = new Matrix4x4f[MAX_BONES_COUNT]; // 뼈대의 캐릭터공간 변환 행렬들
+        private Matrix4x4f[] _animatedTransforms; // 애니메이션된 행렬
+        private Matrix4x4f[] _rootTransforms ; // 뼈대의 캐릭터공간 변환 행렬들
 
         private float _motionTime = 0.0f; // 현재 모션 시간
         private bool _isPlaying = true; // 재생 상태
@@ -39,12 +39,16 @@ namespace Animate
         // 클래스내 처리 변수
         private Action _actionOnceFinished = null; // 한번 실행 완료 콜백
 
-        // [추가] 튜플 대신 분리된 큐들 사용
-        private Queue<Bone> _boneQueue = new Queue<Bone>();
-        private Queue<Matrix4x4f> _transformQueue = new Queue<Matrix4x4f>();
-
         // 최적화용 변수
         Dictionary<string, Matrix4x4f> _currentPose;
+
+        // 초기화 시 한 번만 생성되는 순회 순서 배열
+        private Bone[] _boneTraversalOrder;
+        private Matrix4x4f[] _parentTransforms; // 각 본의 부모 변환을 미리 계산해둘 배열
+        private int[] _parentIndices; // 각 본의 부모 인덱스
+
+        // Identity 행렬 재사용
+        private readonly Matrix4x4f _identityMatrix = Matrix4x4f.Identity;
 
         /// <summary>
         /// 애니메이션이 적용된 최종 행렬로서 스키닝행렬이다. 
@@ -88,6 +92,44 @@ namespace Animate
             _rootBone = rootBone ?? throw new ArgumentNullException(nameof(rootBone));
 
             _currentPose = new Dictionary<string, Matrix4x4f>();
+
+            _animatedTransforms = new Matrix4x4f[MAX_BONES_COUNT];
+            _rootTransforms = new Matrix4x4f[MAX_BONES_COUNT];
+
+            // ✅ 초기화 시 순회 순서를 미리 계산
+            BuildBoneTraversalOrder(rootBone);
+        }
+
+        /// <summary>
+        /// 초기화 시 한 번만 실행 - 순회 순서를 미리 계산
+        /// </summary>
+        private void BuildBoneTraversalOrder(Bone rootBone)
+        {
+            var boneList = new List<Bone>();
+            var parentIndexList = new List<int>();
+
+            // 큐를 사용하여 순회 순서 결정 (초기화 시에만)
+            var queue = new Queue<(Bone bone, int parentIndex)>();
+            queue.Enqueue((rootBone, -1)); // 루트는 부모가 없음
+
+            while (queue.Count > 0)
+            {
+                var (bone, parentIndex) = queue.Dequeue();
+
+                boneList.Add(bone);
+                parentIndexList.Add(parentIndex);
+
+                // 자식들을 큐에 추가
+                foreach (var child in bone.Children)
+                {
+                    queue.Enqueue((child, boneList.Count - 1)); // 현재 본이 자식의 부모
+                }
+            }
+
+            // 배열로 변환 (한 번만)
+            _boneTraversalOrder = boneList.ToArray();
+            _parentIndices = parentIndexList.ToArray();
+            _parentTransforms = new Matrix4x4f[_boneTraversalOrder.Length];
         }
 
         public Matrix4x4f GetRootTransform(Bone bone)
@@ -132,7 +174,8 @@ namespace Animate
             }
             else
             {
-                _blendMotion = Motion.BlendMotion(SWITCH_MOTION_NAME, _currentMotion, _motionTime, motion, 0.0f, blendingInterval);
+                _blendMotion = MotionBlend.BlendMotion(SWITCH_MOTION_NAME, _currentMotion, _motionTime, motion, 0.0f, blendingInterval);
+                
                 _currentMotion = _blendMotion;
                 _nextMotion = motion;
                 _animationState = AnimationState.Blending;
@@ -216,48 +259,37 @@ namespace Animate
         /// </summary>
         /// <param name="motionTime">모션 시간</param>
         /// <param name="rootBone">루트 본</param>
+        /// <summary>
+        /// 매 프레임마다 실행 - 순회 순서에 따라 빠르게 처리
+        /// </summary>
         private void UpdateAnimationTransforms(float motionTime, Bone rootBone)
         {
-            // 키프레임으로부터 현재의 **로컬**포즈행렬을 가져온다.(bone name, mat4x4f)
-            _currentPose.Clear();
-            _currentPose = _currentMotion.InterpolatePoseAtTime(motionTime);
-
-            // [수정] 두 개의 큐를 클리어하고 초기값 설정
-            if (_boneQueue.Count > 0) _boneQueue.Clear();
-            if (_transformQueue.Count > 0) _transformQueue.Clear();
-
-            _boneQueue.Enqueue(rootBone);
-            _transformQueue.Enqueue(Matrix4x4f.Identity);
-
-            // 큐를 이용하여 너비우선 탐색으로 뼈대 트리를 탐색
-            while (_boneQueue.Count > 0)
+            // 키프레임으로부터 현재의 로컬포즈행렬을 가져온다.
+            if (!_currentMotion.InterpolatePoseAtTime(motionTime, _currentPose))
             {
-                // [수정] 분리된 큐에서 각각 꺼내기 - 튜플 할당 없음
-                Bone bone = _boneQueue.Dequeue();
-                Matrix4x4f parentTransform = _transformQueue.Dequeue();
+                return; // 실패시 처리
+            }
 
-                // 뼈대의 인덱스가 유효한지 확인한다.
+            // ✅ 미리 계산된 순회 순서로 처리 - GC 없음, 큐 없음
+            for (int i = 0; i < _boneTraversalOrder.Length; i++)
+            {
+                Bone bone = _boneTraversalOrder[i];
                 int boneIndex = bone.Index;
                 if (boneIndex < 0) continue;
 
-                // 현재 포즈 딕셔너리에 뼈대의 이름이 있으면 그 행렬을 가져오고, 없으면 **기본로컬바인딩행렬**을 사용한다.
+                // 부모 변환 가져오기
+                Matrix4x4f parentTransform = _parentIndices[i] == -1 ?
+                    _identityMatrix : // 루트 본
+                    _rootTransforms[_boneTraversalOrder[_parentIndices[i]].Index]; // 부모 본의 변환
+
+                // 현재 포즈 처리
                 bone.BoneTransforms.LocalTransform =
                     (_currentPose != null && _currentPose.TryGetValue(bone.Name, out Matrix4x4f poseTransform)) ?
                     poseTransform : bone.BoneTransforms.LocalBindTransform;
 
-                // 부모 행렬과 로컬 변환 행렬을 곱하여 애니메이션된 행렬을 계산한다.
+                // 행렬 계산
                 _rootTransforms[boneIndex] = parentTransform * bone.BoneTransforms.LocalTransform;
-                //bone.BoneTransforms.RootTransform = _rootTransforms[boneIndex];
-
-                // 애니메이션된 행렬에 역바인드포즈를 적용한다.
                 _animatedTransforms[boneIndex] = _rootTransforms[boneIndex] * bone.BoneTransforms.InverseBindPoseTransform;
-
-                // [수정] 자식 뼈대가 있다면 분리된 큐에 추가 - 튜플 할당 없음
-                foreach (Bone childbone in bone.Children)
-                {
-                    _boneQueue.Enqueue(childbone);
-                    _transformQueue.Enqueue(_rootTransforms[boneIndex]);
-                }
             }
         }
     }

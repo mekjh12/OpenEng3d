@@ -35,6 +35,9 @@ namespace Common
         private Dictionary<string, string> _fileContentHash = new Dictionary<string, string>();
         private bool _isInitialized = false;
 
+        // 각 셰이더마다 하나의 재사용 버퍼
+        private float[] _matrixBuffer = new float[16]; 
+
         public string Name => _name;
         
         public uint ProgramID => _programID;
@@ -140,6 +143,28 @@ namespace Common
         {
             int loc = Gl.GetUniformLocation(_programID, uniformName);
             base.LoadMatrix(loc, value);
+        }
+
+        protected override void LoadMatrix(int location, Matrix4x4f matrix)
+        {
+            _matrixBuffer[0] = matrix[0, 0];
+            _matrixBuffer[1] = matrix[0, 1];
+            _matrixBuffer[2] = matrix[0, 2];
+            _matrixBuffer[3] = matrix[0, 3];
+            _matrixBuffer[4] = matrix[1, 0];
+            _matrixBuffer[5] = matrix[1, 1];
+            _matrixBuffer[6] = matrix[1, 2];
+            _matrixBuffer[7] = matrix[1, 3];
+            _matrixBuffer[8] = matrix[2, 0];
+            _matrixBuffer[9] = matrix[2, 1];
+            _matrixBuffer[10] = matrix[2, 2];
+            _matrixBuffer[11] = matrix[2, 3];
+            _matrixBuffer[12] = matrix[3, 0];
+            _matrixBuffer[13] = matrix[3, 1];
+            _matrixBuffer[14] = matrix[3, 2];
+            _matrixBuffer[15] = matrix[3, 3];
+
+            Gl.UniformMatrix4(location, false, _matrixBuffer);
         }
 
         protected int UniformLocation(string uniformName)

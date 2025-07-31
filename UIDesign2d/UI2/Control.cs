@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using ZetaExt;
 
 namespace Ui2d
 {
@@ -699,11 +700,19 @@ namespace Ui2d
             return ctrl;
         }
 
+        public void Print()
+        {
+            Console.WriteLine($"Control Name: {_name}, Type: {this.GetType().ToString()}");
+            foreach (Control ctrl in _controls) ctrl.Print();
+        }
+
         public virtual void Update(int deltaTime)
         {
             // calculate a absolutly position of child from position of parent.
             Vertex2f delta = Vertex2f.Zero;
             float aspect = UIEngine.Aspect;
+
+            return;
 
             // 최상위 컨트롤이 아닌 경우에
             if (Parent != null)
@@ -892,8 +901,10 @@ namespace Ui2d
                         break;
                 }
 
-                renderingPosition1 = new Vertex2f(X1, Y1) + delta;
-                renderingPosition2 = renderingPosition1 + new Vertex2f(w, h);
+                renderingPosition1.x = X1 + delta.x;
+                renderingPosition1.y = Y1 + delta.y;
+                renderingPosition2.x = renderingPosition1.x + w;
+                renderingPosition2.y = renderingPosition1.y + h;
 
                 if (_isFixedAspect)
                 {
@@ -918,8 +929,12 @@ namespace Ui2d
                     float orginHeight = UIEngine.Height;
                     float h = 17.0f / orginHeight;
                     float w = h * UIEngine.MouseAspect / UIEngine.Aspect;
-                    renderingPosition1 = _position;
-                    renderingPosition2 = renderingPosition1 + new Vertex2f(w, h);
+
+                    renderingPosition1.x = _position.x;
+                    renderingPosition1.y = _position.y;
+                    renderingPosition2.x = renderingPosition1.x + w;
+                    renderingPosition2.y = renderingPosition1.y + h;
+
                     renderingWidth = w;
                     renderingHeight = h;
                     renderingMarginX = 0.0f;
@@ -930,8 +945,11 @@ namespace Ui2d
                 //---------------------------------------------------------------------------
                 else
                 {
-                    renderingPosition1 = Vertex2f.Zero;
-                    renderingPosition2 = renderingPosition1 + new Vertex2f(_width, _height);
+                    renderingPosition1.x = 0;
+                    renderingPosition1.y = 0;
+                    renderingPosition2.x = renderingPosition1.x + _width;
+                    renderingPosition2.y = renderingPosition1.y + _height;
+
                     renderingMarginX = 0.0f;
                     renderingMarginY = 0.0f;
                     renderingPaddingX = 0.0f;

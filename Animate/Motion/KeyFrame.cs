@@ -7,6 +7,7 @@ namespace Animate
     {
         private float _timeStamp;
         private Dictionary<string, BoneTransform> _pose; // 뼈대의 이름과 뼈대 포즈를 저장하는 딕셔너리
+        private string[] _cacheBoneNames;
 
         public bool ContainsKey(string boneName) => _pose.ContainsKey(boneName);
 
@@ -14,6 +15,7 @@ namespace Animate
         {
             _timeStamp = timeStamp;
             _pose = new Dictionary<string, BoneTransform>();
+            _cacheBoneNames = null;
         }
 
         public float TimeStamp
@@ -32,9 +34,12 @@ namespace Animate
         {
             // 뼈대가 있으면 기존 뼈대에 덮어쓰고 없으면 새로운 뼈대를 추가한다.
             _pose[boneName] = boneTransform;
+
+            // 캐시된 뼈대 이름을 업데이트
+            _cacheBoneNames = _pose.Keys.ToArray();
         }
 
-        public string[] BoneNames => _pose.Keys.ToArray();
+        public string[] BoneNames => _cacheBoneNames;
 
         public BoneTransform[] BoneTransforms => _pose.Values.ToArray();
 
@@ -45,6 +50,7 @@ namespace Animate
             {
                 dest._pose[kvp.Key] = kvp.Value;
             }
+            dest._cacheBoneNames = _cacheBoneNames?.ToArray();
             return dest;
         }
     }

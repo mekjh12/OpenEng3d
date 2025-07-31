@@ -43,12 +43,14 @@ namespace Animate
             _scaling = scaling;
         }
 
-        /// <summary>기본 BoneTransform (원점, 회전 없음, 스케일 1.0)</summary>
-        public static BoneTransform Identity => new BoneTransform(
+        private static BoneTransform _identity = new BoneTransform(
             Vertex3f.Zero,
             ZetaExt.Quaternion.Identity,
             Vertex3f.One
         );
+
+        /// <summary>기본 BoneTransform (원점, 회전 없음, 스케일 1.0)</summary>
+        public static BoneTransform Identity => _identity;
 
         /// <summary>
         /// 본의 로컬 변환 행렬<br/>

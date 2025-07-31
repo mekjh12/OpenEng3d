@@ -122,6 +122,12 @@
     <Compile Include="FormTerrainImposter.Designer.cs">
       <DependentUpon>FormTerrainImposter.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormTest.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormTest.Designer.cs">
+      <DependentUpon>FormTest.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormTexture3d.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -166,6 +172,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormTerrainImposter.resx">
       <DependentUpon>FormTerrainImposter.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormTest.resx">
+      <DependentUpon>FormTest.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormTexture3d.resx">
       <DependentUpon>FormTexture3d.cs</DependentUpon>

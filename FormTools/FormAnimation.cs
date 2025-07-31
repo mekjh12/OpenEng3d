@@ -26,6 +26,8 @@ namespace FormTools
 
         MixamoRotMotionStorage _mixamoRotMotionStorage;
         List<Human> _humans = new List<Human>();
+        private int _lastGen0Count = 0;
+        private int _tick = 0;
 
         public FormAnimation()
         {
@@ -39,14 +41,14 @@ namespace FormTools
                 IsVisibleGrid = true,
                 PolygonMode = PolygonMode.Fill,
                 BackClearColor = new Vertex3f(0, 0, 0),
-                IsVisibleUi2d = true,
+                IsVisibleUi2d = false,
             };
 
             _glControl3.Init += (w, h) => Init(w, h);
             _glControl3.Init3d += (w, h) => Init3d(w, h);
             _glControl3.Init2d += (w, h) => Init2d(w, h);
-            _glControl3.UpdateFrame = (deltaTime, w, h, camera) => UpdateFrame(deltaTime, w, h, camera);
-            _glControl3.RenderFrame = (deltaTime, w, h, backcolor, camera) => RenderFrame(deltaTime, backcolor, camera);
+            _glControl3.UpdateFrame = UpdateFrame;
+            _glControl3.RenderFrame = RenderFrame;
             _glControl3.MouseDown += (s, e) => MouseDnEvent(s, e);
             _glControl3.MouseUp += (s, e) => MouseUpEvent(s, e);
             _glControl3.KeyDown += (s, e) => KeyDownEvent(s, e);
@@ -62,7 +64,7 @@ namespace FormTools
 
         private void FormUi2d_Load(object sender, EventArgs e)
         {
-
+            MemoryProfiler.StartFrameMonitoring();
         }
 
         public void Init(int width, int height)
@@ -84,9 +86,6 @@ namespace FormTools
             _glControl3.AddLabel("ocs", "ocs", align: Ui2d.Control.CONTROL_ALIGN.ADJOINT_TOP, foreColor: new Vertex3f(1, 1, 0));
             _glControl3.IsVisibleDebug = bool.Parse(IniFile.GetPrivateProfileString("sysInfo", "visibleDebugWindow", "False"));
             _glControl3.IsVisibleGrid = bool.Parse(IniFile.GetPrivateProfileString("sysInfo", "visibleGrid", "False"));
-
-            // 전체 화면 여부 
-            //if (Screen.PrimaryScreen.DeviceName.IndexOf("DISPLAY") > 0) _glControl3.FullScreen(true);
         }
 
         private void Init3d(int w, int h)
@@ -94,22 +93,21 @@ namespace FormTools
             // 그리드셰이더 초기화
             _glControl3.InitGridShader(PROJECT_PATH);
 
-            PrimateRig aniRig = new PrimateRig(PROJECT_PATH + @"\Res\abe.dae", isLoadAnimation: false);
-            PrimateRig aniRig2 = new PrimateRig(PROJECT_PATH + @"\Res\Guybrush_final.dae", isLoadAnimation: false);
+            PrimateRig aniRig = new PrimateRig(PROJECT_PATH + @"\Res\Actor\abe\abe.dae", isLoadAnimation: false);
+            PrimateRig aniRig2 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Guybrush\Guybrush.dae", isLoadAnimation: false);
+
+            //_humans.Add(new Human($"Guybrush", aniRig2));
+            //_humans[0].Transform.IncreasePosition(2, 0.5f, 0);
 
             //_humans.Add(new Human($"abe", aniRig));
-            //_humans[0].Transform.IncreasePosition(0, 0, 0);
+            //_humans[1].Transform.IncreasePosition(0, 0, 0);
 
-            //_humans.Add(new Human($"Guybrush_final", aniRig2));
-           // _humans[1].Transform.IncreasePosition(2, 0, 0);
-
-            for (int i = 0; i < 5; i++)
+            // [테스트] 캐릭터 수를 점진적으로 증가
+            int TEST_CHARACTER_COUNT = 5; // 이 값을 변경하면서 테스트
+            for (int i = 0; i < TEST_CHARACTER_COUNT; i++)
             {
-                for (int j = 0; j < 5; j++)
-                {
-                    _humans.Add(new Human($"abe{i}x{j}", aniRig));
-                    _humans[5 * i + j].Transform.IncreasePosition(i * 2, j * 2, 0);
-                }
+                _humans.Add(new Human($"test{i}", aniRig2));
+                _humans[i].Transform.IncreasePosition(i * 2, 0, 0);
             }
 
             // 믹사모 애니메이션 로드
@@ -130,16 +128,17 @@ namespace FormTools
             // 애니메이션 모델에 애니메이션 초기 지정
             foreach (Human human in _humans)
             {
-                human.SetMotion(HUMAN_ACTION.RANDOM);
+                human.SetMotion(HUMAN_ACTION.A_T_POSE);
             }
 
             // 아이템 장착
             Model3d.TextureStorage.NullTextureFileName = PROJECT_PATH + "\\Res\\debug.jpg";
             TexturedModel hat = LoadModel(PROJECT_PATH + @"\Res\Items\Merchant_Hat.dae")[0];
-            TexturedModel sword = LoadModel(PROJECT_PATH + @"\Res\Items\sword1.dae")[0];
+            TexturedModel sword = LoadModel(PROJECT_PATH + @"\Res\Items\cutter_gold.dae")[0];
 
             _humans[0].EquipItem(ATTACHMENT_SLOT.Head,"hat0", "hat", hat, 200.0f, positionY: -6.0f, pitch:-20);
-            _humans[0].EquipItem(ATTACHMENT_SLOT.LeftHand, "sword0", "sword", sword, 5.0f, yaw: 90);
+            _humans[0].EquipItem(ATTACHMENT_SLOT.RightHand, "sword1", "sword", sword, 1.0f, yaw: -90);
+            _humans[0].EquipItem(ATTACHMENT_SLOT.LeftHand, "sword0", "sword", sword, 1.0f, yaw: 90);
 
             // 셰이더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
@@ -154,37 +153,43 @@ namespace FormTools
         /// <param name="camera">카메라</param>
         private void UpdateFrame(int deltaTime, int w, int h, Camera camera)
         {
+            if (w == 0 || h == 0)
+            {
+                // 전체 화면 여부 
+                _glControl3.SetResolution(this.Width, this.Height);
+                _glControl3.FullScreen(false);
+            }
+
             // 시간 간격을 초 단위로 변환
             float duration = deltaTime * 0.001f;
 
-            // 애니메이션 업데이트
             foreach (Human human in _humans)
             {
                 human.Update(deltaTime);
             }
 
-            // UI 정보 업데이트
+            /*
             _glControl3.CLabel("cam").Text =
                 $"CamPos={camera.Position}, " +
                 $"CameraPitch={camera.CameraPitch}, " +
                 $"CameraYaw={camera.CameraYaw}, " +
                 $"Dist={camera.Distance}";
+            */
+
+            MemoryProfiler.CheckFrameGC();
         }
 
         /// <summary>
         /// 씬을 렌더링합니다.
         /// </summary>
-        private void RenderFrame(int deltaTime, Vertex4f backcolor, Camera camera)
+        private void RenderFrame(int deltaTime, float w, float h,  Vertex4f backcolor, Camera camera)
         {
-            int w = _glControl3.Width;
-            int h = _glControl3.Height;
-
             // 백그라운드 컬러 설정
-            Vertex3f backColor = _glControl3.BackClearColor;
+            //Vertex3f backColor = _glControl3.BackClearColor;
 
             // 기본 프레임버퍼로 전환 및 초기화
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-            Gl.Viewport(0, 0, w, h);
+            Gl.Viewport(0, 0, (int)w, (int)h);
             Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
 
             // 카메라 중심점 렌더링
@@ -197,7 +202,7 @@ namespace FormTools
                 human.Render(camera, vp, _animateShader, _staticShader, isBoneVisible: true);
             }
 
-            foreach (Human human in _humans)
+            //foreach (Human human in _humans)
             {
                //_axisShader.RenderAxes(human.ModelMatrix, human.Animator.RootTransforms, vp);
             }
@@ -233,7 +238,11 @@ namespace FormTools
             }
             else if (e.KeyCode == Keys.D1)
             {
-                _humans[Rand.NextInt(0,_humans.Count-1)].SetMotion(HUMAN_ACTION.RANDOM); 
+                for (int i = 0; i < _humans.Count; i++)
+                {
+                    //_humans[i].SetMotion(HUMAN_ACTION.RANDOM);
+                    _humans[i].SetMotionImmediately(HUMAN_ACTION.RANDOM);
+                }
             }
             else if (e.KeyCode == Keys.D2)
             {
@@ -259,6 +268,7 @@ namespace FormTools
 
         public void KeyDownEvent(object sender, KeyEventArgs e)
         {
+
         }
 
         public TexturedModel[] LoadModel(string modelFileName)

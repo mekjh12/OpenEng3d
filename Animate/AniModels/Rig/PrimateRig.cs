@@ -1,5 +1,4 @@
 ﻿using OpenGL;
-using System.Collections.Generic;
 
 namespace Animate
 {
@@ -14,6 +13,7 @@ namespace Animate
 
         public PrimateRig(string filename, bool isLoadAnimation = true) : base(filename, isLoadAnimation)
         {
+            // 애니메이션 리그 생성자
             HipIndex = Armature["mixamorig_Hips"].Index;
             RightHandIndex = Armature["mixamorig_RightHand"].Index;
             LeftHandIndex = Armature["mixamorig_LeftHand"].Index;
@@ -22,11 +22,13 @@ namespace Animate
             RightFootIndex = Armature["mixamorig_RightFoot"].Index;
 
             int index = 0;
+            
+            // 추가 본 부위 인덱스 딕셔너리 초기화
             index = Armature.AttachBone("mixamorig_Head", ATTACHMENT_SLOT.Head, Matrix4x4f.Translated(0, 20, 0));
             _dicIndices.Add(ATTACHMENT_SLOT.Head, index);
-            index = Armature.AttachBone("mixamorig_LeftHand", ATTACHMENT_SLOT.LeftHand, Matrix4x4f.Translated(0, 5, 2));
+            index = Armature.AttachBone("mixamorig_LeftHand", ATTACHMENT_SLOT.LeftHand, Matrix4x4f.Translated(0, 8, 5));
             _dicIndices.Add(ATTACHMENT_SLOT.LeftHand, index);
-            index = Armature.AttachBone("mixamorig_RightHand", ATTACHMENT_SLOT.RightHand, Matrix4x4f.Translated(0, 5, 2));
+            index = Armature.AttachBone("mixamorig_RightHand", ATTACHMENT_SLOT.RightHand, Matrix4x4f.Translated(0, 8, 5));
             _dicIndices.Add(ATTACHMENT_SLOT.RightHand, index);
         }
     }

@@ -122,6 +122,23 @@ namespace Animate
             return keyFrame;
         }
 
+        public KeyFrame GetFastKeyFrame(float time)
+        {
+            float currentKeyFrameTime = 0.0f;
+            KeyFrame keyFrame = null;
+            foreach (KeyValuePair<float, KeyFrame> item in _keyframes)
+            {
+                float keytime = item.Key;
+                currentKeyFrameTime = keytime;
+                if (time < currentKeyFrameTime)
+                {
+                    keyFrame = item.Value;
+                    break;
+                }
+            }
+            return keyFrame;
+        }
+
         /// <summary>
         /// 인덱스로 키프레임을 가져옵니다.
         /// </summary>
@@ -174,18 +191,17 @@ namespace Animate
         /// </summary>
         /// <param name="motionTime">모션 시간</param>
         /// <returns>뼈 이름별 변환 행렬 딕셔너리</returns>
-        public Dictionary<string, Matrix4x4f> InterpolatePoseAtTime(float motionTime)
+        public bool InterpolatePoseAtTime(float motionTime, Dictionary<string, Matrix4x4f> outPose)
         {
-            // 모션이 비어 있거나 키프레임이 없는 경우에는 null을 반환한다.
-            if (FirstKeyFrame == null || KeyFrameCount == 0) return null;
+            // 모션이 비어 있거나 키프레임이 없는 경우
+            if (FirstKeyFrame == null || KeyFrameCount == 0) return false;
 
-            // [최적화] 캐시된 배열을 사용한 효율적인 검색
             EnsureCacheValid();
 
             KeyFrame previousFrame = _sortedKeyframes[0];
             KeyFrame nextFrame = _sortedKeyframes[0];
 
-            // 선형 검색으로 키프레임 찾기 (키프레임 수가 적으면 바이너리 서치보다 빠름)
+            // 키프레임 찾기
             for (int i = 1; i < _sortedKeyframes.Length; i++)
             {
                 nextFrame = _sortedKeyframes[i];
@@ -196,42 +212,48 @@ namespace Animate
                 previousFrame = _sortedKeyframes[i];
             }
 
-            // 현재 진행률을 계산한다.
+            // 진행률 계산
             float totalTime = nextFrame.TimeStamp - previousFrame.TimeStamp;
             float currentTime = motionTime - previousFrame.TimeStamp;
             float progression = (totalTime > 0) ? (currentTime / totalTime) : 0f;
 
-            // 두 키프레임 사이의 보간된 포즈를 딕셔너리로 가져온다.
-            _currentPose.Clear();
-            foreach (string jointName in previousFrame.BoneNames)
+            // ✅ _currentPose 대신 outPose 직접 사용
+            outPose.Clear();
+
+            // ✅ 배열 할당 없이 직접 컬렉션 사용
+            string[] boneNames = previousFrame.BoneNames; // 컬렉션 직접 사용
+
+            if (boneNames == null) return false;
+
+            for (int i = 0; i < boneNames.Length; i++)
             {
+                string jointName = boneNames[i];
                 BoneTransform previousTransform = previousFrame[jointName];
                 BoneTransform nextTransform = nextFrame[jointName];
-                BoneTransform currentTransform = BoneTransform.InterpolateSlerp(previousTransform, nextTransform, progression);
-                _currentPose[jointName] = currentTransform.LocalTransform;
 
-                // 보간된 변환이 유효한지 확인하고, 유효하지 않으면 이전 또는 다음 키프레임을 사용하여 보간한다.
+                BoneTransform currentTransform = BoneTransform.InterpolateSlerp(previousTransform, nextTransform, progression);
+
+                outPose[jointName] = currentTransform.LocalTransform;
+
+                // 유효성 검증
                 if (!currentTransform.LocalTransform.IsValidMatrix())
                 {
-                    // 이전 키프레임이 유효하면 이전 것 사용
                     if (previousTransform.LocalTransform.IsValidMatrix())
                     {
-                        currentTransform = previousTransform;
+                        outPose[jointName] = previousTransform.LocalTransform;
                     }
-                    // 다음 키프레임이 유효하면 다음 것 사용
                     else if (nextTransform.LocalTransform.IsValidMatrix())
                     {
-                        currentTransform = nextTransform;
+                        outPose[jointName] = nextTransform.LocalTransform;
                     }
-                    // 둘 다 유효하지 않으면 Identity 사용
                     else
                     {
-                        currentTransform = BoneTransform.Identity;
+                        outPose[jointName] = Matrix4x4f.Identity;
                     }
                 }
             }
 
-            return _currentPose;
+            return true;
         }
 
         /// <summary>
@@ -330,26 +352,5 @@ namespace Animate
             }
         }
 
-        /// <summary>
-        /// 두 모션을 블렌딩하여 새로운 모션을 생성합니다.
-        /// </summary>
-        /// <param name="name">블렌딩된 모션의 이름</param>
-        /// <param name="prevMotion">이전 모션</param>
-        /// <param name="prevTime">이전 모션의 시간</param>
-        /// <param name="nextMotion">다음 모션</param>
-        /// <param name="nextTime">다음 모션의 시간</param>
-        /// <param name="blendingInterval">블렌딩 간격</param>
-        /// <returns>블렌딩된 새로운 모션</returns>
-        public static Motion BlendMotion(string name, Motion prevMotion, float prevTime, Motion nextMotion, float nextTime, float blendingInterval)
-        {
-            KeyFrame k0 = prevMotion.CloneKeyFrame(prevTime);
-            k0.TimeStamp = 0;
-            KeyFrame k1 = nextMotion.CloneKeyFrame(nextTime);
-            k1.TimeStamp = blendingInterval;
-            Motion blendMotion = new Motion(name, blendingInterval);
-            if (k0 != null) blendMotion.AddKeyFrame(k0);
-            if (k1 != null) blendMotion.AddKeyFrame(k1);
-            return blendMotion;
-        }
     }
 }

@@ -36,31 +36,6 @@ namespace Animate
         {
             _actions = new Dictionary<string, Action>();
 
-            //TransplantEye(EngineLoop.PROJECT_PATH + "\\Res\\Human\\simple_eye.dae", "mixamorig_Head");
-            /*
-            HandGrabItem(_aniRig, "mixamorig_LeftHand_Item", "mixamorig_LeftHand",
-                  Matrix4x4f.RotatedY(0), Matrix4x4f.Translated(0, 10, 3) * Matrix4x4f.Scaled(1, 1, 1));
-            HandGrabItem(_aniRig, "mixamorig_RightHand_Item", "mixamorig_RightHand",
-                Matrix4x4f.RotatedY(180), Matrix4x4f.Translated(0, 10, 3) * Matrix4x4f.Scaled(1, 1, 1));
-            HandGrabItem(_aniRig, "mixamorig_Head_Item", "mixamorig_Head",
-                Matrix4x4f.RotatedY(0), Matrix4x4f.Translated(0, 18.5f, 7.2f) * Matrix4x4f.Scaled(1, 1, 1));
-            HandGrabItem(_aniRig, "mixamorig_Back", "mixamorig_Spine2",
-                Matrix4x4f.RotatedY(0), Matrix4x4f.Translated(0, 0, -10.0f) * Matrix4x4f.Scaled(1, 1, 1));
-            */
-        }
-
-        public void Attach(ATTACHMENT_SLOT hand)
-        {
-            
-        }
-
-        public void LootAtEye(Vertex3f worldPosition)
-        {
-            _updateAfter += () =>
-            {
-                AniRig.Armature["mixamorig_eyeLeft"]?.ApplyCoordinateFrame(_transform.Matrix4x4f.Position, worldPosition, Vertex3f.UnitZ);
-                AniRig.Armature["mixamorig_eyeRight"]?.ApplyCoordinateFrame(_transform.Matrix4x4f.Position, worldPosition, Vertex3f.UnitZ);
-            };
         }
 
         /// <summary>
@@ -109,52 +84,6 @@ namespace Animate
             }
         }
 
-        /// <summary>
-        /// 눈을 이식한다.
-        /// </summary>
-        /// <param name="fileName"></param>
-        /// <param name="parentBoneName"></param>
-        private void TransplantEye(string fileName, string parentBoneName)
-        {
-            if (!File.Exists(fileName))
-            {
-                Console.WriteLine($"{fileName}이 없어 눈 이식에 실패하였습니다.");
-                return;
-            }
-
-            TexturedModel texturedModel = AniXmlLoader.LoadOnlyGeometryMesh(fileName);
-            string boneName = $"mixamorig_eyeLeft";
-            Bone LEyeBone = _aniRig.AddBone(boneName, _aniRig.BoneCount, parentBoneName,
-                inverseBindPoseTransform: Matrix4x4f.RotatedY(90).Inverse,
-                localBindTransform: Matrix4x4f.Translated(4.4f, 11.8f, 12.5f) * Matrix4x4f.Scaled(0.75f, 0.65f, 0.65f));
-            LEyeBone.BoneKinematics.RestrictAngle = new BoneAngle(-30, 30, -0, 0, -60, 60);
-            //AddEntity(boneName, texturedModel);
-
-            boneName = $"mixamorig_eyeRight";
-            Bone REyeBone = _aniRig.AddBone(boneName, _aniRig.BoneCount, parentBoneName,
-                inverseBindPoseTransform: Matrix4x4f.RotatedY(90).Inverse,
-                localBindTransform: Matrix4x4f.Translated(-4.4f, 11.8f, 12.5f) * Matrix4x4f.Scaled(0.75f, 0.65f, 0.65f));
-            REyeBone.BoneKinematics.RestrictAngle = new BoneAngle(-30, 30, -0, 0, -60, 60);
-            //AddEntity(boneName, texturedModel);
-        }
-
-        /// <summary>
-        /// 부모뼈로부터 자식뼈를 생성하고 생성한 뼈의 변환을 지정한다.
-        /// </summary>
-        /// <param name="xmlDae"></param>
-        /// <param name="boneName"></param>
-        /// <param name="parentBoneName"></param>
-        /// <param name="bindTransform"> 캐릭터 공간의 invBind를 위하여 역행렬이 아닌 바인딩행렬을 지정한다.</param>
-        /// <param name="localBindTransform">부모뼈공간에서의 바인딩 행렬을 지정한다.</param>
-        /// <returns></returns>
-        private Bone HandGrabItem(AniRig aniRig, string boneName, string parentBoneName, Matrix4x4f bindTransform, Matrix4x4f localBindTransform)
-        {
-            Bone bone = aniRig.AddBone(boneName, aniRig.BoneCount, parentBoneName,
-                inverseBindPoseTransform: bindTransform.Inverse,
-                localBindTransform: localBindTransform);
-            //bone.RestrictAngle = new BoneAngle(-0, 0, -0, 0, -0, 0);
-            return bone;
-        }
 
     }
 }

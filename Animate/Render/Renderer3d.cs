@@ -4,7 +4,9 @@ using Common.Abstractions;
 using Model3d;
 using OpenGL;
 using Shader;
+using System;
 using System.Collections.Generic;
+using System.Xml.Linq;
 using ZetaExt;
 
 namespace Animate
@@ -115,14 +117,11 @@ namespace Animate
         {
             // GC 압박을 줄이기 위하여 model과 vp는 GPU에서 계산한다.
             shader.Bind();
-            shader.LoadUniform(AnimateShader.UNIFORM_NAME.vp, vp);
-            shader.LoadUniform(AnimateShader.UNIFORM_NAME.model, model);
-            shader.LoadUniform(AnimateShader.UNIFORM_NAME.isSkinningEnabled, true);
 
-            for (int i = 0; i < finalAnimatedBoneMatrices?.Length; i++)
-            {
-                shader.LoadFinalAnimatedBoneMatrix(i, finalAnimatedBoneMatrices[i]);
-            }
+            shader.LoadVPMatrix(vp);
+            shader.LoadModelMatrix(model);
+            shader.LoadIsSkinningEnabled(true);
+            shader.LoadAllBoneMatrices(finalAnimatedBoneMatrices);
 
             foreach (TexturedModel texturedModel in models)
             {

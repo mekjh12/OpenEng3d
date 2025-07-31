@@ -13,6 +13,7 @@ namespace FormTools
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            //Application.Run(new FormTest());
             Application.Run(new FormAnimation());
             //Application.Run(new FormCloud());
             //Application.Run(new FormHzm());

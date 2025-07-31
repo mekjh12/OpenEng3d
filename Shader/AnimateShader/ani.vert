@@ -17,7 +17,14 @@ out vec2 pass_textureCoords;   // 프래그먼트 셰이더로 전달할 텍스�
 out vec4 pass_weights;         // 프래그먼트 셰이더로 전달할 가중치
 
 // 유니폼 변수
-uniform mat4 finalAnimatedBoneMatrix[MAX_JOINTS]; // 애니메이션된 뼈대 변환 행렬들
+//uniform mat4 finalAnimatedBoneMatrix[MAX_JOINTS]; // 애니메이션된 뼈대 변환 행렬들
+
+// 새로 추가
+layout (std140) uniform BoneMatrices
+{
+    mat4 finalAnimatedBoneMatrix[128];
+};
+
 uniform mat4 vp;				// 뷰-투영 행렬
 uniform mat4 model;				// 모델 행렬
 

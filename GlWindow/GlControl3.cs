@@ -444,7 +444,7 @@ namespace GlWindow
                 _camera?.Update(deltaTime);
             }
 
-            // 컨트롤에 부과된 액션을 실행한다.
+            // 컨트롤에 첨부한 액션을 실행한다.
             _update(deltaTime, _width, _height, _camera);
 
             // 그리드 보임유무를 업데이트한다.
@@ -493,9 +493,8 @@ namespace GlWindow
             int glLeftMargin = Parent.Width - this.Width;
             int glTopMargin = Parent.Height - this.Height;
 
-
-            CLabel("fps").Text = "프레임율(" + FramePerSecond.FPS + $"FPS {_tick}) {_camera.Direction}";
-            CLabel("debug").Text = Debug.Text;
+            //CLabel("fps").Text = "프레임율(" + FramePerSecond.FPS + $"FPS {_tick}) {_camera.Direction}";
+            //CLabel("debug").Text = Debug.Text;
 
             UIEngine.MouseUpdateFrame(Parent.Left + glLeftMargin, Parent.Top + glTopMargin, Width, Height, mouseWheelValue);
             UIEngine.UpdateFrame(deltaTime);

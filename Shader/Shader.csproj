@@ -68,6 +68,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AnimateShader\AnimateShader.cs" />
+    <Compile Include="AnimateShader\BoneMatrixUBO.cs" />
     <Compile Include="AtmosphericScatteringLUT\AtmosphericScatteringLUT.cs" />
     <Compile Include="AxisShader\AxisGeometry.cs" />
     <Compile Include="CloudShader\CloudShadowMapShader.cs" />

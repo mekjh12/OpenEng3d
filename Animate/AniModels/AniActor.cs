@@ -7,6 +7,7 @@ using Shader;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ZetaExt;
 
 namespace Animate
 {
@@ -113,7 +114,6 @@ namespace Animate
                 _updateBefore();
             }
 
-            // 애니메이션 업데이트
             _animator.Update(0.001f * deltaTime);
 
             // 애니메이션 업데이트 후에 호출할 수 있는 콜백 함수
@@ -136,7 +136,7 @@ namespace Animate
                 if (_renderingMode == RenderingMode.Animation)
                 {
                     Renderer3d.RenderSkinning(ashader, ModelMatrix, vp, _aniRig.TexturedModels, _animator.AnimatedTransforms);
-                    Renderer3d.RenderRigidBody(ashader, ModelMatrix, vp, _items.Values.ToList(),  _animator.RootTransforms);
+                    //Renderer3d.RenderRigidBody(ashader, ModelMatrix, vp, _items.Values.ToList(),  _animator.RootTransforms);
                 }
                 else if (_renderingMode == RenderingMode.BoneWeight)
                 {
@@ -149,6 +149,5 @@ namespace Animate
                 Gl.Enable(EnableCap.CullFace);
             }
         }
-
     }
 }

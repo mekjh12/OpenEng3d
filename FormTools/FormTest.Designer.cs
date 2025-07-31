@@ -28,18 +28,30 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.glControl1 = new OpenGL.GlControl();
             this.SuspendLayout();
+            // 
+            // glControl1
+            // 
+            this.glControl1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
+            this.glControl1.ColorBits = ((uint)(24u));
+            this.glControl1.DepthBits = ((uint)(0u));
+            this.glControl1.Location = new System.Drawing.Point(22, 12);
+            this.glControl1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.glControl1.MultisampleBits = ((uint)(0u));
+            this.glControl1.Name = "glControl1";
+            this.glControl1.Size = new System.Drawing.Size(765, 426);
+            this.glControl1.StencilBits = ((uint)(0u));
+            this.glControl1.TabIndex = 0;
+            this.glControl1.Render += new System.EventHandler<OpenGL.GlControlEventArgs>(this.glControl1_Render);
             // 
             // FormTest
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1252, 759);
-            this.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
+            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Controls.Add(this.glControl1);
             this.Name = "FormTest";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "FormTest";
             this.Load += new System.EventHandler(this.FormTest_Load);
             this.ResumeLayout(false);
@@ -48,5 +60,6 @@
 
         #endregion
 
+        private OpenGL.GlControl glControl1;
     }
 }
