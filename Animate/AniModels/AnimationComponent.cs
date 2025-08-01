@@ -28,7 +28,7 @@ namespace Animate
             _animator.Update(deltaTime);
         }
 
-        public void SetMotion(string motionName, float blendingInterval = 0.2f)
+        public void SetMotion(string motionName, MotionCache motionCache, float blendingInterval = 0.2f)
         {
             _animator.OnceFinished = null;
             Motion motion = _aniRig.Motions.GetMotion(motionName);
@@ -39,7 +39,7 @@ namespace Animate
             }
             else
             {
-                _animator.SetMotion(motion, blendingInterval);
+                _animator.SetMotion(motion, motionCache, blendingInterval);
             }
         }
 
@@ -51,11 +51,11 @@ namespace Animate
 
             _animator.OnceFinished = () =>
             {
-                _animator.SetMotion(curMotion);
+                _animator.SetMotion(curMotion, _aniRig.MotionCache);
                 _animator.OnceFinished = null;
             };
 
-            _animator.SetMotion(nextMotion);
+            _animator.SetMotion(nextMotion, _aniRig.MotionCache);
         }
 
     }

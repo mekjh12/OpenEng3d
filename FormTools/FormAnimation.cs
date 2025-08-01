@@ -96,14 +96,14 @@ namespace FormTools
             PrimateRig aniRig = new PrimateRig(PROJECT_PATH + @"\Res\Actor\abe\abe.dae", isLoadAnimation: false);
             PrimateRig aniRig2 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Guybrush\Guybrush.dae", isLoadAnimation: false);
 
-            //_humans.Add(new Human($"Guybrush", aniRig2));
-            //_humans[0].Transform.IncreasePosition(2, 0.5f, 0);
+            _humans.Add(new Human($"Guybrush", aniRig2));
+            _humans[0].Transform.IncreasePosition(2, 0.5f, 0);
 
-            //_humans.Add(new Human($"abe", aniRig));
-            //_humans[1].Transform.IncreasePosition(0, 0, 0);
+            _humans.Add(new Human($"abe", aniRig));
+            _humans[1].Transform.IncreasePosition(0, 0, 0);
 
             // [테스트] 캐릭터 수를 점진적으로 증가
-            int TEST_CHARACTER_COUNT = 5; // 이 값을 변경하면서 테스트
+            int TEST_CHARACTER_COUNT = 1; // 이 값을 변경하면서 테스트
             int yDelta = 0;
             int xDelta = 0;
             for (int i = 0; i < TEST_CHARACTER_COUNT; i++)
@@ -246,8 +246,8 @@ namespace FormTools
             {
                 for (int i = 0; i < _humans.Count; i++)
                 {
-                    //_humans[i].SetMotion(HUMAN_ACTION.RANDOM);
-                    _humans[i].SetMotionImmediately(HUMAN_ACTION.RANDOM);
+                    _humans[i].SetMotion(HUMAN_ACTION.RANDOM);
+                    _humans[i].AniRig.MotionCache.Print();
                 }
             }
             else if (e.KeyCode == Keys.D2)
@@ -261,6 +261,13 @@ namespace FormTools
             else if (e.KeyCode == Keys.H)
             {
                 _humans[0].FoldHand(true);
+            }
+            else if (e.KeyCode == Keys.R)
+            {
+                if (_humans[0].Animator.IsPlaying)
+                    _humans[0].Animator.Stop();
+                else
+                    _humans[0].Animator.Play();
             }
             else if (e.KeyCode == Keys.J)
             {

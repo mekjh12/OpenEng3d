@@ -71,11 +71,11 @@ namespace Animate
 
             _animator.OnceFinished = () =>
             {
-                _animator.SetMotion(curMotion);
+                _animator.SetMotion(curMotion, _aniRig.MotionCache);
                 _animator.OnceFinished = null;
             };
 
-            _animator.SetMotion(nextMotion);
+            _animator.SetMotion(nextMotion, _aniRig.MotionCache);
             _animator.Play();
         }
 
@@ -84,7 +84,7 @@ namespace Animate
         /// </summary>
         /// <param name="motionName">모션 이름</param>
         /// <param name="blendingInterval">블렌딩 간격</param>
-        protected void SetMotion(string motionName, float blendingInterval = 0.2f)
+        protected void SetMotion(string motionName, MotionCache motionCache, float blendingInterval = 0.2f)
         {
             _animator.OnceFinished = null;
 
@@ -96,7 +96,7 @@ namespace Animate
             }
             else
             {
-                _animator.SetMotion(motion, blendingInterval);
+                _animator.SetMotion(motion, motionCache, blendingInterval);
             }
 
             _animator.Play();

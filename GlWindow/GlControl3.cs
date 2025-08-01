@@ -496,7 +496,7 @@ namespace GlWindow
             int glLeftMargin = Parent.Width - this.Width;
             int glTopMargin = Parent.Height - this.Height;
 
-            if (_tick % 60 == 0) // 10틱마다 업데이트
+            if (_tick % 2 == 0) // 10틱마다 업데이트
             {
                 // FPS 텍스트 업데이트
                 if (_fpsCtrl == null)

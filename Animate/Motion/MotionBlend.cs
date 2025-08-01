@@ -1,15 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Animate
+﻿namespace Animate
 {
     public class MotionBlend
     {
-
-        //
         private static Motion _blendMotion;
 
 
@@ -18,12 +10,18 @@ namespace Animate
         /// </summary>
         /// <param name="name">블렌딩된 모션의 이름</param>
         /// <param name="prevMotion">이전 모션</param>
-        /// <param name="prevTime">이전 모션의 시간</param>
+        /// <param name="prevTime">이전 모션에서의 블렌딩 시작 시간</param>
         /// <param name="nextMotion">다음 모션</param>
-        /// <param name="nextTime">다음 모션의 시간</param>
+        /// <param name="nextTime">다음 모션에서의 블렌딩 종료 시간</param>
         /// <param name="blendingInterval">블렌딩 간격</param>
         /// <returns>블렌딩된 새로운 모션</returns>
-        public static Motion BlendMotion(string name, Motion prevMotion, float prevTime, Motion nextMotion, float nextTime, float blendingInterval)
+        public static Motion BlendMotion(
+            string name, 
+            Motion prevMotion, 
+            float prevTime, 
+            Motion nextMotion, 
+            float nextTime, 
+            float blendingInterval)
         {
             KeyFrame k0 = prevMotion.CloneKeyFrame(prevTime);
             k0.TimeStamp = 0;

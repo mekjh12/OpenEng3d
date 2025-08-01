@@ -18,16 +18,20 @@ namespace Animate
         // 핵심 데이터
         private Matrix4x4f _bindShapeMatrix;            // 바인드 형태 행렬
         private MotionStorage _motions;                 // 모션 저장소
+        private MotionCache _motionCache;           // 모션 캐시 (블렌딩 모션 캐시)
+
         private List<TexturedModel> _texturedModels;    // 텍스처 모델 목록
         private Armature _armature;                     // 골격 구조
 
         // 추가 본 부위 인덱스 딕셔너리
         protected Dictionary<ATTACHMENT_SLOT, int> _dicIndices;
 
+
         // 공개 속성
         public Dictionary<string, Bone> DicBones => _armature.DicBones;
         public Armature Armature => _armature;
         public MotionStorage Motions => _motions;
+        public MotionCache MotionCache => _motionCache;
         public int BoneCount => _armature.BoneNames.Length;
         public List<TexturedModel> TexturedModels => _texturedModels;
         public string Name => _name;
@@ -64,6 +68,9 @@ namespace Animate
             // 모션 저장소 재초기화 (중복 처리 - 개선 필요)
             _motions = new MotionStorage();
             _motions.AddMotion(new Motion("default", lengthInSeconds: 2.0f));
+
+            // 모션 캐시 초기화
+            _motionCache = new MotionCache(_name);
 
             // 추가 본 부위 인덱스 딕셔너리 초기화
             _dicIndices = new Dictionary<ATTACHMENT_SLOT, int>();
