@@ -64,6 +64,7 @@
   <ItemGroup>
     <Compile Include="AniModels\AniActor.Equip.cs" />
     <Compile Include="AniModels\AnimationComponent.cs" />
+    <Compile Include="AniModels\BlendingAnimator.cs" />
     <Compile Include="AniModels\Rig\AniRig.cs" />
     <Compile Include="AniModels\Animator.cs" />
     <Compile Include="AniModels\AniActor.cs" />
@@ -84,6 +85,8 @@
     <Compile Include="Kinematic\Clothes.cs" />
     <Compile Include="Core\ColorPoint.cs" />
     <Compile Include="AniModels\Human.cs" />
+    <Compile Include="Motion\BlendMotion.cs" />
+    <Compile Include="Motion\Motionable.cs" />
     <Compile Include="Motion\KeyFrame.cs" />
     <Compile Include="Kinematic\Kinetics.cs" />
     <Compile Include="AniModels\Primate.cs" />
@@ -94,6 +97,7 @@
     <Compile Include="Motion\MotionCache.cs" />
     <Compile Include="Motion\MotionStorage.cs" />
     <Compile Include="Loader\ObjLoader.cs" />
+    <Compile Include="Motion\TimeFinder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Render\Renderer3d.cs" />
     <Compile Include="Material\TextureStorage.cs" />

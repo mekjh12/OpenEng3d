@@ -234,21 +234,23 @@ namespace Ui2d
 
         public static void RenderFrame(int deltaTime)
         {
-            // UIEngine을 렌더링한다.
-            foreach (UIEngine uIEngine in UIEngine.UIEngineList)
+            // UIEngine을 렌더링한다.d
+            for (int i=0; i<UIEngine.UIEngineList.Count; i++)
             {
-                uIEngine.Render(deltaTime);
+                UIEngine.UIEngineList[i].Render(deltaTime);
             }
         }
 
         public static void UpdateFrame(int deltaTime)
         {
             // UIEngine을 업데이트한다.
-            foreach (UIEngine uIEngine in UIEngine.UIEngineList)
+            float fx = UIEngine.CurrentMousePointFloat.x;
+            float fy = UIEngine.CurrentMousePointFloat.y;
+
+            var uiEngineList = UIEngine.UIEngineList;
+            for (int i = 0; i < uiEngineList.Count; i++)
             {
-                float fx = UIEngine.CurrentMousePointFloat.x;
-                float fy = UIEngine.CurrentMousePointFloat.y;
-                uIEngine.Update(deltaTime, fx, fy);
+                uiEngineList[i].Update(deltaTime, fx, fy);
             }
         }
 

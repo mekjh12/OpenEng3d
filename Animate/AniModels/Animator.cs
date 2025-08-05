@@ -51,6 +51,8 @@ namespace Animate
         // Identity 행렬 재사용
         private readonly Matrix4x4f _identityMatrix = Matrix4x4f.Identity;
 
+        public Bone[] BoneTraversalOrder => _boneTraversalOrder;
+
         /// <summary>
         /// 애니메이션이 적용된 최종 행렬로서 스키닝행렬이다. 
         /// <code>
@@ -193,7 +195,6 @@ namespace Animate
                     {
                         _blendMotion = MotionBlend.BlendMotion(blendMotionName, _currentMotion, _motionTime, motion, 0.0f, blendingInterval);
                         motionCache.AddMotionToCache(_blendMotion);
-                        Console.WriteLine("cache 추가");
                     }
                     _currentMotion = _blendMotion;
                     _nextMotion = motion;
@@ -290,12 +291,12 @@ namespace Animate
         private void UpdateAnimationTransforms(float motionTime, Bone rootBone)
         {
             // 키프레임으로부터 현재의 로컬포즈행렬을 가져온다.
-            if (!_currentMotion.InterpolatePoseAtTime(motionTime, _currentPose))
+            if (!_currentMotion.InterpolatePoseAtTime(motionTime, ref _currentPose))
             {
                 return; // 실패시 처리
             }
 
-            // ✅ 미리 계산된 순회 순서로 처리 - GC 없음, 큐 없음
+            // _currentPose로부터 현재 포즈를 가져온다.
             for (int i = 0; i < _boneTraversalOrder.Length; i++)
             {
                 Bone bone = _boneTraversalOrder[i];
@@ -307,7 +308,7 @@ namespace Animate
                     _identityMatrix : // 루트 본
                     _rootTransforms[_boneTraversalOrder[_parentIndices[i]].Index]; // 부모 본의 변환
 
-                // 현재 포즈 처리
+                // 현재 포즈로부터 본의 로컬 변환을 가져온다.
                 bone.BoneTransforms.LocalTransform =
                     (_currentPose != null && _currentPose.TryGetValue(bone.Name, out Matrix4x4f poseTransform)) ?
                     poseTransform : bone.BoneTransforms.LocalBindTransform;

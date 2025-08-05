@@ -97,10 +97,10 @@ namespace FormTools
             PrimateRig aniRig2 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Guybrush\Guybrush.dae", isLoadAnimation: false);
 
             _humans.Add(new Human($"Guybrush", aniRig2));
-            _humans[0].Transform.IncreasePosition(2, 0.5f, 0);
+            _humans[0].Transform.IncreasePosition(4, 0.0f, 0);
 
             _humans.Add(new Human($"abe", aniRig));
-            _humans[1].Transform.IncreasePosition(0, 0, 0);
+            _humans[1].Transform.IncreasePosition(2, 0, 0);
 
             // [테스트] 캐릭터 수를 점진적으로 증가
             int TEST_CHARACTER_COUNT = 1; // 이 값을 변경하면서 테스트
@@ -176,13 +176,14 @@ namespace FormTools
                 human.Update(deltaTime);
             }
 
+            /*
             _glControl3.CLabel("cam").Text = 
                 $"CamPos={camera.Position}, " +
                 $"CameraPitch={camera.CameraPitch}, " +
                 $"CameraYaw={camera.CameraYaw}, " +
                 $"Dist={camera.Distance}";
+            */
 
-            MemoryProfiler.CheckFrameGC();
         }
 
         /// <summary>
@@ -247,7 +248,6 @@ namespace FormTools
                 for (int i = 0; i < _humans.Count; i++)
                 {
                     _humans[i].SetMotion(HUMAN_ACTION.RANDOM);
-                    _humans[i].AniRig.MotionCache.Print();
                 }
             }
             else if (e.KeyCode == Keys.D2)
@@ -257,6 +257,30 @@ namespace FormTools
             else if (e.KeyCode == Keys.D3)
             {
                 _humans[Rand.NextInt(0, _humans.Count - 1)].SetMotionImmediately(HUMAN_ACTION.RANDOM);
+            }
+            else if (e.KeyCode == Keys.D4)
+            {
+                _humans[0].SetBlendMotion(1.0f);
+            }
+            else if (e.KeyCode == Keys.D5)
+            {
+                _humans[0].SetBlendMotion(1.2f);
+            }
+            else if (e.KeyCode == Keys.D6)
+            {
+                _humans[0].SetBlendMotion(1.4f);
+            }
+            else if (e.KeyCode == Keys.D7)
+            {
+                _humans[0].SetBlendMotion(1.6f);
+            }
+            else if (e.KeyCode == Keys.D8)
+            {
+                _humans[0].SetBlendMotion(1.8f);
+            }
+            else if (e.KeyCode == Keys.D9)
+            {
+                _humans[0].SetBlendMotion(2.0f);
             }
             else if (e.KeyCode == Keys.H)
             {

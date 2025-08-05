@@ -6,8 +6,6 @@ using OpenGL;
 using Shader;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using ZetaExt;
 
 namespace Animate
 {
@@ -32,6 +30,9 @@ namespace Animate
         // 컴포넌트들
         protected AnimationComponent _animationComponent; // 애니메이션 컴포넌트
         protected TransformComponent _transformComponent; // 트랜스폼 컴포넌트
+
+
+        BlendMotion _blendMotion;
 
         // 속성
         public string Name => _name;
@@ -101,6 +102,24 @@ namespace Animate
 
             _animator.Play();
         }
+
+        public void SetBlendMotion(float blendFactor)
+        {
+            if (_blendMotion == null)
+            {
+            }
+
+            Motion motion1 = _aniRig.Motions.GetMotion("Walking");
+            Motion motion2 = _aniRig.Motions.GetMotion("Fast Run");
+
+            _blendMotion = new BlendMotion(_animator.BoneTraversalOrder, motion1, motion2, 1.0f, 2.0f, blendFactor);
+
+            _animator.OnceFinished = null;
+            _animator.SetMotion(_blendMotion, null, 0.0f);
+
+            _animator.Play();
+        }
+
 
         /// <summary>
         /// 업데이트를 통하여 애니메이션 행렬을 업데이트한다.

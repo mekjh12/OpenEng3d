@@ -1,5 +1,6 @@
 ﻿using OpenGL;
 using System;
+using System.Text;
 
 namespace Ui2d
 {
@@ -37,6 +38,10 @@ namespace Ui2d
         protected VScrollBar _vScrollBar;
         protected VerticalValueBar _verticalValueBar;
         protected event Action<Control, int> _valueChanged;
+
+        // 재사용을 위한 변수들
+        private readonly StringBuilder _reusableStringBuilder = new StringBuilder(512);
+        private Vertex4f _reusableColor = new Vertex4f();
 
         #region ============ 속성================
 
@@ -151,13 +156,16 @@ namespace Ui2d
             get => _txt;
             set
             {
+                if (value == null) return;
+
                 if (_txt != value)
                 {
-                    _txt = value.Trim();
+                    _txt = value;
                     if (_txt.IndexOf(UI2.NewLine) > 0)
                     {
                         _numOfLine = _txt.NumOfLine(UI2.NewLine);
                     }
+
                     SetTextMesh(_txt);
                 }
             }
@@ -321,40 +329,54 @@ namespace Ui2d
             float pWidth = (Parent == null) ? 1.0f : Parent.RenderingWidth;
             float pHeight = (Parent == null) ? 1.0f : Parent.RenderingHeight;
 
-            _text.Color = new Vertex4f(_foreColor.x, _foreColor.y, _foreColor.z, _alphaText);
-            _text.FontSize = (Label.INIT_HEIGHT / UIEngine.Height) * _fontSize;
+            // 1. 객체 재사용 (new Vertex4f 대신)
+            _reusableColor.x = _foreColor.x;
+            _reusableColor.y = _foreColor.y;
+            _reusableColor.z = _foreColor.z;
+            _reusableColor.w = _alphaText;
+            _text.Color = _reusableColor;
 
+            _text.FontSize = (Label.INIT_HEIGHT / UIEngine.Height) * _fontSize;
             float relLineWidthMax = pWidth * _lineWidthMax;
 
-            // Max라인에 맞게 텍스트를 자른다. IndexOfLine, MaxNumOfLine으로 텍스트를 자른다.
+            // 2. StringBuilder 사용 (string += 대신)
             _txt = txt;
-            string[] lines = txt.Replace(UI2.NewLine, "$").Split(new char[] { '$' });
-            string cuttingText = "";
-            int endOfLine = Math.Min(lines.Length, _indexOfLine + _maxNumOfLine);
+            _reusableStringBuilder.Clear();
+            string[] lines = txt.Replace(UI2.NewLine, "$").Split('$');
+
+            // 3. Math 함수 제거 (boxing 방지)
+            int endOfLine = lines.Length < (_indexOfLine + _maxNumOfLine) ?
+                           lines.Length : (_indexOfLine + _maxNumOfLine);
+
             for (int i = _indexOfLine; i < endOfLine; i++)
             {
-                cuttingText += lines[i].Trim() + ((i < endOfLine - 1) ? UI2.NewLine : UI2.EndOfString);
+                _reusableStringBuilder.Append(lines[i].Trim());
+                if (i < endOfLine - 1)
+                    _reusableStringBuilder.Append(UI2.NewLine);
+                else
+                    _reusableStringBuilder.Append(UI2.EndOfString);
             }
 
-            // 텍스트를 텍스처링한다.
+            string cuttingText = _reusableStringBuilder.ToString();
+
+            // 4. 텍스트 설정
             _text.SetText(cuttingText, _lineSpacing, maxLineWidth: relLineWidthMax);
 
-            // 자신의 상대 크기를 계산한다. 자신의 상대적 크기를 text.width의 절대크기를 비로 하여 
+            // 5. 크기 계산 (Math.Max 대신 조건문)
             float aspect = UIEngine.Aspect;
-
             float pixel = _text.Height * UIEngine.Height;
-
             float cHeight = _text.Height / (1 - 2 * _padding);
             float cPadding = cHeight * _padding;
             float cWidth = _text.Width + 2 * cPadding;
-            cWidth = Math.Max(pWidth * _lineWidthMin, cWidth);
+
+            float minWidth = pWidth * _lineWidthMin;
+            cWidth = cWidth > minWidth ? cWidth : minWidth;
 
             if (_autosize)
             {
-                _width = cWidth / pWidth; //상대크기
-                _height = cHeight / pHeight; //상대높이
+                _width = cWidth / pWidth;
+                _height = cHeight / pHeight;
             }
-
         }
     }
 }

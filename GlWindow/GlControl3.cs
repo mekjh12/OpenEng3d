@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows.Forms;
 using System.Windows.Input;
 using Ui2d;
@@ -82,6 +83,12 @@ namespace GlWindow
         private Vertex2f _mouseDeltaPos = Vertex2f.Zero;
         private float _mouseWheelValue = 0.0f;
 
+        // 프레임율 표시를 위한 텍스트
+        private FpsStringCache _fpsCache;
+        private GameInfoStringCache _gameInfoCache;
+        private string _fps;
+
+
         private struct POINT
         { public int X; public int Y; }
 
@@ -109,7 +116,7 @@ namespace GlWindow
         public bool IsUi2dMode
         {
             get => _isUi2dMode;
-            set
+            set 
             {
                 _isUi2dMode = value;
                 _isMouseVisible = value;
@@ -248,6 +255,15 @@ namespace GlWindow
             // 그리드를 생성한다.
             _grid = new InfiniteGrid();
 
+            // FPS 문자열 빌더 생성한다.
+            // 0~144 FPS 지원
+            _fpsCache = new FpsStringCache(maxFps: 144, prefix: "FPS: ");
+            _gameInfoCache = new GameInfoStringCache(maxFps: 144);
+
+            // 메모리 사용량 확인
+            Console.WriteLine($"FPS 캐시 메모리: {_fpsCache.EstimatedMemoryUsage} bytes");
+            // 144개 * 평균 8글자 * 2byte = 약 2.3KB
+
             // 시스템 정보 출력
             Console.WriteLine("========================================================");
             Console.WriteLine("                  OpenGL3d 시스템 정보");
@@ -288,19 +304,19 @@ namespace GlWindow
                         Console.WriteLine("경고: 컴퓨트 셰이더는 OpenGL 4.3 이상이 필요합니다!");
                     }
                 }
-                Console.WriteLine(" ");
 
                 string shaderPath = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\UIDesign2d\Shader\";
                 InitGlControl(shaderPath);
                 if (_init2d != null) _init2d(Width, Height);
             }
 
+            // 프레임 카운트를 증가시킨다.
             _tick++;
-            if (_tick >= uint.MaxValue) _tick = 0;
+            if (_tick >= uint.MaxValue) _tick = 0;            
 
             // 다음 프레임에서 프레임텍스트를 쓰기 위해서 이전 프레임 문자를 지운다.
-            Debug.ClearFrameText();
-            Debug.ClearPointAndLine();
+            //Debug.ClearFrameText();
+            //Debug.ClearPointAndLine();
 
             GetMouseInputFromWinAPI(Parent.Left, Parent.Top, Width, Height);
 
@@ -326,6 +342,8 @@ namespace GlWindow
 
             // fps업데이트
             FramePerSecond.Update();
+
+            MemoryProfiler.CheckFrameGC();
         }
 
         /// <summary>
@@ -411,17 +429,28 @@ namespace GlWindow
         /// <param name="height">컨트롤의 화면높이</param>
         private void GetMouseInputFromWinAPI(int ox, int oy, int width, int height)
         {
-            _windowOffSet = new Vertex2i(ox, oy);
+            // 1. 기존 객체 재사용 (새 객체 생성 없음)
+            _windowOffSet.x = ox;
+            _windowOffSet.y = oy;
 
             POINT point;
             GetCursorPos(out point);
+
             float fx = (float)(point.X - ox) / (float)width;
             float fy = (float)(point.Y - oy) / (float)height;
-            _currentMousePointFloat = new Vertex2f(fx, fy);
-            Vertex2f currentPoint = new Vertex2f(fx, fy);
-            Vertex2f delta = currentPoint - _prevMousePosition;
-            _mouseDeltaPos.x = (float)delta.x;
-            _mouseDeltaPos.y = (float)delta.y;
+
+            // 2. 기존 객체에 값만 설정 (GC 없음)
+            _currentMousePointFloat.x = fx;
+            _currentMousePointFloat.y = fy;
+
+            // 3. 연산자 오버로딩 대신 직접 계산 (GC 없음)
+            float deltaX = fx - _prevMousePosition.x;
+            float deltaY = fy - _prevMousePosition.y;
+
+            // 4. 기존 객체에 값 설정 (GC 없음)
+            _mouseDeltaPos.x = deltaX;
+            _mouseDeltaPos.y = deltaY;
+
             _mousePosition.x = point.X;
             _mousePosition.y = point.Y;
         }
@@ -486,6 +515,7 @@ namespace GlWindow
             }
         }
 
+
         /// <summary>
         /// ui2d를 업데이트한다.
         /// </summary>
@@ -496,23 +526,26 @@ namespace GlWindow
             int glLeftMargin = Parent.Width - this.Width;
             int glTopMargin = Parent.Height - this.Height;
 
-            if (_tick % 2 == 0) // 10틱마다 업데이트
+            // FPS 텍스트 업데이트
+            if (_fpsCtrl == null)
             {
-                // FPS 텍스트 업데이트
-                if (_fpsCtrl == null)
+                _fpsCtrl = CLabel("centerFps");
+            }
+            else
+            {
+                //_fpsCtrl.Text = _fpsCache.GetFpsTextIfChanged(FramePerSecond.FPS);
+                _fps = _fpsCache.GetFpsTextIfChanged(FramePerSecond.FPS);
+                if (_fps != null)
                 {
-                    _fpsCtrl = CLabel("centerFps");
-                }
-                else
-                {
-                    _fpsCtrl.Text = "프레임율(" + FramePerSecond.FPS + $"FPS {_tick}) {_camera.Direction}";
+                    this.Parent.Text = _fps;
+                    //Console.WriteLine(_fps);
                 }
             }
 
             // 디버깅 텍스트 업데이트
             if (_isVisibleDebug)
             { 
-                CLabel("debug").Text = Debug.Text;
+                //CLabel("debug").Text = Debug.Text;
             }
 
             // 마우스 위치 업데이트

@@ -10,13 +10,30 @@ namespace Ui2d
 		private List<Word> words = new List<Word>();
 		private double currentLineLength = 0;
 
-		/// <summary>
-		/// Creates an empty line.
-		/// </summary>
-		/// <param name="spaceWidth">the screen-space width of a space character.</param>
-		/// <param name="fontSize">the size of font being used.</param>
-		/// <param name="maxLength">the screen-space maximum length of a line.</param>
-		public Line(double spaceWidth, double fontSize, double maxLength)
+
+        public double LineLength { get { return currentLineLength; } }
+
+        public List<Word> Words { get { return words; } }
+
+        public double SpaceSize
+        {
+            get => spaceSize;
+            set => spaceSize = value;
+        }
+
+        public double MaxLength
+        {
+            get => maxLength;
+            set => maxLength = value;
+        }
+
+        /// <summary>
+        /// Creates an empty line.
+        /// </summary>
+        /// <param name="spaceWidth">the screen-space width of a space character.</param>
+        /// <param name="fontSize">the size of font being used.</param>
+        /// <param name="maxLength">the screen-space maximum length of a line.</param>
+        public Line(double spaceWidth, double fontSize, double maxLength)
 		{
 			this.spaceSize = spaceWidth * fontSize;
 			this.maxLength = maxLength;
@@ -45,11 +62,6 @@ namespace Ui2d
 			}
 		}
 
-		public double MaxLength { get { return maxLength; } }
-
-		public double LineLength { get { return currentLineLength; } }
-
-		public List<Word> Words { get { return words; } }
 
 	}
 }

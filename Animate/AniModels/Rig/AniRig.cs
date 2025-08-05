@@ -18,7 +18,7 @@ namespace Animate
         // 핵심 데이터
         private Matrix4x4f _bindShapeMatrix;            // 바인드 형태 행렬
         private MotionStorage _motions;                 // 모션 저장소
-        private MotionCache _motionCache;           // 모션 캐시 (블렌딩 모션 캐시)
+        private MotionCache _motionCache;               // 모션 캐시 (블렌딩 모션 캐시)
 
         private List<TexturedModel> _texturedModels;    // 텍스처 모델 목록
         private Armature _armature;                     // 골격 구조

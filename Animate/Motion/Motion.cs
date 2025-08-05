@@ -6,19 +6,39 @@ using ZetaExt;
 
 namespace Animate
 {
-    public class Motion
+    public class Motion: Motionable
     {
         string _animationName; // 애니메이션 이름
-        float _length; // 애니메이션 길이(초)
+        protected float _length; // 애니메이션 길이(초)
         Dictionary<float, KeyFrame> _keyframes; // 키프레임 딕셔너리 (시간 -> 키프레임)
+        
+        // 최적화 처리 변수
+        TimeFinder _timeFinder;
+        bool _isInitTimeFinder = false; // 시간 찾기 유틸리티 초기화 여부
+        KeyFrame _previousFrame;
+        KeyFrame _nextFrame;
 
         // ## 최적화를 위한 부분
         // 재사용이 가능하도록 사용시 사전을 비우도록 하고 초기 용량을 128로 설정
-        readonly Dictionary<string, Matrix4x4f> _currentPose = new Dictionary<string, Matrix4x4f>(128);
+        readonly Dictionary<string, Matrix4x4f> _currentPose;
 
         // [추가] 시간순 정렬된 키프레임 캐시 - ElementAt() 제거용
         private KeyFrame[] _sortedKeyframes;
         private bool _cacheValid = false;
+
+        public TimeFinder TimeFinder => _timeFinder;
+
+        /// <summary>키프레임 딕셔너리를 반환합니다.</summary>
+        public Dictionary<float, KeyFrame> Keyframes => _keyframes;
+
+        /// <summary>애니메이션 길이를 반환합니다.</summary>
+        public float Length => _length;
+
+        /// <summary>애니메이션 이름을 반환합니다.</summary>
+        public string Name => _animationName;
+
+        /// <summary>키프레임 개수를 반환합니다.</summary>
+        public int KeyFrameCount => _keyframes.Count;
 
         // [추가] 캐시 생성 및 유효성 확인
         private void EnsureCacheValid()
@@ -62,18 +82,6 @@ namespace Animate
             }
         }
 
-        /// <summary>키프레임 딕셔너리를 반환합니다.</summary>
-        public Dictionary<float, KeyFrame> Keyframes => _keyframes;
-
-        /// <summary>애니메이션 길이를 반환합니다.</summary>
-        public float Length => _length;
-
-        /// <summary>애니메이션 이름을 반환합니다.</summary>
-        public string Name => _animationName;
-
-        /// <summary>키프레임 개수를 반환합니다.</summary>
-        public int KeyFrameCount => _keyframes.Count;
-
         /// <summary>
         /// Motion 객체를 생성합니다.
         /// </summary>
@@ -83,7 +91,13 @@ namespace Animate
         {
             _animationName = name;
             _length = lengthInSeconds;
+
+            // 초기화
+            _currentPose = new Dictionary<string, Matrix4x4f>(128);
             _keyframes = new Dictionary<float, KeyFrame>();
+
+            // 시간 찾기 유틸리티
+            _timeFinder = new TimeFinder(); 
         }
 
         /// <summary>
@@ -190,46 +204,44 @@ namespace Animate
         /// 현재 포즈와 시각에 대한 뼈마다의 로컬포즈행렬(부모뼈공간)을 가져온다.
         /// </summary>
         /// <param name="motionTime">모션 시간</param>
+        /// <param name="outPose">모션 시간</param>
         /// <returns>뼈 이름별 변환 행렬 딕셔너리</returns>
-        public bool InterpolatePoseAtTime(float motionTime, Dictionary<string, Matrix4x4f> outPose)
+        public virtual bool InterpolatePoseAtTime(float motionTime, ref Dictionary<string, Matrix4x4f> outPose)
         {
+            // 모션 시간 유효성 검사
+            if (!_isInitTimeFinder)
+            {
+                _timeFinder.SetTimes(_keyframes.Keys.ToArray());
+                _isInitTimeFinder = true;
+            }
+
             // 모션이 비어 있거나 키프레임이 없는 경우
             if (FirstKeyFrame == null || KeyFrameCount == 0) return false;
 
             EnsureCacheValid();
 
-            KeyFrame previousFrame = _sortedKeyframes[0];
-            KeyFrame nextFrame = _sortedKeyframes[0];
-
-            // 키프레임 찾기
-            for (int i = 1; i < _sortedKeyframes.Length; i++)
-            {
-                nextFrame = _sortedKeyframes[i];
-                if (nextFrame.TimeStamp >= motionTime)
-                {
-                    break;
-                }
-                previousFrame = _sortedKeyframes[i];
-            }
+            _timeFinder.FindInterpolationIndices(motionTime, out int lowerIndex, out int upperIndex, out float blenderFactor);
+            _previousFrame = _sortedKeyframes[lowerIndex];
+            _nextFrame = _sortedKeyframes[upperIndex];
 
             // 진행률 계산
-            float totalTime = nextFrame.TimeStamp - previousFrame.TimeStamp;
-            float currentTime = motionTime - previousFrame.TimeStamp;
+            float totalTime = _nextFrame.TimeStamp - _previousFrame.TimeStamp;
+            float currentTime = motionTime - _previousFrame.TimeStamp;
             float progression = (totalTime > 0) ? (currentTime / totalTime) : 0f;
 
             // ✅ _currentPose 대신 outPose 직접 사용
             outPose.Clear();
 
             // ✅ 배열 할당 없이 직접 컬렉션 사용
-            string[] boneNames = previousFrame.BoneNames; // 컬렉션 직접 사용
+            string[] boneNames = _previousFrame.BoneNames; // 컬렉션 직접 사용
 
             if (boneNames == null) return false;
 
             for (int i = 0; i < boneNames.Length; i++)
             {
                 string jointName = boneNames[i];
-                BoneTransform previousTransform = previousFrame[jointName];
-                BoneTransform nextTransform = nextFrame[jointName];
+                BoneTransform previousTransform = _previousFrame[jointName];
+                BoneTransform nextTransform = _nextFrame[jointName];
 
                 BoneTransform currentTransform = BoneTransform.InterpolateSlerp(previousTransform, nextTransform, progression);
 

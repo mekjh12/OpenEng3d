@@ -13,6 +13,12 @@ namespace Ui2d
 		private double width = 0;
 		private double fontSize;
 
+        public double FontSize
+        {
+            get => fontSize;
+            set => fontSize = value;
+        }
+
 		public List<Character> Characters { get { return characters; } }
 
 		public double WordWidth { get { return width; } }

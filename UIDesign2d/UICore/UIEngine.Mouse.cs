@@ -91,28 +91,30 @@ namespace Ui2d
             UIEngine.GetCursorPos(out UIEngine.POINT point);
             int mx = point.X;
             int my = point.Y;
-
             float fx = (float)(mx - ox) / (float)width;
             float fy = (float)(my - oy) / (float)height;
-            UIEngine.CurrentMousePointFloat = new Vertex2f(fx, fy);
 
-            Vertex2f currentPoint = new Vertex2f(fx, fy);
-            Vertex2f delta = currentPoint - _prevMousePosition;
-            
-            float dx = (float)delta.x;
-            float dy = (float)delta.y;
+            UIEngine.CurrentMousePointFloat.x = fx;
+            UIEngine.CurrentMousePointFloat.y = fy;  // 버그 수정!
+
+            // 연산자 오버로딩 대신 직접 계산
+            float dx = fx - _prevMousePosition.x;
+            float dy = fy - _prevMousePosition.y;
 
             bool Lbutton = UIEngine.GetAsyncKeyState((int)UIEngine.VKeys.VK_LBUTTON) != 0;
 
-            foreach (UIEngine uIEngine in UIEngine.UIEngineList)
+            // foreach → for 변경
+            for (int i = 0; i < UIEngine.UIEngineList.Count; i++)
             {
+                var uIEngine = UIEngine.UIEngineList[i];
                 if (uIEngine.Enable && uIEngine.Visible)
                 {
                     uIEngine.UpdateInput(Lbutton, mx, my, fx, fy, dx, dy, mouseWheelValue);
                 }
             }
 
-            _prevMousePosition = currentPoint;
+            _prevMousePosition.x = fx;
+            _prevMousePosition.y = fy;
         }
     }
 }

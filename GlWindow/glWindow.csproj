@@ -81,6 +81,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FpsStringCache.cs" />
+    <Compile Include="GameInfoStringCache.cs" />
     <Compile Include="InfiniteGrid.cs" />
     <Compile Include="IRenderable.cs" />
     <Compile Include="Mouse.cs" />

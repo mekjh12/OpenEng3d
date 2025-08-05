@@ -93,9 +93,10 @@ namespace Ui2d
 			}
 
             _textContent = txt.Replace("<br>", " <br>");
-			
-			// 텍스트의 VAO, Width, Height를 설정한다.
+            
+            // 텍스트의 VAO, Width, Height를 설정한다.
             _textMesh = _fontFamily.LoadMesh(this, lineSpacing, maxLineWidth);
+
             _textMeshVAO = LoadToFontVertexArray(_textMesh.VertexPositions, _textMesh.TextureCoords);
 			_height = _textMesh.Height;
             _width = _textMesh.Width; //_height * UIEngine.Aspect; //

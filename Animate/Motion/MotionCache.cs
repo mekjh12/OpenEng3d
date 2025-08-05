@@ -2,6 +2,9 @@
 
 namespace Animate
 {
+    /// <summary>
+    /// 모션과 모션 사이의 전환을 위한 모션들의 캐시
+    /// </summary>
     public class MotionCache
     {
         // 블렌딩 모션 캐시
