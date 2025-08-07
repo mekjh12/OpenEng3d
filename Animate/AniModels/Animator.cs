@@ -188,8 +188,8 @@ namespace Animate
                     _blendMotion = motionCache.GetMotionFromCache(blendMotionName);
                     if (_blendMotion == null)
                     {
-                        //_blendMotion = MotionBlend.BlendMotion(blendMotionName, _currentMotion, _motionTime, motion, 0.0f, blendingInterval);
-                        //motionCache.AddMotionToCache(_blendMotion);
+                        _blendMotion = MotionBlender.BlendMotion(blendMotionName, _currentMotion, _motionTime, motion, 0.0f, blendingInterval);
+                        motionCache.AddMotionToCache(_blendMotion);
                     }
                     _currentMotion = _blendMotion;
                     _nextMotion = motion;

@@ -8,6 +8,7 @@ using Shader;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.NetworkInformation;
 using System.Windows.Forms;
 using ZetaExt;
 
@@ -132,6 +133,10 @@ namespace FormTools
             // 애니메이션 리타겟팅
             _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig);
             _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig2);
+
+            aniRig2.AddBlendMotion("walking-jump", "Walking", "Jump", 1.0f, 2.0f);
+            aniRig2.AddBlendMotion("walking-fastrun", "Walking", "Fast Run", 1.0f, 2.0f);
+            aniRig2.AddBlendMotion("Defeated-Dying", "Jump", "Defeated", 1.0f, 2.0f);
 
             // 애니메이션 모델에 애니메이션 초기 지정
             foreach (Human human in _humans)
@@ -260,23 +265,8 @@ namespace FormTools
             }
             else if (e.KeyCode == Keys.D4)
             {
-                _humans[0].AddBlendMotion("walking-jump", "Walking", "Jump", 1.0f, 2.0f);
-                _humans[0].AddBlendMotion("walking-fastrun", "Walking", "Fast Run", 1.0f, 2.0f);
-                _humans[0].AddBlendMotion("Defeated-Dying", "Jump", "Defeated", 1.0f, 2.0f);
+                _humans[0].SetMotion("Defeated-Dying");
             }
-            else if (e.KeyCode == Keys.D5)
-            {
-                _humans[0].SetBlendMotionFactor("walking-fastrun", 1.5f);
-            }
-            else if (e.KeyCode == Keys.D6)
-            {
-                _humans[0].SetBlendMotionFactor("walking-jump", 1.5f);
-            }
-            else if (e.KeyCode == Keys.D7)
-            {
-                _humans[0].SetBlendMotionFactor("Defeated-Dying", 1.5f);
-            }
-
             else if (e.KeyCode == Keys.H)
             {
                 _humans[0].FoldHand(true);

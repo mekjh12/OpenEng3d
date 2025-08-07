@@ -18,13 +18,13 @@ namespace Animate
         public void SetMotionImmediately(HUMAN_ACTION action)
         {
             if (action == HUMAN_ACTION.RANDOM) action = RandomAction;
-            SetMotion(Actions.ActionMap[action], _aniRig.MotionCache,  blendingInterval: 0.0f);
+            SetMotion(Actions.ActionMap[action], blendingInterval: 0.0f);
         }
 
         public void SetMotion(HUMAN_ACTION action)
         {
             if (action == HUMAN_ACTION.RANDOM) action = RandomAction;
-            SetMotion(Actions.ActionMap[action], _aniRig.MotionCache);
+            SetMotion(Actions.ActionMap[action]);
         }
 
         /// <summary>

@@ -10,16 +10,16 @@ namespace Animate
         // 블렌딩 모션 캐시
         private string _name; // 캐시 이름
         private const int MAX_BLENDMOTION_CACHE_COUNT = 64;
-        private Motion[] _blendingMotionCache;
+        private Motionable[] _blendingMotionCache;
         private int _blendMotionCacheIndex = 0; // 블렌딩 모션 캐시 인덱스
 
         public MotionCache(string name)
         {
             _name = name;
-            _blendingMotionCache = new Motion[MAX_BLENDMOTION_CACHE_COUNT];
+            _blendingMotionCache = new Motionable[MAX_BLENDMOTION_CACHE_COUNT];
         }
 
-        public void AddMotionToCache(Motion blendMotion)
+        public void AddMotionToCache(Motionable blendMotion)
         {
             if (blendMotion == null || string.IsNullOrEmpty(blendMotion.Name))
             {
@@ -37,7 +37,7 @@ namespace Animate
             _blendMotionCacheIndex++;
         }
 
-        public Motion GetMotionFromCache(string blendMotionName)
+        public Motionable GetMotionFromCache(string blendMotionName)
         {
             for (int i = 0; i < MAX_BLENDMOTION_CACHE_COUNT; i++)
             {

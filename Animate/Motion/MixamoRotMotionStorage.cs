@@ -6,7 +6,7 @@ namespace Animate
 {
     public class MixamoRotMotionStorage
     {
-        Dictionary<string, Motion> _motions = new Dictionary<string, Motion>();
+        Dictionary<string, Motionable> _motions = new Dictionary<string, Motionable>();
 
         /// <summary>
         /// 모션을 추가한다.
@@ -32,11 +32,13 @@ namespace Animate
         public void RetargetMotionsTransfer(AniRig targetAniRig)
         {
             // 믹사모 모션을 애니메이션 DAE에 리타겟팅
-            foreach (KeyValuePair<string, Motion> motionItem in _motions)
+            foreach (KeyValuePair<string, Motionable> motionItem in _motions)
             {
+                if (motionItem.Value.GetType() != typeof(Motion)) continue;
+
                 // 모션 이름과 모션 객체를 가져온다.
                 string motionName = motionItem.Key;
-                Motion srcMotion = motionItem.Value;
+                Motion srcMotion = (Motion)motionItem.Value;
 
                 // 리타켓팅 알고리즘 구현하기
                 if (srcMotion.Length > 0 && targetAniRig.DicBones != null)

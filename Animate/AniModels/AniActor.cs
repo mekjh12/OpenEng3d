@@ -64,8 +64,8 @@ namespace Animate
         /// <param name="motionName">모션 이름</param>
         public void SetMotionOnce(string motionName)
         {
-            Motion curMotion = _aniRig.Motions.GetMotion(Actions.ActionMap[_curMotion]);
-            Motion nextMotion = _aniRig.Motions.GetMotion(motionName);
+            Motionable curMotion = _aniRig.Motions.GetMotion(Actions.ActionMap[_curMotion]);
+            Motionable nextMotion = _aniRig.Motions.GetMotion(motionName);
             if (nextMotion == null) nextMotion = _aniRig.Motions.DefaultMotion;
 
             _animator.OnceFinished = () =>
@@ -83,11 +83,11 @@ namespace Animate
         /// </summary>
         /// <param name="motionName">모션 이름</param>
         /// <param name="blendingInterval">블렌딩 간격</param>
-        protected void SetMotion(string motionName, MotionCache motionCache, float blendingInterval = 0.2f)
+        public void SetMotion(string motionName, float blendingInterval = 0.2f)
         {
             _animator.OnceFinished = null;
 
-            Motion motion = _aniRig.Motions.GetMotion(motionName);
+            Motionable motion = _aniRig.Motions.GetMotion(motionName);
 
             if (motion == null)
             {
@@ -95,24 +95,16 @@ namespace Animate
             }
             else
             {
-                _animator.SetMotion(motion, motionCache, blendingInterval);
+                _animator.SetMotion(motion, _aniRig.MotionCache, blendingInterval);
             }
 
             _animator.Play();
         }
 
-        public void AddBlendMotion(string name, string motionName1, string motionName2, float blendFactor1, float blendFactor2)
-        {
-            _aniRig.AddBlendMotion(name, motionName1, motionName2, blendFactor1, blendFactor2);
-        }
-
         public void SetBlendMotionFactor(string name, float blendFactor)
         {
-            BlendMotion blendMotion = _aniRig.GetBlendMotion(name);
-            _animator.OnceFinished = null;
-            _animator.SetMotion(blendMotion, null, 0.0f);
+            BlendMotion blendMotion = (BlendMotion)_aniRig.GetBlendMotion(name);
             blendMotion.SetBlendFactor(blendFactor);
-            _animator.Play();
         }
 
         /// <summary>

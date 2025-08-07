@@ -31,7 +31,7 @@ namespace Animate
         public void SetMotion(string motionName, MotionCache motionCache, float blendingInterval = 0.2f)
         {
             _animator.OnceFinished = null;
-            Motion motion = _aniRig.Motions.GetMotion(motionName);
+            Motionable motion = _aniRig.Motions.GetMotion(motionName);
 
             if (motion == null)
             {
@@ -45,8 +45,8 @@ namespace Animate
 
         public void SetMotionOnce(string motionName, HUMAN_ACTION returnMotion)
         {
-            Motion curMotion = _aniRig.Motions.GetMotion(Actions.ActionMap[_curMotion]);
-            Motion nextMotion = _aniRig.Motions.GetMotion(motionName);
+            Motionable curMotion = _aniRig.Motions.GetMotion(Actions.ActionMap[_curMotion]);
+            Motionable nextMotion = _aniRig.Motions.GetMotion(motionName);
             if (nextMotion == null) nextMotion = _aniRig.Motions.DefaultMotion;
 
             _animator.OnceFinished = () =>

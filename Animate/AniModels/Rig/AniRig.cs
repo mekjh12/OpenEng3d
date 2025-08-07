@@ -31,8 +31,6 @@ namespace Animate
         // 추가 본 부위 인덱스 딕셔너리
         protected Dictionary<ATTACHMENT_SLOT, int> _dicIndices;
 
-        private Dictionary<string, BlendMotion> _blendMotions;
-
         // -----------------------------------------------------------------------
         // 속성
         // -----------------------------------------------------------------------
@@ -106,39 +104,25 @@ namespace Animate
         /// 리그에 모션을 추가한다.
         /// </summary>
         /// <param name="motion">추가할 모션</param>
-        public void AddMotion(Motion motion)
+        public void AddMotion(Motionable motion)
         {
             Motions.AddMotion(motion);
         }
 
 
-        public BlendMotion GetBlendMotion(string name)
+        public Motionable GetBlendMotion(string name)
         {
-            if (_blendMotions != null && _blendMotions.TryGetValue(name, out BlendMotion blendMotion))
-            {
-                return blendMotion;
-            }
-            return null; // 블렌드 모션이 없으면 null 반환
+            return _motions.GetMotion(name);
         }
 
-        public void AddBlendMotion(string name, string motionName1, string motionName2, float blendFactor1, float blendFactor2)
+        public void AddBlendMotion(string newMotionName, string motionName1, string motionName2, float blendFactor1, float blendFactor2)
         {
-            Motion motion1 = _motions.GetMotion(motionName1);
-            Motion motion2 = _motions.GetMotion(motionName2);
+            Motionable motion1 = _motions.GetMotion(motionName1);
+            Motionable motion2 = _motions.GetMotion(motionName2);
 
-            if (_blendMotions == null) _blendMotions = new Dictionary<string, BlendMotion>();
-
-            if (_blendMotions.TryGetValue(name, out BlendMotion existingBlendMotion))
-            {
-                // 이미 존재하는 블렌드 모션이 있다면 업데이트
-                existingBlendMotion = new BlendMotion(name, motion1, motion2, blendFactor1, blendFactor2, blendFactor1);
-                return;
-            }
-            else
-            {
-                // 새로운 블렌드 모션 생성
-                _blendMotions[name] = new BlendMotion(name, motion1, motion2, blendFactor1, blendFactor2, blendFactor1);
-            }
+            BlendMotion newBlendMotion = new BlendMotion(newMotionName, motion1, motion2, blendFactor1, blendFactor2, blendFactor1);
+            _motions.AddMotion(newBlendMotion);
+            newBlendMotion.SetBlendFactor((blendFactor1 + blendFactor2) * 0.5f);
         }
 
         /// <summary>
