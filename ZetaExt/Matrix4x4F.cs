@@ -420,5 +420,46 @@ namespace ZetaExt
             return myProjection1;
         }
 
+        /// <summary>
+        /// 행렬의 회전 부분을 정규화하여 직교 행렬(Orthonormal Matrix)로 만든다.
+        /// 이는 행렬에 누적된 스케일이나 비틀림(shear) 오차를 제거하여 순수 회전 행렬로 만듭니다.
+        /// </summary>
+        /// <param name="mat">원본 Matrix4x4f</param>
+        /// <returns>회전 부분이 정규화된 새로운 Matrix4x4f</returns>
+        public static Matrix4x4f Orthonormalize(this Matrix4x4f mat)
+        {
+            // 행렬의 열 벡터(축)를 추출
+            Vertex3f x_axis = mat.Column0.Vertex3f();
+            Vertex3f y_axis = mat.Column1.Vertex3f();
+            Vertex3f z_axis = mat.Column2.Vertex3f();
+
+            // Gram-Schmidt 과정을 사용하여 축을 직교정규화(Orthonormalize)합니다.
+            // 1. 첫 번째 축(x_axis)을 정규화합니다.
+            x_axis = x_axis.Normalized;
+
+            // 2. 두 번째 축(y_axis)을 x_axis에 수직이 되도록 만듭니다.
+            //    y_axis에서 x_axis 방향 성분을 뺀 후, 정규화합니다.
+            Vertex3f projection_y_on_x = x_axis * y_axis.Dot(x_axis);
+            y_axis = (y_axis - projection_y_on_x).Normalized;
+
+            // 3. 세 번째 축(z_axis)은 x_axis와 y_axis에 모두 수직이 되도록
+            //    외적(cross product)을 사용하여 계산합니다.
+            //    이렇게 하면 z_axis는 x, y 축에 자동으로 수직이 됩니다.
+            z_axis = x_axis.Cross(y_axis);
+            // 외적 결과는 이미 정규화되어 있을 가능성이 높지만,
+            // 안정성을 위해 다시 한번 정규화하는 것이 좋습니다.
+            z_axis = z_axis.Normalized;
+
+            // 보간에 사용될 최종 행렬을 생성
+            Matrix4x4f orthoMat = mat.Clone();
+
+            // 정규화된 축으로 회전 부분을 재구성
+            // Column 함수를 사용하여 새로운 축 벡터로 행렬의 열을 채웁니다.
+            orthoMat.Column(0, x_axis);
+            orthoMat.Column(1, y_axis);
+            orthoMat.Column(2, z_axis);
+
+            return orthoMat;
+        }
     }
 }

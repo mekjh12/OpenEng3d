@@ -480,6 +480,12 @@ namespace Animate
                     q.W = (a21 - a12) / s;
                 }
             }
+
+            if (q.X == 0 && q.Y==0 && q.Z == 0 && q.W == 0)
+            {
+                Console.WriteLine(q);
+            }
+
             return q;
         }
 

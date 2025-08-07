@@ -1,6 +1,6 @@
 ﻿namespace Animate
 {
-    public class MotionBlend
+    public class MotionBlender
     {
         private static Motion _blendMotion;
 

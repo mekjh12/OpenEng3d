@@ -32,15 +32,13 @@ namespace Animate
         protected TransformComponent _transformComponent; // 트랜스폼 컴포넌트
 
 
-        BlendMotion _blendMotion;
-
         // 속성
         public string Name => _name;
         public AniRig AniRig => _aniRig;
         public Animator Animator => _animator;
         public Transform Transform => _transform;
         public float MotionTime => _animator.MotionTime;
-        public Motion CurrentMotion => _animator.CurrentMotion;
+        public Motionable CurrentMotion => _animator.CurrentMotion;
         public Matrix4x4f[] AnimatedTransforms => _animator.AnimatedTransforms;
         public Matrix4x4f ModelMatrix => _transform.Matrix4x4f;
 
@@ -103,23 +101,19 @@ namespace Animate
             _animator.Play();
         }
 
-        public void SetBlendMotion(float blendFactor)
+        public void AddBlendMotion(string name, string motionName1, string motionName2, float blendFactor1, float blendFactor2)
         {
-            if (_blendMotion == null)
-            {
-            }
-
-            Motion motion1 = _aniRig.Motions.GetMotion("Walking");
-            Motion motion2 = _aniRig.Motions.GetMotion("Fast Run");
-
-            _blendMotion = new BlendMotion(_animator.BoneTraversalOrder, motion1, motion2, 1.0f, 2.0f, blendFactor);
-
-            _animator.OnceFinished = null;
-            _animator.SetMotion(_blendMotion, null, 0.0f);
-
-            _animator.Play();
+            _aniRig.AddBlendMotion(name, motionName1, motionName2, blendFactor1, blendFactor2);
         }
 
+        public void SetBlendMotionFactor(string name, float blendFactor)
+        {
+            BlendMotion blendMotion = _aniRig.GetBlendMotion(name);
+            _animator.OnceFinished = null;
+            _animator.SetMotion(blendMotion, null, 0.0f);
+            blendMotion.SetBlendFactor(blendFactor);
+            _animator.Play();
+        }
 
         /// <summary>
         /// 업데이트를 통하여 애니메이션 행렬을 업데이트한다.

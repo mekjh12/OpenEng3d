@@ -33,8 +33,11 @@ namespace AutoGenEnums
 			{HUMAN_ACTION.AXE_ATTACK_DOWNWARD, "Axe Attack Downward"},
 			{HUMAN_ACTION.AXE_STANDING_IDLE, "Axe Standing Idle"},
 			{HUMAN_ACTION.BREATHING_IDLE, "Breathing Idle"},
+			{HUMAN_ACTION.CLIMBING_LADDER, "Climbing Ladder"},
+			{HUMAN_ACTION.DYING, "Dying"},
 			{HUMAN_ACTION.FAST_RUN, "Fast Run"},
 			{HUMAN_ACTION.GUNPLAY, "Gunplay"},
+			{HUMAN_ACTION.INJURED_RUN_JUMP, "Injured Run Jump"},
 			{HUMAN_ACTION.INTERPOLATION_POSE, "Interpolation Pose"},
 			{HUMAN_ACTION.JUMP, "Jump"},
 			{HUMAN_ACTION.LEFT_STRAFE_WALK, "Left Strafe Walk"},
@@ -42,12 +45,13 @@ namespace AutoGenEnums
 			{HUMAN_ACTION.RUNNING, "Running"},
 			{HUMAN_ACTION.SLOW_RUN, "Slow Run"},
 			{HUMAN_ACTION.STANDING_IDLE, "Standing Idle"},
+			{HUMAN_ACTION.STANDING_JUMP, "Standing Jump"},
 			{HUMAN_ACTION.WALKING, "Walking"},
 			{HUMAN_ACTION.WALKING_BACKWARDS, "Walking Backwards"},
 		};
 
         public static string GetRandomAction() => ActionMap.Values.ElementAt(new Random().Next(ActionMap.Count));
-        public static int Count => 15;
+        public static int Count => 19;
     }
 
     public enum HUMAN_ACTION
@@ -56,17 +60,21 @@ namespace AutoGenEnums
         AXE_ATTACK_DOWNWARD = 1,
         AXE_STANDING_IDLE = 2,
         BREATHING_IDLE = 3,
-        FAST_RUN = 4,
-        GUNPLAY = 5,
-        INTERPOLATION_POSE = 6,
-        JUMP = 7,
-        LEFT_STRAFE_WALK = 8,
-        RIGHT_STRAFE_WALK = 9,
-        RUNNING = 10,
-        SLOW_RUN = 11,
-        STANDING_IDLE = 12,
-        WALKING = 13,
-        WALKING_BACKWARDS = 14,
+        CLIMBING_LADDER = 4,
+        DYING = 5,
+        FAST_RUN = 6,
+        GUNPLAY = 7,
+        INJURED_RUN_JUMP = 8,
+        INTERPOLATION_POSE = 9,
+        JUMP = 10,
+        LEFT_STRAFE_WALK = 11,
+        RIGHT_STRAFE_WALK = 12,
+        RUNNING = 13,
+        SLOW_RUN = 14,
+        STANDING_IDLE = 15,
+        STANDING_JUMP = 16,
+        WALKING = 17,
+        WALKING_BACKWARDS = 18,
         // 추가된 액션들
 		RANDOM,
         STOP,

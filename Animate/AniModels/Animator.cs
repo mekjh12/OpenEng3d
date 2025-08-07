@@ -31,9 +31,9 @@ namespace Animate
 
         // 모션 관련 변수
         private AnimationState _animationState = AnimationState.Normal; // 현재 애니메이션 상태
-        private Motion _currentMotion; // 현재 모션
-        private Motion _blendMotion; // 블렌딩 모션
-        private Motion _nextMotion; // 다음 모션
+        private Motionable _currentMotion; // 현재 모션
+        private Motionable _blendMotion; // 블렌딩 모션
+        private Motionable _nextMotion; // 다음 모션
 
         private Bone _rootBone; // 루트 본
 
@@ -74,7 +74,7 @@ namespace Animate
             set => _actionOnceFinished = value;
         }
 
-        public Motion CurrentMotion => _currentMotion;
+        public Motionable CurrentMotion => _currentMotion;
         public bool IsPlaying => _isPlaying;
 
         /// <summary>
@@ -87,7 +87,7 @@ namespace Animate
         }
 
         /// <summary>
-        /// 생성자
+        /// 생성자//
         /// </summary>
         /// <param name="rootBone">루트 본</param>
         public Animator(Bone rootBone)
@@ -99,7 +99,7 @@ namespace Animate
             _animatedTransforms = new Matrix4x4f[MAX_BONES_COUNT];
             _rootTransforms = new Matrix4x4f[MAX_BONES_COUNT];
 
-            // ✅ 초기화 시 순회 순서를 미리 계산
+            // 초기화 시 순회 순서를 미리 계산
             BuildBoneTraversalOrder(rootBone);
 
         }
@@ -156,20 +156,15 @@ namespace Animate
             _animatedTransforms[index] = transform;
         }
 
-        /// <summary>
-        /// 모션을 지정한다.
-        /// </summary>
-        /// <param name="motion">설정할 모션</param>
-        /// <param name="blendingInterval">블렌딩 시간(초)</param>
-        public void SetMotion(Motion motion, MotionCache motionCache, float blendingInterval = 0.2f)
+        public void SetMotion(Motionable motion, MotionCache motionCache, float blendingInterval = 0.2f)
         {
             // 모션이 null인 경우 예외를 발생시킨다.
             if (motion == null)
                 throw new ArgumentNullException(nameof(motion));
 
             // 블렌딩 간격이 음수인 경우 0으로 설정
-            if (blendingInterval < 0) blendingInterval = 0.0f; 
-            
+            if (blendingInterval < 0) blendingInterval = 0.0f;
+
             // 현재 모션이 null이면 새로운 모션을 설정하고,
             if (_currentMotion == null)
             {
@@ -193,8 +188,8 @@ namespace Animate
                     _blendMotion = motionCache.GetMotionFromCache(blendMotionName);
                     if (_blendMotion == null)
                     {
-                        _blendMotion = MotionBlend.BlendMotion(blendMotionName, _currentMotion, _motionTime, motion, 0.0f, blendingInterval);
-                        motionCache.AddMotionToCache(_blendMotion);
+                        //_blendMotion = MotionBlend.BlendMotion(blendMotionName, _currentMotion, _motionTime, motion, 0.0f, blendingInterval);
+                        //motionCache.AddMotionToCache(_blendMotion);
                     }
                     _currentMotion = _blendMotion;
                     _nextMotion = motion;
@@ -219,14 +214,6 @@ namespace Animate
         public void Stop()
         {
             _isPlaying = false;
-        }
-
-        /// <summary>
-        /// 애니메이션 재생/정지를 토글한다.
-        /// </summary>
-        public void Toggle()
-        {
-            _isPlaying = !_isPlaying;
         }
 
         /// <summary>

@@ -1,4 +1,5 @@
-﻿using Model3d;
+﻿using Microsoft.SqlServer.Server;
+using Model3d;
 using OpenGL;
 using System;
 using System.Collections.Generic;
@@ -11,6 +12,10 @@ namespace Animate
     /// </summary>
     public class AniRig
     {
+        // -----------------------------------------------------------------------
+        // 멤버변수
+        // -----------------------------------------------------------------------
+
         // 파일 정보
         private string _filename;           // 파일 경로
         private readonly string _name;      // 리그 이름
@@ -26,6 +31,11 @@ namespace Animate
         // 추가 본 부위 인덱스 딕셔너리
         protected Dictionary<ATTACHMENT_SLOT, int> _dicIndices;
 
+        private Dictionary<string, BlendMotion> _blendMotions;
+
+        // -----------------------------------------------------------------------
+        // 속성
+        // -----------------------------------------------------------------------
 
         // 공개 속성
         public Dictionary<string, Bone> DicBones => _armature.DicBones;
@@ -36,6 +46,10 @@ namespace Animate
         public List<TexturedModel> TexturedModels => _texturedModels;
         public string Name => _name;
         public Matrix4x4f BindShapeMatrix => _bindShapeMatrix;
+
+        // -----------------------------------------------------------------------
+        // 생성자
+        // -----------------------------------------------------------------------
 
         /// <summary>
         /// AniRig 생성자
@@ -95,6 +109,36 @@ namespace Animate
         public void AddMotion(Motion motion)
         {
             Motions.AddMotion(motion);
+        }
+
+
+        public BlendMotion GetBlendMotion(string name)
+        {
+            if (_blendMotions != null && _blendMotions.TryGetValue(name, out BlendMotion blendMotion))
+            {
+                return blendMotion;
+            }
+            return null; // 블렌드 모션이 없으면 null 반환
+        }
+
+        public void AddBlendMotion(string name, string motionName1, string motionName2, float blendFactor1, float blendFactor2)
+        {
+            Motion motion1 = _motions.GetMotion(motionName1);
+            Motion motion2 = _motions.GetMotion(motionName2);
+
+            if (_blendMotions == null) _blendMotions = new Dictionary<string, BlendMotion>();
+
+            if (_blendMotions.TryGetValue(name, out BlendMotion existingBlendMotion))
+            {
+                // 이미 존재하는 블렌드 모션이 있다면 업데이트
+                existingBlendMotion = new BlendMotion(name, motion1, motion2, blendFactor1, blendFactor2, blendFactor1);
+                return;
+            }
+            else
+            {
+                // 새로운 블렌드 모션 생성
+                _blendMotions[name] = new BlendMotion(name, motion1, motion2, blendFactor1, blendFactor2, blendFactor1);
+            }
         }
 
         /// <summary>

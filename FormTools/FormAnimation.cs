@@ -260,28 +260,23 @@ namespace FormTools
             }
             else if (e.KeyCode == Keys.D4)
             {
-                _humans[0].SetBlendMotion(1.0f);
+                _humans[0].AddBlendMotion("walking-jump", "Walking", "Jump", 1.0f, 2.0f);
+                _humans[0].AddBlendMotion("walking-fastrun", "Walking", "Fast Run", 1.0f, 2.0f);
+                _humans[0].AddBlendMotion("Defeated-Dying", "Jump", "Defeated", 1.0f, 2.0f);
             }
             else if (e.KeyCode == Keys.D5)
             {
-                _humans[0].SetBlendMotion(1.2f);
+                _humans[0].SetBlendMotionFactor("walking-fastrun", 1.5f);
             }
             else if (e.KeyCode == Keys.D6)
             {
-                _humans[0].SetBlendMotion(1.4f);
+                _humans[0].SetBlendMotionFactor("walking-jump", 1.5f);
             }
             else if (e.KeyCode == Keys.D7)
             {
-                _humans[0].SetBlendMotion(1.6f);
+                _humans[0].SetBlendMotionFactor("Defeated-Dying", 1.5f);
             }
-            else if (e.KeyCode == Keys.D8)
-            {
-                _humans[0].SetBlendMotion(1.8f);
-            }
-            else if (e.KeyCode == Keys.D9)
-            {
-                _humans[0].SetBlendMotion(2.0f);
-            }
+
             else if (e.KeyCode == Keys.H)
             {
                 _humans[0].FoldHand(true);

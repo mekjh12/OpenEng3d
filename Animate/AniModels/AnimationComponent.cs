@@ -10,7 +10,7 @@ namespace Animate
         private HUMAN_ACTION _curMotion = HUMAN_ACTION.BREATHING_IDLE;
 
         public Animator Animator => _animator;
-        public Motion CurrentMotion => _animator.CurrentMotion;
+        public Motionable CurrentMotion => _animator.CurrentMotion;
         public float MotionTime => _animator.MotionTime;
 
         public AnimationComponent(AniRig aniRig, Bone rootBone)

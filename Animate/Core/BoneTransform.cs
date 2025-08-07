@@ -93,30 +93,56 @@ namespace Animate
         /// <param name="frameB">끝 변환 행렬</param>
         /// <param name="progression">보간 진행률 (0.0 ~ 1.0)</param>
         /// <returns>보간된 변환 행렬</returns>
+        /// <summary>
+        /// 두 변환 행렬 사이를 구면 선형 보간(Slerp)합니다.
+        /// 쿼터니언 보간 시 발생할 수 있는 '튀는' 현상을 방지하는 로직이 포함되어 있습니다.
+        /// </summary>
+        /// <param name="frameA">시작 변환 행렬</param>
+        /// <param name="frameB">종료 변환 행렬</param>
+        /// <param name="progression">진행도 (0.0 ~ 1.0)</param>
+        /// <returns>보간된 변환 행렬</returns>
         public static Matrix4x4f InterpolateSlerp(Matrix4x4f frameA, Matrix4x4f frameB, float progression)
         {
             // 위치 보간 (선형)
             Vertex3f pos = InterpolateLerp(frameA.Position, frameB.Position, progression);
 
-            // 회전 보간 (구면 선형 보간)
             ZetaExt.Quaternion qa = frameA.ToQuaternion();
             ZetaExt.Quaternion qb = frameB.ToQuaternion();
+            
+            // 구면 선형 보간 (Slerp)
             ZetaExt.Quaternion rot = qa.Interpolate(qb, progression);
 
             // 회전 행렬 생성
             Matrix4x4f res = (Matrix4x4f)rot;
 
-            // 원본 스케일 정보 보존하여 최종 행렬 구성
-            Vertex3f c0 = res.Column0.Vertex3f() * frameA.Column0.Vertex3f().Norm();
-            Vertex3f c1 = res.Column1.Vertex3f() * frameA.Column1.Vertex3f().Norm();
-            Vertex3f c2 = res.Column2.Vertex3f() * frameA.Column2.Vertex3f().Norm();
+            // frameA와 frameB의 스케일 추출
+            float scaleA_X = frameA.Column0.Vertex3f().Norm();
+            float scaleA_Y = frameA.Column1.Vertex3f().Norm();
+            float scaleA_Z = frameA.Column2.Vertex3f().Norm();
 
+            float scaleB_X = frameB.Column0.Vertex3f().Norm();
+            float scaleB_Y = frameB.Column1.Vertex3f().Norm();
+            float scaleB_Z = frameB.Column2.Vertex3f().Norm();
+
+            // 스케일 선형 보간
+            float finalScale_X = scaleA_X + (scaleB_X - scaleA_X) * progression;
+            float finalScale_Y = scaleA_Y + (scaleB_Y - scaleA_Y) * progression;
+            float finalScale_Z = scaleA_Z + (scaleB_Z - scaleA_Z) * progression;
+
+            // 보간된 스케일을 회전 행렬에 적용
+            Vertex3f c0 = res.Column0.Vertex3f().Normalized * finalScale_X;
+            Vertex3f c1 = res.Column1.Vertex3f().Normalized * finalScale_Y;
+            Vertex3f c2 = res.Column2.Vertex3f().Normalized * finalScale_Z;
+
+            // 최종 변환 행렬 조합
             res = new Matrix4x4f(c0.x, c0.y, c0.z, 0,
-                                c1.x, c1.y, c1.z, 0,
-                                c2.x, c2.y, c2.z, 0,
-                                pos.x, pos.y, pos.z, 1);
+                                 c1.x, c1.y, c1.z, 0,
+                                 c2.x, c2.y, c2.z, 0,
+                                 pos.x, pos.y, pos.z, 1);
+
             return res;
         }
+
 
         /// <summary>
         /// 두 BoneTransform 간의 구면 선형 보간<br/>

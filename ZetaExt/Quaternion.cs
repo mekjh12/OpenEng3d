@@ -160,7 +160,7 @@ namespace ZetaExt
                 return;
             }
 
-            throw new InvalidOperationException("zero magnitude quaternion");
+            //throw new InvalidOperationException("zero magnitude quaternion");
         }
 
         public void Conjugate()
@@ -310,14 +310,118 @@ namespace ZetaExt
             return result;
         }
 
+        /// <summary>
+        /// 두 쿼터니온 간의 구면 선형 보간(Slerp)을 수행합니다.
+        /// </summary>
+        /// <param name="q2">목표 쿼터니온</param>
+        /// <param name="progression">보간 진행도 (0.0 ~ 1.0)</param>
+        /// <returns>보간된 쿼터니온</returns>
         public Quaternion Interpolate(Quaternion q2, float progression)
         {
-            // 클래스를 정비할 필요가 있음.
-            System.Numerics.Quaternion p
-                = new System.Numerics.Quaternion((float)_Vector.x, (float)_Vector.y, (float)_Vector.z, (float)_CosAngle);
-            System.Numerics.Quaternion q = new System.Numerics.Quaternion(q2.X, q2.Y, q2.Z, q2.W);
-            System.Numerics.Quaternion r = System.Numerics.Quaternion.Slerp(p, q, progression);
-            return new Quaternion(r.X, r.Y, r.Z, r.W);
+            // 진행도를 0~1 사이로 제한
+            progression = Math.Max(0.0f, Math.Min(1.0f, progression));
+
+            // 시작점이면 현재 쿼터니온 반환
+            if (progression <= float.Epsilon)
+                return new Quaternion(this);
+
+            // 끝점이면 목표 쿼터니온 반환
+            if (progression >= 1.0f - float.Epsilon)
+                return new Quaternion(q2);
+
+            // 현재 쿼터니온을 q1으로 복사
+            Quaternion q1 = new Quaternion(this);
+
+            // 두 쿼터니온의 내적 계산
+            double dot = q1.X * q2.X + q1.Y * q2.Y + q1.Z * q2.Z + q1.W * q2.W;
+
+            // 쿼터니온 플리핑 방지 - 내적이 음수면 한 쪽을 뒤집음
+            // (같은 회전을 나타내는 두 쿼터니온 중 더 가까운 경로 선택)
+            if (dot < 0.0)
+            {
+                q2 = -q2;
+                dot = -dot;
+            }
+
+            // 내적을 [-1, 1] 범위로 제한 (부동소수점 오차 방지)
+            dot = Math.Max(-1.0, Math.Min(1.0, dot));
+
+            double theta0, sinTheta0, theta, sinTheta;
+            double s0, s1; // 보간 계수
+
+            // 두 쿼터니온이 거의 같은 경우 (선형 보간 사용)
+            if (dot > 0.9995)
+            {
+                // 선형 보간 (Linear interpolation)
+                s0 = 1.0 - progression;
+                s1 = progression;
+            }
+            else
+            {
+                // 구면 선형 보간 (Spherical linear interpolation)
+                theta0 = Math.Acos(dot);        // 두 쿼터니온 사이의 각도
+                sinTheta0 = Math.Sin(theta0);   // sin(theta0)
+                theta = theta0 * progression;   // 보간된 각도
+                sinTheta = Math.Sin(theta);     // sin(theta)
+
+                s0 = Math.Sin(theta0 - theta) / sinTheta0;  // 첫 번째 쿼터니온의 계수
+                s1 = sinTheta / sinTheta0;                  // 두 번째 쿼터니온의 계수
+            }
+
+            // 보간된 쿼터니온 계산
+            double x = s0 * q1.X + s1 * q2.X;
+            double y = s0 * q1.Y + s1 * q2.Y;
+            double z = s0 * q1.Z + s1 * q2.Z;
+            double w = s0 * q1.W + s1 * q2.W;
+
+            // 결과 쿼터니온 생성 및 정규화
+            Quaternion result = new Quaternion(x, y, z, w);
+            result.Normalize();
+
+            return result;
+        }
+
+
+
+
+        /// <param name="q2">두 번째 쿼터니언</param>
+        /// <returns>두 쿼터니언의 내적 값</returns>
+        public static float Dot(Quaternion q1, Quaternion q2)
+        {
+            return q1.X * q2.X + q1.Y * q2.Y + q1.Z * q2.Z + q1.W * q2.W;
+        }
+
+        /// <summary>
+        /// 쿼터니언의 단항 마이너스 연산자 (모든 성분에 -1을 곱함)
+        /// 쿼터니언 플리핑 방지를 위해 사용됩니다.
+        /// </summary>
+        /// <param name="q">대상 쿼터니언</param>
+        /// <returns>모든 성분이 음수로 변환된 쿼터니언</returns>
+        public static Quaternion operator -(Quaternion q)
+        {
+            return new Quaternion(-q.X, -q.Y, -q.Z, -q.W);
+        }
+
+        /// <summary>
+        /// 두 쿼터니언의 빼기 연산자
+        /// </summary>
+        /// <param name="q1">첫 번째 쿼터니언</param>
+        /// <param name="q2">두 번째 쿼터니언</param>
+        /// <returns>두 쿼터니언의 차</returns>
+        public static Quaternion operator -(Quaternion q1, Quaternion q2)
+        {
+            return new Quaternion(q1.X - q2.X, q1.Y - q2.Y, q1.Z - q2.Z, q1.W - q2.W);
+        }
+
+        /// <summary>
+        /// 두 쿼터니언의 더하기 연산자 (보완용)
+        /// </summary>
+        /// <param name="q1">첫 번째 쿼터니언</param>
+        /// <param name="q2">두 번째 쿼터니언</param>
+        /// <returns>두 쿼터니언의 합</returns>
+        public static Quaternion operator +(Quaternion q1, Quaternion q2)
+        {
+            return new Quaternion(q1.X + q2.X, q1.Y + q2.Y, q1.Z + q2.Z, q1.W + q2.W);
         }
 
         public override string ToString()

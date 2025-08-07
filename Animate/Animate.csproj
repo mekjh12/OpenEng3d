@@ -93,7 +93,7 @@
     <Compile Include="Core\MeshTriangles.cs" />
     <Compile Include="Motion\MixamoRotMotionStorage.cs" />
     <Compile Include="Motion\Motion.cs" />
-    <Compile Include="Motion\MotionBlend.cs" />
+    <Compile Include="Motion\MotionBlender.cs" />
     <Compile Include="Motion\MotionCache.cs" />
     <Compile Include="Motion\MotionStorage.cs" />
     <Compile Include="Loader\ObjLoader.cs" />
