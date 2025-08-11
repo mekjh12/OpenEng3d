@@ -18,6 +18,7 @@ namespace Animate
 
         // 초기화 시 한 번만 생성되는 순회 순서 배열
         private Bone[] _boneTraversalOrder;
+        private Bone _rootBone;
         private Matrix4x4f[] _parentTransforms; // 각 본의 부모 변환을 미리 계산해둘 배열
         private int[] _parentIndices; // 각 본의 부모 인덱스
         // 멤버 변수 (Update함수를 통해서 행렬이 업데이트된다.)
@@ -30,7 +31,9 @@ namespace Animate
         // -----------------------------------------------------------------------
         // 속성
         // -----------------------------------------------------------------------
-            
+
+        public Bone RootBone => _rootBone;
+
         public bool IsApplySpeed
         {
             get => _isApplySpeed; 

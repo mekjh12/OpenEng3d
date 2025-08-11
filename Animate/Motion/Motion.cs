@@ -215,8 +215,12 @@ namespace Animate
         /// <param name="motionTime">모션 시간</param>
         /// <param name="outPose">모션 시간</param>
         /// <returns>뼈 이름별 변환 행렬 딕셔너리</returns>
-        public virtual bool InterpolatePoseAtTime(float motionTime, ref Dictionary<string, Matrix4x4f> outPose)
+        public virtual bool InterpolatePoseAtTime(float motionTime, ref Dictionary<string, Matrix4x4f> outPose
+            , Bone searchStartBone = null)
         {
+            // 뼈가 지정되지 않은 경우 루트 본을 사용
+            if (searchStartBone == null) searchStartBone = _rootBone;
+
             // 모션 시간 유효성 검사 및 초기화
             if (!_isInitTimeFinder)
             {

@@ -164,7 +164,8 @@ namespace Animate
 
             // 전진 키워드 확인
             if (lowerName.Contains("walk") || lowerName.Contains("run") || lowerName.Contains("jog") ||
-                lowerName.Contains("sprint") || lowerName.Contains("forward") || lowerName.Contains("march"))
+                lowerName.Contains("sprint") || lowerName.Contains("forward") || lowerName.Contains("march") ||
+                lowerName.Contains("jump"))
             {
                 return MovementType.Forward;
             }

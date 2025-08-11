@@ -10,45 +10,63 @@ namespace Animate
         // 멤버변수
         // -----------------------------------------------------------------------
 
-        string _name;
-        float _periodTime;
-        Motionable _defaultMotion;
-        Dictionary<MixamoBone, Motionable> _layered;
-        Bone[] _bones;
-        Motionable[] _motionables;
+        private string _name;
+        private float _periodTime;
+        private float _speed;
+        private FootStepAnalyzer.MovementType _movementType;
+
+        private Motionable _defaultMotion;
+        private Dictionary<MixamoBone, Motionable> _layered;
+        private Bone[] _bones;
+        private Motionable[] _motionables;
 
         // 최적화를 위한 캐시
-        List<Bone> _boneListCache;
-        List<Motionable> _motionListCache;
-        Dictionary<string, Matrix4x4f> _tempPose1;
-        Dictionary<string, Matrix4x4f> _tempPose2;
+        private List<Bone> _boneListCache;
+        private List<Motionable> _motionListCache;
+        private Dictionary<Motionable, Dictionary<string, Matrix4x4f>> _poseCaches;
 
         // -----------------------------------------------------------------------
         // 속성
         // -----------------------------------------------------------------------
 
         public string Name => _name;
-
         public float PeriodTime => _periodTime;
-
-        public float Speed => 0.0f;
-
-        public FootStepAnalyzer.MovementType MovementType => FootStepAnalyzer.MovementType.Stationary;
-
-
+        public float Speed => _speed;
+        public FootStepAnalyzer.MovementType MovementType => _movementType;
+        public Bone RootBone => _defaultMotion.RootBone;
 
         // -----------------------------------------------------------------------
         // 생성자
         // -----------------------------------------------------------------------
 
+        /// <summary>
+        /// 레이어 모션 생성자
+        /// motionable은 이동을 위하여 하체를 위주로 먼저 설정한다.
+        /// </summary>
+        /// <param name="newName">모션 이름</param>
+        /// <param name="motionable">기본 모션</param>
+        /// <param name="periodTime">주기 시간 (-1이면 기본 모션 시간 사용)</param>
         public LayeredMotion(string newName, Motionable motionable, float periodTime = -1.0f)
         {
             _name = newName;
             _defaultMotion = motionable;
             _periodTime = periodTime;
-            if (periodTime < 0.0f)  _periodTime = motionable.PeriodTime;
+            _speed = motionable.Speed;
+            _movementType = motionable.MovementType;
+
+            if (periodTime < 0.0f)
+                _periodTime = motionable.PeriodTime;
         }
 
+        // -----------------------------------------------------------------------
+        // 공개 메서드
+        // -----------------------------------------------------------------------
+
+        /// <summary>
+        /// 특정 뼈대에 레이어 모션 추가
+        /// </summary>
+        /// <param name="maskBoneName">적용할 뼈대</param>
+        /// <param name="motionable">적용할 모션</param>
         public void AddLayer(MixamoBone maskBoneName, Motionable motionable)
         {
             if (_layered == null)
@@ -56,20 +74,103 @@ namespace Animate
                 _layered = new Dictionary<MixamoBone, Motionable>();
             }
 
-            if (_layered.ContainsKey(maskBoneName))
-            {
-                _layered[maskBoneName] = motionable; // 이미 존재하면 업데이트
-            }
-            else
-            {
-                _layered.Add(maskBoneName, motionable); // 새로 추가
-            }
+            _layered[maskBoneName] = motionable;
         }
 
         /// <summary>
-        /// 지정된 시간의 키프레임을 복제합니다.
-        /// 레이어 블렌드 모션에서는 각 레이어의 키프레임을 조합합니다.
+        /// 뼈대 순회 캐시 구축
         /// </summary>
+        /// <param name="rootBone">루트 뼈대</param>
+        public void BuildTraverseBoneNamesCache(Bone rootBone)
+        {
+            // 캐시 초기화
+            InitializeCaches();
+
+            // 포즈 캐시 초기화
+            if (_poseCaches == null)
+            {
+                _poseCaches = new Dictionary<Motionable, Dictionary<string, Matrix4x4f>>();
+
+                // 기본 모션 캐시 생성
+                _poseCaches[_defaultMotion] = new Dictionary<string, Matrix4x4f>();
+
+                // 레이어 모션 캐시 생성
+                foreach (var kvp in _layered)
+                {
+                    _poseCaches[kvp.Value] = new Dictionary<string, Matrix4x4f>();
+                }
+            }
+
+            // 뼈대 계층구조 순회
+            TraverseBoneHierarchy(rootBone);
+
+            // 배열로 변환
+            _bones = _boneListCache.ToArray();
+            _motionables = _motionListCache.ToArray();
+        }
+
+        /// <summary>
+        /// 지정된 시간의 포즈 보간
+        /// </summary>
+        /// <param name="motionTime">모션 시간</param>
+        /// <param name="outPose">출력 포즈</param>
+        /// <param name="searchStartBone">검색 시작 뼈대</param>
+        /// <returns>성공 여부</returns>
+        public bool InterpolatePoseAtTime(float motionTime, ref Dictionary<string, Matrix4x4f> outPose, Bone searchStartBone = null)
+        {
+            // 뼈가 지정되지 않은 경우 루트 본을 사용
+            if (searchStartBone == null)
+                searchStartBone = _defaultMotion.RootBone;
+
+            // 초기화 확인
+            if (_bones == null || _motionables == null)
+            {
+                throw new Exception("사용하기 전에 BuildTraverseBoneNamesCache 함수를 먼저 실행하세요.");
+            }
+
+            // 기본 모션 포즈 계산
+            var defaultPose = _poseCaches[_defaultMotion];
+            defaultPose.Clear();
+            float newMotionTime = motionTime * _defaultMotion.PeriodTime / _periodTime;
+            _defaultMotion.InterpolatePoseAtTime(newMotionTime, ref defaultPose);
+
+            // 레이어 모션들 포즈 계산
+            foreach (var kvp in _layered)
+            {
+                Motionable motionable = kvp.Value;
+                var pose = _poseCaches[motionable];
+                pose.Clear();
+
+                newMotionTime = motionTime * motionable.PeriodTime / _periodTime;
+                motionable.InterpolatePoseAtTime(newMotionTime, ref pose);
+            }
+
+            // 최종 포즈 조합
+            outPose.Clear();
+
+            // 각 본에 대해 해당하는 모션에서 포즈를 가져와서 결합
+            for (int i = 0; i < _bones.Length; i++)
+            {
+                Bone bone = _bones[i];
+                Motionable motion = _motionables[i];
+
+                if (motion == null) continue;
+
+                // 해당 본의 변환 행렬이 있으면 출력 포즈에 추가
+                if (_poseCaches[motion].ContainsKey(bone.Name))
+                {
+                    outPose[bone.Name] = _poseCaches[motion][bone.Name];
+                }
+            }
+
+            return outPose.Count > 0;
+        }
+
+        /// <summary>
+        /// 지정된 시간의 키프레임 복제
+        /// </summary>
+        /// <param name="time">복제할 시간</param>
+        /// <returns>복제된 키프레임</returns>
         public KeyFrame CloneKeyFrame(float time)
         {
             KeyFrame resultFrame = new KeyFrame(time);
@@ -103,10 +204,16 @@ namespace Animate
             return resultFrame;
         }
 
-        public void BuildTraverseBoneNamesCache(Bone rootBone)
+        // -----------------------------------------------------------------------
+        // 내부 메서드
+        // -----------------------------------------------------------------------
+
+        /// <summary>
+        /// 캐시 초기화
+        /// </summary>
+        private void InitializeCaches()
         {
-            // 최적화된 캐시를 사용하기 위해 기존 리스트를 재사용합니다.
-            if (_boneListCache == null) 
+            if (_boneListCache == null)
             {
                 _boneListCache = new List<Bone>();
             }
@@ -128,27 +235,32 @@ namespace Animate
             {
                 _layered = new Dictionary<MixamoBone, Motionable>();
             }
+        }
 
-            // 스택을 사용하여 본을 순회합니다.
-            Stack<Bone> stack = new Stack<Bone>();
+        /// <summary>
+        /// 뼈대 계층구조 순회
+        /// </summary>
+        /// <param name="rootBone">루트 뼈대</param>
+        private void TraverseBoneHierarchy(Bone rootBone)
+        {
+            Stack<Bone> boneStack = new Stack<Bone>();
             Stack<Motionable> motionStack = new Stack<Motionable>();
 
-            // 루트 본과 기본 모션을 스택에 추가합니다.
-            stack.Push(rootBone);
-            Motionable currentMotion = _defaultMotion;
-            motionStack.Push(currentMotion);
+            // 루트 본과 기본 모션을 스택에 추가
+            boneStack.Push(rootBone);
+            motionStack.Push(_defaultMotion);
 
-            while (stack.Count > 0)
+            while (boneStack.Count > 0)
             {
-                // 스택에서 본을 꺼내고 모션을 꺼냅니다.
-                Bone bone = stack.Pop();
-                currentMotion = motionStack.Pop();
+                // 스택에서 본과 모션을 꺼냄
+                Bone bone = boneStack.Pop();
+                Motionable currentMotion = motionStack.Pop();
 
                 _boneListCache.Add(bone);
                 _motionListCache.Add(currentMotion);
 
-                // 하위 본을 탐색한다.
-                for (int i=bone.Children.Count-1; i >= 0; i--)
+                // 하위 본 탐색
+                for (int i = bone.Children.Count - 1; i >= 0; i--)
                 {
                     Bone child = bone.Children[i];
 
@@ -162,65 +274,10 @@ namespace Animate
                             : currentMotion;
 
                         motionStack.Push(childMotion);
-                        stack.Push(child);
+                        boneStack.Push(child);
                     }
                 }
             }
-
-            _bones = _boneListCache.ToArray();
-            _motionables = _motionListCache.ToArray();
-
-            /*
-            for (int i = 0; i < _bones.Length; i++)
-            {
-                Console.WriteLine($"{_bones[i].Name} / {_motionables[i].Name}");
-            }
-            */
-        }
-
-        public bool InterpolatePoseAtTime(float motionTime, ref Dictionary<string, Matrix4x4f> outPose)
-        {
-            if (_bones == null || _motionables == null)
-            {
-                throw new System.Exception("사용하기 전에 BuildTraverseBoneNamesCache 함수를 먼저 실행하세요.");
-            }
-
-            if (_tempPose1==null) 
-            {
-                _tempPose1 = new Dictionary<string, Matrix4x4f>();
-            }
-            else
-            {
-                _tempPose1.Clear();
-            }
-
-            outPose.Clear();
-
-            // 각 본에 대해 해당하는 모션에서 포즈를 가져와서 결합
-            for (int i = 0; i < _bones.Length; i++)
-            {
-                Bone bone = _bones[i];
-                Motionable motion = _motionables[i];
-
-                if (motion == null) continue;
-
-                // 임시 포즈 딕셔너리 클리어
-                _tempPose1.Clear();
-
-                // 해당 모션에서 현재 시간의 포즈를 가져옴
-                float newMotionTime = motionTime * motion.PeriodTime / _periodTime;
-
-                if (motion.InterpolatePoseAtTime(newMotionTime, ref _tempPose1))
-                {
-                    // 해당 본의 변환 행렬이 있으면 출력 포즈에 추가
-                    if (_tempPose1.ContainsKey(bone.Name))
-                    {
-                        outPose[bone.Name] = _tempPose1[bone.Name];
-                    }
-                }
-            }
-
-            return outPose.Count > 0;
         }
     }
 }

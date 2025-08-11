@@ -13,6 +13,8 @@ namespace Animate
     {
         protected HUMAN_ACTION _prevMotion = HUMAN_ACTION.BREATHING_IDLE; // 이전 모션 상태
         protected HUMAN_ACTION _curMotion = HUMAN_ACTION.BREATHING_IDLE; // 현재 모션 상태
+        //protected HORSE_ACTION _prevMotion = HORSE_ACTION.STAND;
+        //protected HORSE_ACTION _curMotion = HORSE_ACTION.STAND;
 
         protected string _name; // 액터 이름
         protected AniRig _aniRig; // 애니메이션 리그
@@ -174,7 +176,6 @@ namespace Animate
                 }
                 else if (_renderingMode == RenderingMode.Static)
                 {
-                    //Renderer.Render(staticShader, entity, camera);
                 }
                 Gl.Enable(EnableCap.CullFace);
             }

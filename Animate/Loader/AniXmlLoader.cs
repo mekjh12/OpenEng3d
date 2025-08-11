@@ -623,8 +623,10 @@ namespace Animate
             foreach (XmlNode boneAnimation in libraryAnimations[0].ChildNodes)
             {
                 // boneAnimation은 <animation> 태그로 되어있다.
-                string boneName = boneAnimation.Attributes["id"].Value;
-                boneName = boneName.Substring(0, boneName.Length - 5);
+                string boneName = boneAnimation.Attributes["name"].Value;
+
+                boneName = boneName.Substring(0, boneName.Length);
+
                 if (boneName == "Armature") continue;
 
                 // 애니메이션 소스의 시간과 행렬을 담을 리스트를 생성한다.
@@ -725,6 +727,9 @@ namespace Animate
                 {
                     string boneName = item.Key;
                     Dictionary<float, Matrix4x4f> source = item.Value;
+
+                    boneName = boneName.Replace("_pose_m", "");
+                    boneName = boneName.Replace("Armature_Armature_", "");
 
                     Bone bone = targetAniRig.Armature[boneName];
                     if (bone == null) continue;

@@ -59,6 +59,8 @@ namespace Animate
             }
         }
 
+        public Bone RootBone => _motion1.RootBone;
+
         // -----------------------------------------------------------------------
         // 생성자
         // -----------------------------------------------------------------------
@@ -152,8 +154,11 @@ namespace Animate
             _periodTime = _motion1.PeriodTime * (1.0f - alpha) + _motion2.PeriodTime * alpha;
         }
 
-        public bool InterpolatePoseAtTime(float motionTime, ref Dictionary<string, Matrix4x4f> outPose)
+        public bool InterpolatePoseAtTime(float motionTime, ref Dictionary<string, Matrix4x4f> outPose, Bone searchStartBone = null)
         {
+            // 뼈가 지정되지 않은 경우 루트 본을 사용
+            if (searchStartBone == null) searchStartBone = _motion1.RootBone;
+
             float n = motionTime / _periodTime;
             float t1 = _motion1.PeriodTime * n;
             float t2 = _motion2.PeriodTime * n;

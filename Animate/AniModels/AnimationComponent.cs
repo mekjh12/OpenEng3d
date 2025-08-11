@@ -6,8 +6,8 @@ namespace Animate
     {
         private Animator _animator;
         private AniRig _aniRig;
-        private HUMAN_ACTION _prevMotion = HUMAN_ACTION.BREATHING_IDLE;
-        private HUMAN_ACTION _curMotion = HUMAN_ACTION.BREATHING_IDLE;
+        protected HUMAN_ACTION _prevMotion = HUMAN_ACTION.BREATHING_IDLE;
+        protected HUMAN_ACTION _curMotion = HUMAN_ACTION.BREATHING_IDLE;
 
         public Animator Animator => _animator;
         public Motionable CurrentMotion => _animator.CurrentMotion;

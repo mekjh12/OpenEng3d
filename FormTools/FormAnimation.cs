@@ -25,7 +25,7 @@ namespace FormTools
         AxisShader _axisShader;
 
         MixamoRotMotionStorage _mixamoRotMotionStorage;
-        List<Human> _humans = new List<Human>();
+        List<AniActor> _aniActors = new List<AniActor>();
         private int _lastGen0Count = 0;
         private int _tick = 0;
 
@@ -95,16 +95,12 @@ namespace FormTools
 
             PrimateRig aniRig = new PrimateRig(PROJECT_PATH + @"\Res\Actor\abe\abe.dae", isLoadAnimation: false);
             PrimateRig aniRig2 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Guybrush\Guybrush.dae", isLoadAnimation: false);
-            PrimateRig aniRig3 = new PrimateRig(PROJECT_PATH + @"\Res\Lara Croft Bikini 2.dae", isLoadAnimation: false);
 
-            _humans.Add(new Human($"Guybrush", aniRig2));
-            _humans[0].Transform.IncreasePosition(4, 0.0f, 0);
+            _aniActors.Add(new Human($"Guybrush", aniRig2));
+            _aniActors[0].Transform.IncreasePosition(4, 0.0f, 0);
 
-            _humans.Add(new Human($"abe", aniRig));
-            _humans[1].Transform.IncreasePosition(2, 0, 0);
-
-            _humans.Add(new Human($"Piccolo", aniRig3));
-            _humans[2].Transform.IncreasePosition(0, 0, 0);
+            _aniActors.Add(new Human($"abe", aniRig));
+            _aniActors[1].Transform.IncreasePosition(2, 0, 0);
 
             // [테스트] 캐릭터 수를 점진적으로 증가
             int TEST_CHARACTER_COUNT = 1; // 이 값을 변경하면서 테스트
@@ -112,19 +108,19 @@ namespace FormTools
             int xDelta = 0;
             for (int i = 0; i < TEST_CHARACTER_COUNT; i++)
             {
-                _humans.Add(new Human($"test{i}", aniRig2));
+                _aniActors.Add(new Human($"test{i}", aniRig2));
                 xDelta += 2; // X 위치를 증가
                 if (i % 20 == 0 && i != 0)
                 {
                     xDelta = 0; // 20개마다 X 위치를 초기화
                     yDelta += 2; // Y 위치를 증가
                 }
-                _humans[i].Transform.IncreasePosition(xDelta, yDelta, 0);
+                _aniActors[i].Transform.IncreasePosition(xDelta, yDelta, 0);
             }
 
             // 믹사모 애니메이션 로드
             _mixamoRotMotionStorage = new MixamoRotMotionStorage();
-            foreach (string fileName in Directory.GetFiles(PROJECT_PATH + "\\Res\\Action\\"))
+            foreach (string fileName in Directory.GetFiles(PROJECT_PATH + "\\Res\\Action\\Human\\"))
             {
                 if (Path.GetExtension(fileName).Equals(".dae"))
                 {
@@ -136,22 +132,47 @@ namespace FormTools
             // 애니메이션 리타겟팅
             _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig);
             _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig2);
-            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig3);
 
-            aniRig2.AddBlendMotion("walking-jump", "Walking", "Jump", 1.0f, 2.0f);
-            aniRig2.AddBlendMotion("walking-fastrun", "Walking", "Slow Run", 1.0f, 2.0f);
-            aniRig2.AddBlendMotion("Defeated-Dying", "Jump", "Defeated", 1.0f, 2.0f);
+            //aniRig2.AddBlendMotion("walking-jump", "Walking", "Jump", 1.0f, 2.0f);
+            //aniRig2.AddBlendMotion("walking-fastrun", "Walking", "Slow Run", 1.0f, 2.0f);
+            //aniRig2.AddBlendMotion("Defeated-Dying", "Jump", "Defeated", 1.0f, 2.0f);
 
-            LayeredMotion layerBlendMotion = new LayeredMotion("layerWalking", aniRig2.GetMotion("Jump"));
-            layerBlendMotion.AddLayer(MixamoBone.Spine1, aniRig2.GetMotion("Walking"));
-            layerBlendMotion.AddLayer(MixamoBone.Head, aniRig2.GetMotion("Annoyed Head Shake"));
+            LayeredMotion layerBlendMotion = new LayeredMotion("layerWalking", aniRig2.GetMotion("Capoeira"));
+            layerBlendMotion.AddLayer(MixamoBone.Spine1, aniRig2.GetMotion("a-T-Pose"));
             layerBlendMotion.BuildTraverseBoneNamesCache(aniRig2.Armature.RootBone);
             aniRig2.AddMotion(layerBlendMotion);
 
-            // 애니메이션 모델에 애니메이션 초기 지정
-            foreach (Human human in _humans)
+            /*
+            // =========================================
+            HorseRig horseRig = new HorseRig(PROJECT_PATH + @"\Res\Actor\Horse\Horse.dae", isLoadAnimation: false);
+
+            _mixamoRotMotionStorage = new MixamoRotMotionStorage();
+            foreach (string fileName in Directory.GetFiles(PROJECT_PATH + "\\Res\\Action\\Horse\\"))
             {
-                human.SetMotion(HUMAN_ACTION.A_T_POSE);
+                if (Path.GetExtension(fileName).Equals(".dae"))
+                {
+                    Motion motion = AniXmlLoader.LoadMixamoMotion(horseRig, fileName);
+                    _mixamoRotMotionStorage.AddMotion(motion);
+                }
+            }
+            _aniActors.Add(new Horse($"horse", horseRig));
+            _aniActors[0].Transform.IncreasePosition(1, 0, 0);
+            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: horseRig);
+            
+            */
+
+
+            // 애니메이션 모델에 애니메이션 초기 지정
+            foreach (AniActor aniActor in _aniActors)
+            {
+                if (aniActor is Human)
+                {
+                    (aniActor as Human).SetMotion(HUMAN_ACTION.A_T_POSE);
+                }
+                else if (aniActor is Horse)
+                {
+                    (aniActor as Horse).SetMotion(HORSE_ACTION.STAND);
+                }
             }
 
             // 아이템 장착
@@ -159,9 +180,9 @@ namespace FormTools
             TexturedModel hat = LoadModel(PROJECT_PATH + @"\Res\Items\Merchant_Hat.dae")[0];
             TexturedModel sword = LoadModel(PROJECT_PATH + @"\Res\Items\cutter_gold.dae")[0];
 
-            _humans[0].EquipItem(ATTACHMENT_SLOT.Head,"hat0", "hat", hat, 200.0f, positionY: -6.0f, pitch:-20);
-            _humans[0].EquipItem(ATTACHMENT_SLOT.RightHand, "sword1", "sword", sword, 1.0f, yaw: -90);
-            _humans[0].EquipItem(ATTACHMENT_SLOT.LeftHand, "sword0", "sword", sword, 1.0f, yaw: 90);
+            //_aniActors[0].EquipItem(ATTACHMENT_SLOT.Head,"hat0", "hat", hat, 200.0f, positionY: -6.0f, pitch:-20);
+            //_aniActors[0].EquipItem(ATTACHMENT_SLOT.RightHand, "sword1", "sword", sword, 1.0f, yaw: -90);
+            //_aniActors[0].EquipItem(ATTACHMENT_SLOT.LeftHand, "sword0", "sword", sword, 1.0f, yaw: 90);
 
             // 셰이더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
@@ -186,9 +207,9 @@ namespace FormTools
             // 시간 간격을 초 단위로 변환
             float duration = deltaTime * 0.001f;
 
-            foreach (Human human in _humans)
+            foreach (AniActor aniActor in _aniActors)
             {
-                human.Update(deltaTime);
+                aniActor.Update(deltaTime);
             }
 
             /*
@@ -219,14 +240,14 @@ namespace FormTools
 
             Matrix4x4f vp = camera.VPMatrix;
 
-            foreach (Human human in _humans)
+            foreach (AniActor aniActor in _aniActors)
             {
-                human.Render(camera, vp, _animateShader, _staticShader, isBoneVisible: true);
+                aniActor.Render(camera, vp, _animateShader, _staticShader, isBoneVisible: true);
             }
 
-            //foreach (Human human in _humans)
+            foreach (AniActor aniActor in _aniActors)
             {
-               //_axisShader.RenderAxes(human.ModelMatrix, human.Animator.RootTransforms, vp);
+               //_axisShader.RenderAxes(aniActor.ModelMatrix, aniActor.Animator.RootTransforms, vp, axisLength: 0.2f);
             }
 
             // 폴리곤 모드 설정
@@ -253,50 +274,34 @@ namespace FormTools
         {
             if (e.KeyCode == Keys.F)
             {
-                foreach (Human human in _humans)
+                foreach (AniActor aniActor in _aniActors)
                 {
-                    human.PolygonMode = human.PolygonMode == PolygonMode.Fill ? PolygonMode.Line : PolygonMode.Fill;
+                    aniActor.PolygonMode = aniActor.PolygonMode == PolygonMode.Fill ? PolygonMode.Line : PolygonMode.Fill;
                 }
             }
             else if (e.KeyCode == Keys.D1)
             {
-                for (int i = 0; i < _humans.Count; i++)
+                for (int i = 0; i < _aniActors.Count; i++)
                 {
-                    _humans[i].SetMotion(HUMAN_ACTION.RANDOM);
+                    (_aniActors[i] as Human).SetMotion(HUMAN_ACTION.RANDOM);
                 }
-            }
-            else if (e.KeyCode == Keys.D2)
-            {
-                _humans[Rand.NextInt(0, _humans.Count - 1)].SetMotionOnce(HUMAN_ACTION.RANDOM);
-            }
-            else if (e.KeyCode == Keys.D3)
-            {
-                _humans[Rand.NextInt(0, _humans.Count - 1)].SetMotionImmediately(HUMAN_ACTION.RANDOM);
             }
             else if (e.KeyCode == Keys.D4)
             {
-                _humans[0].SetMotion("layerWalking");
+                _aniActors[0].SetMotion("layerWalking");
             }
             else if (e.KeyCode == Keys.D5)
             {
-                _humans[0].Transform.SetPosition(0, 0, 0);
-                _humans[1].Transform.SetPosition(1, 0, 0);
-                _humans[2].Transform.SetPosition(2, 0, 0);
-            }
-            else if (e.KeyCode == Keys.H)
-            {
-                _humans[0].FoldHand(true);
+                _aniActors[0].Transform.SetPosition(0, 0, 0);
+                _aniActors[1].Transform.SetPosition(1, 0, 0);
+                _aniActors[2].Transform.SetPosition(2, 0, 0);
             }
             else if (e.KeyCode == Keys.R)
             {
-                if (_humans[0].Animator.IsPlaying)
-                    _humans[0].Animator.Stop();
+                if (_aniActors[0].Animator.IsPlaying)
+                    _aniActors[0].Animator.Stop();
                 else
-                    _humans[0].Animator.Play();
-            }
-            else if (e.KeyCode == Keys.J)
-            {
-                _humans[0].UnfoldHand(true);
+                    _aniActors[0].Animator.Play();
             }
             else if (e.KeyCode == Keys.D0)
             {
