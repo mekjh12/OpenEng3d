@@ -746,7 +746,7 @@ namespace Animate
 
                         // 키프레임을 추가하고 본포즈를 추가한다.
                         motion.AddKeyFrame(time);
-                        motion.KeyFrame(time).AddBoneTransform(boneName, boneTransform);
+                        motion[time].AddBoneTransform(boneName, boneTransform);
                     }
                 }
             }
@@ -906,7 +906,7 @@ namespace Animate
                             BoneTransform boneTransform = new BoneTransform(position, q);
 
                             // 해당 시간의 키프레임에 본 변환 데이터 추가
-                            motion.KeyFrame(time).AddBoneTransform(boneName, boneTransform);
+                            motion[time].AddBoneTransform(boneName, boneTransform);
                         }
                     }
                 }

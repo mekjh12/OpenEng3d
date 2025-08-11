@@ -8,7 +8,6 @@ using Shader;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.NetworkInformation;
 using System.Windows.Forms;
 using ZetaExt;
 
@@ -96,12 +95,16 @@ namespace FormTools
 
             PrimateRig aniRig = new PrimateRig(PROJECT_PATH + @"\Res\Actor\abe\abe.dae", isLoadAnimation: false);
             PrimateRig aniRig2 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Guybrush\Guybrush.dae", isLoadAnimation: false);
+            PrimateRig aniRig3 = new PrimateRig(PROJECT_PATH + @"\Res\Lara Croft Bikini 2.dae", isLoadAnimation: false);
 
             _humans.Add(new Human($"Guybrush", aniRig2));
             _humans[0].Transform.IncreasePosition(4, 0.0f, 0);
 
             _humans.Add(new Human($"abe", aniRig));
             _humans[1].Transform.IncreasePosition(2, 0, 0);
+
+            _humans.Add(new Human($"Piccolo", aniRig3));
+            _humans[2].Transform.IncreasePosition(0, 0, 0);
 
             // [테스트] 캐릭터 수를 점진적으로 증가
             int TEST_CHARACTER_COUNT = 1; // 이 값을 변경하면서 테스트
@@ -133,10 +136,17 @@ namespace FormTools
             // 애니메이션 리타겟팅
             _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig);
             _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig2);
+            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig3);
 
             aniRig2.AddBlendMotion("walking-jump", "Walking", "Jump", 1.0f, 2.0f);
-            aniRig2.AddBlendMotion("walking-fastrun", "Walking", "Fast Run", 1.0f, 2.0f);
+            aniRig2.AddBlendMotion("walking-fastrun", "Walking", "Slow Run", 1.0f, 2.0f);
             aniRig2.AddBlendMotion("Defeated-Dying", "Jump", "Defeated", 1.0f, 2.0f);
+
+            LayeredMotion layerBlendMotion = new LayeredMotion("layerWalking", aniRig2.GetMotion("Jump"));
+            layerBlendMotion.AddLayer(MixamoBone.Spine1, aniRig2.GetMotion("Walking"));
+            layerBlendMotion.AddLayer(MixamoBone.Head, aniRig2.GetMotion("Annoyed Head Shake"));
+            layerBlendMotion.BuildTraverseBoneNamesCache(aniRig2.Armature.RootBone);
+            aniRig2.AddMotion(layerBlendMotion);
 
             // 애니메이션 모델에 애니메이션 초기 지정
             foreach (Human human in _humans)
@@ -265,7 +275,13 @@ namespace FormTools
             }
             else if (e.KeyCode == Keys.D4)
             {
-                _humans[0].SetMotion("Defeated-Dying");
+                _humans[0].SetMotion("layerWalking");
+            }
+            else if (e.KeyCode == Keys.D5)
+            {
+                _humans[0].Transform.SetPosition(0, 0, 0);
+                _humans[1].Transform.SetPosition(1, 0, 0);
+                _humans[2].Transform.SetPosition(2, 0, 0);
             }
             else if (e.KeyCode == Keys.H)
             {

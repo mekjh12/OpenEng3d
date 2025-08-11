@@ -5,8 +5,10 @@ using System.Linq;
 namespace Animate
 {
     /// <summary>
-    /// (W,T1, t1, s1)
-    /// (R,T2, t2, s2)
+    /// 두 행동으로 블렌딩된 모션을 나타냅니다.
+    /// <code>
+    /// (M1, T1, t1, s1), (M2, T2, t2, s2)를 이용하여 blendFactor를 적용한 모션을 생성합니다.
+    /// </code>
     /// </summary>
     public class BlendMotion : Motionable
     {
@@ -40,15 +42,30 @@ namespace Animate
         // -----------------------------------------------------------------------
 
         public string Name => _name;
-        public float Length => _periodTime;
+        public float PeriodTime => _periodTime;
+        public float Speed => _motion1.Speed * (1 - _blendFactor) + _motion2.Speed * _blendFactor;
+        public FootStepAnalyzer.MovementType MovementType
+        {
+            get
+            {
+                if (_motion1.MovementType == _motion2.MovementType)
+                {
+                    return _motion1.MovementType;
+                }
+                else
+                {
+                    return FootStepAnalyzer.MovementType.Stationary;
+                }
+            }
+        }
 
         // -----------------------------------------------------------------------
         // 생성자
         // -----------------------------------------------------------------------
 
-        public BlendMotion(string name, Motionable motion1, Motionable motion2, float factor1, float factor2, float blendFactor)
+        public BlendMotion(string newName, Motionable motion1, Motionable motion2, float factor1, float factor2, float blendFactor)
         {
-            _name = name;
+            _name = newName;
 
             _motion1 = motion1;
             _motion2 = motion2;
@@ -72,8 +89,8 @@ namespace Animate
             }
 
             float n = time / _periodTime;
-            float t1 = _motion1.Length * n;
-            float t2 = _motion2.Length * n;
+            float t1 = _motion1.PeriodTime * n;
+            float t2 = _motion2.PeriodTime * n;
 
             if (_outPose1 == null) _outPose1 = new Dictionary<string, Matrix4x4f>();
             if (_outPose2 == null) _outPose2 = new Dictionary<string, Matrix4x4f>();
@@ -132,15 +149,15 @@ namespace Animate
         {
             _blendFactor = blendFactor;
             float alpha = (_blendFactor - _factor1) / (_factor2 - _factor1);
-            _periodTime = _motion1.Length * (1.0f - alpha) + _motion2.Length * alpha;
+            _periodTime = _motion1.PeriodTime * (1.0f - alpha) + _motion2.PeriodTime * alpha;
         }
 
         public bool InterpolatePoseAtTime(float motionTime, ref Dictionary<string, Matrix4x4f> outPose)
         {
             float n = motionTime / _periodTime;
-            float t1 = _motion1.Length * n;
-            float t2 = _motion2.Length * n;
-
+            float t1 = _motion1.PeriodTime * n;
+            float t2 = _motion2.PeriodTime * n;
+                
             if (_outPose1 == null) _outPose1 = new Dictionary<string, Matrix4x4f>();
             if (_outPose2 == null) _outPose2 = new Dictionary<string, Matrix4x4f>();
 
@@ -194,6 +211,5 @@ namespace Animate
 
             return true;
         }
-
     }
 }

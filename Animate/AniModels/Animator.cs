@@ -75,6 +75,7 @@ namespace Animate
         }
 
         public Motionable CurrentMotion => _currentMotion;
+
         public bool IsPlaying => _isPlaying;
 
         /// <summary>
@@ -238,10 +239,10 @@ namespace Animate
                 _motionTime += deltaTime;
 
                 // 모션의 재생이 역인 경우에 마이너스 시간을 조정한다.
-                if (_motionTime < 0) _motionTime = _currentMotion.Length;
+                if (_motionTime < 0) _motionTime = _currentMotion.PeriodTime;
 
                 // 모션 완료 시
-                if (_motionTime >= _currentMotion.Length)
+                if (_motionTime >= _currentMotion.PeriodTime)
                 {
                     _motionTime = 0.0f;
 

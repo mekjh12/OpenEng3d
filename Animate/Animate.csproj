@@ -77,6 +77,7 @@
     <Compile Include="Armature\BoneKinematics.cs" />
     <Compile Include="Armature\BoneTransforms.cs" />
     <Compile Include="Armature\BoneTraverse.cs" />
+    <Compile Include="Armature\MixamoBone.cs" />
     <Compile Include="Core\IComponent.cs" />
     <Compile Include="Loader\AniXmlLoader.cs" />
     <Compile Include="Armature\Bone.cs" />
@@ -85,7 +86,10 @@
     <Compile Include="Kinematic\Clothes.cs" />
     <Compile Include="Core\ColorPoint.cs" />
     <Compile Include="AniModels\Human.cs" />
+    <Compile Include="Motion\LayeredMotion.cs" />
     <Compile Include="Motion\BlendMotion.cs" />
+    <Compile Include="Motion\FootStepAnalyzer.cs" />
+    <Compile Include="Motion\Motion.Utils.cs" />
     <Compile Include="Motion\Motionable.cs" />
     <Compile Include="Motion\KeyFrame.cs" />
     <Compile Include="Kinematic\Kinetics.cs" />
@@ -95,6 +99,7 @@
     <Compile Include="Motion\Motion.cs" />
     <Compile Include="Motion\MotionBlender.cs" />
     <Compile Include="Motion\MotionCache.cs" />
+    <Compile Include="Motion\MotionExtensions.cs" />
     <Compile Include="Motion\MotionStorage.cs" />
     <Compile Include="Loader\ObjLoader.cs" />
     <Compile Include="Motion\TimeFinder.cs" />

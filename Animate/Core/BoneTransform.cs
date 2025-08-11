@@ -11,13 +11,47 @@ namespace Animate
     /// </summary>
     public readonly struct BoneTransform : IEquatable<BoneTransform>
     {
+        // -----------------------------------------------------------------------
+        // 멤버변수
+        // -----------------------------------------------------------------------
+
         readonly Vertex3f _scaling;   // 본의 스케일 (x, y, z 배율)
         readonly Vertex3f _position;  // 본의 위치 (x, y, z 좌표) 
         readonly ZetaExt.Quaternion _rotation; // 본의 회전 (쿼터니언)
 
+        private static BoneTransform _identity = new BoneTransform(
+            Vertex3f.Zero,
+            ZetaExt.Quaternion.Identity,
+            Vertex3f.One
+        );
+
+        // -----------------------------------------------------------------------
+        // 속성
+        // -----------------------------------------------------------------------
+
         public Vertex3f Scaling => _scaling;
         public Vertex3f Position => _position;
         public ZetaExt.Quaternion Rotation => _rotation;
+        public static BoneTransform Identity => _identity;
+
+        /// <summary>
+        /// 본의 로컬 변환 행렬<br/>
+        /// T(이동) * R(회전) * S(스케일) 순서로 변환 적용
+        /// </summary>
+        public Matrix4x4f LocalTransform
+        {
+            get
+            {
+                Matrix4x4f T = Matrix4x4f.Translated(_position.x, _position.y, _position.z);
+                Matrix4x4f R = (Matrix4x4f)_rotation;
+                Matrix4x4f S = Matrix4x4f.Scaled(_scaling.x, _scaling.y, _scaling.z);
+                return T * R * S; // TRS 순서
+            }
+        }
+
+        // -----------------------------------------------------------------------
+        // 생성자
+        // -----------------------------------------------------------------------
 
         /// <summary>위치만 지정하는 생성자 (기본: 회전 없음, 스케일 1.0)</summary>
         public BoneTransform(Vertex3f position)
@@ -41,30 +75,6 @@ namespace Animate
             _position = position;
             _rotation = rotation;
             _scaling = scaling;
-        }
-
-        private static BoneTransform _identity = new BoneTransform(
-            Vertex3f.Zero,
-            ZetaExt.Quaternion.Identity,
-            Vertex3f.One
-        );
-
-        /// <summary>기본 BoneTransform (원점, 회전 없음, 스케일 1.0)</summary>
-        public static BoneTransform Identity => _identity;
-
-        /// <summary>
-        /// 본의 로컬 변환 행렬<br/>
-        /// T(이동) * R(회전) * S(스케일) 순서로 변환 적용
-        /// </summary>
-        public Matrix4x4f LocalTransform
-        {
-            get
-            {
-                Matrix4x4f T = Matrix4x4f.Translated(_position.x, _position.y, _position.z);
-                Matrix4x4f R = (Matrix4x4f)_rotation;
-                Matrix4x4f S = Matrix4x4f.Scaled(_scaling.x, _scaling.y, _scaling.z);
-                return T * R * S; // TRS 순서
-            }
         }
 
         /// <summary>스케일을 변경한 새로운 BoneTransform 반환</summary>
@@ -142,7 +152,6 @@ namespace Animate
 
             return res;
         }
-
 
         /// <summary>
         /// 두 BoneTransform 간의 구면 선형 보간<br/>

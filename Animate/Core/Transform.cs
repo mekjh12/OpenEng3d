@@ -78,6 +78,16 @@ namespace Animate
             SetPosition(Position + Forward.Normalized * delta);
         }
 
+        public void GoLeft(float delta)
+        {
+            SetPosition(Position + Left.Normalized * delta);
+        }
+
+        public void GoRight(float delta)
+        {
+            SetPosition(Position + Right.Normalized * delta);
+        }
+
         /// <summary>전진 방향을 설정하여 로컬 좌표계 재구성</summary>
         public void SetForward(Vertex3f forward)
         {
@@ -90,7 +100,15 @@ namespace Animate
             _transform = mat;
         }
 
-        private void SetPosition(Vertex3f pos)
+        public void SetPosition(float x, float y, float z)
+        {
+            _transform[3, 0] = x;
+            _transform[3, 1] = y;
+            _transform[3, 2] = z;
+        }
+
+
+        public void SetPosition(Vertex3f pos)
         {
             _transform[3, 0] = pos.x;
             _transform[3, 1] = pos.y;

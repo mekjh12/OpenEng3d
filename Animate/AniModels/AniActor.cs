@@ -103,7 +103,7 @@ namespace Animate
 
         public void SetBlendMotionFactor(string name, float blendFactor)
         {
-            BlendMotion blendMotion = (BlendMotion)_aniRig.GetBlendMotion(name);
+            BlendMotion blendMotion = (BlendMotion)_aniRig.GetMotion(name);
             blendMotion.SetBlendFactor(blendFactor);
         }
 
@@ -113,13 +113,38 @@ namespace Animate
         /// <param name="deltaTime">델타 시간</param>
         public void Update(int deltaTime)
         {
+            // 애니메이션 업데이트를 위한 시간 간격을 계산한다.
+            float duration = 0.001f * deltaTime;
+
             // 애니메이션 업데이트 전에 호출할 수 있는 콜백 함수
             if (_updateBefore != null)
             {
                 _updateBefore();
             }
 
-            _animator.Update(0.001f * deltaTime);
+            _animator.Update(duration);
+
+            // 현재 모션이 속도를 적용해야 하는 경우, 트랜스폼을 업데이트한다.
+            if (_animator.CurrentMotion.MovementType != FootStepAnalyzer.MovementType.Stationary)
+            {
+                // 모션의 속도를 적용하여 애니메이션을 업데이트한다.
+                float deltaDistance = duration * _animator.CurrentMotion.Speed;
+
+                FootStepAnalyzer.MovementType movementType = _animator.CurrentMotion.MovementType;
+                if (movementType == FootStepAnalyzer.MovementType.Forward ||
+                    movementType == FootStepAnalyzer.MovementType.Backward)
+                {
+                    _transform.GoFoward(deltaDistance);
+                }
+                else if (movementType == FootStepAnalyzer.MovementType.Left)
+                {
+                    _transform.GoLeft(deltaDistance);
+                }
+                else if (movementType == FootStepAnalyzer.MovementType.Right)
+                {
+                    _transform.GoRight(deltaDistance);
+                }
+            }
 
             // 애니메이션 업데이트 후에 호출할 수 있는 콜백 함수
             if (_updateAfter != null)

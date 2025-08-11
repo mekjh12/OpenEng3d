@@ -110,7 +110,7 @@ namespace Animate
         }
 
 
-        public Motionable GetBlendMotion(string name)
+        public Motionable GetMotion(string name)
         {
             return _motions.GetMotion(name);
         }
@@ -122,6 +122,8 @@ namespace Animate
 
             BlendMotion newBlendMotion = new BlendMotion(newMotionName, motion1, motion2, blendFactor1, blendFactor2, blendFactor1);
             _motions.AddMotion(newBlendMotion);
+
+            // 기본값으로 두 행동의 평균으로 설정한다.
             newBlendMotion.SetBlendFactor((blendFactor1 + blendFactor2) * 0.5f);
         }
 

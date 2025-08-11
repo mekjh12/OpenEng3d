@@ -58,7 +58,7 @@ namespace Animate
             {
                 if (_blendingMotionCache[i] != null)
                 {
-                    Console.WriteLine($"_blendingMotionCache[{i}] = {_blendingMotionCache[i].Name} (Length: {_blendingMotionCache[i].Length})");
+                    Console.WriteLine($"_blendingMotionCache[{i}] = {_blendingMotionCache[i].Name} (Length: {_blendingMotionCache[i].PeriodTime})");
                 }
             }
         }

@@ -30,10 +30,12 @@ namespace AutoGenEnums
         public static Dictionary<HUMAN_ACTION, string> ActionMap = new Dictionary<HUMAN_ACTION, string>()
         {
 			{HUMAN_ACTION.A_T_POSE, "a-T-Pose"},
+			{HUMAN_ACTION.ANNOYED_HEAD_SHAKE, "Annoyed Head Shake"},
 			{HUMAN_ACTION.AXE_ATTACK_DOWNWARD, "Axe Attack Downward"},
 			{HUMAN_ACTION.AXE_STANDING_IDLE, "Axe Standing Idle"},
 			{HUMAN_ACTION.BREATHING_IDLE, "Breathing Idle"},
 			{HUMAN_ACTION.CLIMBING_LADDER, "Climbing Ladder"},
+			{HUMAN_ACTION.DEFEATED, "Defeated"},
 			{HUMAN_ACTION.DYING, "Dying"},
 			{HUMAN_ACTION.FAST_RUN, "Fast Run"},
 			{HUMAN_ACTION.GUNPLAY, "Gunplay"},
@@ -51,30 +53,32 @@ namespace AutoGenEnums
 		};
 
         public static string GetRandomAction() => ActionMap.Values.ElementAt(new Random().Next(ActionMap.Count));
-        public static int Count => 19;
+        public static int Count => 21;
     }
 
     public enum HUMAN_ACTION
     {
         A_T_POSE = 0,
-        AXE_ATTACK_DOWNWARD = 1,
-        AXE_STANDING_IDLE = 2,
-        BREATHING_IDLE = 3,
-        CLIMBING_LADDER = 4,
-        DYING = 5,
-        FAST_RUN = 6,
-        GUNPLAY = 7,
-        INJURED_RUN_JUMP = 8,
-        INTERPOLATION_POSE = 9,
-        JUMP = 10,
-        LEFT_STRAFE_WALK = 11,
-        RIGHT_STRAFE_WALK = 12,
-        RUNNING = 13,
-        SLOW_RUN = 14,
-        STANDING_IDLE = 15,
-        STANDING_JUMP = 16,
-        WALKING = 17,
-        WALKING_BACKWARDS = 18,
+        ANNOYED_HEAD_SHAKE = 1,
+        AXE_ATTACK_DOWNWARD = 2,
+        AXE_STANDING_IDLE = 3,
+        BREATHING_IDLE = 4,
+        CLIMBING_LADDER = 5,
+        DEFEATED = 6,
+        DYING = 7,
+        FAST_RUN = 8,
+        GUNPLAY = 9,
+        INJURED_RUN_JUMP = 10,
+        INTERPOLATION_POSE = 11,
+        JUMP = 12,
+        LEFT_STRAFE_WALK = 13,
+        RIGHT_STRAFE_WALK = 14,
+        RUNNING = 15,
+        SLOW_RUN = 16,
+        STANDING_IDLE = 17,
+        STANDING_JUMP = 18,
+        WALKING = 19,
+        WALKING_BACKWARDS = 20,
         // 추가된 액션들
 		RANDOM,
         STOP,

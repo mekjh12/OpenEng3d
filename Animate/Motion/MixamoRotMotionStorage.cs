@@ -31,6 +31,8 @@ namespace Animate
         /// <param name="targetAniRig"></param>
         public void RetargetMotionsTransfer(AniRig targetAniRig)
         {
+            Animator animator;
+
             // 믹사모 모션을 애니메이션 DAE에 리타겟팅
             foreach (KeyValuePair<string, Motionable> motionItem in _motions)
             {
@@ -41,7 +43,7 @@ namespace Animate
                 Motion srcMotion = (Motion)motionItem.Value;
 
                 // 리타켓팅 알고리즘 구현하기
-                if (srcMotion.Length > 0 && targetAniRig.DicBones != null)
+                if (srcMotion.PeriodTime > 0 && targetAniRig.DicBones != null)
                 {
                     // src 모션의 첫번째 키프레임에서 본 포즈를 가져온다.
                     BoneTransform[] bonePoses = srcMotion.FirstKeyFrame.BoneTransforms;
@@ -72,6 +74,15 @@ namespace Animate
                             }
                         }                      
                     }
+
+                    // 모션의 발 위치를 계산한다.
+                    animator = new Animator(targetAniRig.Armature.RootBone);
+                    FootStepAnalyzer.FootStepResult footstep =
+                        MotionExtensions.AnalyzeFootStep(destMotion, animator, targetAniRig.Armature.RootBone);
+
+                    destMotion.Speed = footstep.Speed;
+                    destMotion.FootStepDistance = footstep.FootStepDistance;
+                    destMotion.MovementType = footstep.Type;
 
                     // 지정된 애니메이션 모델에 모션을 추가한다.
                     targetAniRig.AddMotion(destMotion);

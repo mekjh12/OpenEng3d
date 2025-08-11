@@ -6,12 +6,12 @@ using ZetaExt;
 
 namespace Animate
 {
-    public class Motion: Motionable
+    public partial class Motion : Motionable
     {
         // ------------------------------------------------------------------------------
         // 멤버 변수
         // ------------------------------------------------------------------------------
-        const int MAX_BONES_COUNT = 128;    // 최대 뼈대 개수
+        const int MAX_BONES_COUNT = 128;            // 최대 뼈대 개수
         string _animationName;                      // 애니메이션 이름
         float _length;                              // 애니메이션 길이(초)
         Dictionary<float, KeyFrame> _keyframes;     // 키프레임 딕셔너리 (시간 -> 키프레임)
@@ -28,15 +28,15 @@ namespace Animate
         private KeyFrame[] _sortedKeyframes;    // 키프레임 사전으로부터 시간순으로 정렬된 키프레임 배열
         private bool _cacheValid = false;       // 캐시 유효성 플래그
 
-        readonly Dictionary<string, Matrix4x4f> _currentPose;   // 재사용시 초기 용량을 설정
-                                                                // ✅ 배열 할당 없이 직접 컬렉션 사용
+        Dictionary<string, Matrix4x4f> _currentPose;   // 재사용시 초기 용량을 설정
+                                                                // 배열 할당 없이 직접 컬렉션 사용
         string[] _boneNames;
 
         // ------------------------------------------------------------------------------
         // 속성
         // ------------------------------------------------------------------------------
         public Dictionary<float, KeyFrame> Keyframes => _keyframes;
-        public float Length => _length;
+        public float PeriodTime => _length;
         public string Name => _animationName;
         public int KeyFrameCount => _keyframes.Count;
         public KeyFrame FirstKeyFrame
@@ -77,7 +77,7 @@ namespace Animate
             _keyframes = new Dictionary<float, KeyFrame>();
 
             // 시간 찾기 유틸리티
-            _timeFinder = new TimeFinder(); 
+            _timeFinder = new TimeFinder();
         }
 
         /// <summary>
@@ -116,6 +116,7 @@ namespace Animate
             return keyFrame;
         }
 
+        [Obsolete("GetFastKeyFrame는 성능 최적화를 위해 사용되지 않습니다. 대신 KeyFrame(time) 또는 FirstKeyFrame을 사용하세요.")]
         public KeyFrame GetFastKeyFrame(float time)
         {
             float currentKeyFrameTime = 0.0f;
@@ -150,10 +151,13 @@ namespace Animate
         /// </summary>
         /// <param name="time">키프레임 시간</param>
         /// <returns>해당 시간의 키프레임 또는 첫 번째 키프레임</returns>
-        public KeyFrame KeyFrame(float time)
+        public KeyFrame this[float time]
         {
-            return _keyframes.ContainsKey(time) ?
-                ((_keyframes.Values.Count > 0) ? _keyframes[time] : null) : FirstKeyFrame;
+            get
+            {
+                return _keyframes.ContainsKey(time) ?
+                  ((_keyframes.Values.Count > 0) ? _keyframes[time] : null) : FirstKeyFrame;
+            }
         }
 
         /// <summary>
@@ -381,6 +385,5 @@ namespace Animate
                 }
             }
         }
-
     }
 }
