@@ -1,11 +1,12 @@
 ﻿using Animate.AniModels;
 using Model3d;
 using OpenGL;
+using System;
 
 namespace Animate
 {
-	public abstract partial class AniActor
-	{
+    public abstract partial class AniActor<TAction> : IAniActor where TAction : struct, Enum
+    {
         public void EquipItem(
             ATTACHMENT_SLOT where, 
             string itemUniqueName, 

@@ -1,11 +1,12 @@
 ﻿using OpenGL;
+using System;
 
 namespace Animate
 {
-	public abstract partial class AniActor
-	{
-		#region 디버깅용 멤버 변수
-		PolygonMode _polygonMode = PolygonMode.Fill; // 폴리곤 모드
+    public abstract partial class AniActor<TAction> : IAniActor where TAction : struct, Enum
+    {
+        #region 디버깅용 멤버 변수
+        PolygonMode _polygonMode = PolygonMode.Fill; // 폴리곤 모드
 		RenderingMode _renderingMode = RenderingMode.Animation; // 렌더링 모드
 		int _selectedBoneIndex = 0; // 선택된 본 인덱스
 		float _axisLength = 10.3f; // 축 길이

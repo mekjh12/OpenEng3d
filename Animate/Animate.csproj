@@ -63,9 +63,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AniModels\AniActor.Equip.cs" />
-    <Compile Include="AniModels\AnimationComponent.cs" />
     <Compile Include="AniModels\BlendingAnimator.cs" />
     <Compile Include="AniModels\Horse.cs" />
+    <Compile Include="AniModels\IAniActor.cs" />
     <Compile Include="AniModels\Rig\AniRig.cs" />
     <Compile Include="AniModels\Animator.cs" />
     <Compile Include="AniModels\AniActor.cs" />

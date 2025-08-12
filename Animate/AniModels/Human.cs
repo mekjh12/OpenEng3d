@@ -5,36 +5,37 @@ using ZetaExt;
 
 namespace Animate
 {
-    public class Human : Primate
+    public class Human : Primate<HUMAN_ACTION>
     {
-        
-        public Human(string name, AniRig aniRig) : base(name, aniRig)
+
+        public Human(string name, AniRig aniRig) : base(name, aniRig, HUMAN_ACTION.A_T_POSE)
         {
            
         }
 
-        public HUMAN_ACTION RandomAction => (HUMAN_ACTION)Rand.NextInt(0, (int)(HUMAN_ACTION.RANDOM - 1));
+        public override HUMAN_ACTION RandomAction => (HUMAN_ACTION)Rand.NextInt(0, (int)(HUMAN_ACTION.RANDOM - 1));
 
-        public void SetMotionImmediately(HUMAN_ACTION action)
+        public override void SetMotionImmediately(HUMAN_ACTION action)
         {
             if (action == HUMAN_ACTION.RANDOM) action = RandomAction;
-            SetMotion(Actions.ActionMap[action], blendingInterval: 0.0f);
+            SetMotion(HumanActions.ActionMap[action], blendingInterval: 0.0f);
         }
 
-        public void SetMotion(HUMAN_ACTION action)
+        public override void SetMotion(HUMAN_ACTION action)
         {
             if (action == HUMAN_ACTION.RANDOM) action = RandomAction;
-            SetMotion(Actions.ActionMap[action]);
+            SetMotion(HumanActions.ActionMap[action]);
         }
 
-        /// <summary>
-        /// 다음 모션을 한번만 하고 이후에는 이전 모션으로 돌아간다.
-        /// </summary>
-        /// <param name="action"></param>
-        public void SetMotionOnce(HUMAN_ACTION action)
+        public override void SetMotionOnce(HUMAN_ACTION action)
         {
             if (action == HUMAN_ACTION.RANDOM) action = RandomAction;
-            SetMotionOnce(Actions.ActionMap[action]);
+            SetMotionOnce(HumanActions.ActionMap[action]);
+        }
+
+        protected override string GetActionName(HUMAN_ACTION action)
+        {
+            return action.IsCommonAction() ? action.GetName() : HumanActions.GetActionName(action);
         }
     }
 }

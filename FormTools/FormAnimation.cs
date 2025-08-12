@@ -25,7 +25,7 @@ namespace FormTools
         AxisShader _axisShader;
 
         MixamoRotMotionStorage _mixamoRotMotionStorage;
-        List<AniActor> _aniActors = new List<AniActor>();
+        List<IAniActor> _aniActors = new List<IAniActor>();
         private int _lastGen0Count = 0;
         private int _tick = 0;
 
@@ -135,7 +135,7 @@ namespace FormTools
 
             //aniRig2.AddBlendMotion("walking-jump", "Walking", "Jump", 1.0f, 2.0f);
             //aniRig2.AddBlendMotion("walking-fastrun", "Walking", "Slow Run", 1.0f, 2.0f);
-            //aniRig2.AddBlendMotion("Defeated-Dying", "Jump", "Defeated", 1.0f, 2.0f);
+            aniRig2.AddBlendMotion("Defeated-Dying", "Jump", "Defeated", 1.0f, 2.0f);
 
             LayeredMotion layerBlendMotion = new LayeredMotion("layerWalking", aniRig2.GetMotion("Capoeira"));
             layerBlendMotion.AddLayer(MixamoBone.Spine1, aniRig2.GetMotion("a-T-Pose"));
@@ -163,7 +163,7 @@ namespace FormTools
 
 
             // 애니메이션 모델에 애니메이션 초기 지정
-            foreach (AniActor aniActor in _aniActors)
+            foreach (IAniActor aniActor in _aniActors)
             {
                 if (aniActor is Human)
                 {
@@ -207,7 +207,7 @@ namespace FormTools
             // 시간 간격을 초 단위로 변환
             float duration = deltaTime * 0.001f;
 
-            foreach (AniActor aniActor in _aniActors)
+            foreach (IAniActor aniActor in _aniActors)
             {
                 aniActor.Update(deltaTime);
             }
@@ -240,12 +240,12 @@ namespace FormTools
 
             Matrix4x4f vp = camera.VPMatrix;
 
-            foreach (AniActor aniActor in _aniActors)
+            foreach (IAniActor aniActor in _aniActors)
             {
                 aniActor.Render(camera, vp, _animateShader, _staticShader, isBoneVisible: true);
             }
 
-            foreach (AniActor aniActor in _aniActors)
+            foreach (IAniActor aniActor in _aniActors)
             {
                //_axisShader.RenderAxes(aniActor.ModelMatrix, aniActor.Animator.RootTransforms, vp, axisLength: 0.2f);
             }
@@ -274,7 +274,7 @@ namespace FormTools
         {
             if (e.KeyCode == Keys.F)
             {
-                foreach (AniActor aniActor in _aniActors)
+                foreach (IAniActor aniActor in _aniActors)
                 {
                     aniActor.PolygonMode = aniActor.PolygonMode == PolygonMode.Fill ? PolygonMode.Line : PolygonMode.Fill;
                 }
@@ -285,6 +285,10 @@ namespace FormTools
                 {
                     (_aniActors[i] as Human).SetMotion(HUMAN_ACTION.RANDOM);
                 }
+            }
+            else if (e.KeyCode == Keys.D2)
+            {
+                _aniActors[0].SetMotion("Defeated-Dying");
             }
             else if (e.KeyCode == Keys.D4)
             {

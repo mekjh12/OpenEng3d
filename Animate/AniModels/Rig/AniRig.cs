@@ -120,6 +120,11 @@ namespace Animate
             Motionable motion1 = _motions.GetMotion(motionName1);
             Motionable motion2 = _motions.GetMotion(motionName2);
 
+            if (motion1 == null || motion2 == null)
+            {
+                throw new Exception($"모션({motionName1} 또는 {motionName2})이 존재하지 않습니다.");
+            }
+
             BlendMotion newBlendMotion = new BlendMotion(newMotionName, motion1, motion2, blendFactor1, blendFactor2, blendFactor1);
             _motions.AddMotion(newBlendMotion);
 

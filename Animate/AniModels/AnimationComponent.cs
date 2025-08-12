@@ -43,20 +43,6 @@ namespace Animate
             }
         }
 
-        public void SetMotionOnce(string motionName, HUMAN_ACTION returnMotion)
-        {
-            Motionable curMotion = _aniRig.Motions.GetMotion(Actions.ActionMap[_curMotion]);
-            Motionable nextMotion = _aniRig.Motions.GetMotion(motionName);
-            if (nextMotion == null) nextMotion = _aniRig.Motions.DefaultMotion;
-
-            _animator.OnceFinished = () =>
-            {
-                _animator.SetMotion(curMotion, _aniRig.MotionCache);
-                _animator.OnceFinished = null;
-            };
-
-            _animator.SetMotion(nextMotion, _aniRig.MotionCache);
-        }
 
     }
 }

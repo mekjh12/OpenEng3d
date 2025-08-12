@@ -1,7 +1,5 @@
 ﻿using Animate.AniModels;
-using AutoGenEnums;
 using Common.Abstractions;
-using Model3d;
 using OpenGL;
 using Shader;
 using System;
@@ -9,12 +7,10 @@ using System.Collections.Generic;
 
 namespace Animate
 {
-    public abstract partial class AniActor
+    public abstract partial class AniActor<TAction>: IAniActor where TAction : struct, Enum
     {
-        protected HUMAN_ACTION _prevMotion = HUMAN_ACTION.BREATHING_IDLE; // 이전 모션 상태
-        protected HUMAN_ACTION _curMotion = HUMAN_ACTION.BREATHING_IDLE; // 현재 모션 상태
-        //protected HORSE_ACTION _prevMotion = HORSE_ACTION.STAND;
-        //protected HORSE_ACTION _curMotion = HORSE_ACTION.STAND;
+        protected TAction _prevMotion;
+        protected TAction _curMotion;
 
         protected string _name; // 액터 이름
         protected AniRig _aniRig; // 애니메이션 리그
@@ -29,11 +25,6 @@ namespace Animate
         // 개선된 아이템 시스템: 아이템 이름을 키로 하고 ItemAttachment를 값으로 하는 딕셔너리
         Dictionary<string, ItemAttachment> _items;
 
-        // 컴포넌트들
-        protected AnimationComponent _animationComponent; // 애니메이션 컴포넌트
-        protected TransformComponent _transformComponent; // 트랜스폼 컴포넌트
-
-
         // 속성
         public string Name => _name;
         public AniRig AniRig => _aniRig;
@@ -44,20 +35,32 @@ namespace Animate
         public Matrix4x4f[] AnimatedTransforms => _animator.AnimatedTransforms;
         public Matrix4x4f ModelMatrix => _transform.Matrix4x4f;
 
+        // 추상 함수 - 제네릭 타입으로 수정
+        public abstract TAction RandomAction { get; }
+        public abstract void SetMotionImmediately(TAction action);
+        public abstract void SetMotion(TAction action);
+        public abstract void SetMotionOnce(TAction action);
+        protected abstract string GetActionName(TAction action);
+
         /// <summary>
         /// 생성자
         /// </summary>
         /// <param name="name">액터 이름</param>
         /// <param name="aniRig">애니메이션 리그</param>
-        public AniActor(string name, AniRig aniRig)
+        /// <param name="defaultAction">기본 액션</param>
+        public AniActor(string name, AniRig aniRig, TAction defaultAction)
         {
+            _name = name;
             _items = new Dictionary<string, ItemAttachment>();
             _items.Clear();
 
             _aniRig = aniRig;
-
             _animator = new Animator(aniRig.Armature.RootBone);
             _transform = new Transform();
+
+            // 기본 액션으로 초기화
+            _prevMotion = defaultAction;
+            _curMotion = defaultAction;
         }
 
         /// <summary>
@@ -66,10 +69,10 @@ namespace Animate
         /// <param name="motionName">모션 이름</param>
         public void SetMotionOnce(string motionName)
         {
-            Motionable curMotion = _aniRig.Motions.GetMotion(Actions.ActionMap[_curMotion]);
+            Motionable curMotion = _aniRig.Motions.GetMotion(GetActionName(_curMotion));
             Motionable nextMotion = _aniRig.Motions.GetMotion(motionName);
             if (nextMotion == null) nextMotion = _aniRig.Motions.DefaultMotion;
-
+            
             _animator.OnceFinished = () =>
             {
                 _animator.SetMotion(curMotion, _aniRig.MotionCache);
@@ -99,7 +102,7 @@ namespace Animate
             {
                 _animator.SetMotion(motion, _aniRig.MotionCache, blendingInterval);
             }
-
+            
             _animator.Play();
         }
 

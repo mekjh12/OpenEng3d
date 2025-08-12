@@ -8,7 +8,7 @@
 //    ../Res/Action/Human/*.dae → HUMAN_ACTION enum
 //    ../Res/Action/Horse/*.dae → HORSE_ACTION enum
 // ===================================
-// 자동생성 by GenerateMultiActionEnums.ps1: 2025-08-11 23:21:06
+// 자동생성 by GenerateMultiActionEnums.ps1: 2025-08-12 13:34:22
 
 using System;
 using System.Linq;
@@ -16,6 +16,14 @@ using System.Collections.Generic;
 
 namespace AutoGenEnums
 {
+    // ==================== 공통 인터페이스 ====================
+    
+    public interface IActionEnum
+    {
+        int GetValue();
+        string GetName();
+        bool IsCommonAction();
+    }
     // ==================== HUMAN ACTIONS ====================
     
     public static class HumanActions
@@ -29,16 +37,17 @@ namespace AutoGenEnums
             {HUMAN_ACTION.DEFEATED, "Defeated"},
             {HUMAN_ACTION.DYING, "Dying"},
             {HUMAN_ACTION.GUNPLAY, "Gunplay"},
+            {HUMAN_ACTION.JUMP, "Jump"},
             {HUMAN_ACTION.WALKING, "Walking"},
         };
 
         public static string GetRandomAction() => ActionMap.Values.ElementAt(new Random().Next(ActionMap.Count));
-        public static int Count => 8;
+        public static int Count => 9;
         public static bool HasAction(HUMAN_ACTION action) => ActionMap.ContainsKey(action);
         public static string GetActionName(HUMAN_ACTION action) => ActionMap.TryGetValue(action, out string name) ? name : null;
     }
 
-    public enum HUMAN_ACTION
+    public enum HUMAN_ACTION : int
     {
         A_T_POSE = 0,
         ANNOYED_HEAD_SHAKE = 1,
@@ -47,7 +56,8 @@ namespace AutoGenEnums
         DEFEATED = 4,
         DYING = 5,
         GUNPLAY = 6,
-        WALKING = 7,
+        JUMP = 7,
+        WALKING = 8,
         // 추가된 액션들
         RANDOM,
         STOP,
@@ -70,7 +80,7 @@ namespace AutoGenEnums
         public static string GetActionName(HORSE_ACTION action) => ActionMap.TryGetValue(action, out string name) ? name : null;
     }
 
-    public enum HORSE_ACTION
+    public enum HORSE_ACTION : int
     {
         STAND = 0,
         WALK = 1,
@@ -80,18 +90,33 @@ namespace AutoGenEnums
         NONE,
         COUNT,
     }
-    // ==================== 통합 ACTIONS 관리 ====================
+    // ==================== 확장 메서드로 인터페이스 구현 ====================
     
-    public static class Actions
+    public static class ActionEnumExtensions
     {
-        // 하위 호환성을 위한 Human Actions 직접 접근
-        public static Dictionary<HUMAN_ACTION, string> ActionMap => HumanActions.ActionMap;
-        public static string GetRandomAction() => HumanActions.GetRandomAction();
-        public static int Count => HumanActions.Count;
-        
+        private static readonly HashSet<string> CommonActions = new HashSet<string>
+        {
+            "RANDOM", "STOP", "NONE", "COUNT"
+        };
+        public static int GetValue(this HUMAN_ACTION action) => (int)action;
+        public static string GetName(this HUMAN_ACTION action) => action.ToString();
+        public static bool IsCommonAction(this HUMAN_ACTION action) => CommonActions.Contains(action.ToString());
+        public static int GetValue(this HORSE_ACTION action) => (int)action;
+        public static string GetName(this HORSE_ACTION action) => action.ToString();
+        public static bool IsCommonAction(this HORSE_ACTION action) => CommonActions.Contains(action.ToString());    }
+    // ==================== 액션 유틸리티 ====================
+    
+    public static class ActionUtils
+    {
         // 모든 타입의 액션 개수
         public static int TotalActionCount => HumanActions.Count + HorseActions.Count;
         
-        // 타입별 액션 존재 여부 확인
-        public static bool HasHumanAction(HUMAN_ACTION action) => HumanActions.HasAction(action);        public static bool HasHorseAction(HORSE_ACTION action) => HorseActions.HasAction(action);    }
+        // 타입별 액션 통계
+        public static void PrintActionStats()
+        {
+            System.Console.WriteLine("=== Action Statistics ===");            System.Console.WriteLine("Human Actions: {0}", HumanActions.Count);            System.Console.WriteLine("Horse Actions: {0}", HorseActions.Count);            System.Console.WriteLine("Total Actions: {0}", TotalActionCount);
+        }
+        
+        // 특정 타입의 랜덤 액션 가져오기
+        public static string GetRandomHumanAction() => HumanActions.GetRandomAction();        public static string GetRandomHorseAction() => HorseActions.GetRandomAction();    }
 }

@@ -69,6 +69,14 @@ using System.Collections.Generic;
 
 namespace AutoGenEnums
 {
+    // ==================== 공통 인터페이스 ====================
+    
+    public interface IActionEnum
+    {
+        int GetValue();
+        string GetName();
+        bool IsCommonAction();
+    }
 "@
 
 # 각 타입별로 enum과 매핑 생성
@@ -105,7 +113,7 @@ foreach ($actionTypeData in $AllActionTypes) {
         public static string GetActionName($($actionType.EnumName) action) => ActionMap.TryGetValue(action, out string name) ? name : null;
     }
 
-    public enum $($actionType.EnumName)
+    public enum $($actionType.EnumName) : int
     {
 "@
     # enum 멤버들
@@ -125,18 +133,45 @@ foreach ($actionTypeData in $AllActionTypes) {
 "@
 }
 
-# 통합 Actions 클래스 추가
+# ActionEnumExtensions 클래스 추가
 $code += @"
 
-    // ==================== 통합 ACTIONS 관리 ====================
+    // ==================== 확장 메서드로 인터페이스 구현 ====================
     
-    public static class Actions
+    public static class ActionEnumExtensions
     {
-        // 하위 호환성을 위한 Human Actions 직접 접근
-        public static Dictionary<HUMAN_ACTION, string> ActionMap => HumanActions.ActionMap;
-        public static string GetRandomAction() => HumanActions.GetRandomAction();
-        public static int Count => HumanActions.Count;
-        
+        private static readonly HashSet<string> CommonActions = new HashSet<string>
+        {
+            "RANDOM", "STOP", "NONE", "COUNT"
+        };
+"@
+
+# 각 액션 타입에 대한 확장 메서드 생성
+foreach ($actionTypeData in $AllActionTypes) {
+    if ($actionTypeData.Actions.Count -eq 0) {
+        continue
+    }
+    
+    $enumName = $actionTypeData.Type.EnumName
+    $code += @"
+
+        public static int GetValue(this $enumName action) => (int)action;
+        public static string GetName(this $enumName action) => action.ToString();
+        public static bool IsCommonAction(this $enumName action) => CommonActions.Contains(action.ToString());
+"@
+}
+
+$code += @"
+    }
+"@
+
+# 유틸리티 클래스 추가 (Actions 대신)
+$code += @"
+
+    // ==================== 액션 유틸리티 ====================
+    
+    public static class ActionUtils
+    {
         // 모든 타입의 액션 개수
         public static int TotalActionCount => 
 "@
@@ -149,17 +184,34 @@ if ([string]::IsNullOrEmpty($totalCountExpression)) {
 $code += @"
 $totalCountExpression;
         
-        // 타입별 액션 존재 여부 확인
-
+        // 타입별 액션 통계
+        public static void PrintActionStats()
+        {
+            System.Console.WriteLine("=== Action Statistics ===");
 "@
 
 foreach ($actionTypeData in $AllActionTypes) {
     if ($actionTypeData.Actions.Count -gt 0) {
         $typeName = $actionTypeData.Type.Name
         $code += @"
-        public static bool Has$($typeName)Action($($actionTypeData.Type.EnumName) action) => $($typeName)Actions.HasAction(action);
+            System.Console.WriteLine(`"$typeName Actions: {0}`", $($typeName)Actions.Count);
 "@
     }
+}
+
+$code += @"
+            System.Console.WriteLine(`"Total Actions: {0}`", TotalActionCount);
+        }
+        
+        // 특정 타입의 랜덤 액션 가져오기
+        public static string GetRandomHumanAction() => HumanActions.GetRandomAction();
+"@
+
+# Horse가 있다면 Horse 랜덤 액션도 추가
+if (($AllActionTypes | Where-Object { $_.Type.Name -eq "Horse" -and $_.Actions.Count -gt 0 }).Count -gt 0) {
+    $code += @"
+        public static string GetRandomHorseAction() => HorseActions.GetRandomAction();
+"@
 }
 
 $code += @"
@@ -179,3 +231,4 @@ foreach ($actionTypeData in $AllActionTypes) {
     }
 }
 Write-Host "   Total: $($AllActionTypes | ForEach-Object { $_.Actions.Count } | Measure-Object -Sum).Sum actions" -ForegroundColor Green
+Write-Host "🎯 Classes generated: HumanActions, HorseActions, ActionEnumExtensions, ActionUtils" -ForegroundColor Magenta
