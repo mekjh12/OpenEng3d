@@ -8,7 +8,6 @@ namespace Animate
         public Horse(string name, AniRig aniRig) : base(name, aniRig, HORSE_ACTION.NONE)
         {
 
-
         }
 
         public override HORSE_ACTION RandomAction =>

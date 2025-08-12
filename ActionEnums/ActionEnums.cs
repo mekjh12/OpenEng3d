@@ -8,7 +8,7 @@
 //    ../Res/Action/Human/*.dae → HUMAN_ACTION enum
 //    ../Res/Action/Horse/*.dae → HORSE_ACTION enum
 // ===================================
-// 자동생성 by GenerateMultiActionEnums.ps1: 2025-08-12 13:34:22
+// 자동생성 by GenerateMultiActionEnums.ps1: 2025-08-12 15:41:03
 
 using System;
 using System.Linq;
@@ -70,8 +70,8 @@ namespace AutoGenEnums
     {
         public static Dictionary<HORSE_ACTION, string> ActionMap = new Dictionary<HORSE_ACTION, string>()
         {
-            {HORSE_ACTION.STAND, "Stand"},
-            {HORSE_ACTION.WALK, "Walk"},
+            {HORSE_ACTION.ABC, "abc"},
+            {HORSE_ACTION.BEAR, "bear"},
         };
 
         public static string GetRandomAction() => ActionMap.Values.ElementAt(new Random().Next(ActionMap.Count));
@@ -82,8 +82,8 @@ namespace AutoGenEnums
 
     public enum HORSE_ACTION : int
     {
-        STAND = 0,
-        WALK = 1,
+        ABC = 0,
+        BEAR = 1,
         // 추가된 액션들
         RANDOM,
         STOP,

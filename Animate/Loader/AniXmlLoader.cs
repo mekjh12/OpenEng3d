@@ -622,8 +622,10 @@ namespace Animate
             // 행렬은 캐릭터의 발 밑 가운데를 원점으로 하는 캐릭터 공간 변환행렬이다.
             foreach (XmlNode boneAnimation in libraryAnimations[0].ChildNodes)
             {
+                XmlNode node = boneAnimation;
+                
                 // boneAnimation은 <animation> 태그로 되어있다.
-                string boneName = boneAnimation.Attributes["name"].Value;
+                string boneName = node.Attributes["name"].Value;
 
                 boneName = boneName.Substring(0, boneName.Length);
 
@@ -633,11 +635,12 @@ namespace Animate
                 List<float> sourceInput = new List<float>(); 
                 List<Matrix4x4f> sourceOutput = new List<Matrix4x4f>();
                 List<string> interpolationInput = new List<string>();
-
+                
                 // 채널과 샘플러를 가져온다.
-                XmlNode channel = boneAnimation["channel"];
+                XmlNode channel = node["channel"];
+
                 string channelName = channel.Attributes["source"].Value;
-                XmlNode sampler = boneAnimation["sampler"];
+                XmlNode sampler = node["sampler"];
                 if (channelName != "#" + sampler.Attributes["id"].Value) continue;
 
                 // sampler의 INPUT, OUTPUT, INTERPOLATION을 읽어온다.
@@ -652,7 +655,7 @@ namespace Animate
                 }
 
                 // 각 뼈마다 시간과 행렬을 가져온다.
-                foreach (XmlNode source in boneAnimation.ChildNodes)
+                foreach (XmlNode source in node.ChildNodes)
                 {
                     if (source.Name == "source")
                     {
@@ -707,7 +710,10 @@ namespace Animate
                     keyframe.Add(sourceInput[i], sourceOutput[i]);
                 }
 
-                animationData.Add(boneName, keyframe);
+                if (!animationData.ContainsKey(boneName))
+                {
+                    animationData.Add(boneName, keyframe);
+                }
             }
 
             // *** [중요] 바닥으로부터 엉덩이 위치를 맞추기 위하여 hipHeightScale을 구한다.
@@ -947,9 +953,10 @@ namespace Animate
             // Armature 노드를 찾는다.
             foreach ((XmlNode parent, XmlNode node) in nodes.TraverseXmlNodesWithParent())
             {
+                if (node.Name != "node") continue;
                 if (node.Attributes["id"].Value == "Armature")
                 {
-                    rootNode = node;
+                    rootNode = node.ParentNode;
                     break;
                 }
             }
@@ -961,9 +968,10 @@ namespace Animate
                 return;
             }
 
-            // XML노드들을 순회하며 본을 생성한다. 확장메소드의 내부 로직으로 스택을 사용하지 않고 자식노드를 순회한다. 
+            // XML노드들을 순회하며 본을 생성한다.
+            // ** 확장메소드의 내부 로직으로 스택을 사용하지 않고 자식노드를 순회한다. **
             Dictionary<string, Bone> boneDics = new Dictionary<string, Bone>();
-            foreach ((XmlNode parentNode, XmlNode node) in nodes.TraverseXmlNodesWithParent())
+            foreach ((XmlNode parentNode, XmlNode node) in rootNode.TraverseXmlNodesWithParent())
             {
                 // 노드가 "node" 또는 "JOINT" 타입인지 확인한다.
                 if (!node.HasAttribute("type")) continue;

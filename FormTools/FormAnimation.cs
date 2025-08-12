@@ -92,7 +92,7 @@ namespace FormTools
         {
             // 그리드셰이더 초기화
             _glControl3.InitGridShader(PROJECT_PATH);
-
+                        
             PrimateRig aniRig = new PrimateRig(PROJECT_PATH + @"\Res\Actor\abe\abe.dae", isLoadAnimation: false);
             PrimateRig aniRig2 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Guybrush\Guybrush.dae", isLoadAnimation: false);
 
@@ -144,7 +144,7 @@ namespace FormTools
 
             /*
             // =========================================
-            HorseRig horseRig = new HorseRig(PROJECT_PATH + @"\Res\Actor\Horse\Horse.dae", isLoadAnimation: false);
+            HorseRig horseRig = new HorseRig(PROJECT_PATH + @"\Res\Actor\Horse\bear.dae", isLoadAnimation: false);
 
             _mixamoRotMotionStorage = new MixamoRotMotionStorage();
             foreach (string fileName in Directory.GetFiles(PROJECT_PATH + "\\Res\\Action\\Horse\\"))
@@ -171,7 +171,7 @@ namespace FormTools
                 }
                 else if (aniActor is Horse)
                 {
-                    (aniActor as Horse).SetMotion(HORSE_ACTION.STAND);
+                    (aniActor as Horse).SetMotion(HORSE_ACTION.ABC);
                 }
             }
 
