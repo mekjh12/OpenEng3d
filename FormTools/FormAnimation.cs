@@ -92,57 +92,8 @@ namespace FormTools
         {
             // 그리드셰이더 초기화
             _glControl3.InitGridShader(PROJECT_PATH);
-                        
-            PrimateRig aniRig = new PrimateRig(PROJECT_PATH + @"\Res\Actor\abe\abe.dae", isLoadAnimation: false);
-            PrimateRig aniRig2 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Guybrush\Guybrush.dae", isLoadAnimation: false);
+              
 
-            _aniActors.Add(new Human($"Guybrush", aniRig2));
-            _aniActors[0].Transform.IncreasePosition(4, 0.0f, 0);
-
-            _aniActors.Add(new Human($"abe", aniRig));
-            _aniActors[1].Transform.IncreasePosition(2, 0, 0);
-
-            // [테스트] 캐릭터 수를 점진적으로 증가
-            int TEST_CHARACTER_COUNT = 1; // 이 값을 변경하면서 테스트
-            int yDelta = 0;
-            int xDelta = 0;
-            for (int i = 0; i < TEST_CHARACTER_COUNT; i++)
-            {
-                _aniActors.Add(new Human($"test{i}", aniRig2));
-                xDelta += 2; // X 위치를 증가
-                if (i % 20 == 0 && i != 0)
-                {
-                    xDelta = 0; // 20개마다 X 위치를 초기화
-                    yDelta += 2; // Y 위치를 증가
-                }
-                _aniActors[i].Transform.IncreasePosition(xDelta, yDelta, 0);
-            }
-
-            // 믹사모 애니메이션 로드
-            _mixamoRotMotionStorage = new MixamoRotMotionStorage();
-            foreach (string fileName in Directory.GetFiles(PROJECT_PATH + "\\Res\\Action\\Human\\"))
-            {
-                if (Path.GetExtension(fileName).Equals(".dae"))
-                {
-                    Motion motion = MotionLoader.LoadMixamoMotion(aniRig, fileName);
-                    _mixamoRotMotionStorage.AddMotion(motion);
-                }
-            }
-
-            // 애니메이션 리타겟팅
-            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig);
-            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig2);
-
-            //aniRig2.AddBlendMotion("walking-jump", "Walking", "Jump", 1.0f, 2.0f);
-            //aniRig2.AddBlendMotion("walking-fastrun", "Walking", "Slow Run", 1.0f, 2.0f);
-            aniRig2.AddBlendMotion("Defeated-Dying", "Jump", "Defeated", 1.0f, 2.0f);
-
-            LayeredMotion layerBlendMotion = new LayeredMotion("layerWalking", aniRig2.GetMotion("Capoeira"));
-            layerBlendMotion.AddLayer(MixamoBone.Spine1, aniRig2.GetMotion("a-T-Pose"));
-            layerBlendMotion.BuildTraverseBoneNamesCache(aniRig2.Armature.RootBone);
-            aniRig2.AddMotion(layerBlendMotion);
-
-            /*
             // =========================================
             HorseRig horseRig = new HorseRig(PROJECT_PATH + @"\Res\Actor\Horse\bear.dae", isLoadAnimation: false);
 
@@ -151,7 +102,7 @@ namespace FormTools
             {
                 if (Path.GetExtension(fileName).Equals(".dae"))
                 {
-                    Motion motion = AniXmlLoader.LoadMixamoMotion(horseRig, fileName);
+                    Motion motion = MotionLoader.LoadMixamoMotion(horseRig, fileName);
                     _mixamoRotMotionStorage.AddMotion(motion);
                 }
             }
@@ -159,7 +110,6 @@ namespace FormTools
             _aniActors[0].Transform.IncreasePosition(1, 0, 0);
             _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: horseRig);
             
-            */
 
 
             // 애니메이션 모델에 애니메이션 초기 지정

@@ -11,6 +11,8 @@ namespace Animate
 {
     public class AniColladaLoader
     {
+        public const string ARMATURE = "Armature";
+
         /// <summary>
         /// * TextureStorage에 텍스처를 로딩한다. <br/>
         /// - 딕셔너리의 키는 전체파일명으로 한다.<br/>
@@ -467,6 +469,130 @@ namespace Animate
                 }
             }
         }
+
+
+        /// <summary>
+        /// COLLADA XML 파일에서 뼈대 구조를 파싱하여 루트 본을 반환한다.
+        /// </summary>
+        /// <param name="xml">XML</param>
+        /// <param name="invBindPoses">역바인드 포즈 딕셔너리</param>
+        /// <param name="dicBoneIndex">본익덱스 딕셔너리</param>
+        /// <param name="dicBones">생성한 본딕셔너리</param>
+        public static void LibraryVisualScenes(XmlDocument xml,
+            Dictionary<string, Matrix4x4f> invBindPoses, ref Armature armature)
+        {
+            // 뼈대 구조를 읽기 위하여 준비한다.
+            XmlNodeList library_visual_scenes = xml.GetElementsByTagName("library_visual_scenes");
+            if (library_visual_scenes.Count == 0)
+            {
+                Console.WriteLine($"[주의] 파일구조에서 뼈대구조가 없습니다.");
+                return;
+            }
+
+            // 뼈대 구조를 읽기 위해 스택을 준비한다.
+            XmlNode visual_scene_nodes = library_visual_scenes[0]["visual_scene"];
+            XmlNode rootNode = null;
+
+            // Armature 노드를 찾는다.
+            foreach ((XmlNode parent, XmlNode node) in visual_scene_nodes.TraverseXmlNodesWithParent())
+            {
+                if (node.Name != "node") continue;
+                if (node.HasAttribute("id") && node.Attributes["id"].Value == "Armature")
+                {
+                    rootNode = node.ParentNode;
+                    break;
+                }
+            }
+
+            // Armature 노드가 없으면 경고 메시지를 출력하고 null을 반환한다.
+            if (rootNode == null)
+            {
+                Console.WriteLine("Armature 노드가 없어 뼈대구조를 읽어올 수 없습니다.");
+                return;
+            }
+
+            // XML노드들을 순회하며 본을 생성한다.
+            Dictionary<string, Bone> boneDics = new Dictionary<string, Bone>();
+            Matrix4x4f startMatrix = Matrix4x4f.Identity;
+
+            foreach ((XmlNode parentNode, XmlNode node) in rootNode.TraverseXmlNodesWithParent())
+            {
+                // 노드가 "JOINT" 타입인지 확인한다.
+                if (!node.HasAttribute("type")) continue;
+
+                string nodeType = node.Attributes["type"].Value;
+
+                if (nodeType == "NODE")
+                {
+                    if (node["matrix"] == null) continue;
+                    Matrix4x4f nodeMatrix = node["matrix"].InnerText.ParseToMatrix4x4f(transposed: true);
+                    startMatrix = nodeMatrix * startMatrix;
+
+                    // 루트본을 설정한다.
+                    string armatureName = ARMATURE;
+                    if (node.Attributes["id"].Value == armatureName)
+                    {
+                        Bone root = new Bone(armatureName, 0)
+                        {
+                            Index = 0,
+                            ID = "Armature",
+                        };
+                        root.BoneTransforms.LocalBindTransform = node["matrix"].InnerText.ParseToMatrix4x4f(transposed: true);
+
+                        if (invBindPoses.ContainsKey(armatureName))
+                        {
+                            root.BoneTransforms.InverseBindPoseTransform = invBindPoses[armatureName];
+                        }
+
+                        boneDics[armatureName] = root;
+                        armature.AddBone(root);
+                        armature.SetRootBone(root);
+                    }
+
+                    continue;
+                }
+
+                if (nodeType != "JOINT") continue;
+
+                // 본 이름과 변환 행렬을 읽어온다.
+                Matrix4x4f mat = node["matrix"].InnerText.ParseToMatrix4x4f(transposed: true);
+                string boneName = node.Attributes["sid"].Value;
+
+                string parentName = parentNode.HasAttribute("sid") ?
+                    parentNode.Attributes["sid"].Value : "Armature";
+
+
+                int boneIndex = armature.IsExistBoneIndex(boneName) ? armature.GetBoneIndex(boneName) : -1;
+                string boneID = node.Attributes["id"].Value;
+                Bone bone = new Bone(boneName, 0)
+                {
+                    Index = boneIndex,
+                    ID = boneID,
+                };
+                bone.BoneTransforms.LocalBindTransform = mat;
+
+                // 역바인드 포즈를 설정한다.
+                if (invBindPoses.ContainsKey(boneName))
+                {
+                    bone.BoneTransforms.InverseBindPoseTransform = invBindPoses[boneName];
+                }
+
+                armature.AddBone(bone);
+                boneDics[boneName] = bone;
+
+                if (boneDics.ContainsKey(parentName))
+                {
+                    Bone parentBone = boneDics[parentName];
+                    parentBone.AddChild(bone);
+                    bone.Parent = parentBone;
+                }
+
+            }
+
+            return;
+        }
+
+        /*
         /// <summary>
         /// COLLADA XML 파일에서 애니메이션 라이브러리를 파싱하여 AniRig 객체에 모션 데이터를 추가하는 메서드
         /// </summary>
@@ -629,6 +755,7 @@ namespace Animate
             }
         }
 
+
         /// <summary>
         /// COLLADA XML 파일에서 뼈대 구조를 파싱하여 루트 본을 반환한다.
         /// </summary>
@@ -636,7 +763,7 @@ namespace Animate
         /// <param name="invBindPoses">역바인드 포즈 딕셔너리</param>
         /// <param name="dicBoneIndex">본익덱스 딕셔너리</param>
         /// <param name="dicBones">생성한 본딕셔너리</param>
-        public static void LibraryVisualScenes(XmlDocument xml,
+        public static void LibraryVisualScenes_Orginal(XmlDocument xml,
             Dictionary<string, Matrix4x4f> invBindPoses, ref Armature armature)
         {
             // 뼈대 구조를 읽기 위하여 준비한다.
@@ -648,15 +775,14 @@ namespace Animate
             }
 
             // 뼈대 구조를 읽기 위해 스택을 준비한다.
-            Stack<(XmlNode, Bone)> nStack = new Stack<(XmlNode, Bone)>();
-            XmlNode nodes = library_visual_scenes[0]["visual_scene"];
+            XmlNode visual_scene_nodes = library_visual_scenes[0]["visual_scene"];
             XmlNode rootNode = null;
 
             // Armature 노드를 찾는다.
-            foreach ((XmlNode parent, XmlNode node) in nodes.TraverseXmlNodesWithParent())
+            foreach ((XmlNode parent, XmlNode node) in visual_scene_nodes.TraverseXmlNodesWithParent())
             {
                 if (node.Name != "node") continue;
-                if (node.Attributes["id"].Value == "Armature")
+                if (node.HasAttribute("id") && node.Attributes["id"].Value == "Armature")
                 {
                     rootNode = node.ParentNode;
                     break;
@@ -673,13 +799,16 @@ namespace Animate
             // XML노드들을 순회하며 본을 생성한다.
             // ** 확장메소드의 내부 로직으로 스택을 사용하지 않고 자식노드를 순회한다. **
             Dictionary<string, Bone> boneDics = new Dictionary<string, Bone>();
+
             foreach ((XmlNode parentNode, XmlNode node) in rootNode.TraverseXmlNodesWithParent())
             {
                 // 노드가 "node" 또는 "JOINT" 타입인지 확인한다.
                 if (!node.HasAttribute("type")) continue;
                 string nodeType = node.Attributes["type"].Value;
                 if (nodeType != "JOINT" && nodeType != "NODE") continue;
-                if (nodeType == "NODE" && node.Attributes["id"]?.Value != "Armature") continue;
+
+
+                if (nodeType == "NODE" && node.Attributes["id"].Value != "Armature") continue;
 
                 // 본 이름과 변환 행렬을 읽어온다.
                 Matrix4x4f mat = node["matrix"].InnerText.ParseToMatrix4x4f(transposed: true);
@@ -718,5 +847,10 @@ namespace Animate
 
             return;
         }
+
+        
+        */
+
+
     }
 }

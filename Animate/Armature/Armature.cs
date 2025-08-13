@@ -16,8 +16,9 @@ namespace Animate
         private float _hipHeightScaled = 1.0f;  // 엉덩이 높이 비율
 
         // 본 관리 데이터
-        private Dictionary<string, Bone> _dicBones;     // 본 이름 -> 본 객체 매핑
-        private Dictionary<string, int> _dicBoneIndex;  // 본 이름 -> 인덱스 매핑
+        private Dictionary<string, Bone> _dicBones;         // 본 이름 -> 본 객체 매핑
+        private Dictionary<string, Bone> _dicTargetBones;   // 본 이름 -> 본 객체 매핑
+        private Dictionary<string, int> _dicBoneIndex;      // 본 이름 -> 인덱스 매핑
 
         /// <summary>
         /// 엉덩이 높이 비율을 가져오거나 설정한다.
@@ -30,7 +31,10 @@ namespace Animate
 
         public string[] BoneNames => _dicBoneIndex.Keys.ToArray();
         public Bone RootBone => _rootBone;
+
         public Dictionary<string, Bone> DicBones => _dicBones;
+
+        public Dictionary<string, Bone> DicTargetBones => _dicTargetBones;
 
         /// <summary>
         /// Armature 생성자

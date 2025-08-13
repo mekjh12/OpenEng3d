@@ -1,9 +1,6 @@
-﻿using OpenGL;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
 using System.Xml;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 
 namespace ZetaExt
 {
@@ -12,10 +9,7 @@ namespace ZetaExt
         /// <summary>
         /// XML 노드를 깊이 우선 순회하여 모든 하위 노드를 반환합니다.
         /// <code>
-        /// foreach (XmlNode node in TraverseXmlNodes(rootNode))
-        /// {
-        ///     Console.WriteLine($"방문한 노드: {node.Name}");
-        /// }
+        /// 파일 구조 그대로의 순서대로 순회한다.
         /// </code>
         /// </summary>
         /// <param name="node">순회할 루트 노드</param>

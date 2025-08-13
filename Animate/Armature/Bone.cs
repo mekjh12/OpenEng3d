@@ -17,6 +17,7 @@ namespace Animate
         // 기본 정보
         private int _index;
         private string _name;
+        private string _id;
 
         // 계층 구조
         private List<Bone> _children;
@@ -38,6 +39,12 @@ namespace Animate
         /// 뼈대의 변환 정보를 포함하는 객체
         /// </summary>
         public BoneTransforms BoneTransforms => _boneTransforms;
+
+        public string ID
+        {
+            get => _id;
+            set => _id = value;
+        }
 
         /// <summary>
         /// 뼈대의 고유 인덱스

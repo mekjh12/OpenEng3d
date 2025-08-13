@@ -1,13 +1,27 @@
-﻿using OpenGL;
+﻿using Microsoft.SqlServer.Server;
+using OpenGL;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml;
+using ZetaExt;
 
 namespace Animate
 {
     public static class MotionLoader
     {
+        private const string ARMATURE = "Armature";
+        private const string CHANNEL = "channel";
+        private const string SOURCE = "source";
+        private const string SAMPLER = "sampler";
+        private const string SEMANTIC = "semantic";
+        private const string INPUT = "INPUT";
+        private const string OUTPUT = "OUTPUT";
+        private const string INTERPOLATION = "INTERPOLATION";
+        private const string FLOAT_ARRAY = "float_array";
+        private const string NAME_ARRAY = "Name_array";
+        private const string ANIMATION = "animation";
+        private const string TARGET = "target";
 
         /// <summary>
         /// 대입한 모델의 엉덩이 뼈를 기준으로 엉덩이 뼈의 바닥으로부터의 상대적 높이를 반환한다.
@@ -54,7 +68,7 @@ namespace Animate
         /// <param name="motionFileName"></param>
         public static Motion LoadMixamoMotion(AniRig targetAniRig, string motionFileName)
         {
-            // Dae 파일을 읽어온다.
+            // Xml을 준비한다.
             XmlDocument xml = new XmlDocument();
             xml.Load(motionFileName);
             string motionName = Path.GetFileNameWithoutExtension(motionFileName);
@@ -74,16 +88,32 @@ namespace Animate
             // 각 뼈의 애니메이션 소스를 읽어온다.
             // 행렬 정보는 4x4 행렬로 되어있고, 시간은 float로 되어있다.
             // 행렬은 캐릭터의 발 밑 가운데를 원점으로 하는 캐릭터 공간 변환행렬이다.
-            foreach (XmlNode boneAnimation in libraryAnimations[0].ChildNodes)
+            foreach ((XmlNode parentNode, XmlNode node) in libraryAnimations[0].TraverseXmlNodesWithParent())
             {
-                XmlNode node = boneAnimation;
+                if (node.Name != ANIMATION) continue;
+
+                if (node[CHANNEL] == null) continue;
 
                 // boneAnimation은 <animation> 태그로 되어있다.
+                string bid = "";
+                if (node[CHANNEL].HasAttribute(TARGET))
+                {
+                    bid = node[CHANNEL].GetAttribute(TARGET).Replace("/transform", "");
+                }
+
                 string boneName = node.Attributes["name"].Value;
+                foreach (Bone bone in targetAniRig.DicBones.Values)
+                {
+                    if (bone.ID == bid)
+                    {
+                        boneName = bone.Name;
+                        break;
+                    }
+                }
 
-                boneName = boneName.Substring(0, boneName.Length);
+                //boneName = boneName.Substring(0, boneName.Length);
 
-                if (boneName == "Armature") continue;
+                if (boneName == ARMATURE) continue;
 
                 // 애니메이션 소스의 시간과 행렬을 담을 리스트를 생성한다.
                 List<float> sourceInput = new List<float>();
@@ -91,10 +121,10 @@ namespace Animate
                 List<string> interpolationInput = new List<string>();
 
                 // 채널과 샘플러를 가져온다.
-                XmlNode channel = node["channel"];
+                XmlNode channel = node[CHANNEL];
 
-                string channelName = channel.Attributes["source"].Value;
-                XmlNode sampler = node["sampler"];
+                string channelName = channel.Attributes[SOURCE].Value;
+                XmlNode sampler = node[SAMPLER];
                 if (channelName != "#" + sampler.Attributes["id"].Value) continue;
 
                 // sampler의 INPUT, OUTPUT, INTERPOLATION을 읽어온다.
@@ -103,22 +133,22 @@ namespace Animate
                 string interpolationName = "";
                 foreach (XmlNode input in sampler.ChildNodes)
                 {
-                    if (input.Attributes["semantic"].Value == "INPUT") inputName = input.Attributes["source"].Value;
-                    if (input.Attributes["semantic"].Value == "OUTPUT") outputName = input.Attributes["source"].Value;
-                    if (input.Attributes["semantic"].Value == "INTERPOLATION") interpolationName = input.Attributes["source"].Value;
+                    if (input.Attributes[SEMANTIC].Value == INPUT) inputName = input.Attributes[SOURCE].Value;
+                    if (input.Attributes[SEMANTIC].Value == OUTPUT) outputName = input.Attributes[SOURCE].Value;
+                    if (input.Attributes[SEMANTIC].Value == INTERPOLATION) interpolationName = input.Attributes[SOURCE].Value;
                 }
 
                 // 각 뼈마다 시간과 행렬을 가져온다.
                 foreach (XmlNode source in node.ChildNodes)
                 {
-                    if (source.Name == "source")
+                    if (source.Name == SOURCE)
                     {
                         // source의 id를 읽어온다.
                         string sourcesId = source.Attributes["id"].Value;
                         if ("#" + sourcesId == inputName)
                         {
                             // 시간 배열을 가져오고 최대시간을 얻는다.
-                            string[] value = source["float_array"].InnerText.Trim().Replace("\n", " ").Split(' ');
+                            string[] value = source[FLOAT_ARRAY].InnerText.Trim().Replace("\n", " ").Split(' ');
                             float[] items = new float[value.Length];
                             for (int i = 0; i < value.Length; i++)
                             {
@@ -132,7 +162,7 @@ namespace Animate
                         // 행렬은 각 본의 로컬 공간 변환행렬 (부모 본에 대한 상대적 변환)
                         if ("#" + sourcesId == outputName)
                         {
-                            string[] value = source["float_array"].InnerText.Trim().Replace("\n", " ").Split(' ');
+                            string[] value = source[FLOAT_ARRAY].InnerText.Trim().Replace("\n", " ").Split(' ');
                             float[] items = new float[value.Length];
                             for (int i = 0; i < value.Length; i++) items[i] = float.Parse(value[i]);
                             for (int i = 0; i < value.Length; i += 16)
@@ -151,7 +181,7 @@ namespace Animate
                         // source의 INTERPOLATION을 읽어온다. (예) LINEAR, BEZIER 등
                         if ("#" + sourcesId == interpolationName)
                         {
-                            string[] value = source["Name_array"].InnerText.Trim().Replace("\n", " ").Split(' ');
+                            string[] value = source[NAME_ARRAY].InnerText.Trim().Replace("\n", " ").Split(' ');
                             interpolationInput.AddRange(value);
                         }
                     }
