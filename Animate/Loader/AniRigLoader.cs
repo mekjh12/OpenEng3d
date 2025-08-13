@@ -9,7 +9,6 @@ namespace Animate
 {
     public class AniRigLoader
     {
-
         public static (Armature, MotionStorage, List<TexturedModel>, Matrix4x4f) LoadFile(string filename) 
         {
             // dae 파일을 읽어온다.
@@ -17,21 +16,21 @@ namespace Animate
             xml.Load(filename);
 
             // 텍스처, 재질, 이미지효과 정보를 읽어온다.
-            Dictionary<string, Texture> textures = AniXmlLoader.LibraryImages(filename, xml);
-            Dictionary<string, string> materialToEffect = AniXmlLoader.LoadMaterials(xml);
-            Dictionary<string, string> effectToImage = AniXmlLoader.LoadEffect(xml);
+            Dictionary<string, Texture> textures = AniColladaLoader.LibraryImages(filename, xml);
+            Dictionary<string, string> materialToEffect = AniColladaLoader.LoadMaterials(xml);
+            Dictionary<string, string> effectToImage = AniColladaLoader.LoadEffect(xml);
 
             Armature armature = new Armature();
             MotionStorage motions = new MotionStorage();
 
             // 지오메트리 정보를 읽어온다. position, normal, texcoord, color, MeshTriangles 정보가 포함되어 있다.
-            List<MeshTriangles> meshes = AniXmlLoader.LibraryGeometris(xml,
+            List<MeshTriangles> meshes = AniColladaLoader.LibraryGeometris(xml,
                 out List<Vertex3f> lstPositions,
                 out List<Vertex2f> lstTexCoord,
                 out List<Vertex3f> lstNormals);
 
             // 컨트롤러 정보, 역바인딩포즈를 읽어온다.
-            AniXmlLoader.LibraryController(xml,
+            AniColladaLoader.LibraryController(xml,
                 out List<string> boneNames,
                 out Dictionary<string, Matrix4x4f> invBindPoses,
                 out List<BoneWeightVector4> vertexBoneData,
@@ -48,7 +47,7 @@ namespace Animate
             //AniXmlLoader.LibraryAnimations(xml);
 
             // (5) library_visual_scenes = bone hierarchy + rootBone
-            AniXmlLoader.LibraryVisualScenes(xml, invBindPoses, ref armature);
+            AniColladaLoader.LibraryVisualScenes(xml, invBindPoses, ref armature);
 
             // (6) source positions으로부터 
             Matrix4x4f A0 = armature.RootBone.BoneTransforms.LocalBindTransform;

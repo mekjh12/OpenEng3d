@@ -69,7 +69,7 @@
     <Compile Include="AniModels\Rig\AniRig.cs" />
     <Compile Include="AniModels\Animator.cs" />
     <Compile Include="AniModels\AniActor.cs" />
-    <Compile Include="AniModels\Rig\AniRigLoader.cs" />
+    <Compile Include="Loader\AniRigLoader.cs" />
     <Compile Include="AniModels\Rig\ATTACHMENT_SLOT .cs" />
     <Compile Include="AniModels\Rig\HorseRig.cs" />
     <Compile Include="AniModels\Rig\PrimateRig.cs" />
@@ -85,13 +85,15 @@
     <Compile Include="Armature\MixamoBone.cs" />
     <Compile Include="Armature\MixamoBoneExtensions.cs" />
     <Compile Include="Core\IComponent.cs" />
-    <Compile Include="Loader\AniXmlLoader.cs" />
+    <Compile Include="Loader\SimpleDaeLoader.cs" />
+    <Compile Include="Loader\AniColladaLoader.cs" />
     <Compile Include="Armature\Bone.cs" />
     <Compile Include="Core\BoneAngle.cs" />
     <Compile Include="Core\BoneTransform.cs" />
     <Compile Include="Kinematic\Clothes.cs" />
     <Compile Include="Core\ColorPoint.cs" />
     <Compile Include="AniModels\Human.cs" />
+    <Compile Include="Loader\MotionLoader.cs" />
     <Compile Include="Motion\LayeredMotion.cs" />
     <Compile Include="Motion\BlendMotion.cs" />
     <Compile Include="Motion\FootStepAnalyzer.cs" />

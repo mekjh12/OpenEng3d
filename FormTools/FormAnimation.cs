@@ -124,7 +124,7 @@ namespace FormTools
             {
                 if (Path.GetExtension(fileName).Equals(".dae"))
                 {
-                    Motion motion = AniXmlLoader.LoadMixamoMotion(aniRig, fileName);
+                    Motion motion = MotionLoader.LoadMixamoMotion(aniRig, fileName);
                     _mixamoRotMotionStorage.AddMotion(motion);
                 }
             }

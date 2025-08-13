@@ -98,7 +98,7 @@ namespace Animate
 
         public static TexturedModel WearAssignWeightTransfer(TexturedModel skinModel, string clothFileName)
         {
-            TexturedModel texturedModel = AniXmlLoader.LoadOnlyGeometryMesh(clothFileName);
+            TexturedModel texturedModel = SimpleDaeLoader.LoadOnlyGeometryMesh(clothFileName);
 
             if (!skinModel.IsDrawElement)
             {
