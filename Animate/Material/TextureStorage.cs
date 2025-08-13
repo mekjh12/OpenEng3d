@@ -1,7 +1,5 @@
-﻿using Model3d;
+﻿using Common.Abstractions;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 
 namespace Animate
 {

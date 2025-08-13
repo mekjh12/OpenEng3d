@@ -1,5 +1,4 @@
-﻿using Animate.AniModels;
-using Common.Abstractions;
+﻿using Common.Abstractions;
 using OpenGL;
 using Shader;
 using System;

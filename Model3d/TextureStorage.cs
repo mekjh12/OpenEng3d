@@ -1,9 +1,7 @@
-﻿using Assimp.Unmanaged;
+﻿using Common.Abstractions;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
-using static Model3d.Texture;
 
 namespace Model3d
 {
@@ -32,14 +30,14 @@ namespace Model3d
             _texturesLoaded.Clear();
         }
 
-        public static Texture Add(string filename, TextureMapType textureMapType = TextureMapType.Diffuse)
+        public static Texture Add(string filename, Texture.TextureMapType textureMapType = Texture.TextureMapType.Diffuse)
         {
             // 초기화가 진행되지 않았으면 초기화를 한다.
             if (!_isInit)
             {
                 if (File.Exists(NullTextureFileName))
                 {
-                    Texture texture = new Texture(NullTextureFileName, TextureMapType.Diffuse);
+                    Texture texture = new Texture(NullTextureFileName, Texture.TextureMapType.Diffuse);
                     _texturesLoaded.Add(NullTextureFileName, texture);
                     DebugTexture = texture;
                     _isInit = true;

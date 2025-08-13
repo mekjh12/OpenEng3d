@@ -1,5 +1,4 @@
-﻿using Animate.AniModels;
-using Model3d;
+﻿using Model3d;
 using OpenGL;
 using System;
 

@@ -1,5 +1,5 @@
 ﻿using Assimp;
-using Model3d;
+using Common.Abstractions;
 using OpenGL;
 using System;
 using System.Collections.Generic;

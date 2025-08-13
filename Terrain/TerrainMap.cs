@@ -1,4 +1,4 @@
-﻿using Geometry;
+﻿using Common.Abstractions;
 using Model3d;
 using OpenGL;
 using System;

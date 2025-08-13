@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 
 using System;
+using Common.Abstractions;
 
 /// <summary>
 /// Assimp를 사용하여 3D OBJ 파일을 로드하고 OpenGL 렌더링용으로 변환하는 클래스

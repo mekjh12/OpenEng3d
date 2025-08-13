@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using Common.Abstractions;
+using OpenGL;
 using System.Collections.Generic;
 
 namespace Model3d

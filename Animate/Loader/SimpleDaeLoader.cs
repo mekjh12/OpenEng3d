@@ -4,6 +4,7 @@ using System.Xml;
 using System;
 using OpenGL;
 using ZetaExt;
+using Common.Abstractions;
 
 namespace Animate
 {

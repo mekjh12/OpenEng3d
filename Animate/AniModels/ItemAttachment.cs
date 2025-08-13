@@ -1,7 +1,7 @@
 ﻿using Model3d;
 using OpenGL;
 
-namespace Animate.AniModels
+namespace Animate
 {
     /// <summary>
     /// 아이템 부착 정보를 담는 구조체

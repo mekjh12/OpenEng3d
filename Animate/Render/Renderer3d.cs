@@ -1,13 +1,9 @@
-﻿using Animate.AniModels;
-using Camera3d;
+﻿using Camera3d;
 using Common.Abstractions;
 using Model3d;
 using OpenGL;
 using Shader;
-using System;
 using System.Collections.Generic;
-using System.Xml.Linq;
-using ZetaExt;
 
 namespace Animate
 {

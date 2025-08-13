@@ -62,13 +62,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AniModels\AniActor.Equip.cs" />
+    <Compile Include="AniModels\AniActor\AniActor.Equip.cs" />
     <Compile Include="AniModels\BlendingAnimator.cs" />
-    <Compile Include="AniModels\Horse.cs" />
-    <Compile Include="AniModels\IAniActor.cs" />
+    <Compile Include="AniModels\Actor\Horse.cs" />
+    <Compile Include="AniModels\AniActor\IAniActor.cs" />
     <Compile Include="AniModels\Rig\AniRig.cs" />
     <Compile Include="AniModels\Animator.cs" />
-    <Compile Include="AniModels\AniActor.cs" />
+    <Compile Include="AniModels\AniActor\AniActor.cs" />
     <Compile Include="Loader\AniRigLoader.cs" />
     <Compile Include="AniModels\Rig\ATTACHMENT_SLOT .cs" />
     <Compile Include="AniModels\Rig\HorseRig.cs" />
@@ -92,7 +92,7 @@
     <Compile Include="Core\BoneTransform.cs" />
     <Compile Include="Kinematic\Clothes.cs" />
     <Compile Include="Core\ColorPoint.cs" />
-    <Compile Include="AniModels\Human.cs" />
+    <Compile Include="AniModels\Actor\Human.cs" />
     <Compile Include="Loader\MotionLoader.cs" />
     <Compile Include="Motion\LayeredMotion.cs" />
     <Compile Include="Motion\BlendMotion.cs" />
@@ -101,7 +101,7 @@
     <Compile Include="Motion\Motionable.cs" />
     <Compile Include="Motion\KeyFrame.cs" />
     <Compile Include="Kinematic\Kinetics.cs" />
-    <Compile Include="AniModels\Primate.cs" />
+    <Compile Include="AniModels\Actor\Primate.cs" />
     <Compile Include="Core\MeshTriangles.cs" />
     <Compile Include="Motion\MixamoRotMotionStorage.cs" />
     <Compile Include="Motion\Motion.cs" />
@@ -156,7 +156,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AniModels\AniActor.Debug.cs" />
+    <Compile Include="AniModels\AniActor\AniActor.Debug.cs" />
     <None Include="packages.config" />
     <None Include="README.md" />
   </ItemGroup>
