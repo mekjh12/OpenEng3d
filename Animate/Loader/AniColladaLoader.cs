@@ -4,6 +4,7 @@ using OpenGL;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Resources;
 using System.Xml;
 using ZetaExt;
 
@@ -479,8 +480,10 @@ namespace Animate
         /// <param name="dicBoneIndex">본익덱스 딕셔너리</param>
         /// <param name="dicBones">생성한 본딕셔너리</param>
         public static void LibraryVisualScenes(XmlDocument xml,
-            Dictionary<string, Matrix4x4f> invBindPoses, ref Armature armature)
+            Dictionary<string, Matrix4x4f> invBindPoses, ref Armature armature, out Matrix4x4f bind)
         {
+            bind = Matrix4x4f.Identity;
+
             // 뼈대 구조를 읽기 위하여 준비한다.
             XmlNodeList library_visual_scenes = xml.GetElementsByTagName("library_visual_scenes");
             if (library_visual_scenes.Count == 0)
@@ -514,8 +517,9 @@ namespace Animate
             // XML노드들을 순회하며 본을 생성한다.
             Dictionary<string, Bone> boneDics = new Dictionary<string, Bone>();
             Matrix4x4f startMatrix = Matrix4x4f.Identity;
+            bool modifyStartMatrix = true;
 
-            foreach ((XmlNode parentNode, XmlNode node) in rootNode.TraverseXmlNodesWithParent())
+            foreach ((XmlNode parentNode, XmlNode node) in visual_scene_nodes.TraverseXmlNodesWithParent())
             {
                 // 노드가 "JOINT" 타입인지 확인한다.
                 if (!node.HasAttribute("type")) continue;
@@ -525,28 +529,38 @@ namespace Animate
                 if (nodeType == "NODE")
                 {
                     if (node["matrix"] == null) continue;
-                    Matrix4x4f nodeMatrix = node["matrix"].InnerText.ParseToMatrix4x4f(transposed: true);
-                    startMatrix = nodeMatrix * startMatrix;
+
+                    Matrix4x4f nodeMatrix = Matrix4x4f.Identity;
+                    if (modifyStartMatrix)
+                    {
+                        nodeMatrix = node["matrix"].InnerText.ParseToMatrix4x4f(transposed: true);
+
+                        if (node.Attributes["id"].Value != ARMATURE)
+                        {
+                            startMatrix = nodeMatrix * startMatrix;
+                        }
+                    }
 
                     // 루트본을 설정한다.
-                    string armatureName = ARMATURE;
-                    if (node.Attributes["id"].Value == armatureName)
+                    if (node.Attributes["id"].Value == ARMATURE)
                     {
-                        Bone root = new Bone(armatureName, 0)
+                        Bone root = new Bone(ARMATURE, 0)
                         {
                             Index = 0,
                             ID = "Armature",
                         };
-                        root.BoneTransforms.LocalBindTransform = node["matrix"].InnerText.ParseToMatrix4x4f(transposed: true);
+                        root.BoneTransforms.LocalBindTransform = startMatrix * node["matrix"].InnerText.ParseToMatrix4x4f(transposed: true);
 
-                        if (invBindPoses.ContainsKey(armatureName))
+                        if (invBindPoses.ContainsKey(ARMATURE))
                         {
-                            root.BoneTransforms.InverseBindPoseTransform = invBindPoses[armatureName];
+                            root.BoneTransforms.InverseBindPoseTransform = invBindPoses[ARMATURE];
                         }
 
-                        boneDics[armatureName] = root;
+                        boneDics[ARMATURE] = root;
                         armature.AddBone(root);
                         armature.SetRootBone(root);
+
+                        modifyStartMatrix = false;
                     }
 
                     continue;
@@ -588,6 +602,8 @@ namespace Animate
                 }
 
             }
+
+            bind = startMatrix;
 
             return;
         }

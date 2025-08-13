@@ -93,9 +93,8 @@ namespace FormTools
             // 그리드셰이더 초기화
             _glControl3.InitGridShader(PROJECT_PATH);
               
-
             // =========================================
-            HorseRig horseRig = new HorseRig(PROJECT_PATH + @"\Res\Actor\Horse\bear.dae", isLoadAnimation: false);
+            HorseRig horseRig = new HorseRig(PROJECT_PATH + @"\Res\Actor\Horse\horse.dae", isLoadAnimation: false);
 
             _mixamoRotMotionStorage = new MixamoRotMotionStorage();
             foreach (string fileName in Directory.GetFiles(PROJECT_PATH + "\\Res\\Action\\Horse\\"))
@@ -233,10 +232,17 @@ namespace FormTools
             {
                 for (int i = 0; i < _aniActors.Count; i++)
                 {
-                    (_aniActors[i] as Human).SetMotion(HUMAN_ACTION.RANDOM);
+                    (_aniActors[i] as Horse).SetMotion( HORSE_ACTION.ABC);
                 }
             }
             else if (e.KeyCode == Keys.D2)
+            {
+                for (int i = 0; i < _aniActors.Count; i++)
+                {
+                    (_aniActors[i] as Horse).SetMotion(HORSE_ACTION.CDE);
+                }
+            }
+            else if (e.KeyCode == Keys.D3)
             {
                 _aniActors[0].SetMotion("Defeated-Dying");
             }

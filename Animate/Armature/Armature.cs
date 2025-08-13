@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace Animate
 {
@@ -17,7 +18,6 @@ namespace Animate
 
         // 본 관리 데이터
         private Dictionary<string, Bone> _dicBones;         // 본 이름 -> 본 객체 매핑
-        private Dictionary<string, Bone> _dicTargetBones;   // 본 이름 -> 본 객체 매핑
         private Dictionary<string, int> _dicBoneIndex;      // 본 이름 -> 인덱스 매핑
 
         /// <summary>
@@ -33,8 +33,6 @@ namespace Animate
         public Bone RootBone => _rootBone;
 
         public Dictionary<string, Bone> DicBones => _dicBones;
-
-        public Dictionary<string, Bone> DicTargetBones => _dicTargetBones;
 
         /// <summary>
         /// Armature 생성자
@@ -203,6 +201,102 @@ namespace Animate
                 throw new ArgumentNullException(nameof(rootBone));
             }
             _rootBone = rootBone;
+        }
+
+
+        /// <summary>
+        /// RootBone으로부터 연결된 모든 본을 쇠사슬 구조로 출력한다.
+        /// </summary>
+        /// <returns>본들의 계층 구조를 나타내는 문자열</returns>
+        public override string ToString()
+        {
+            if (_rootBone == null)
+            {
+                return "Armature: [루트 본 없음]";
+            }
+
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine($"Armature: 총 {_dicBones.Count}개의 본");
+            sb.AppendLine($"엉덩이 높이 비율: {_hipHeightScaled:F3}");
+            sb.AppendLine("본 계층 구조:");
+
+            // 루트 본부터 시작하여 재귀적으로 트리 구조 출력
+            BuildBoneChainString(_rootBone, sb, "", true);
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// 재귀적으로 본의 계층 구조를 문자열로 구성한다.
+        /// </summary>
+        /// <param name="bone">현재 출력할 본</param>
+        /// <param name="sb">문자열 빌더</param>
+        /// <param name="indent">들여쓰기 문자열</param>
+        /// <param name="isLast">현재 본이 같은 레벨에서 마지막 본인지 여부</param>
+        private void BuildBoneChainString(Bone bone, StringBuilder sb, string indent, bool isLast)
+        {
+            if (bone == null) return;
+
+            // 트리 구조 표시용 문자
+            string connector = isLast ? "└── " : "├── ";
+            string nextIndent = indent + (isLast ? "    " : "│   ");
+
+            // 본 정보 출력
+            string boneInfo = $"[{bone.Index}] {bone.Name}";
+
+            // 추가 정보 표시 (자식 개수, 위치 등)
+            if (bone.Children.Count > 0)
+            {
+                boneInfo += $" (자식: {bone.Children.Count}개)";
+            }
+            else
+            {
+                boneInfo += " (말단 본)";
+            }
+
+            sb.AppendLine($"{indent}{connector}{boneInfo}");
+
+            // 자식 본들을 재귀적으로 출력
+            for (int i = 0; i < bone.Children.Count; i++)
+            {
+                bool isLastChild = (i == bone.Children.Count - 1);
+                BuildBoneChainString(bone.Children[i], sb, nextIndent, isLastChild);
+            }
+        }
+
+        /// <summary>
+        /// 간단한 본 체인 정보를 한 줄로 출력한다.
+        /// </summary>
+        /// <returns>간단한 본 체인 문자열</returns>
+        public string ToSimpleChainString()
+        {
+            if (_rootBone == null)
+            {
+                return "빈 골격";
+            }
+
+            StringBuilder sb = new StringBuilder();
+            sb.Append($"[{_rootBone.Name}]");
+
+            BuildSimpleChain(_rootBone, sb);
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// 재귀적으로 간단한 체인 문자열을 구성한다.
+        /// </summary>
+        /// <param name="bone">현재 본</param>
+        /// <param name="sb">문자열 빌더</param>
+        private void BuildSimpleChain(Bone bone, StringBuilder sb)
+        {
+            if (bone == null || bone.Children.Count == 0) return;
+
+            foreach (var child in bone.Children)
+            {
+                sb.Append($" → [{child.Name}]");
+                BuildSimpleChain(child, sb);
+            }
         }
     }
 }

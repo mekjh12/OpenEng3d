@@ -3,6 +3,7 @@ using Model3d;
 using OpenGL;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Xml;
 using ZetaExt;
 
@@ -48,12 +49,12 @@ namespace Animate
             //AniXmlLoader.LibraryAnimations(xml);
 
             // (5) library_visual_scenes = bone hierarchy + rootBone
-            AniColladaLoader.LibraryVisualScenes(xml, invBindPoses, ref armature);
+            AniColladaLoader.LibraryVisualScenes(xml, invBindPoses, ref armature, out Matrix4x4f bind);
 
             // (6) source positions으로부터 
             Matrix4x4f A0 = armature.RootBone.BoneTransforms.LocalBindTransform;
             Matrix4x4f S = bindShapeMatrix;
-            Matrix4x4f A0xS = A0 * S;
+            Matrix4x4f A0xS = A0 * bindShapeMatrix;
 
             // 모든 꼭지점에 바이딩세이프를 적용한다.
             for (int i = 0; i < lstPositions.Count; i++)

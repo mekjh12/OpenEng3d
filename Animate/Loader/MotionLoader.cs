@@ -111,8 +111,6 @@ namespace Animate
                     }
                 }
 
-                //boneName = boneName.Substring(0, boneName.Length);
-
                 if (boneName == ARMATURE) continue;
 
                 // 애니메이션 소스의 시간과 행렬을 담을 리스트를 생성한다.
@@ -217,10 +215,7 @@ namespace Animate
                 {
                     string boneName = item.Key;
                     Dictionary<float, Matrix4x4f> source = item.Value;
-
-                    boneName = boneName.Replace("_pose_m", "");
-                    boneName = boneName.Replace("Armature_Armature_", "");
-
+                    
                     Bone bone = targetAniRig.Armature[boneName];
                     if (bone == null) continue;
 

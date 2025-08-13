@@ -2,14 +2,13 @@
 // 🎬 자동 스캔 기반 다중 타입 ActionEnums 생성 시스템
 // ===================================
 // 📄 생성 스크립트: GenerateMultiActionEnums.ps1
-// 🔧 자동 감지된 타입: Bear, Horse, Human
+// 🔧 자동 감지된 타입: Horse, Human
 // ===================================
 // 📁 폴더 구조 자동 스캔:
-//    ../Res/Action/Bear/*.dae → BEAR_ACTION enum
 //    ../Res/Action/Horse/*.dae → HORSE_ACTION enum
 //    ../Res/Action/Human/*.dae → HUMAN_ACTION enum
 // ===================================
-// 자동생성 by GenerateMultiActionEnums.ps1: 2025-08-13 11:30:39
+// 자동생성 by GenerateMultiActionEnums.ps1: 2025-08-13 14:14:56
 
 using System;
 using System.Linq;
@@ -25,32 +24,6 @@ namespace AutoGenEnums
         string GetName();
         bool IsCommonAction();
     }
-    // ==================== BEAR ACTIONS ====================
-    
-    public static class BearActions
-    {
-        public static Dictionary<BEAR_ACTION, string> ActionMap = new Dictionary<BEAR_ACTION, string>()
-        {
-            {BEAR_ACTION.ABC, "abc"},
-            {BEAR_ACTION.BEAR, "bear"},
-        };
-
-        public static string GetRandomAction() => ActionMap.Values.ElementAt(new Random().Next(ActionMap.Count));
-        public static int Count => 2;
-        public static bool HasAction(BEAR_ACTION action) => ActionMap.ContainsKey(action);
-        public static string GetActionName(BEAR_ACTION action) => ActionMap.TryGetValue(action, out string name) ? name : null;
-    }
-
-    public enum BEAR_ACTION : int
-    {
-        ABC = 0,
-        BEAR = 1,
-        // 추가된 액션들
-        RANDOM,
-        STOP,
-        NONE,
-        COUNT,
-    }
     // ==================== HORSE ACTIONS ====================
     
     public static class HorseActions
@@ -58,7 +31,7 @@ namespace AutoGenEnums
         public static Dictionary<HORSE_ACTION, string> ActionMap = new Dictionary<HORSE_ACTION, string>()
         {
             {HORSE_ACTION.ABC, "abc"},
-            {HORSE_ACTION.BEAR, "bear"},
+            {HORSE_ACTION.CDE, "cde"},
         };
 
         public static string GetRandomAction() => ActionMap.Values.ElementAt(new Random().Next(ActionMap.Count));
@@ -70,7 +43,7 @@ namespace AutoGenEnums
     public enum HORSE_ACTION : int
     {
         ABC = 0,
-        BEAR = 1,
+        CDE = 1,
         // 추가된 액션들
         RANDOM,
         STOP,
@@ -125,9 +98,6 @@ namespace AutoGenEnums
         {
             "RANDOM", "STOP", "NONE", "COUNT"
         };
-        public static int GetValue(this BEAR_ACTION action) => (int)action;
-        public static string GetName(this BEAR_ACTION action) => action.ToString();
-        public static bool IsCommonAction(this BEAR_ACTION action) => CommonActions.Contains(action.ToString());
         public static int GetValue(this HORSE_ACTION action) => (int)action;
         public static string GetName(this HORSE_ACTION action) => action.ToString();
         public static bool IsCommonAction(this HORSE_ACTION action) => CommonActions.Contains(action.ToString());
@@ -139,25 +109,24 @@ namespace AutoGenEnums
     public static class ActionUtils
     {
         // 모든 타입의 액션 개수
-        public static int TotalActionCount => BearActions.Count + HorseActions.Count + HumanActions.Count;
+        public static int TotalActionCount => HorseActions.Count + HumanActions.Count;
         
         // 감지된 액션 타입들
-        public static readonly string[] DetectedActionTypes = { "Bear", "Horse", "Human" };
+        public static readonly string[] DetectedActionTypes = { "Horse", "Human" };
         
         // 타입별 액션 통계
         public static void PrintActionStats()
         {
-            System.Console.WriteLine("=== Auto-Detected Action Statistics ===");            System.Console.WriteLine("Bear Actions: {0}", BearActions.Count);            System.Console.WriteLine("Horse Actions: {0}", HorseActions.Count);            System.Console.WriteLine("Human Actions: {0}", HumanActions.Count);            System.Console.WriteLine("Total Actions: {0}", TotalActionCount);
+            System.Console.WriteLine("=== Auto-Detected Action Statistics ===");            System.Console.WriteLine("Horse Actions: {0}", HorseActions.Count);            System.Console.WriteLine("Human Actions: {0}", HumanActions.Count);            System.Console.WriteLine("Total Actions: {0}", TotalActionCount);
             System.Console.WriteLine("Detected Types: {0}", string.Join(", ", DetectedActionTypes));
         }
         
-        // 동적 랜덤 액션 가져오기        public static string GetRandomBearAction() => BearActions.GetRandomAction();        public static string GetRandomHorseAction() => HorseActions.GetRandomAction();        public static string GetRandomHumanAction() => HumanActions.GetRandomAction();        
+        // 동적 랜덤 액션 가져오기        public static string GetRandomHorseAction() => HorseActions.GetRandomAction();        public static string GetRandomHumanAction() => HumanActions.GetRandomAction();        
         // 타입명으로 랜덤 액션 가져오기 (동적)
         public static string GetRandomActionByType(string typeName)
         {
             switch (typeName?.ToLower())
-            {                case "bear":
-                    return BearActions.GetRandomAction();                case "horse":
+            {                case "horse":
                     return HorseActions.GetRandomAction();                case "human":
                     return HumanActions.GetRandomAction();                default:
                     throw new ArgumentException($"Unknown action type: {typeName}. Available types: {string.Join(", ", DetectedActionTypes)}");

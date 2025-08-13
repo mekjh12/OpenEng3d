@@ -122,6 +122,10 @@ namespace Animate
                 var (bone, parentIndex) = queue.Dequeue();
 
                 boneList.Add(bone);
+
+                Console.WriteLine($"{bone.Name} {bone.Index} => {parentIndex}");
+
+                //if (bone.Name == "Knee_L") parentIndex = 0;
                 parentIndexList.Add(parentIndex);
 
                 // 자식들을 큐에 추가
@@ -289,10 +293,11 @@ namespace Animate
             {
                 Bone bone = _boneTraversalOrder[i];
                 int boneIndex = bone.Index;
+                
                 if (boneIndex < 0) continue;
 
                 // 부모 변환 가져오기
-                Matrix4x4f parentTransform = _parentIndices[i] == -1 ?
+                Matrix4x4f parentTransform = _parentIndices[i] < 0 ?
                     _identityMatrix : // 루트 본
                     _rootTransforms[_boneTraversalOrder[_parentIndices[i]].Index]; // 부모 본의 변환
 
