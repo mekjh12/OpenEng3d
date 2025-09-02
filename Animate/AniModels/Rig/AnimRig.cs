@@ -10,7 +10,7 @@ namespace Animate
     /// <summary>
     /// 모델, 모션, 골격을 통합 관리하는 애니메이션 리그 클래스
     /// </summary>
-    public class AniRig
+    public partial class AnimRig
     {
         // -----------------------------------------------------------------------
         // 멤버변수
@@ -54,7 +54,7 @@ namespace Animate
         /// </summary>
         /// <param name="filename">로드할 파일 경로</param>
         /// <param name="isLoadAnimation">애니메이션 로드 여부</param>
-        public AniRig(string filename, bool isLoadAnimation = true)
+        public AnimRig(string filename, bool isLoadAnimation = true)
         {
             // 파일명과 이름 설정
             _filename = filename;
@@ -182,5 +182,6 @@ namespace Animate
 
             return newBone;
         }
+
     }
 }

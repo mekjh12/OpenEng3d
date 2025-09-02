@@ -1,6 +1,4 @@
 ﻿using AutoGenEnums;
-using Geometry;
-using OpenGL;
 using ZetaExt;
 
 namespace Animate
@@ -8,7 +6,7 @@ namespace Animate
     public class Human : Primate<HUMAN_ACTION>
     {
 
-        public Human(string name, AniRig aniRig) : base(name, aniRig, HUMAN_ACTION.A_T_POSE)
+        public Human(string name, AnimRig aniRig) : base(name, aniRig, HUMAN_ACTION.A_T_POSE)
         {
            
         }

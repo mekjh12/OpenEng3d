@@ -1,5 +1,4 @@
-﻿using Microsoft.SqlServer.Server;
-using OpenGL;
+﻿using OpenGL;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -66,7 +65,7 @@ namespace Animate
         /// </summary>
         /// <param name="targetAniRig"></param>
         /// <param name="motionFileName"></param>
-        public static Motion LoadMixamoMotion(AniRig targetAniRig, string motionFileName)
+        public static Motion LoadMixamoMotion(AnimRig targetAniRig, string motionFileName)
         {
             // Xml을 준비한다.
             XmlDocument xml = new XmlDocument();
@@ -102,6 +101,8 @@ namespace Animate
                 }
 
                 string boneName = node.Attributes["name"].Value;
+                boneName = boneName.Replace(" ", "_"); // 뼈 이름에 공백이 있으면 _로 변경
+
                 foreach (Bone bone in targetAniRig.DicBones.Values)
                 {
                     if (bone.ID == bid)

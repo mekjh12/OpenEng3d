@@ -62,13 +62,22 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AniModels\AniActor\AniActor.Equip.cs" />
+    <Compile Include="AniModels\Actor\Bird.cs" />
+    <Compile Include="AniModels\Actor\Bear.cs" />
+    <Compile Include="AniModels\Actor\Donkey.cs" />
+    <Compile Include="AniModels\AniActor\ActionHandler.cs" />
+    <Compile Include="AniModels\AniActor\AnimActor.Equip.cs" />
+    <Compile Include="AniModels\AniActor\AnimalActor.cs" />
     <Compile Include="AniModels\BlendingAnimator.cs" />
     <Compile Include="AniModels\Actor\Horse.cs" />
-    <Compile Include="AniModels\AniActor\IAniActor.cs" />
-    <Compile Include="AniModels\Rig\AniRig.cs" />
+    <Compile Include="AniModels\AniActor\IAnimActor.cs" />
+    <Compile Include="AniModels\Rig\AnimRig.cs" />
     <Compile Include="AniModels\Animator.cs" />
-    <Compile Include="AniModels\AniActor\AniActor.cs" />
+    <Compile Include="AniModels\AniActor\AnimActor.cs" />
+    <Compile Include="AniModels\Rig\AnimRig.Correction.cs" />
+    <Compile Include="AniModels\Rig\BirdRig.cs" />
+    <Compile Include="AniModels\Rig\BearRig.cs" />
+    <Compile Include="AniModels\Rig\DonkeyRig.cs" />
     <Compile Include="Loader\AniRigLoader.cs" />
     <Compile Include="AniModels\Rig\ATTACHMENT_SLOT .cs" />
     <Compile Include="AniModels\Rig\HorseRig.cs" />
@@ -156,7 +165,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AniModels\AniActor\AniActor.Debug.cs" />
+    <Compile Include="AniModels\AniActor\AnimActor.Debug.cs" />
     <None Include="packages.config" />
     <None Include="README.md" />
   </ItemGroup>

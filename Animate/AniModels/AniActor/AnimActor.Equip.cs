@@ -4,7 +4,7 @@ using System;
 
 namespace Animate
 {
-    public abstract partial class AniActor<TAction> : IAniActor where TAction : struct, Enum
+    public abstract partial class AnimActor<TAction> : IAnimActor where TAction : struct, Enum
     {
         public void EquipItem(
             ATTACHMENT_SLOT where, 

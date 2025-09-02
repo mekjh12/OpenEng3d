@@ -1,12 +1,21 @@
 ﻿using OpenGL;
 using System;
 using System.Collections.Generic;
+using ZetaExt;
 
 namespace Animate
 {
     public class MixamoRotMotionStorage
     {
         Dictionary<string, Motionable> _motions = new Dictionary<string, Motionable>();
+
+        /// <summary>
+        /// 모션 스토리지를 비운다.
+        /// </summary>
+        public void Clear()
+        {
+           _motions?.Clear();
+        }
 
         /// <summary>
         /// 모션을 추가한다.
@@ -29,7 +38,7 @@ namespace Animate
         /// 모션스토리지에서 모션을 리타겟팅하여 지정된 애니메이션 DAE에 모션을 수정합니다.
         /// </summary>
         /// <param name="targetAniRig"></param>
-        public void RetargetMotionsTransfer(AniRig targetAniRig)
+        public void RetargetMotionsTransfer(AnimRig targetAniRig)
         {
             Animator animator;
 
@@ -47,7 +56,7 @@ namespace Animate
                 {
                     // src 모션의 첫번째 키프레임에서 본 포즈를 가져온다.
                     BoneTransform[] bonePoses = srcMotion.FirstKeyFrame.BoneTransforms;
-                    string[] boneNames = srcMotion.FirstKeyFrame.BoneNames;
+                    string[] boneNames = srcMotion.ExtractBoneName();// srcMotion.FirstKeyFrame.BoneNames;
                     Dictionary<string, float> bonesLength = new Dictionary<string, float>();
                     for (int i=0; i < boneNames.Length; i++ )
                     {

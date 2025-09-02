@@ -2,7 +2,7 @@
 
 namespace Animate
 {
-    public class PrimateRig : AniRig
+    public class PrimateRig : AnimRig
     {
         public int HipIndex { get; private set; }
         public int RightHandIndex { get; private set; }

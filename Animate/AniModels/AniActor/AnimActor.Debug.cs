@@ -3,7 +3,7 @@ using System;
 
 namespace Animate
 {
-    public abstract partial class AniActor<TAction> : IAniActor where TAction : struct, Enum
+    public abstract partial class AnimActor<TAction> : IAnimActor where TAction : struct, Enum
     {
         #region 디버깅용 멤버 변수
         PolygonMode _polygonMode = PolygonMode.Fill; // 폴리곤 모드

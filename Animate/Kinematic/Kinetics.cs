@@ -1,7 +1,6 @@
 ﻿using OpenGL;
 using System;
 using System.Collections.Generic;
-using System.Runtime.Remoting.Channels;
 using ZetaExt;
 
 namespace Animate
@@ -17,7 +16,7 @@ namespace Animate
     /// </summary>
     public static class Kinetics
     {
-        public static float Norm(this Vertex3f vec) => (float)Math.Sqrt(vec.Dot(vec));
+        //public static float Norm(this Vertex3f vec) => (float)Math.Sqrt(vec.Dot(vec));
 
         /// <summary>
         /// 
@@ -370,7 +369,7 @@ namespace Animate
         }
 
         /// <summary>
-        /// Gregory G.Slabaugh, "Computing Euler angles from a rotation matrix."
+        /// Gregory G.Slabaugh, "Computing Euler Angles from a Rotation Matrix."
         /// </summary>
         /// <param name="mat"></param>
         /// <returns></returns>
@@ -420,73 +419,6 @@ namespace Animate
             }
 
             return new Vertex3f[] { new Vertex3f(psi1, theta1, phi1), new Vertex3f(psi2, theta2, phi2) };
-        }
-
-
-        /// <summary>
-        ///  Quaternions for Computer Graphics by John Vince. p199 참고
-        /// </summary>
-        /// <param name="mat"></param>
-        /// <returns></returns>
-        public static ZetaExt.Quaternion ToQuaternion(this Matrix4x4f mat)
-        {
-            ZetaExt.Quaternion q = ZetaExt.Quaternion.Identity;
-            float a11 = mat[0, 0];
-            float a12 = mat[1, 0];
-            float a13 = mat[2, 0];
-
-            float a21 = mat[0, 1];
-            float a22 = mat[1, 1];
-            float a23 = mat[2, 1];
-
-            float a31 = mat[0, 2];
-            float a32 = mat[1, 2];
-            float a33 = mat[2, 2];
-
-            float trace = a11 + a22 + a33;
-            if (trace >= -1)
-            {
-                // I changed M_EPSILON to 0
-                float s = 0.5f / (float)Math.Sqrt(trace + 1.0f);
-                q.W = 0.25f / s;
-                q.X = (a32 - a23) * s;
-                q.Y = (a13 - a31) * s;
-                q.Z = (a21 - a12) * s;
-            }
-            else
-            {
-                if (1 + a11 - a22 - a33 >= 0)
-                {
-                    float s = 2.0f * (float)Math.Sqrt(1.0f + a11 - a22 - a33);
-                    q.X = 0.25f * s;
-                    q.Y = (a12 + a21) / s;
-                    q.Z = (a13 + a31) / s;
-                    q.W = (a32 - a23) / s;
-                }
-                else if (1 - a11 + a22 - a33 >= 0)
-                {
-                    float s = 2.0f * (float)Math.Sqrt(1 - a11 + a22 - a33);
-                    q.Y = 0.25f * s;
-                    q.X = (a12 + a21) / s;
-                    q.Z = (a23 + a32) / s;
-                    q.W = (a13 - a31) / s;
-                }
-                else
-                {
-                    float s = 2.0f * (float)Math.Sqrt(1 - a11 - a22 + a33);
-                    q.Z = 0.25f * s;
-                    q.X = (a13 + a31) / s;
-                    q.Y = (a23 + a32) / s;
-                    q.W = (a21 - a12) / s;
-                }
-            }
-
-            if (q.X == 0 && q.Y==0 && q.Z == 0 && q.W == 0)
-            {
-                Console.WriteLine(q);
-            }
-
-            return q;
         }
 
         public static float Angle(float a, float b)

@@ -47,7 +47,7 @@ namespace ZetaExt
         /// </summary>
         /// <param name="mat"></param>
         /// <returns></returns>
-        private static ZetaExt.Quaternion ToQuaternion(this Matrix4x4f mat)
+        public static ZetaExt.Quaternion ToQuaternion(this Matrix4x4f mat)
         {
             ZetaExt.Quaternion q = ZetaExt.Quaternion.Identity;
             float a11 = mat[0, 0];

@@ -3,6 +3,7 @@ using Common.Abstractions;
 using Model3d;
 using OpenGL;
 using Shader;
+using System;
 using System.Collections.Generic;
 
 namespace Animate
@@ -111,16 +112,15 @@ namespace Animate
 
         public static void RenderSkinning(AnimateShader shader, Matrix4x4f model, Matrix4x4f vp, List<TexturedModel> models, Matrix4x4f[] finalAnimatedBoneMatrices)
         {
-            // GC 압박을 줄이기 위하여 model과 vp는 GPU에서 계산한다.
             shader.Bind();
-
             shader.LoadVPMatrix(vp);
             shader.LoadModelMatrix(model);
             shader.LoadIsSkinningEnabled(true);
             shader.LoadAllBoneMatrices(finalAnimatedBoneMatrices);
 
-            foreach (TexturedModel texturedModel in models)
+            for (int i = 0; i < models.Count; i++)
             {
+                TexturedModel texturedModel = models[i];
                 Gl.BindVertexArray(texturedModel.VAO);
                 Gl.EnableVertexAttribArray(0);
                 Gl.EnableVertexAttribArray(1);
@@ -128,14 +128,14 @@ namespace Animate
                 Gl.EnableVertexAttribArray(4);
                 Gl.EnableVertexAttribArray(5);
 
-                if (texturedModel is TexturedModel)
+                // 텍스처 바인딩을 드로우 직전으로 이동
+                if (texturedModel.Texture != null)
                 {
-                    if (texturedModel.Texture != null)
-                    {
-                        shader.LoadTexture(AnimateShader.UNIFORM_NAME.diffuseMap, TextureUnit.Texture0, texturedModel.Texture.TextureID);
-                    }
+                    Gl.ActiveTexture(TextureUnit.Texture0);
+                    Gl.BindTexture(TextureTarget.Texture2d, texturedModel.Texture.TextureID);
                 }
 
+                // 즉시 드로우
                 if (texturedModel.IsDrawElement)
                 {
                     Gl.DrawElements(PrimitiveType.Triangles, texturedModel.VertexCount, DrawElementsType.UnsignedInt, System.IntPtr.Zero);

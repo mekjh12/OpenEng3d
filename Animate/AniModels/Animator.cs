@@ -123,8 +123,6 @@ namespace Animate
 
                 boneList.Add(bone);
 
-                Console.WriteLine($"{bone.Name} {bone.Index} => {parentIndex}");
-
                 //if (bone.Name == "Knee_L") parentIndex = 0;
                 parentIndexList.Add(parentIndex);
 
@@ -161,7 +159,7 @@ namespace Animate
             _animatedTransforms[index] = transform;
         }
 
-        public void SetMotion(Motionable motion, MotionCache motionCache, float blendingInterval = 0.2f)
+        public void SetMotion(Motionable motion, MotionCache motionCache = null, float blendingInterval = 0.2f)
         {
             // 모션이 null인 경우 예외를 발생시킨다.
             if (motion == null)
@@ -185,20 +183,32 @@ namespace Animate
                     _currentMotion = motion;
                     _animationState = AnimationState.Normal;
                 }
-                // 블렌딩 시간이 있으면
+                // 블렌딩 시간이 있으면 (블렌딩이 일어나는 경우...)
                 else
                 {
                     string blendMotionName = $"{_currentMotion.Name}\t{motion.Name}";
 
-                    _blendMotion = motionCache.GetMotionFromCache(blendMotionName);
-                    if (_blendMotion == null)
+                    if (motionCache == null)
                     {
+                        // 모션 전환용 캐시가 없는 경우
                         _blendMotion = MotionBlender.BlendMotion(blendMotionName, _currentMotion, _motionTime, motion, 0.0f, blendingInterval);
                         motionCache.AddMotionToCache(_blendMotion);
                     }
+                    else
+                    {
+                        // 모션 전환용 캐시가 있는 경우
+                        _blendMotion = motionCache.GetMotionFromCache(blendMotionName);
+                        if (_blendMotion == null)
+                        {
+                            _blendMotion = MotionBlender.BlendMotion(blendMotionName, _currentMotion, _motionTime, motion, 0.0f, blendingInterval);
+                            motionCache.AddMotionToCache(_blendMotion);
+                        }
+                    }
+
                     _currentMotion = _blendMotion;
                     _nextMotion = motion;
                     _animationState = AnimationState.Blending;
+
                 }
             }
 
@@ -296,10 +306,16 @@ namespace Animate
                 
                 if (boneIndex < 0) continue;
 
+                Bone pBone = _parentIndices[i] < 0 ? null : _boneTraversalOrder[_parentIndices[i]];
+
+                // 본 인덱스가 범위를 벗어나면 건너뛴다.
+                if (boneIndex >= _rootTransforms.Length) continue;
+                if (pBone != null && pBone.Index >= _rootTransforms.Length) continue;
+
                 // 부모 변환 가져오기
-                Matrix4x4f parentTransform = _parentIndices[i] < 0 ?
+                Matrix4x4f parentTransform = pBone == null || pBone.Index < 0 ?
                     _identityMatrix : // 루트 본
-                    _rootTransforms[_boneTraversalOrder[_parentIndices[i]].Index]; // 부모 본의 변환
+                    _rootTransforms[pBone.Index]; // 부모 본의 변환
 
                 // 현재 포즈로부터 본의 로컬 변환을 가져온다.
                 bone.BoneTransforms.LocalTransform =

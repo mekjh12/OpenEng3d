@@ -1,6 +1,7 @@
 ﻿using OpenGL;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using ZetaExt;
 
 namespace Animate
@@ -67,6 +68,28 @@ namespace Animate
         // -----------------------------------------------------------------------
         // 생성자
         // -----------------------------------------------------------------------
+
+        public string[] ExtractBoneName()
+        {
+            HashSet<string> uniqueBoneNames = new HashSet<string>();
+
+            foreach (KeyFrame keyframe in _keyframes.Values)
+            {
+                string[] boneNames = keyframe.BoneNames;
+                if (boneNames != null)
+                {
+                    foreach (string boneName in boneNames)
+                    {
+                        if (!string.IsNullOrEmpty(boneName))
+                        {
+                            uniqueBoneNames.Add(boneName);
+                        }
+                    }
+                }
+            }
+
+            return uniqueBoneNames.ToArray();
+        }
 
         private void UpdateAnimationTransforms(float motionTime, Bone rootBone)
         {

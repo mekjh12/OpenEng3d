@@ -186,6 +186,11 @@ namespace Animate
                             int texcoordOffset = -1;
                             int colorOffset = -1;
 
+                            // 초기화
+                            lstVertexIndices.Clear();
+                            texcoordIndices.Clear();
+                            lstNormalIndices.Clear();
+
                             // offset 읽어온다. pos, tex, nor, color                        
                             foreach (XmlNode input in triangles.ChildNodes)
                             {

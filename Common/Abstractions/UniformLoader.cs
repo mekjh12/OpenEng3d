@@ -21,6 +21,9 @@ namespace Common
         public void LoadTexture(TEnum textureUniformName, TextureUnit textureUnit, uint texture)
         {
             int ind = textureUnit - TextureUnit.Texture0;
+
+            Console.WriteLine($"Loading texture {texture} to unit {ind}"); // 추가
+
             LoadInt(_location[textureUniformName.ToString()], ind);
             Gl.ActiveTexture(textureUnit);
             Gl.BindTexture(TextureTarget.Texture2d, texture);

@@ -6,13 +6,13 @@ using System.Collections.Generic;
 
 namespace Animate
 {
-    public abstract partial class AniActor<TAction>: IAniActor where TAction : struct, Enum
+    public abstract partial class AnimActor<TAction>: IAnimActor where TAction : struct, Enum
     {
         protected TAction _prevMotion;
         protected TAction _curMotion;
 
         protected string _name; // 액터 이름
-        protected AniRig _aniRig; // 애니메이션 리그
+        protected AnimRig _aniRig; // 애니메이션 리그
         protected Animator _animator; // 애니메이터
 
         protected Action _updateBefore; // 업데이트 전 콜백
@@ -26,7 +26,7 @@ namespace Animate
 
         // 속성
         public string Name => _name;
-        public AniRig AniRig => _aniRig;
+        public AnimRig AniRig => _aniRig;
         public Animator Animator => _animator;
         public Transform Transform => _transform;
         public float MotionTime => _animator.MotionTime;
@@ -47,7 +47,7 @@ namespace Animate
         /// <param name="name">액터 이름</param>
         /// <param name="aniRig">애니메이션 리그</param>
         /// <param name="defaultAction">기본 액션</param>
-        public AniActor(string name, AniRig aniRig, TAction defaultAction)
+        public AnimActor(string name, AnimRig aniRig, TAction defaultAction)
         {
             _name = name;
             _items = new Dictionary<string, ItemAttachment>();
@@ -171,9 +171,19 @@ namespace Animate
             {
                 Gl.PolygonMode(MaterialFace.FrontAndBack, _polygonMode);
                 Gl.Disable(EnableCap.CullFace);
+
+                // 기본 모델 행렬
+                Matrix4x4f finalModelMatrix = ModelMatrix;
+
+                // AniRig의 보정 행렬 적용
+                if (_aniRig.UseCorrectionMatrix)
+                {
+                    finalModelMatrix = finalModelMatrix * _aniRig.CorrectionMatrix;
+                }
+
                 if (_renderingMode == RenderingMode.Animation)
                 {
-                    Renderer3d.RenderSkinning(ashader, ModelMatrix, vp, _aniRig.TexturedModels, _animator.AnimatedTransforms);
+                    Renderer3d.RenderSkinning(ashader, finalModelMatrix, vp, _aniRig.TexturedModels, _animator.AnimatedTransforms);
                     //Renderer3d.RenderRigidBody(ashader, ModelMatrix, vp, _items.Values.ToList(),  _animator.RootTransforms);
                 }
                 else if (_renderingMode == RenderingMode.BoneWeight)

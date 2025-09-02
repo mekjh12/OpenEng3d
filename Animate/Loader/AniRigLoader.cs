@@ -3,7 +3,6 @@ using Model3d;
 using OpenGL;
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Xml;
 using ZetaExt;
 

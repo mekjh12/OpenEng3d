@@ -5,10 +5,10 @@ using Shader;
 namespace Animate
 {
     // 1. 공통 인터페이스 정의
-    public interface IAniActor
+    public interface IAnimActor
     {
         string Name { get; }
-        AniRig AniRig { get; }
+        AnimRig AniRig { get; }
         Animator Animator { get; }
         Transform Transform { get; }
         float MotionTime { get; }

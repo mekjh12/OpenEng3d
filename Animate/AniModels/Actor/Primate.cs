@@ -28,11 +28,11 @@ namespace Animate
     /// 근육 변형 애니메이션, 걸음걸이 패턴 다양화
     /// </code>
     /// </summary>
-    public abstract class Primate<TAction> : AniActor<TAction> where TAction : struct, Enum
+    public abstract class Primate<TAction> : AnimActor<TAction> where TAction : struct, Enum
     {
         Dictionary<string, Action> _actions;
 
-        public Primate(string name, AniRig aniRig, TAction defaultAction) : base(name, aniRig, defaultAction)
+        public Primate(string name, AnimRig aniRig, TAction defaultAction) : base(name, aniRig, defaultAction)
         {
             _actions = new Dictionary<string, Action>();
 
