@@ -162,7 +162,7 @@ namespace Occlusion
 
             if (_isLod)
             {
-                float dist = (cameraPos - Pose.Position).Norm();
+                float dist = (cameraPos - Pose.Position).Length();
                 if (dist > DISTANCE_LOD2)
                 {
                     _lod = 2;

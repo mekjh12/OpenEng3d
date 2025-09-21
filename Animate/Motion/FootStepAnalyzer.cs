@@ -244,7 +244,7 @@ namespace Animate
 
                     Matrix4x4f localTransform = currentPose.ContainsKey(bone.Name) ?
                         currentPose[bone.Name] :
-                        bone.BoneTransforms.LocalBindTransform;
+                        bone.BoneMatrixSet.LocalBindTransform;
 
                     Matrix4x4f rootTransform = parentTransform * localTransform;
                     animator.SetRootTransform(bone.Index, rootTransform);

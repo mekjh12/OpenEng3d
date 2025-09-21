@@ -48,13 +48,28 @@ namespace Shader
             Matrix4x4f scaleMatrix = Matrix4x4f.Scaled(axisLength, axisLength, axisLength);
 
             // 각 객체의 좌표축 렌더링 (각각 1번의 draw call)
-            foreach (var transform in boneTransforms)
+            for(int i= 0; i < boneTransforms.Length; i++)
             {
-                Matrix4x4f finalTransform = viewProjection * model * transform * scaleMatrix;
+                if (i == 8) break;
+                if (i == 0) Gl.LineWidth(10.0f);
+                if (i == 1) Gl.LineWidth(5.0f);
+                if (i == 2) Gl.LineWidth(lineWidth);
+
+                Matrix4x4f finalTransform = viewProjection * model * boneTransforms[i] * scaleMatrix;
                 LoadUniform(UNIFORM_NAME.mvp, finalTransform);
 
                 // 한 번의 draw call로 3축 모두 렌더링
-                Gl.DrawArrays(PrimitiveType.Lines, 0, 6);
+                if (i < 2)
+                {
+                    Gl.DrawArrays(PrimitiveType.Lines, 0, 6);
+                }
+                else
+                {
+                    Gl.LineWidth(5.0f);
+                    Gl.DrawArrays(PrimitiveType.Lines, 0, 2);
+                    Gl.LineWidth(lineWidth);
+                    Gl.DrawArrays(PrimitiveType.Lines, 2, 4);
+                }
             }
 
             // 정리

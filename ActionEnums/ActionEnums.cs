@@ -11,7 +11,7 @@
 //    ../Res/Action/Horse/*.dae → HORSE_ACTION enum
 //    ../Res/Action/Human/*.dae → HUMAN_ACTION enum
 // ===================================
-// 자동생성 by GenerateMultiActionEnums.ps1: 2025-09-02 21:22:39
+// 자동생성 by GenerateMultiActionEnums.ps1: 2025-09-21 11:06:19
 
 using System;
 using System.Linq;
@@ -85,30 +85,24 @@ namespace AutoGenEnums
     {
         public static Dictionary<DONKEY_ACTION, string> ActionMap = new Dictionary<DONKEY_ACTION, string>()
         {
-            {DONKEY_ACTION.DEATH, "Death"},
-            {DONKEY_ACTION.DEATH2, "Death2"},
-            {DONKEY_ACTION.H_CANTER_IP, "H_Canter_IP"},
-            {DONKEY_ACTION.H_IDLE_01, "H_Idle_01"},
-            {DONKEY_ACTION.H_IDLE_02_HEADSHAKE, "H_Idle_02_HeadShake"},
-            {DONKEY_ACTION.H_JUMP_GALLOP, "H_Jump_Gallop"},
-            {DONKEY_ACTION.H_SPRINT_IP, "H_Sprint_IP"},
+            {DONKEY_ACTION.A_T_POSE, "a-T-Pose"},
+            {DONKEY_ACTION.H_CANTER_RIGHT, "H_Canter_Right"},
+            {DONKEY_ACTION.H_IDLE, "H_Idle"},
+            {DONKEY_ACTION.H_NEIGH, "H_Neigh"},
         };
 
         public static string GetRandomAction() => ActionMap.Values.ElementAt(new Random().Next(ActionMap.Count));
-        public static int Count => 7;
+        public static int Count => 4;
         public static bool HasAction(DONKEY_ACTION action) => ActionMap.ContainsKey(action);
         public static string GetActionName(DONKEY_ACTION action) => ActionMap.TryGetValue(action, out string name) ? name : null;
     }
 
     public enum DONKEY_ACTION : int
     {
-        DEATH = 0,
-        DEATH2 = 1,
-        H_CANTER_IP = 2,
-        H_IDLE_01 = 3,
-        H_IDLE_02_HEADSHAKE = 4,
-        H_JUMP_GALLOP = 5,
-        H_SPRINT_IP = 6,
+        A_T_POSE = 0,
+        H_CANTER_RIGHT = 1,
+        H_IDLE = 2,
+        H_NEIGH = 3,
         // 추가된 액션들
         RANDOM,
         STOP,

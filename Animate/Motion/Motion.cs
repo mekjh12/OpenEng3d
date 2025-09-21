@@ -287,6 +287,12 @@ namespace Animate
                     }
                 }
 
+                // CG 본이 여기서 처리되는지 로그 추가
+                if (jointName == "Armature")
+                {
+                    Console.WriteLine($"CG bone transform at time {motionTime}: {localTransform}");
+                }
+
                 // 결과 딕셔너리에 추가
                 outPose[jointName] = localTransform;
             }

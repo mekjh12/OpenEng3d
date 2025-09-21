@@ -30,7 +30,7 @@ namespace Model3d
             _position = position;
             _cameraPosition = cameraPosition;
 
-            float distance = (cameraPosition - position).Norm();
+            float distance = (cameraPosition - position).Length();
             for (int i = 0; i < DISTANCE_LOD.Length; i++)
             {
                 if (DISTANCE_LOD[i] > distance)

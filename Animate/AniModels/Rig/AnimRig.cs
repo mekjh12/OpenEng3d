@@ -173,9 +173,9 @@ namespace Animate
             newBone.Parent = parentBone;
 
             // 변환 행렬 설정
-            newBone.BoneTransforms.LocalBindTransform = localBindTransform;
-            newBone.BoneTransforms.LocalTransform = localBindTransform;
-            newBone.BoneTransforms.InverseBindPoseTransform = inverseBindPoseTransform;
+            newBone.BoneMatrixSet.LocalBindTransform = localBindTransform;
+            newBone.BoneMatrixSet.LocalTransform = localBindTransform;
+            newBone.BoneMatrixSet.InverseBindPoseTransform = inverseBindPoseTransform;
 
             // 골격에 뼈대 추가
             _armature.AddBone(newBone);

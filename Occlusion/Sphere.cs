@@ -172,7 +172,7 @@ namespace Occlusion
 
         public bool IsInclude(Sphere<T> sphere)
         {
-            float d = (_center - sphere.Center).Norm();
+            float d = (_center - sphere.Center).Length();
             return ((d + sphere.Radius) < _radius);
         }
 
@@ -184,7 +184,7 @@ namespace Occlusion
         /// <returns></returns>
         public static Sphere<T> Union(Sphere<T> A, Sphere<T> B)
         {
-            float R = ((A.Center - B.Center).Norm() + A.Radius + B.Radius) * 0.5f;
+            float R = ((A.Center - B.Center).Length() + A.Radius + B.Radius) * 0.5f;
             float t1 = (R - B.Radius) / (2 * R - A.Radius - B.Radius);
             float t2 = (R - A.Radius) / (2 * R - A.Radius - B.Radius);
             Vertex3f center = A.Center * t1 + B.Center * t2;

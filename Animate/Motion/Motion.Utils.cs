@@ -115,13 +115,13 @@ namespace Animate
                     _rootTransforms[_boneTraversalOrder[_parentIndices[i]].Index]; // 부모 본의 변환
 
                 // 현재 포즈로부터 본의 로컬 변환을 가져온다.
-                bone.BoneTransforms.LocalTransform =
+                bone.BoneMatrixSet.LocalTransform =
                     (_currentPose != null && _currentPose.TryGetValue(bone.Name, out Matrix4x4f poseTransform)) ?
-                    poseTransform : bone.BoneTransforms.LocalBindTransform;
+                    poseTransform : bone.BoneMatrixSet.LocalBindTransform;
 
                 // 행렬 계산
-                _rootTransforms[boneIndex] = parentTransform * bone.BoneTransforms.LocalTransform;
-                _animatedTransforms[boneIndex] = _rootTransforms[boneIndex] * bone.BoneTransforms.InverseBindPoseTransform;
+                _rootTransforms[boneIndex] = parentTransform * bone.BoneMatrixSet.LocalTransform;
+                _animatedTransforms[boneIndex] = _rootTransforms[boneIndex] * bone.BoneMatrixSet.InverseBindPoseTransform;
             }
         }
 

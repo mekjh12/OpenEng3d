@@ -134,9 +134,9 @@ namespace Animate
             Bone newBone = new Bone(boneName, newBoneIndex);
 
             // 변환 행렬 설정
-            newBone.BoneTransforms.LocalBindTransform = localBindTransform;
-            newBone.BoneTransforms.LocalTransform = localBindTransform;
-            newBone.BoneTransforms.InverseBindPoseTransform = Matrix4x4f.Identity;
+            newBone.BoneMatrixSet.LocalBindTransform = localBindTransform;
+            newBone.BoneMatrixSet.LocalTransform = localBindTransform;
+            newBone.BoneMatrixSet.InverseBindPoseTransform = Matrix4x4f.Identity;
             parentBone.AddChild(newBone);
 
             // 딕셔너리에 새 본 추가

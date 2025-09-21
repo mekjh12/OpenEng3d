@@ -122,7 +122,7 @@ namespace Occlusion
                         if (occlusionEntity.IsOccluder)
                         {
                             // 거리에 따라 크기가 달리 보이므로 적당히 큰 오클루더만 선택한다.
-                            float distance = (cameraPos - occlusionEntity.Position).Norm();
+                            float distance = (cameraPos - occlusionEntity.Position).Length();
                             float perspectiveArea = occlusionEntity.OBB.Area / distance;
                             if (perspectiveArea > OCCLUDER_MINIMAL_AREA)
                             {

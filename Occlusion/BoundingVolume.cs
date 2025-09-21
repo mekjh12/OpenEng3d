@@ -41,7 +41,7 @@ namespace Occlusion
 
                 // test 4
                 float r = (float)Math.Sqrt(R * R - d0 * d0);
-                float dXn = Math.Abs(d.Cross(n).Norm());
+                float dXn = Math.Abs(d.Cross(n).Length());
                 if (cutoff < ((r * dXn) - d0 * dn) / R) { contactCount++; continue; }
             }
 
@@ -249,12 +249,12 @@ namespace Occlusion
             for (int i = 0; i < vertices.Length; i++)
             {
                 Vertex3f pv = vertices[i] - center;
-                float m2 = pv.Norm();
+                float m2 = pv.Length();
                 if (m2 > radius)
                 {
                     Vertex3f q = center - (pv * (radius / m2));
                     center = (q + vertices[i]) * 0.5f;
-                    radius = (q - center).Norm();
+                    radius = (q - center).Length();
                 }
             }
         }

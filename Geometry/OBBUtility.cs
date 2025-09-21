@@ -122,11 +122,11 @@ namespace Geometry
             }
 
             // Find direction for which vertices at min and max extents are furthest apart.
-            float d2 = (vertices[imax[0]] - vertices[imin[0]]).Norm();
+            float d2 = (vertices[imax[0]] - vertices[imin[0]]).Length();
             int k = 0;
             for (int j = 1; j < kDirectionCount; j++)
             {
-                float m2 = (vertices[imax[j]] - vertices[imin[j]]).Norm();
+                float m2 = (vertices[imax[j]] - vertices[imin[j]]).Length();
                 if (m2 > d2) { d2 = m2; k = j; }
             }
 
@@ -210,12 +210,12 @@ namespace Geometry
 
             // Find diameter in plane perpendicular to primary axis.
             Vertex3f dv = vertices[imax[0]] - vertices[imin[0]];
-            float d2 = (dv - axis * dv.Dot(axis)).Norm();
+            float d2 = (dv - axis * dv.Dot(axis)).Length();
             int k = 0;
             for (int j = 0; j < kDirectionCount; j++)
             {
                 dv = vertices[imax[j]] - vertices[imin[j]];
-                float m2 = (dv - axis * dv.Dot(axis)).Norm();
+                float m2 = (dv - axis * dv.Dot(axis)).Length();
                 if (m2 > d2) { d2 = m2; k = j; }
             }
 
@@ -292,7 +292,7 @@ namespace Geometry
             float DistancePointLine(Vertex3f point, Vertex3f linePoint, Vertex3f lineDirection)
             {
                 Vertex3f areaVector = (linePoint - point).Cross(lineDirection);
-                return areaVector.Norm() / lineDirection.Norm();
+                return areaVector.Length() / lineDirection.Length();
             }
         }
     }

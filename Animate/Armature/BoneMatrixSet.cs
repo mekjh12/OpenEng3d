@@ -11,7 +11,7 @@ namespace Animate
     /// - 바인딩 행렬의 역행렬은 캐릭터 공간의 본의 위치를 부모 뼈대 공간으로 변환하는 데 사용된다.
     /// </code>
     /// </summary>
-    public class BoneTransforms
+    public class BoneMatrixSet
     {
         // 애니메이션 변환 행렬들
         Matrix4x4f _localTransform = Matrix4x4f.Identity;      // 부모 뼈 공간에서의 변환 행렬
@@ -25,6 +25,10 @@ namespace Animate
 
         // 속성
         public Vertex3f Pivot => _bindPoseTransform.Position;
+
+        /// <summary>
+        /// 바인딩 포즈에서의 뼈 벡터
+        /// </summary>
         public Vertex3f LocalPivot => _localBindTransform.Position;
 
 

@@ -25,6 +25,7 @@ namespace FormTools
         AxisShader _axisShader;
 
         MixamoRotMotionStorage _mixamoRotMotionStorage;
+        MixamoRotMotionStorage _mixamoRotMotionStorageB;
         List<IAnimActor> _aniActors = new List<IAnimActor>();
         private int _lastGen0Count = 0;
         private int _tick = 0;
@@ -95,8 +96,29 @@ namespace FormTools
 
             _mixamoRotMotionStorage = new MixamoRotMotionStorage();
 
-            /*
+            // [당나귀] =========================================
+            var donkeyRig = new DonkeyRig(PROJECT_PATH + @"\Res\Actor\Donkey\donkey.dae", isLoadAnimation: false);
+            donkeyRig.SetModelCorrection(Vertex3f.UnitZ, Vertex3f.UnitY, Vertex3f.UnitZ, -Vertex3f.UnitX);
+            _mixamoRotMotionStorageB = new MixamoRotMotionStorage();
+            _mixamoRotMotionStorageB.Clear();
+            foreach (string fileName in Directory.GetFiles(PROJECT_PATH + "\\Res\\Action\\Donkey\\"))
+            {
+                if (Path.GetExtension(fileName).Equals(".dae"))
+                {
+                    Motion motion = MotionLoader.LoadMixamoMotion(donkeyRig, fileName);
+                    _mixamoRotMotionStorageB.AddMotion(motion);
+                }
+            }
+
+            Donkey donkey = new Donkey($"donkey", donkeyRig);
+            donkey.Transform.SetPosition(-2, 0, 0);
+            _aniActors.Add(donkey);
+            _mixamoRotMotionStorageB.RetargetMotionsTransfer(targetAniRig: donkeyRig);
+
+            Console.WriteLine(donkeyRig.Armature.ToString());
+
             // [캐릭터] =========================================
+            /*
             PrimateRig aniRig = new PrimateRig(PROJECT_PATH + @"\Res\Actor\abe\abe.dae", isLoadAnimation: false);
             PrimateRig aniRig2 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Guybrush\Guybrush.dae", isLoadAnimation: false);
 
@@ -144,26 +166,31 @@ namespace FormTools
             layerBlendMotion.AddLayer(MixamoBone.Spine1, aniRig2.GetMotion("a-T-Pose"));
             layerBlendMotion.BuildTraverseBoneNamesCache(aniRig2.Armature.RootBone);
             aniRig2.AddMotion(layerBlendMotion);
-            */
 
-            // [당나귀] =========================================
-            var donkeyRig = new DonkeyRig(PROJECT_PATH + @"\Res\Actor\Donkey\donkey.dae", isLoadAnimation: false);
-            donkeyRig.SetModelCorrection(Vertex3f.UnitZ, Vertex3f.UnitY, Vertex3f.UnitZ, -Vertex3f.UnitX);
+            // [인간형] =========================================
+            aniRig = new PrimateRig(PROJECT_PATH + @"\Res\Actor\abe\abe.dae", isLoadAnimation: false);
             _mixamoRotMotionStorage.Clear();
-            foreach (string fileName in Directory.GetFiles(PROJECT_PATH + "\\Res\\Action\\Donkey\\"))
+            foreach (string fileName in Directory.GetFiles(PROJECT_PATH + "\\Res\\Action\\Human\\"))
             {
                 if (Path.GetExtension(fileName).Equals(".dae"))
                 {
-                    Motion motion = MotionLoader.LoadMixamoMotion(donkeyRig, fileName);
+                    Motion motion = MotionLoader.LoadMixamoMotion(aniRig, fileName);
                     _mixamoRotMotionStorage.AddMotion(motion);
                 }
             }
-            Donkey donkey = new Donkey($"donkey", donkeyRig);
-            donkey.Transform.SetPosition(-1, 0, 0);
-            _aniActors.Add(donkey);
-            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: donkeyRig);
+            var human = new Human($"abe", aniRig);
+            human.Transform.SetPosition(2, 0, 0);
+            _aniActors.Add(human);
+            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig);
+            Console.WriteLine(aniRig.Armature.ToString());
 
-            Console.WriteLine(donkeyRig.Armature.ToString());
+            // -------------------------------------------------
+            // 이종간 모션 링킹 생성
+            //ArmatureLinker armatureLinker = new ArmatureLinker();
+            //armatureLinker.LoadLinkFile(PROJECT_PATH + @"\Res\Action\Human-to-Donkey BoneLinker.txt");
+            //armatureLinker.LinkRigs(aniRig.Armature, donkeyRig.Armature);
+            //_mixamoRotMotionStorage.Transfer(armatureLinker, donkeyRig);
+            */
 
             // -------------------------------------------------
             // 애니메이션 모델에 애니메이션 초기 지정
@@ -175,7 +202,7 @@ namespace FormTools
                 }
                 else if (aniActor is Donkey)
                 {
-                    (aniActor as Donkey).SetMotion(DONKEY_ACTION.H_IDLE_02_HEADSHAKE);
+                    (aniActor as Donkey).SetMotion(DONKEY_ACTION.H_IDLE);
                 }
             }
 
@@ -249,9 +276,9 @@ namespace FormTools
                 aniActor.Render(camera, vp, _animateShader, _staticShader, isBoneVisible: true);
             }
 
-            //foreach (IAnimActor aniActor in _aniActors)
+            foreach (IAnimActor aniActor in _aniActors)
             {
-               //_axisShader.RenderAxes(aniActor.ModelMatrix, aniActor.Animator.RootTransforms, vp, axisLength: 0.2f);
+               _axisShader.RenderAxes(aniActor.ModelMatrix, aniActor.Animator.RootTransforms, vp, axisLength: 20.2f);
             }
 
             // 폴리곤 모드 설정
@@ -303,7 +330,7 @@ namespace FormTools
                 {
                     if (_aniActors[i] is Donkey)
                     {
-                        (_aniActors[i] as Donkey).SetMotion(DONKEY_ACTION.H_JUMP_GALLOP);
+                        (_aniActors[i] as Donkey).SetMotion(DONKEY_ACTION.H_NEIGH);
                     }
                     if (_aniActors[i] is Human)
                     {
@@ -313,7 +340,13 @@ namespace FormTools
             }
             else if (e.KeyCode == Keys.D3)
             {
-                _aniActors[0].SetMotion("Defeated-Dying");
+                for(int i = 0; i < _aniActors.Count; i++)
+                {
+                    if (_aniActors[i] is Donkey)
+                    {
+                        (_aniActors[i] as Donkey).SetMotion(DONKEY_ACTION.H_CANTER_RIGHT);
+                    }
+                }
             }
             else if (e.KeyCode == Keys.D4)
             {
@@ -321,9 +354,8 @@ namespace FormTools
             }
             else if (e.KeyCode == Keys.D5)
             {
-                _aniActors[0].Transform.SetPosition(0, 0, 0);
-                _aniActors[1].Transform.SetPosition(1, 0, 0);
-                _aniActors[2].Transform.SetPosition(2, 0, 0);
+                _aniActors[0].Transform.SetPosition(-2, 0, 0);
+                _aniActors[1].Transform.SetPosition(2, 0, 0);
             }
             else if (e.KeyCode == Keys.R)
             {

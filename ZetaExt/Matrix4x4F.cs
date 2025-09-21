@@ -22,6 +22,21 @@ namespace ZetaExt
             return !float.IsNaN(determinant) && !float.IsInfinity(determinant);
         }
 
+        public static string ToString(this Matrix4x4f matrix, int decimalLength = 3)
+        {
+            string txt = "";
+            for (uint i = 0; i < 4; i++)
+            {
+                for (uint j = 0; j < 4; j++)
+                {
+                    txt += matrix[j, i].ToString("F" + decimalLength).PadLeft(8);
+                    if (j < 3) txt += " ";
+                }
+                if (i < 3) txt += "\n";
+            }
+            return txt;
+        }
+
         /// <summary>
         /// 문자열을 식별문자를 이용하여 Matrix4x4f로 변환한다.
         /// </summary>

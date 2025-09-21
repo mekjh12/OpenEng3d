@@ -10,7 +10,7 @@ namespace Animate
         public static string ToString(this Bone bone)
         {
             string txt = "";
-            Matrix4x4f m = bone.BoneTransforms.LocalTransform;
+            Matrix4x4f m = bone.BoneMatrixSet.LocalTransform;
             for (uint i = 0; i < 4; i++)
             {
                 txt += $"{Cut(m[0, i])} {Cut(m[1, i])} {Cut(m[2, i])} {Cut(m[3, i])}"
@@ -18,7 +18,7 @@ namespace Animate
             }
 
             string invBind = "";
-            Matrix4x4f n = bone.BoneTransforms.InverseBindPoseTransform;
+            Matrix4x4f n = bone.BoneMatrixSet.InverseBindPoseTransform;
             for (uint i = 0; i < 4; i++)
             {
                 invBind += $"{Cut(n[0, i])} {Cut(n[1, i])} {Cut(n[2, i])} {Cut(n[3, i])}"
@@ -50,24 +50,24 @@ namespace Animate
         {
             if (phi < bone.BoneKinematics.RestrictAngle.ConstraintAngle.x)
             {
-                Matrix4x4f localMat = bone.BoneTransforms.LocalTransform;
+                Matrix4x4f localMat = bone.BoneMatrixSet.LocalTransform;
                 Vertex3f lowerYAxis = localMat.Column1.Vertex3f();
                 lowerYAxis.y = 0;
                 lowerYAxis = lowerYAxis.Normalized * -Math.Sin(bone.BoneKinematics.RestrictAngle.ConstraintAngle.x.ToRadian());
                 lowerYAxis.y = (float)Math.Cos(bone.BoneKinematics.RestrictAngle.ConstraintAngle.x.ToRadian());
                 Matrix4x4f localRotMat = localMat.Column1.Vertex3f().RotateBetween(lowerYAxis);
-                bone.BoneTransforms.LocalTransform = localMat * localRotMat;
+                bone.BoneMatrixSet.LocalTransform = localMat * localRotMat;
                 //bone.UpdateRootTransforms(isSelfIncluded: true);
             }
             else if (phi > bone.BoneKinematics.RestrictAngle.ConstraintAngle.y)
             {
-                Matrix4x4f localMat = bone.BoneTransforms.LocalTransform;
+                Matrix4x4f localMat = bone.BoneMatrixSet.LocalTransform;
                 Vertex3f lowerYAxis = localMat.Column1.Vertex3f();
                 lowerYAxis.y = 0;
                 lowerYAxis = lowerYAxis.Normalized * Math.Sin(bone.BoneKinematics.RestrictAngle.ConstraintAngle.y.ToRadian());
                 lowerYAxis.y = (float)Math.Cos(bone.BoneKinematics.RestrictAngle.ConstraintAngle.y.ToRadian());
                 Matrix4x4f localRotMat = localMat.Column1.Vertex3f().RotateBetween(lowerYAxis);
-                bone.BoneTransforms.LocalTransform = localMat * localRotMat;
+                bone.BoneMatrixSet.LocalTransform = localMat * localRotMat;
                 //bone.UpdateRootTransforms(isSelfIncluded: true);
             }
         }
@@ -76,24 +76,24 @@ namespace Animate
         {
             if (phi < bone.BoneKinematics.RestrictAngle.ConstraintAngle.z)
             {
-                Matrix4x4f localMat = bone.BoneTransforms.LocalTransform;
+                Matrix4x4f localMat = bone.BoneMatrixSet.LocalTransform;
                 Vertex3f lowerZAxis = localMat.Column2.Vertex3f();
                 lowerZAxis.z = 0;
                 lowerZAxis = lowerZAxis.Normalized * -Math.Sin(bone.BoneKinematics.RestrictAngle.ConstraintAngle.z.ToRadian());
                 lowerZAxis.y = (float)Math.Cos(bone.BoneKinematics.RestrictAngle.ConstraintAngle.z.ToRadian());
                 Matrix4x4f localRotMat = localMat.Column2.Vertex3f().RotateBetween(lowerZAxis);
-                bone.BoneTransforms.LocalTransform = localMat * localRotMat;
+                bone.BoneMatrixSet.LocalTransform = localMat * localRotMat;
                 //bone.UpdateRootTransforms(isSelfIncluded: true);
             }
             else if (phi > bone.BoneKinematics.RestrictAngle.ConstraintAngle.w)
             {
-                Matrix4x4f localMat = bone.BoneTransforms.LocalTransform;
+                Matrix4x4f localMat = bone.BoneMatrixSet.LocalTransform;
                 Vertex3f lowerZAxis = localMat.Column2.Vertex3f();
                 lowerZAxis.z = 0;
                 lowerZAxis = lowerZAxis.Normalized * Math.Sin(bone.BoneKinematics.RestrictAngle.ConstraintAngle.w.ToRadian());
                 lowerZAxis.z = (float)Math.Cos(bone.BoneKinematics.RestrictAngle.ConstraintAngle.w.ToRadian());
                 Matrix4x4f localRotMat = localMat.Column2.Vertex3f().RotateBetween(lowerZAxis);
-                bone.BoneTransforms.LocalTransform = localMat * localRotMat;
+                bone.BoneMatrixSet.LocalTransform = localMat * localRotMat;
                 //bone.UpdateRootTransforms(isSelfIncluded: true);
             }
         }
@@ -102,24 +102,24 @@ namespace Animate
         {
             if (phi < bone.BoneKinematics.RestrictAngle.TwistAngle.x)
             {
-                Matrix4x4f localMat = bone.BoneTransforms.LocalTransform;
+                Matrix4x4f localMat = bone.BoneMatrixSet.LocalTransform;
                 Vertex3f lowerZAxis = localMat.Column2.Vertex3f();
                 lowerZAxis.z = 0;
                 lowerZAxis = lowerZAxis.Normalized * -Math.Sin(bone.BoneKinematics.RestrictAngle.ConstraintAngle.z.ToRadian());
                 lowerZAxis.y = (float)Math.Cos(bone.BoneKinematics.RestrictAngle.ConstraintAngle.z.ToRadian());
                 Matrix4x4f localRotMat = localMat.Column2.Vertex3f().RotateBetween(lowerZAxis);
-                bone.BoneTransforms.LocalTransform = localMat * localRotMat;
+                bone.BoneMatrixSet.LocalTransform = localMat * localRotMat;
                 //bone.UpdateRootTransforms(isSelfIncluded: true);
             }
             else if (phi > bone.BoneKinematics.RestrictAngle.TwistAngle.y)
             {
-                Matrix4x4f localMat = bone.BoneTransforms.LocalTransform;
+                Matrix4x4f localMat = bone.BoneMatrixSet.LocalTransform;
                 Vertex3f lowerZAxis = localMat.Column2.Vertex3f();
                 lowerZAxis.z = 0;
                 lowerZAxis = lowerZAxis.Normalized * Math.Sin(bone.BoneKinematics.RestrictAngle.ConstraintAngle.w.ToRadian());
                 lowerZAxis.z = (float)Math.Cos(bone.BoneKinematics.RestrictAngle.ConstraintAngle.w.ToRadian());
                 Matrix4x4f localRotMat = localMat.Column2.Vertex3f().RotateBetween(lowerZAxis);
-                bone.BoneTransforms.LocalTransform = localMat * localRotMat;
+                bone.BoneMatrixSet.LocalTransform = localMat * localRotMat;
                 //bone.UpdateRootTransforms(isSelfIncluded: true);
             }
         }
@@ -149,7 +149,7 @@ namespace Animate
             // 제한된 각도를 벗어나면 제한된 각도로 회귀한다.
             if (isRestrictAngle)
             {
-                Vertex3f angleVector = Kinetics.EulerAngleFromRotationMatrixZYX(bone.BoneTransforms.LocalBindTransform.Rot3x3f())[0]; // 오일러 각을 가져온다.
+                Vertex3f angleVector = Kinetics.EulerAngleFromRotationMatrixZYX(bone.BoneMatrixSet.LocalBindTransform.Rot3x3f())[0]; // 오일러 각을 가져온다.
                 angleVector.x = angleVector.x.Clamp(bone.BoneKinematics.RestrictAngle.ConstraintAngle.x, bone.BoneKinematics.RestrictAngle.ConstraintAngle.y);
                 angleVector.y = angleVector.y.Clamp(bone.BoneKinematics.RestrictAngle.TwistAngle.x, bone.BoneKinematics.RestrictAngle.TwistAngle.y);
                 angleVector.z = angleVector.z.Clamp(bone.BoneKinematics.RestrictAngle.ConstraintAngle.z, bone.BoneKinematics.RestrictAngle.ConstraintAngle.w);
@@ -158,9 +158,9 @@ namespace Animate
                 Matrix4x4f RotZ = Matrix4x4f.RotatedZ(angleVector.z); // 회전을 계산한다.
                 //pos = bone.BoneTransforms.LocalTransform.Position;
                 //Matrix4x4f Rot = Matrix4x4f.Translated(pos.x, pos.y, pos.z) * RotZ * RotY * RotX; // 회전과 이동을 계산한다.
-                float sx = bone.BoneTransforms.LocalTransform.Column0.Vertex3f().Norm();
-                float sy = bone.BoneTransforms.LocalTransform.Column1.Vertex3f().Norm();
-                float sz = bone.BoneTransforms.LocalTransform.Column2.Vertex3f().Norm();
+                float sx = bone.BoneMatrixSet.LocalTransform.Column0.Vertex3f().Length();
+                float sy = bone.BoneMatrixSet.LocalTransform.Column1.Vertex3f().Length();
+                float sz = bone.BoneMatrixSet.LocalTransform.Column2.Vertex3f().Length();
                 //bone.BoneTransforms.LocalTransform = Rot * Matrix4x4f.Scaled(sx, sy, sz) * 100f; // 원본의 행렬의 열벡터의 크기를 가져온다.
                 //bone.UpdateRootTransforms(isSelfIncluded: true);
             }

@@ -51,7 +51,7 @@ namespace Animate
             AniColladaLoader.LibraryVisualScenes(xml, invBindPoses, ref armature, out Matrix4x4f bind);
 
             // (6) source positions으로부터 
-            Matrix4x4f A0 = armature.RootBone.BoneTransforms.LocalBindTransform;
+            Matrix4x4f A0 = armature.RootBone.BoneMatrixSet.LocalBindTransform;
             Matrix4x4f S = bindShapeMatrix;
             Matrix4x4f A0xS = A0 * bindShapeMatrix;
 
@@ -77,10 +77,10 @@ namespace Animate
                 }
 
                 // 현재 뼈대의 애니메이션 바인드 포즈를 계산한다.
-                boneDict[cBone.Name] = prevAnimatedMat * cBone.BoneTransforms.LocalBindTransform;
+                boneDict[cBone.Name] = prevAnimatedMat * cBone.BoneMatrixSet.LocalBindTransform;
 
                 // 역바인딩포즈를 계산한다.
-                cBone.BoneTransforms.InverseBindPoseTransform = boneDict[cBone.Name].Inversed();
+                cBone.BoneMatrixSet.InverseBindPoseTransform = boneDict[cBone.Name].Inversed();
             }           
 
             // lstPositions, lstTexCoord, lstNormals, lstBoneIndex, lstBoneWeight를 이용하여 RawModel3d를 생성한다.

@@ -75,6 +75,7 @@
     <Compile Include="AniModels\Animator.cs" />
     <Compile Include="AniModels\AniActor\AnimActor.cs" />
     <Compile Include="AniModels\Rig\AnimRig.Correction.cs" />
+    <Compile Include="AniModels\Rig\ArmatureLinker.cs" />
     <Compile Include="AniModels\Rig\BirdRig.cs" />
     <Compile Include="AniModels\Rig\BearRig.cs" />
     <Compile Include="AniModels\Rig\DonkeyRig.cs" />
@@ -86,7 +87,7 @@
     <Compile Include="Armature\Armature.cs" />
     <Compile Include="Armature\BoneExtension.cs" />
     <Compile Include="Armature\BoneKinematics.cs" />
-    <Compile Include="Armature\BoneTransforms.cs" />
+    <Compile Include="Armature\BoneMatrixSet.cs" />
     <Compile Include="Armature\BoneTraverse.cs" />
     <Compile Include="Armature\HorseBone.cs" />
     <Compile Include="Armature\HorseBoneExtensions.cs" />

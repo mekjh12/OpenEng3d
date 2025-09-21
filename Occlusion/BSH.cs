@@ -210,7 +210,7 @@ namespace Occlusion
                 if (currentNode == null) continue;
 
                 // 두 점 사이의 거리
-                float distance = MathF.Abs((currentNode.Center - position).Norm());
+                float distance = MathF.Abs((currentNode.Center - position).Length());
                 float R = currentNode.Radius;
 
                 if (radius + R > distance)
@@ -432,8 +432,8 @@ namespace Occlusion
                     }
                     else
                     {
-                        float d0 = (insertNode.Center - currentNode.Childs[0].Center).Norm();
-                        float d1 = (insertNode.Center - currentNode.Childs[1].Center).Norm();
+                        float d0 = (insertNode.Center - currentNode.Childs[0].Center).Length();
+                        float d1 = (insertNode.Center - currentNode.Childs[1].Center).Length();
                         int bestIndex = (d0 < d1) ? 0 : 1;
 
                         bool i0 = currentNode.Childs[0].IsInclude(insertNode);

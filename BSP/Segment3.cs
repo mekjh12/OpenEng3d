@@ -51,7 +51,7 @@ namespace BSP
         /// <summary>
         /// 선분의 길이
         /// </summary>
-        public float Length => (_end - _start).Norm();
+        public float Length => (_end - _start).Length();
 
         /// <summary>
         /// 영역의 넓이

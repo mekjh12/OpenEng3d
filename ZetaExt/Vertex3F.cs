@@ -48,12 +48,12 @@ namespace ZetaExt
         public static Matrix4x4f RotateBetween(this Vertex3f a, Vertex3f b)
         {
             // 월드공간의 좌표로 변환을 해야 함.
-            float af = a.Norm();
-            float bf = b.Norm();
+            float af = a.Length();
+            float bf = b.Length();
             if (af == 0 || bf == 0) return Matrix4x4f.Identity;
 
             Vertex3f R = a.Cross(b).Normalized;
-            float cf = (a - b).Norm();
+            float cf = (a - b).Length();
             float cos = (af * af + bf * bf - cf * cf) / (2 * af * bf);
             float cosTheta = (-1 <= cos && cos <= 1) ? ((float)Math.Acos(cos)).ToDegree() : 0.0f;
             return (Matrix4x4f)new Quaternion4(R, cosTheta);
@@ -102,7 +102,7 @@ namespace ZetaExt
         }
 
 
-        public static float Norm(this Vertex3f a)
+        public static float Length(this Vertex3f a)
         {
             return (float)Math.Sqrt(a.Dot(a));
         }

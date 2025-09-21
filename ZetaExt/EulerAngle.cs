@@ -98,7 +98,7 @@ namespace ZetaExt
 
         public override string ToString()
         {
-            return $"psi={_psi}, theta={_theta}, phi={_phi}";
+            return $"psi={_psi.ToString("F3")}, theta={_theta.ToString("F3")}, phi={_phi.ToString("F3")}";
         }
     }
 }

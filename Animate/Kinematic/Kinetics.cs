@@ -32,13 +32,13 @@ namespace Animate
             //bone.RotateBy(e.RotateBetween(t), endTarget);
             //bone.UpdateRootTransforms(isSelfIncluded: false);
 
-            Vertex3f angleVector = EulerAngleFromRotationMatrix(bone.BoneTransforms.LocalTransform.Rot3x3f())[0];
+            Vertex3f angleVector = EulerAngleFromRotationMatrix(bone.BoneMatrixSet.LocalTransform.Rot3x3f())[0];
             Matrix4x4f RotX = Matrix4x4f.RotatedX(angleVector.x);
             Matrix4x4f RotY = Matrix4x4f.RotatedY(angleVector.y);
             Matrix4x4f RotZ = Matrix4x4f.RotatedZ(angleVector.z);
-            Vertex3f pos = bone.BoneTransforms.LocalTransform.Position;
+            Vertex3f pos = bone.BoneMatrixSet.LocalTransform.Position;
             Matrix4x4f Rot = Matrix4x4f.Translated(pos.x, pos.y, pos.z) * RotZ * RotY * RotX;
-            bone.BoneTransforms.LocalTransform = Rot;
+            bone.BoneMatrixSet.LocalTransform = Rot;
             //bone.UpdateRootTransforms(isSelfIncluded: true);
         }
 
@@ -51,7 +51,7 @@ namespace Animate
             //Matrix4x4f RotY = Matrix4x4f.RotatedY(angleVector.y.Clamp(bone.RestrictAngle.YMin, bone.RestrictAngle.YMax));
             //Matrix4x4f RotZ = Matrix4x4f.RotatedZ(angleVector.z.Clamp(bone.RestrictAngle.ZMin, bone.RestrictAngle.ZMax));
 
-            Vertex3f pos = bone.BoneTransforms.LocalTransform.Position;
+            Vertex3f pos = bone.BoneMatrixSet.LocalTransform.Position;
             //Matrix4x4f Rot = Matrix4x4f.Translated(pos.x, pos.y, pos.z) * RotZ * RotY * RotX;
             //bone.LocalTransform = Rot;
             //bone.UpdateChildBone(isSelfIncluded: true);
@@ -148,16 +148,16 @@ namespace Animate
                 for (int i = N - 1; i >= 0; i--)
                 {
                     Bone cBone = Bn[i];
-                    Vertex3f angleVector = EulerAngleFromRotationMatrixZYX(cBone.BoneTransforms.LocalTransform.Rot3x3f())[0];
+                    Vertex3f angleVector = EulerAngleFromRotationMatrixZYX(cBone.BoneMatrixSet.LocalTransform.Rot3x3f())[0];
                     angleVector.x = angleVector.x.Clamp(cBone.BoneKinematics.RestrictAngle.ConstraintAngle.x, cBone.BoneKinematics.RestrictAngle.ConstraintAngle.y);
                     angleVector.y = angleVector.y.Clamp(cBone.BoneKinematics.RestrictAngle.TwistAngle.x, cBone.BoneKinematics.RestrictAngle.TwistAngle.y);
                     angleVector.z = angleVector.z.Clamp(cBone.BoneKinematics.RestrictAngle.ConstraintAngle.z, cBone.BoneKinematics.RestrictAngle.ConstraintAngle.w);
                     Matrix4x4f RotX = Matrix4x4f.RotatedX(angleVector.x);
                     Matrix4x4f RotY = Matrix4x4f.RotatedY(angleVector.y);
                     Matrix4x4f RotZ = Matrix4x4f.RotatedZ(angleVector.z);
-                    Vertex3f pos = cBone.BoneTransforms.LocalTransform.Position;
+                    Vertex3f pos = cBone.BoneMatrixSet.LocalTransform.Position;
                     Matrix4x4f Rot = Matrix4x4f.Translated(pos.x, pos.y, pos.z) * RotZ * RotY * RotX;
-                    cBone.BoneTransforms.LocalTransform = Rot;
+                    cBone.BoneMatrixSet.LocalTransform = Rot;
                     //cBone.UpdateRootTransforms(isSelfIncluded: true);
                 }
 
@@ -245,7 +245,7 @@ namespace Animate
 
             Matrix4x4f invCharMat = (charMat * 100.0f).Inverse * 100.0f;
             Vertex3f t = (invCharMat * target.Vertex4f()).Vertex3f();
-            float length = t.Norm();
+            float length = t.Length();
             float s = t.y;
             //s = (s < 0.001f) ? 0.001f : s;
             Vertex4f t2d = FindTangentPoint2D(t.z, t.x, s, theta);

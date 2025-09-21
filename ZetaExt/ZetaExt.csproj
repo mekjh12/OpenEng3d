@@ -62,6 +62,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Matrix4x4fExtensions.cs" />
     <Compile Include="MemoryProfiler.cs" />
     <Compile Include="XmlNode.cs" />
     <Compile Include="Debug.cs" />

@@ -58,7 +58,7 @@ namespace Animate
                         // 엄지 손가락이 아닌 경우
                         if (bone.Name.IndexOf("Thumb") < 0)
                         {
-                            bone.BoneTransforms.LocalTransform = bone.BoneTransforms.LocalBindTransform * Matrix4x4f.RotatedX(40);
+                            bone.BoneMatrixSet.LocalTransform = bone.BoneMatrixSet.LocalBindTransform * Matrix4x4f.RotatedX(40);
                         }
                     }
 

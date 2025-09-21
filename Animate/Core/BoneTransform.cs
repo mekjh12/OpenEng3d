@@ -126,13 +126,13 @@ namespace Animate
             Matrix4x4f res = (Matrix4x4f)rot;
 
             // frameA와 frameB의 스케일 추출
-            float scaleA_X = frameA.Column0.Vertex3f().Norm();
-            float scaleA_Y = frameA.Column1.Vertex3f().Norm();
-            float scaleA_Z = frameA.Column2.Vertex3f().Norm();
+            float scaleA_X = frameA.Column0.Vertex3f().Length();
+            float scaleA_Y = frameA.Column1.Vertex3f().Length();
+            float scaleA_Z = frameA.Column2.Vertex3f().Length();
 
-            float scaleB_X = frameB.Column0.Vertex3f().Norm();
-            float scaleB_Y = frameB.Column1.Vertex3f().Norm();
-            float scaleB_Z = frameB.Column2.Vertex3f().Norm();
+            float scaleB_X = frameB.Column0.Vertex3f().Length();
+            float scaleB_Y = frameB.Column1.Vertex3f().Length();
+            float scaleB_Z = frameB.Column2.Vertex3f().Length();
 
             // 스케일 선형 보간
             float finalScale_X = scaleA_X + (scaleB_X - scaleA_X) * progression;
@@ -203,9 +203,9 @@ namespace Animate
 
             // 스케일 추출 (각 열벡터의 크기)
             var scaling = new Vertex3f(
-                matrix.Column0.Vertex3f().Norm(),
-                matrix.Column1.Vertex3f().Norm(),
-                matrix.Column2.Vertex3f().Norm()
+                matrix.Column0.Vertex3f().Length(),
+                matrix.Column1.Vertex3f().Length(),
+                matrix.Column2.Vertex3f().Length()
             );
 
             return new BoneTransform(position, rotation, scaling);
@@ -247,7 +247,7 @@ namespace Animate
 
         public override string ToString()
         {
-            return $"BoneTransform(Pos: {_position}, Rot: {_rotation}, Scale: {_scaling})";
+            return $"BoneTransform(Pos: {_position}, Quaternion: {_rotation}, Scale: {_scaling})";
         }
     }
 }

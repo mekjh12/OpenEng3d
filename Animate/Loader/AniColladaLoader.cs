@@ -554,11 +554,11 @@ namespace Animate
                             Index = 0,
                             ID = "Armature",
                         };
-                        root.BoneTransforms.LocalBindTransform = startMatrix * node["matrix"].InnerText.ParseToMatrix4x4f(transposed: true);
+                        root.BoneMatrixSet.LocalBindTransform = startMatrix * node["matrix"].InnerText.ParseToMatrix4x4f(transposed: true);
 
                         if (invBindPoses.ContainsKey(ARMATURE))
                         {
-                            root.BoneTransforms.InverseBindPoseTransform = invBindPoses[ARMATURE];
+                            root.BoneMatrixSet.InverseBindPoseTransform = invBindPoses[ARMATURE];
                         }
 
                         boneDics[ARMATURE] = root;
@@ -588,12 +588,12 @@ namespace Animate
                     Index = boneIndex,
                     ID = boneID,
                 };
-                bone.BoneTransforms.LocalBindTransform = mat;
+                bone.BoneMatrixSet.LocalBindTransform = mat;
 
                 // 역바인드 포즈를 설정한다.
                 if (invBindPoses.ContainsKey(boneName))
                 {
-                    bone.BoneTransforms.InverseBindPoseTransform = invBindPoses[boneName];
+                    bone.BoneMatrixSet.InverseBindPoseTransform = invBindPoses[boneName];
                 }
 
                 armature.AddBone(bone);

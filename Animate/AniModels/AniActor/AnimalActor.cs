@@ -33,6 +33,12 @@ namespace Animate
                 SetMotion(motionName);
         }
 
+        public void SetRandomMotion()
+        {
+            var action = ActionHandler.GetRandomAction();
+            SetMotion(action);
+        }
+
         public override void SetMotionOnce(TAction action)
         {
             var motionName = ActionHandler.GetMotionName(action);

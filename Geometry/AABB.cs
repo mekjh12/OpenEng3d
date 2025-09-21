@@ -30,7 +30,7 @@ namespace Geometry
         /// </summary>
         public float Diameter
         {
-            get => (_upper - _lower).Norm();
+            get => (_upper - _lower).Length();
         }
 
         /// <summary>

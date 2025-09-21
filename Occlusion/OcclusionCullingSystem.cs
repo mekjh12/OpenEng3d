@@ -621,7 +621,7 @@ namespace Occlusion
                     if (occlusionEntity.IsOccluder)
                     {
                         // 카메라로부터 엔티티까지의 거리 계산
-                        float distance = (cameraPosition - occlusionEntity.Position).Norm();
+                        float distance = (cameraPosition - occlusionEntity.Position).Length();
 
                         // 원근 공간에서의 영역 크기 계산
                         // 거리에 따라 크기가 달리 보이므로 적당히 큰 오클루더만 선택한다.

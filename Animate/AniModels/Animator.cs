@@ -1,6 +1,7 @@
 ﻿using OpenGL;
 using System;
 using System.Collections.Generic;
+using ZetaExt;
 
 namespace Animate
 {
@@ -22,7 +23,7 @@ namespace Animate
         private const string SWITCH_MOTION_NAME = "switchMotion";
         private const float MIN_MOTION_TIME = 0.0f;
 
-        // 멤버 변수 (Update함수를 통해서 행렬이 업데이트된다.)
+        // 멤버 변수 (Update함수를 통해서 행렬이 업데이트되어서 임시로 수정하지 않는다.)
         private Matrix4x4f[] _animatedTransforms; // 애니메이션된 행렬
         private Matrix4x4f[] _rootTransforms ; // 뼈대의 캐릭터공간 변환 행렬들
 
@@ -43,10 +44,20 @@ namespace Animate
         // 최적화용 변수
         Dictionary<string, Matrix4x4f> _currentPose;
 
-        // 초기화 시 한 번만 생성되는 순회 순서 배열
+        /// <summary>
+        /// 초기화 시 한 번만 생성되는 순회 순서 배열
+        /// </summary>
         private Bone[] _boneTraversalOrder;
-        private Matrix4x4f[] _parentTransforms; // 각 본의 부모 변환을 미리 계산해둘 배열
-        private int[] _parentIndices; // 각 본의 부모 인덱스
+
+        /// <summary>
+        /// 각 본의 부모 변환을 미리 계산해둘 배열
+        /// </summary>
+        private Matrix4x4f[] _parentTransforms;
+
+        /// <summary>
+        /// 각 본의 BoneTraversalOrder 배열에서 부모 인덱스 배열
+        /// </summary>
+        private int[] _parentIndices; 
 
         // Identity 행렬 재사용
         private readonly Matrix4x4f _identityMatrix = Matrix4x4f.Identity;
@@ -279,7 +290,7 @@ namespace Animate
             }
 
             // 모션의 현재 시간에 맞는 애니메이션 최종 행렬을 루트본에 의하여 계층적으로 업데이트한다.
-            UpdateAnimationTransforms(_motionTime, _rootBone);
+            UpdateAnimationTransforms(_motionTime);
         }
 
         /// <summary>
@@ -290,7 +301,7 @@ namespace Animate
         /// <summary>
         /// 매 프레임마다 실행 - 순회 순서에 따라 빠르게 처리
         /// </summary>
-        private void UpdateAnimationTransforms(float motionTime, Bone rootBone)
+        private void UpdateAnimationTransforms(float motionTime)
         {
             // 키프레임으로부터 현재의 로컬포즈행렬을 가져온다.
             if (!_currentMotion.InterpolatePoseAtTime(motionTime, ref _currentPose))
@@ -302,10 +313,10 @@ namespace Animate
             for (int i = 0; i < _boneTraversalOrder.Length; i++)
             {
                 Bone bone = _boneTraversalOrder[i];
-                int boneIndex = bone.Index;
-                
+                int boneIndex = bone.Index;                
                 if (boneIndex < 0) continue;
 
+                // 부모본을 가져온다.
                 Bone pBone = _parentIndices[i] < 0 ? null : _boneTraversalOrder[_parentIndices[i]];
 
                 // 본 인덱스가 범위를 벗어나면 건너뛴다.
@@ -318,13 +329,27 @@ namespace Animate
                     _rootTransforms[pBone.Index]; // 부모 본의 변환
 
                 // 현재 포즈로부터 본의 로컬 변환을 가져온다.
-                bone.BoneTransforms.LocalTransform =
+                bone.BoneMatrixSet.LocalTransform =
                     (_currentPose != null && _currentPose.TryGetValue(bone.Name, out Matrix4x4f poseTransform)) ?
-                    poseTransform : bone.BoneTransforms.LocalBindTransform;
+                    poseTransform : bone.BoneMatrixSet.LocalBindTransform;
 
-                // 행렬 계산
-                _rootTransforms[boneIndex] = parentTransform * bone.BoneTransforms.LocalTransform;
-                _animatedTransforms[boneIndex] = _rootTransforms[boneIndex] * bone.BoneTransforms.InverseBindPoseTransform;
+                // 캐릭터 공간에서의 본의 변환 행렬 계산
+                _rootTransforms[boneIndex] = parentTransform * bone.BoneMatrixSet.LocalTransform;
+
+                if (boneIndex == 0)
+                {
+                    Vertex3f p = _rootTransforms[boneIndex].Column3.xyz();
+                    if (p.x==0 && p.y==0 && p.z==0)
+                    {
+
+                    }
+                    else
+                    {
+                        //Console.WriteLine(p);
+                    }
+                }
+                // 애니메이션된 최종 행렬 계산 (스키닝 행렬)
+                _animatedTransforms[boneIndex] = _rootTransforms[boneIndex] * bone.BoneMatrixSet.InverseBindPoseTransform;
             }
         }
     }

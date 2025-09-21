@@ -49,8 +49,8 @@ namespace Animate
                 Bone bone = dicBones[boneName];
                 if (bone.IsHipBone && timeFrames.ContainsKey(0.0f)) //
                 {
-                    float dstSize = bone.BoneTransforms.Pivot.Norm();//.BoneTransforms.InverseBindPoseTransform.Inversed().Position.Norm();
-                    float srcSize = timeFrames[0.0f].Position.Norm();
+                    float dstSize = bone.BoneMatrixSet.Pivot.Length();//.BoneTransforms.InverseBindPoseTransform.Inversed().Position.Norm();
+                    float srcSize = timeFrames[0.0f].Position.Length();
                     return dstSize / srcSize; // 찾으면 즉시 반환
                 }
             }
@@ -203,7 +203,7 @@ namespace Animate
             // Interpolation Pose만 0초에서 정상적 T-pose를 취하고 있어서 이 부분에서 가져와야 한다.
             if (motionName == "a-T-Pose") //Interpolation Pose
             {
-                targetAniRig.Armature.HipHeightScaled = CalculateHipScaleRatio(animationData, targetAniRig.DicBones);
+                targetAniRig.Armature.HipHeightScaled = 1.0f;// CalculateHipScaleRatio(animationData, targetAniRig.DicBones);
                 Console.WriteLine($"{targetAniRig.Name} XmeDae HipScaled={targetAniRig.Armature.HipHeightScaled}");
             }
 
@@ -212,33 +212,74 @@ namespace Animate
             if (maxTimeLength > 0 && targetAniRig.DicBones != null)
             {
                 // 뼈마다 순회 (뼈, 시간, 로컬변환행렬)
-                foreach (KeyValuePair<string, Dictionary<float, Matrix4x4f>> item in animationData)
+                foreach (KeyValuePair<string, Dictionary<float, Matrix4x4f>> bones in animationData)
                 {
-                    string boneName = item.Key;
-                    Dictionary<float, Matrix4x4f> source = item.Value;
-                    
+                    string boneName = bones.Key;
+                    Dictionary<float, Matrix4x4f> timeTransforms = bones.Value;
+
                     Bone bone = targetAniRig.Armature[boneName];
                     if (bone == null) continue;
 
                     // 시간마다 순회 (시간, 로컬변환행렬)
-                    foreach (KeyValuePair<float, Matrix4x4f> subsource in source)
+                    foreach (KeyValuePair<float, Matrix4x4f> transform in timeTransforms)
                     {
-                        float time = subsource.Key;
-                        Matrix4x4f mat = subsource.Value;
+                        float time = transform.Key;
+                        Matrix4x4f mat = transform.Value;
+                        Vertex3f scale = Vertex3f.One;
 
-                        // 본포즈를 설정한다.
-                        Vertex3f position = bone.IsHipBone ?
-                            mat.Position * targetAniRig.Armature.HipHeightScaled :
-                            bone.BoneTransforms.LocalPivot;
+                        // 회전행렬에서 열벡터를 정규화한다.
+                        mat.NormalizeColumn(0);
+                        mat.NormalizeColumn(1);
+                        mat.NormalizeColumn(2);
+
+                        if (boneName == "CG")
+                        {
+                            Console.Write($"{motionName}-->\t{boneName}\ttime={time.ToString("F3")}초\n");
+                            //EulerAngle angle = new EulerAngle(mat);
+                            //Console.Write(angle.ToString() + "\t");
+                            //Console.Write(mat.Position + "\t\n");
+                            //Console.Write("\n");
+                            //Console.WriteLine(mat.ToString(3));
+                        }
+
+                        // 올바른 방식:
+                        Vertex3f position = Vertex3f.Zero;
+
+                        if (bone.IsHipBone)
+                        {
+                            position = mat.Position;// * targetAniRig.Armature.HipHeightScaled;
+                            Console.WriteLine(position.ToString());
+                        }
+                        else
+                        {
+                            position = bone.BoneMatrixSet.LocalPivot;
+                        }
+
+                        //position = bone.BoneTransforms.LocalPivot;
 
                         ZetaExt.Quaternion q = mat.ToQuaternion();
                         q.Normalize();
                         BoneTransform boneTransform = new BoneTransform(position, q);
 
+
+                        //if (boneName == "CG") Console.WriteLine(boneTransform.Position.ToString());
+
                         // 키프레임을 추가하고 본포즈를 추가한다.
                         motion.AddKeyFrame(time);
                         motion[time].AddBoneTransform(boneName, boneTransform);
                     }
+                }
+            }
+
+
+            if (motion.Name== "H_RIGHT") //
+            {
+                foreach(KeyFrame keyframe in motion.Keyframes.Values)
+                {
+                    BoneTransform boneTransform = keyframe["CG"];
+                    Console.WriteLine(keyframe.TimeStamp + "초\tr=" + boneTransform.Rotation + "\tp=" + boneTransform.Position);
+                    //BoneTransform boneTransform = keyframe["Root"];
+                    //Console.WriteLine(keyframe.TimeStamp + "초\tr=" + boneTransform.Rotation + "\tp=" + boneTransform.Position);
                 }
             }
 

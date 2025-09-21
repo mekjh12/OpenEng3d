@@ -165,7 +165,7 @@ namespace Animate
                         float u = res.y;
                         float v = res.z;
 
-                        float distance = Math.Min((clothPoint - v3).Norm(), Math.Min((clothPoint - v1).Norm(), (clothPoint - v2).Norm()));
+                        float distance = Math.Min((clothPoint - v3).Length(), Math.Min((clothPoint - v1).Length(), (clothPoint - v2).Length()));
                         if (distance < min && t > 0)
                         {
                             minIndex = i;
