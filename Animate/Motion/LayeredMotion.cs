@@ -4,6 +4,10 @@ using System.Collections.Generic;
 
 namespace Animate
 {
+    /// <summary>
+    /// TODO: 여러 행동을 뼈대별로 레이어링하여 블렌딩된 모션을 나타낼 때 주기시간을 어떻게 정할지 고민 필요
+    /// 다시 이야기하면 레이어 모션간 주기시간이 다를 때 어떻게 처리할지 고민 필요
+    /// </summary>
     public class LayeredMotion : Motionable
     {
         // -----------------------------------------------------------------------
@@ -75,6 +79,14 @@ namespace Animate
             }
 
             _layered[maskBoneName] = motionable;
+        }
+
+        /// <summary>
+        /// 블렌딩된 모션의 주기 시간을 설정합니다.
+        /// </summary>
+        public void SetPeriodTime(float periodTime)
+        {
+            _periodTime = periodTime;
         }
 
         /// <summary>

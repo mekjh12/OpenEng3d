@@ -3,6 +3,10 @@ using System;
 
 namespace ZetaExt
 {
+    /// <summary>
+    /// ZYX 오일러 각도 구조체
+    /// 회전 순서: Z축(psi) → Y축(theta) → X축(phi)
+    /// </summary>
     public struct EulerAngle
     {
         float _theta;

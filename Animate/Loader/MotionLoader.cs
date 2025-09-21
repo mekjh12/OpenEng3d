@@ -228,58 +228,30 @@ namespace Animate
                         Vertex3f scale = Vertex3f.One;
 
                         // 회전행렬에서 열벡터를 정규화한다.
+                        float dist0 = mat.Column0.xyz().Length();
+                        float dist1 = mat.Column1.xyz().Length();
+                        float dist2 = mat.Column2.xyz().Length();
+
                         mat.NormalizeColumn(0);
                         mat.NormalizeColumn(1);
                         mat.NormalizeColumn(2);
-
-                        if (boneName == "CG")
-                        {
-                            Console.Write($"{motionName}-->\t{boneName}\ttime={time.ToString("F3")}초\n");
-                            //EulerAngle angle = new EulerAngle(mat);
-                            //Console.Write(angle.ToString() + "\t");
-                            //Console.Write(mat.Position + "\t\n");
-                            //Console.Write("\n");
-                            //Console.WriteLine(mat.ToString(3));
-                        }
+                        mat[3, 0] /= dist0;
+                        mat[3, 1] /= dist1;
+                        mat[3, 2] /= dist2;
 
                         // 올바른 방식:
-                        Vertex3f position = Vertex3f.Zero;
-
-                        if (bone.IsHipBone)
-                        {
-                            position = mat.Position;// * targetAniRig.Armature.HipHeightScaled;
-                            Console.WriteLine(position.ToString());
-                        }
-                        else
-                        {
-                            position = bone.BoneMatrixSet.LocalPivot;
-                        }
-
-                        //position = bone.BoneTransforms.LocalPivot;
+                        Vertex3f position = bone.IsHipBone ?
+                            mat.Position * targetAniRig.Armature.HipHeightScaled:
+                            bone.BoneMatrixSet.LocalPivot;
 
                         ZetaExt.Quaternion q = mat.ToQuaternion();
                         q.Normalize();
                         BoneTransform boneTransform = new BoneTransform(position, q);
 
-
-                        //if (boneName == "CG") Console.WriteLine(boneTransform.Position.ToString());
-
                         // 키프레임을 추가하고 본포즈를 추가한다.
                         motion.AddKeyFrame(time);
                         motion[time].AddBoneTransform(boneName, boneTransform);
                     }
-                }
-            }
-
-
-            if (motion.Name== "H_RIGHT") //
-            {
-                foreach(KeyFrame keyframe in motion.Keyframes.Values)
-                {
-                    BoneTransform boneTransform = keyframe["CG"];
-                    Console.WriteLine(keyframe.TimeStamp + "초\tr=" + boneTransform.Rotation + "\tp=" + boneTransform.Position);
-                    //BoneTransform boneTransform = keyframe["Root"];
-                    //Console.WriteLine(keyframe.TimeStamp + "초\tr=" + boneTransform.Rotation + "\tp=" + boneTransform.Position);
                 }
             }
 

@@ -96,47 +96,25 @@ namespace FormTools
 
             _mixamoRotMotionStorage = new MixamoRotMotionStorage();
 
-            // [당나귀] =========================================
-            var donkeyRig = new DonkeyRig(PROJECT_PATH + @"\Res\Actor\Donkey\donkey.dae", isLoadAnimation: false);
-            donkeyRig.SetModelCorrection(Vertex3f.UnitZ, Vertex3f.UnitY, Vertex3f.UnitZ, -Vertex3f.UnitX);
-            _mixamoRotMotionStorageB = new MixamoRotMotionStorage();
-            _mixamoRotMotionStorageB.Clear();
-            foreach (string fileName in Directory.GetFiles(PROJECT_PATH + "\\Res\\Action\\Donkey\\"))
-            {
-                if (Path.GetExtension(fileName).Equals(".dae"))
-                {
-                    Motion motion = MotionLoader.LoadMixamoMotion(donkeyRig, fileName);
-                    _mixamoRotMotionStorageB.AddMotion(motion);
-                }
-            }
-
-            Donkey donkey = new Donkey($"donkey", donkeyRig);
-            donkey.Transform.SetPosition(-2, 0, 0);
-            _aniActors.Add(donkey);
-            _mixamoRotMotionStorageB.RetargetMotionsTransfer(targetAniRig: donkeyRig);
-
-            Console.WriteLine(donkeyRig.Armature.ToString());
-
             // [캐릭터] =========================================
-            /*
-            PrimateRig aniRig = new PrimateRig(PROJECT_PATH + @"\Res\Actor\abe\abe.dae", isLoadAnimation: false);
+            PrimateRig aniRig = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Hero\aa_heroNasty.dae", isLoadAnimation: false);
             PrimateRig aniRig2 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Guybrush\Guybrush.dae", isLoadAnimation: false);
 
             _aniActors.Add(new Human($"Guybrush", aniRig2));
             _aniActors[0].Transform.IncreasePosition(4, 0.0f, 0);
 
-            _aniActors.Add(new Human($"abe", aniRig));
+            _aniActors.Add(new Human($"Hero", aniRig));
             _aniActors[1].Transform.IncreasePosition(2, 0, 0);
 
             // 캐릭터 수를 점진적으로 증가
-            int TEST_CHARACTER_COUNT = 1; // 이 값을 변경하면서 테스트
+            int TEST_CHARACTER_COUNT = 0; // 이 값을 변경하면서 테스트
             int yDelta = 0;
             int xDelta = 8;
             for (int i = 0; i < TEST_CHARACTER_COUNT; i++)
             {
                 _aniActors.Add(new Human($"test{i}", aniRig2));
                 xDelta += 2; // X 위치를 증가
-                if (i % 20 == 0 && i != 0)
+                if (i % 10 == 0 && i != 0)
                 {
                     xDelta = 0; // 20개마다 X 위치를 초기화
                     yDelta += 2; // Y 위치를 증가
@@ -158,31 +136,38 @@ namespace FormTools
             // 애니메이션 리타겟팅
             _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig);
             _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig2);
-            //aniRig2.AddBlendMotion("walking-jump", "Walking", "Jump", 1.0f, 2.0f);
-            //aniRig2.AddBlendMotion("walking-fastrun", "Walking", "Slow Run", 1.0f, 2.0f);
-            aniRig2.AddBlendMotion("Defeated-Dying", "Jump", "Defeated", 1.0f, 2.0f);
 
-            LayeredMotion layerBlendMotion = new LayeredMotion("layerWalking", aniRig2.GetMotion("Capoeira"));
-            layerBlendMotion.AddLayer(MixamoBone.Spine1, aniRig2.GetMotion("a-T-Pose"));
-            layerBlendMotion.BuildTraverseBoneNamesCache(aniRig2.Armature.RootBone);
-            aniRig2.AddMotion(layerBlendMotion);
+            // 모션 블렌딩 예제
+            aniRig.AddBlendMotion("Jump-Defeated", "Jump", "Defeated", 1.0f, 2.0f, 0.8f);
 
-            // [인간형] =========================================
-            aniRig = new PrimateRig(PROJECT_PATH + @"\Res\Actor\abe\abe.dae", isLoadAnimation: false);
-            _mixamoRotMotionStorage.Clear();
-            foreach (string fileName in Directory.GetFiles(PROJECT_PATH + "\\Res\\Action\\Human\\"))
+            // 모션 레이어링 예제
+            LayeredMotion layerBlendMotion = new LayeredMotion("layerWalking", aniRig.GetMotion("Capoeira"));
+            layerBlendMotion.AddLayer(MixamoBone.Spine1, aniRig.GetMotion("a-T-Pose"));
+            layerBlendMotion.AddLayer(MixamoBone.LeftShoulder, aniRig.GetMotion("Defeated"));
+            layerBlendMotion.AddLayer(MixamoBone.Neck, aniRig.GetMotion("Jump"));
+            layerBlendMotion.AddLayer(MixamoBone.RightUpLeg, aniRig.GetMotion("Dying"));
+            layerBlendMotion.BuildTraverseBoneNamesCache(aniRig.Armature.RootBone);
+            layerBlendMotion.SetPeriodTime(0.5f);
+            aniRig.AddMotion(layerBlendMotion);
+
+            // [당나귀] =========================================
+            var donkeyRig = new DonkeyRig(PROJECT_PATH + @"\Res\Actor\Donkey\donkey.dae", isLoadAnimation: false);
+            donkeyRig.SetModelCorrection(Vertex3f.UnitZ, Vertex3f.UnitY, Vertex3f.UnitZ, -Vertex3f.UnitX);
+            _mixamoRotMotionStorageB = new MixamoRotMotionStorage();
+            _mixamoRotMotionStorageB.Clear();
+            foreach (string fileName in Directory.GetFiles(PROJECT_PATH + "\\Res\\Action\\Donkey\\"))
             {
                 if (Path.GetExtension(fileName).Equals(".dae"))
                 {
-                    Motion motion = MotionLoader.LoadMixamoMotion(aniRig, fileName);
-                    _mixamoRotMotionStorage.AddMotion(motion);
+                    Motion motion = MotionLoader.LoadMixamoMotion(donkeyRig, fileName);
+                    _mixamoRotMotionStorageB.AddMotion(motion);
                 }
             }
-            var human = new Human($"abe", aniRig);
-            human.Transform.SetPosition(2, 0, 0);
-            _aniActors.Add(human);
-            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig);
-            Console.WriteLine(aniRig.Armature.ToString());
+
+            Donkey donkey = new Donkey($"donkey", donkeyRig);
+            donkey.Transform.SetPosition(-2, 0, 0);
+            _aniActors.Add(donkey);
+            _mixamoRotMotionStorageB.RetargetMotionsTransfer(targetAniRig: donkeyRig);
 
             // -------------------------------------------------
             // 이종간 모션 링킹 생성
@@ -190,7 +175,6 @@ namespace FormTools
             //armatureLinker.LoadLinkFile(PROJECT_PATH + @"\Res\Action\Human-to-Donkey BoneLinker.txt");
             //armatureLinker.LinkRigs(aniRig.Armature, donkeyRig.Armature);
             //_mixamoRotMotionStorage.Transfer(armatureLinker, donkeyRig);
-            */
 
             // -------------------------------------------------
             // 애니메이션 모델에 애니메이션 초기 지정
@@ -202,7 +186,7 @@ namespace FormTools
                 }
                 else if (aniActor is Donkey)
                 {
-                    (aniActor as Donkey).SetMotion(DONKEY_ACTION.H_IDLE);
+                    (aniActor as Donkey).SetMotion(DONKEY_ACTION.H_CANTER_RIGHT);
                 }
             }
 
@@ -276,9 +260,9 @@ namespace FormTools
                 aniActor.Render(camera, vp, _animateShader, _staticShader, isBoneVisible: true);
             }
 
-            foreach (IAnimActor aniActor in _aniActors)
+            //foreach (IAnimActor aniActor in _aniActors)
             {
-               _axisShader.RenderAxes(aniActor.ModelMatrix, aniActor.Animator.RootTransforms, vp, axisLength: 20.2f);
+               //_axisShader.RenderAxes(aniActor.ModelMatrix, aniActor.Animator.RootTransforms, vp, axisLength: 20.2f);
             }
 
             // 폴리곤 모드 설정
@@ -350,7 +334,8 @@ namespace FormTools
             }
             else if (e.KeyCode == Keys.D4)
             {
-                _aniActors[0].SetMotion("layerWalking");
+                _aniActors[0].SetMotion("Jump-Defeated");
+                _aniActors[1].SetMotion("layerWalking");
             }
             else if (e.KeyCode == Keys.D5)
             {

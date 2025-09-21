@@ -115,7 +115,8 @@ namespace Animate
             return _motions.GetMotion(name);
         }
 
-        public void AddBlendMotion(string newMotionName, string motionName1, string motionName2, float blendFactor1, float blendFactor2)
+        public Motionable AddBlendMotion(string newMotionName, string motionName1, string motionName2, 
+            float blendFactor1, float blendFactor2, float periodicTime = 0.0f)
         {
             Motionable motion1 = _motions.GetMotion(motionName1);
             Motionable motion2 = _motions.GetMotion(motionName2);
@@ -129,7 +130,21 @@ namespace Animate
             _motions.AddMotion(newBlendMotion);
 
             // 기본값으로 두 행동의 평균으로 설정한다.
-            newBlendMotion.SetBlendFactor((blendFactor1 + blendFactor2) * 0.5f);
+            float avg = 0.5f;
+            newBlendMotion.SetBlendFactor(blendFactor1 * (1 - avg) + blendFactor2 * avg);
+
+            // 주기 시간 설정
+            if (periodicTime <= 0.0f)
+            {
+                // 주기 시간이 0 이하이면 두 모션의 평균 길이로 설정
+            }
+            else
+            {
+                // 주기 시간이 양수이면 해당 값으로 설정
+                newBlendMotion.SetPeriodTime(periodicTime);
+            }
+
+            return newBlendMotion;
         }
 
         /// <summary>
