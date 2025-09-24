@@ -27,9 +27,9 @@ namespace Animate
         public Vertex3f Pivot => _bindPoseTransform.Position;
 
         /// <summary>
-        /// 바인딩 포즈에서의 뼈 벡터
+        /// 부모 뼈대 공간에서의 바인딩 포즈 위치
         /// </summary>
-        public Vertex3f LocalPivot => _localBindTransform.Position;
+        public Vertex3f LocalBindPosition => _localBindTransform.Position;
 
 
         /// <summary>

@@ -223,29 +223,31 @@ namespace Animate
                     // 시간마다 순회 (시간, 로컬변환행렬)
                     foreach (KeyValuePair<float, Matrix4x4f> transform in timeTransforms)
                     {
+                        // 시간과 행렬을 가져온다.
                         float time = transform.Key;
                         Matrix4x4f mat = transform.Value;
-                        Vertex3f scale = Vertex3f.One;
 
-                        // 회전행렬에서 열벡터를 정규화한다.
+                        // 변환 행렬의 회전행렬에서 스케일을 구한다.
                         float dist0 = mat.Column0.xyz().Length();
                         float dist1 = mat.Column1.xyz().Length();
                         float dist2 = mat.Column2.xyz().Length();
 
+                        // 회전행렬에서 열벡터를 정규화한다.
                         mat.NormalizeColumn(0);
                         mat.NormalizeColumn(1);
                         mat.NormalizeColumn(2);
+
+                        // 스케일을 적용한다.
                         mat[3, 0] /= dist0;
                         mat[3, 1] /= dist1;
                         mat[3, 2] /= dist2;
 
-                        // 올바른 방식:
-                        Vertex3f position = bone.IsHipBone ?
-                            mat.Position * targetAniRig.Armature.HipHeightScaled:
-                            bone.BoneMatrixSet.LocalPivot;
+                        // 변환행렬의 위치를 가져온다.
+                        Vertex3f position = mat.Position;
 
+                        // 회전행렬을 쿼터니언으로 변환한다.
                         ZetaExt.Quaternion q = mat.ToQuaternion();
-                        q.Normalize();
+                        q.Normalize(); // 쿼터니온의 특성상 정규화가 필요하다.
                         BoneTransform boneTransform = new BoneTransform(position, q);
 
                         // 키프레임을 추가하고 본포즈를 추가한다.

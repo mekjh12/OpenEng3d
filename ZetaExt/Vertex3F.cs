@@ -1,5 +1,6 @@
 ﻿using OpenGL;
 using System;
+using System.Runtime.CompilerServices;
 using System.Xml.Linq;
 
 namespace ZetaExt
@@ -101,10 +102,20 @@ namespace ZetaExt
             return a.Dot(a);
         }
 
-
+        /// <summary>
+        /// 벡터의 길이를 계산합니다 (최적화된 버전)
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Length(this Vertex3f a)
         {
-            return (float)Math.Sqrt(a.Dot(a));
+            float dot = a.Dot(a);
+
+            // 0에 가까운 값 체크 (정확도 향상)
+            if (dot < float.Epsilon)
+                return 0.0f;
+
+            // MathF.Sqrt는 Math.Sqrt보다 빠름 (float 전용)
+            return MathF.Sqrt(dot);
         }
 
         /// <summary>

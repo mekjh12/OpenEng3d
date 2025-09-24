@@ -336,18 +336,6 @@ namespace Animate
                 // 캐릭터 공간에서의 본의 변환 행렬 계산
                 _rootTransforms[boneIndex] = parentTransform * bone.BoneMatrixSet.LocalTransform;
 
-                if (boneIndex == 0)
-                {
-                    Vertex3f p = _rootTransforms[boneIndex].Column3.xyz();
-                    if (p.x==0 && p.y==0 && p.z==0)
-                    {
-
-                    }
-                    else
-                    {
-                        //Console.WriteLine(p);
-                    }
-                }
                 // 애니메이션된 최종 행렬 계산 (스키닝 행렬)
                 _animatedTransforms[boneIndex] = _rootTransforms[boneIndex] * bone.BoneMatrixSet.InverseBindPoseTransform;
             }

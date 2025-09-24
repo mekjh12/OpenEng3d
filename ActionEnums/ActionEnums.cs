@@ -11,7 +11,7 @@
 //    ../Res/Action/Horse/*.dae → HORSE_ACTION enum
 //    ../Res/Action/Human/*.dae → HUMAN_ACTION enum
 // ===================================
-// 자동생성 by GenerateMultiActionEnums.ps1: 2025-09-21 13:30:10
+// 자동생성 by GenerateMultiActionEnums.ps1: 2025-09-22 06:32:38
 
 using System;
 using System.Linq;
@@ -89,14 +89,17 @@ namespace AutoGenEnums
             {DONKEY_ACTION.H_AMBLE, "H_Amble"},
             {DONKEY_ACTION.H_ATTACK_BACK_LEGS, "H_Attack_Back_Legs"},
             {DONKEY_ACTION.H_ATTACK_FRONT_LEGS, "H_Attack_Front_Legs"},
+            {DONKEY_ACTION.H_CANTER, "H_Canter"},
             {DONKEY_ACTION.H_CANTER_RIGHT, "H_Canter_Right"},
             {DONKEY_ACTION.H_DEATH01, "H_Death01"},
+            {DONKEY_ACTION.H_DRINK, "H_Drink"},
             {DONKEY_ACTION.H_IDLE, "H_Idle"},
             {DONKEY_ACTION.H_NEIGH, "H_Neigh"},
+            {DONKEY_ACTION.H_SLEEP, "H_Sleep"},
         };
 
         public static string GetRandomAction() => ActionMap.Values.ElementAt(new Random().Next(ActionMap.Count));
-        public static int Count => 8;
+        public static int Count => 11;
         public static bool HasAction(DONKEY_ACTION action) => ActionMap.ContainsKey(action);
         public static string GetActionName(DONKEY_ACTION action) => ActionMap.TryGetValue(action, out string name) ? name : null;
     }
@@ -107,10 +110,13 @@ namespace AutoGenEnums
         H_AMBLE = 1,
         H_ATTACK_BACK_LEGS = 2,
         H_ATTACK_FRONT_LEGS = 3,
-        H_CANTER_RIGHT = 4,
-        H_DEATH01 = 5,
-        H_IDLE = 6,
-        H_NEIGH = 7,
+        H_CANTER = 4,
+        H_CANTER_RIGHT = 5,
+        H_DEATH01 = 6,
+        H_DRINK = 7,
+        H_IDLE = 8,
+        H_NEIGH = 9,
+        H_SLEEP = 10,
         // 추가된 액션들
         RANDOM,
         STOP,

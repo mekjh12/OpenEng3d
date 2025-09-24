@@ -56,7 +56,7 @@ namespace Animate
 
             if (leftFootIndex < 0 || rightFootIndex < 0)
             {
-                Console.WriteLine($"[경고] {motion.Name}: 발 본을 찾을 수 없습니다.");
+                //Console.WriteLine($"[경고] {motion.Name}: 발 본을 찾을 수 없습니다.");
                 return result;
             }
 
@@ -222,8 +222,8 @@ namespace Animate
                     break;
             }
 
-            Console.WriteLine($"[{motionName}] 발자국거리: {result.FootStepDistance:F3}, " +
-                            $"속도: {result.Speed:F3}, 방향: {direction}");
+            //Console.WriteLine($"[{motionName}] 발자국거리: {result.FootStepDistance:F3}, " +
+            //                $"속도: {result.Speed:F3}, 방향: {direction}");
         }
         private static void UpdateAnimationTransforms(Motion motion, Animator animator, Bone rootBone, float time)
         {

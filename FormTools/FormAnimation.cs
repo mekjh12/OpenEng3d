@@ -167,6 +167,7 @@ namespace FormTools
             Donkey donkey = new Donkey($"donkey", donkeyRig);
             donkey.Transform.SetPosition(-2, 0, 0);
             _aniActors.Add(donkey);
+
             _mixamoRotMotionStorageB.RetargetMotionsTransfer(targetAniRig: donkeyRig);
 
             // -------------------------------------------------

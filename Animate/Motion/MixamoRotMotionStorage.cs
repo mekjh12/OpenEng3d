@@ -35,6 +35,7 @@ namespace Animate
             }
         }
 
+        [Obsolete("테스트 중...")]
         public void Transfer(ArmatureLinker armatureLinker, AnimRig targetAniRig)
         {
             // 모션을 리타겟팅
@@ -55,7 +56,7 @@ namespace Animate
                     for (int i = 0; i < dstBoneNames.Length; i++)
                     {
                         Bone bone = targetAniRig.DicBones[dstBoneNames[i]];
-                        dstBonesLength[dstBoneNames[i]] = bone.BoneMatrixSet.LocalPivot.Length();
+                        dstBonesLength[dstBoneNames[i]] = bone.BoneMatrixSet.LocalBindPosition.Length();
                     }
 
                     // 새로운 모션 객체를 생성하고, 모션의 매시간마다 키프레임을 생성한다.
@@ -126,6 +127,7 @@ namespace Animate
 
                 foreach (KeyFrame keyframe in destMotion.Keyframes.Values)
                 {
+                    break;
                     for (int i = 0; i < boneNames.Length; i++)
                     {
                         string boneName = boneNames[i];
@@ -135,25 +137,51 @@ namespace Animate
                         {
                             // 각 본의 위치를 믹사모에서 가져온 길이로 설정
                             Bone targetBone = targetAniRig.DicBones[boneName];
-                            float destBoneLength = targetBone.BoneMatrixSet.LocalPivot.Length();
+                            float destBoneLength = targetBone.BoneMatrixSet.LocalBindPosition.Length();
                             BoneTransform dstBonePose = keyframe[boneName];
+                            keyframe[boneName] = dstBonePose;
+
 
                             // 새로운 위치로 BoneTransform 생성하여 다시 할당
                             if (targetBone.IsHipBone)
                             {
-                                keyframe[boneName] = dstBonePose.WithPosition(dstBonePose.Position);
+                                //keyframe[boneName] = dstBonePose.WithPosition(dstBonePose.Position);
                             }
                             else
                             {
-                                Vertex3f newPosition = dstBonePose.Position.Normalized * destBoneLength;
+                                //Vertex3f newPosition = dstBonePose.Position.Normalized * destBoneLength;
+                                //keyframe[boneName] = dstBonePose.WithPosition(newPosition);
+                            }
+                        }
+                    }
+                }
+
+
+                foreach (KeyFrame keyframe in destMotion.Keyframes.Values)
+                {
+                    break;
+                    for (int i = 0; i < boneNames.Length; i++)
+                    {
+                        string boneName = boneNames[i];
+                        if (targetAniRig.DicBones.ContainsKey(boneName))
+                        {
+                            Bone targetBone = targetAniRig.DicBones[boneName];
+                            if (targetBone.IsHipBone)
+                            {
+                                BoneTransform dstBonePose = keyframe[boneName];
+                                Vertex3f newPosition = dstBonePose.Position;
                                 keyframe[boneName] = dstBonePose.WithPosition(newPosition);
                             }
                         }
                     }
                 }
 
+
                 // 모션의 발 위치를 계산한다.
+                // 애니메이터를 생성한다.
                 animator = new Animator(targetAniRig.Armature.RootBone);
+                animator.SetMotion(destMotion);
+                animator.Update(0);
                 FootStepAnalyzer.FootStepResult footstep =
                     MotionExtensions.AnalyzeFootStep(destMotion, animator, targetAniRig.Armature.RootBone);
 
