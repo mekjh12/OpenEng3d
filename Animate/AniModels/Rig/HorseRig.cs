@@ -5,7 +5,7 @@ namespace Animate
     public class HorseRig : AnimRig
     {
 
-        public HorseRig(string filename, bool isLoadAnimation = true) : base(filename, isLoadAnimation)
+        public HorseRig(string filename, string hipBoneName, bool isLoadAnimation = true) : base(filename, hipBoneName, isLoadAnimation)
         {
             
         }

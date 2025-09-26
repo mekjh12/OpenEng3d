@@ -8,6 +8,7 @@ namespace Animate
 {
     public class MixamoRotMotionStorage
     {
+        private const float ZERO_EPSILON = 0.001f;
         Dictionary<string, Motionable> _motions = new Dictionary<string, Motionable>();
 
         /// <summary>
@@ -159,7 +160,7 @@ namespace Animate
                             BoneTransform dstBonePose = keyframe[boneName];
 
                             // 새로운 위치로 BoneTransform 생성하여 다시 할당
-                            if (targetBone.IsHipBone || targetBone.Name == "Pelvis")
+                            if (targetBone.IsHipBone)
                             {
                                 float ratio = targetAniRig.Armature.HipHeight / sourceAniRig.Armature.HipHeight;
                                 Vertex3f newPosition = dstBonePose.Position * ratio;
@@ -167,6 +168,7 @@ namespace Animate
                             }
                             else
                             {
+                                if (dstBonePose.Position.Length() < ZERO_EPSILON) continue;
                                 float destBoneLength = targetBone.BoneMatrixSet.LocalBindPosition.Length();
                                 Vertex3f newPosition = dstBonePose.Position.Normalized * destBoneLength;
                                 keyframe[boneName] = dstBonePose.WithPosition(newPosition);

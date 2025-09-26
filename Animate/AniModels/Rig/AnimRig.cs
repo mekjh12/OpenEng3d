@@ -53,31 +53,30 @@ namespace Animate
         /// AniRig 생성자
         /// </summary>
         /// <param name="filename">로드할 파일 경로</param>
+        /// <param name="hipBoneName"> 힙 본 이름</param>
         /// <param name="isLoadAnimation">애니메이션 로드 여부</param>
-        public AnimRig(string filename, bool isLoadAnimation = true)
+        public AnimRig(string filename, string hipBoneName, bool isLoadAnimation = true)
         {
             // 파일명과 이름 설정
             _filename = filename;
             _name = Path.GetFileNameWithoutExtension(filename);
 
             // 골격 구조 초기화
-            _armature = new Armature();
+            _armature = new Armature(hipBoneName);
 
             // 파일에서 데이터 로드
             (Armature armature, MotionStorage motions, List<TexturedModel> models, Matrix4x4f bindShapeMatrix)
-                = AniRigLoader.LoadFile(filename);
+                = AniRigLoader.LoadFile(filename, hipBoneName);
 
             // 가져온 골격에서 힙 높이를 설정한다.
             foreach(Bone bone in armature.DicBones.Values)
             {
                 if (bone.IsHipBone)
                 {
-                    armature.HipHeight = bone.BoneMatrixSet.Pivot.z;// bone.BoneMatrixSet.InverseBindPoseTransform.Inverse.Column3.z;
+                    armature.HipHeight = bone.BoneMatrixSet.Pivot.z;
                     break;
                 }
             }
-
-            Console.WriteLine($"AnimRig {_name} {armature.HipHeight}");
 
             // 로드된 데이터로 초기화
             _bindShapeMatrix = bindShapeMatrix;

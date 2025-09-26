@@ -5,7 +5,7 @@ namespace Animate
     public class DonkeyRig : AnimRig
     {
 
-        public DonkeyRig(string filename, bool isLoadAnimation = true) : base(filename, isLoadAnimation)
+        public DonkeyRig(string filename,string hipBoneName, bool isLoadAnimation = true) : base(filename, hipBoneName, isLoadAnimation)
         {
             int index = 0;
 

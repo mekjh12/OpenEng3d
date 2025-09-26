@@ -1,11 +1,9 @@
-﻿using OpenGL;
-
-namespace Animate
+﻿namespace Animate
 {
     public class BirdRig : AnimRig
     {
 
-        public BirdRig(string filename, bool isLoadAnimation = true) : base(filename, isLoadAnimation)
+        public BirdRig(string filename,string hipBoneName, bool isLoadAnimation = true) : base(filename, hipBoneName, isLoadAnimation)
         {
             
         }

@@ -13,8 +13,9 @@ namespace Animate
     public class Armature
     {
         // 골격 구조
-        private Bone _rootBone;                 // 루트 본
-        private float _hipHeight = 1.0f;  // 엉덩이 높이 비율
+        private Bone _rootBone;             // 루트 본
+        private float _hipHeight = 1.0f;    // 엉덩이 높이 비율
+        private string _hipBoneName = "";  // 루트 본 이름
 
         // 본 관리 데이터
         private Dictionary<string, Bone> _dicBones;         // 본 이름 -> 본 객체 매핑
@@ -37,10 +38,11 @@ namespace Animate
         /// <summary>
         /// Armature 생성자
         /// </summary>
-        public Armature()
+        public Armature(string hipBoneName)
         {
             _dicBones = new Dictionary<string, Bone>();
             _dicBoneIndex = new Dictionary<string, int>();
+            _hipBoneName = hipBoneName;
         }
 
         /// <summary>

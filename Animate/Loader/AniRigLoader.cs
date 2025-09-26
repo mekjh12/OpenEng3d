@@ -10,7 +10,7 @@ namespace Animate
 {
     public class AniRigLoader
     {
-        public static (Armature, MotionStorage, List<TexturedModel>, Matrix4x4f) LoadFile(string filename) 
+        public static (Armature, MotionStorage, List<TexturedModel>, Matrix4x4f) LoadFile(string filename, string hipBoneName) 
         {
             // dae 파일을 읽어온다.
             XmlDocument xml = new XmlDocument();
@@ -21,7 +21,7 @@ namespace Animate
             Dictionary<string, string> materialToEffect = AniColladaLoader.LoadMaterials(xml);
             Dictionary<string, string> effectToImage = AniColladaLoader.LoadEffect(xml);
 
-            Armature armature = new Armature();
+            Armature armature = new Armature(hipBoneName);
             MotionStorage motions = new MotionStorage();
 
             // 지오메트리 정보를 읽어온다. position, normal, texcoord, color, MeshTriangles 정보가 포함되어 있다.
@@ -49,6 +49,16 @@ namespace Animate
 
             // (5) library_visual_scenes = bone hierarchy + rootBone
             AniColladaLoader.LibraryVisualScenes(xml, invBindPoses, ref armature, out Matrix4x4f bind);
+
+            // 힙본을 설정한다.
+            if (armature.DicBones.ContainsKey(hipBoneName))
+            {
+                armature.DicBones[hipBoneName].IsHipBone = true;
+            }
+            else
+            {
+                throw new Exception("골격(Armature)을 사용하기 위해서는 hipBone의 Name을 설정해야 합니다.");
+            }
 
             // (6) source positions으로부터 
             Matrix4x4f A0 = armature.RootBone.BoneMatrixSet.LocalBindTransform;

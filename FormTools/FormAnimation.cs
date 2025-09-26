@@ -97,9 +97,10 @@ namespace FormTools
             _mixamoRotMotionStorage = new MixamoRotMotionStorage();
 
             // [캐릭터] =========================================
-            PrimateRig aniRig = new PrimateRig(PROJECT_PATH + @"\Res\Actor\abe\abe.dae", isLoadAnimation: false);
-            PrimateRig aniRig1 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Hero\aa_heroNasty.dae", isLoadAnimation: false);
-            PrimateRig aniRig2 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Guybrush\Guybrush.dae", isLoadAnimation: false);
+            const string HUMAN_HIP_BONENAME = "mixamorig_Hips";
+            PrimateRig aniRig = new PrimateRig(PROJECT_PATH + @"\Res\Actor\abe\abe.dae", HUMAN_HIP_BONENAME, isLoadAnimation: false);
+            PrimateRig aniRig1 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Hero\aa_heroNasty.dae", HUMAN_HIP_BONENAME, isLoadAnimation: false);
+            PrimateRig aniRig2 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Guybrush\Guybrush.dae", HUMAN_HIP_BONENAME, isLoadAnimation: false);
 
             _aniActors.Add(new Human($"abe", aniRig));
             _aniActors[0].Transform.IncreasePosition(2, 0, 0);
@@ -140,7 +141,7 @@ namespace FormTools
             //aniRig.AddMotion(layerBlendMotion);
 
             // [당나귀] =========================================
-            var donkeyRig = new DonkeyRig(PROJECT_PATH + @"\Res\Actor\Donkey\donkey.dae", isLoadAnimation: false);
+            var donkeyRig = new DonkeyRig(PROJECT_PATH + @"\Res\Actor\Donkey\donkey.dae", hipBoneName: "CG", isLoadAnimation: false);
             donkeyRig.SetModelCorrection(Vertex3f.UnitZ, Vertex3f.UnitY, Vertex3f.UnitZ, -Vertex3f.UnitX);
             _mixamoRotMotionStorageB = new MixamoRotMotionStorage();
             _mixamoRotMotionStorageB.Clear();

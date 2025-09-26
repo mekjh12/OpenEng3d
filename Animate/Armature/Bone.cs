@@ -12,8 +12,8 @@ namespace Animate
     public class Bone
     {
         private const float DEFAULT_BONE_LENGTH = 15.0f;            // 자식이 없는 뼈대의 기본 길이 (Y축 방향)
-        private const string ARMATURE_HIPS_NAME = "mixamorig_Hips"; // Mixamo 리그에서 엉덩이(Hips) 뼈대의 이름
-        private const string ARMATURE_CG_NAME = "CG"; // Mixamo 리그에서 엉덩이(Hips) 뼈대의 이름
+        //private const string ARMATURE_HIPS_NAME = "mixamorig_Hips"; // Mixamo 리그에서 엉덩이(Hips) 뼈대의 이름
+        //private const string ARMATURE_CG_NAME = "CG"; // Mixamo 리그에서 엉덩이(Hips) 뼈대의 이름
 
         // 기본 정보
         private int _index;
@@ -23,7 +23,7 @@ namespace Animate
         // 계층 구조
         private List<Bone> _children;
         private Bone _parent;
-
+        private bool _isHipBone = false;
         private BoneMatrixSet _boneMatrixSet; // 뼈대의 변환 정보 (애니메이션 및 바인딩 포즈 변환 행렬들)
         private BoneKinematics _boneKinematics; // 뼈대의 운동학 정보 (추가 기능)
 
@@ -40,6 +40,15 @@ namespace Animate
         /// 뼈대의 변환 정보를 포함하는 객체
         /// </summary>
         public BoneMatrixSet BoneMatrixSet => _boneMatrixSet;
+
+        /// <summary>
+        /// 힙본인지 여부를 반환
+        /// </summary>
+        public bool IsHipBone
+        {
+            get => _isHipBone;
+            set => _isHipBone = value;
+        }
 
         public string ID
         {
@@ -88,11 +97,6 @@ namespace Animate
         /// 루트 뼈대인지 여부 (부모가 없는 뼈대)
         /// </summary>
         public bool IsRoot => _parent == null;
-
-        /// <summary>
-        /// Mixamo 리그의 엉덩이(Hips) 뼈대인지 여부
-        /// </summary>
-        public bool IsHipBone => _name == ARMATURE_HIPS_NAME ||  _name == ARMATURE_CG_NAME;
 
         /// <summary>
         /// 새로운 뼈대를 생성한다
