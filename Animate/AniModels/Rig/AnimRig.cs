@@ -67,6 +67,18 @@ namespace Animate
             (Armature armature, MotionStorage motions, List<TexturedModel> models, Matrix4x4f bindShapeMatrix)
                 = AniRigLoader.LoadFile(filename);
 
+            // 가져온 골격에서 힙 높이를 설정한다.
+            foreach(Bone bone in armature.DicBones.Values)
+            {
+                if (bone.IsHipBone)
+                {
+                    armature.HipHeight = bone.BoneMatrixSet.Pivot.z;// bone.BoneMatrixSet.InverseBindPoseTransform.Inverse.Column3.z;
+                    break;
+                }
+            }
+
+            Console.WriteLine($"AnimRig {_name} {armature.HipHeight}");
+
             // 로드된 데이터로 초기화
             _bindShapeMatrix = bindShapeMatrix;
             _motions = motions;

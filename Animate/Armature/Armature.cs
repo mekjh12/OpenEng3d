@@ -14,7 +14,7 @@ namespace Animate
     {
         // 골격 구조
         private Bone _rootBone;                 // 루트 본
-        private float _hipHeightScaled = 1.0f;  // 엉덩이 높이 비율
+        private float _hipHeight = 1.0f;  // 엉덩이 높이 비율
 
         // 본 관리 데이터
         private Dictionary<string, Bone> _dicBones;         // 본 이름 -> 본 객체 매핑
@@ -23,10 +23,10 @@ namespace Animate
         /// <summary>
         /// 엉덩이 높이 비율을 가져오거나 설정한다.
         /// </summary>
-        public float HipHeightScaled
+        public float HipHeight
         {
-            get => _hipHeightScaled;
-            set => _hipHeightScaled = value;
+            get => _hipHeight;
+            set => _hipHeight = value;
         }
 
         public string[] BoneNames => _dicBoneIndex.Keys.ToArray();
@@ -217,7 +217,7 @@ namespace Animate
 
             StringBuilder sb = new StringBuilder();
             sb.AppendLine($"Armature: 총 {_dicBones.Count}개의 본");
-            sb.AppendLine($"엉덩이 높이 비율: {_hipHeightScaled:F3}");
+            sb.AppendLine($"엉덩이 높이 비율: {_hipHeight:F3}");
             sb.AppendLine("본 계층 구조:");
 
             // 루트 본부터 시작하여 재귀적으로 트리 구조 출력

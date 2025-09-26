@@ -11,7 +11,7 @@
 //    ../Res/Action/Horse/*.dae → HORSE_ACTION enum
 //    ../Res/Action/Human/*.dae → HUMAN_ACTION enum
 // ===================================
-// 자동생성 by GenerateMultiActionEnums.ps1: 2025-09-22 06:32:38
+// 자동생성 by GenerateMultiActionEnums.ps1: 2025-09-25 23:28:21
 
 using System;
 using System.Linq;
@@ -158,18 +158,17 @@ namespace AutoGenEnums
         public static Dictionary<HUMAN_ACTION, string> ActionMap = new Dictionary<HUMAN_ACTION, string>()
         {
             {HUMAN_ACTION.A_T_POSE, "a-T-Pose"},
-            {HUMAN_ACTION.ANNOYED_HEAD_SHAKE, "Annoyed Head Shake"},
-            {HUMAN_ACTION.BREATHING_IDLE, "Breathing Idle"},
-            {HUMAN_ACTION.CAPOEIRA, "Capoeira"},
-            {HUMAN_ACTION.DEFEATED, "Defeated"},
-            {HUMAN_ACTION.DYING, "Dying"},
-            {HUMAN_ACTION.GUNPLAY, "Gunplay"},
-            {HUMAN_ACTION.JUMP, "Jump"},
-            {HUMAN_ACTION.WALKING, "Walking"},
+            {HUMAN_ACTION.CROSS_JUMPS_ROTATION, "Cross Jumps Rotation"},
+            {HUMAN_ACTION.GOALKEEPER_BODY_BLOCK, "Goalkeeper Body Block"},
+            {HUMAN_ACTION.IDLE, "Idle"},
+            {HUMAN_ACTION.JUMP_ATTACK, "Jump Attack"},
+            {HUMAN_ACTION.JUMPING, "Jumping"},
+            {HUMAN_ACTION.KIP_UP, "Kip Up"},
+            {HUMAN_ACTION.SKINNING_TEST, "Skinning Test"},
         };
 
         public static string GetRandomAction() => ActionMap.Values.ElementAt(new Random().Next(ActionMap.Count));
-        public static int Count => 9;
+        public static int Count => 8;
         public static bool HasAction(HUMAN_ACTION action) => ActionMap.ContainsKey(action);
         public static string GetActionName(HUMAN_ACTION action) => ActionMap.TryGetValue(action, out string name) ? name : null;
     }
@@ -177,14 +176,13 @@ namespace AutoGenEnums
     public enum HUMAN_ACTION : int
     {
         A_T_POSE = 0,
-        ANNOYED_HEAD_SHAKE = 1,
-        BREATHING_IDLE = 2,
-        CAPOEIRA = 3,
-        DEFEATED = 4,
-        DYING = 5,
-        GUNPLAY = 6,
-        JUMP = 7,
-        WALKING = 8,
+        CROSS_JUMPS_ROTATION = 1,
+        GOALKEEPER_BODY_BLOCK = 2,
+        IDLE = 3,
+        JUMP_ATTACK = 4,
+        JUMPING = 5,
+        KIP_UP = 6,
+        SKINNING_TEST = 7,
         // 추가된 액션들
         RANDOM,
         STOP,

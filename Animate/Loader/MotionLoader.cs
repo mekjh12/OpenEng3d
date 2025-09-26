@@ -23,42 +23,6 @@ namespace Animate
         private const string TARGET = "target";
 
         /// <summary>
-        /// 대입한 모델의 엉덩이 뼈를 기준으로 엉덩이 뼈의 바닥으로부터의 상대적 높이를 반환한다.
-        /// </summary>
-        /// <param name="animationData">이식을 가져올 애니메이션 행렬 모음</param>
-        /// <param name="dicBones">이식할 뼈대의 모음</param>
-        /// <returns></returns>
-        private static float CalculateHipScaleRatio(Dictionary<string, Dictionary<float, Matrix4x4f>> animationData, Dictionary<string, Bone> dicBones)
-        {
-            // 알고리즘 설명: 0초의 엉덩이 뼈를 찾아 상대적 비를 계산한다.
-            // 
-            //               dstSize       이식할 뼈대의 hip Bone의 pivot의 크기
-            //  hipScaled = ---------  = ---------------------------------------
-            //               srcSize       이식을 가져올 hip Bone의 pivot의 크기
-            //
-            if (dicBones == null) return 1.0f;
-
-            // 딕셔너리 정보는 <뼈, <시간, 행렬>>로 구성되어 있다.
-            foreach (KeyValuePair<string, Dictionary<float, Matrix4x4f>> item in animationData)
-            {
-                string boneName = item.Key;
-                Dictionary<float, Matrix4x4f> timeFrames = item.Value;
-
-                if (!dicBones.ContainsKey(boneName)) continue;
-
-                Bone bone = dicBones[boneName];
-                if (bone.IsHipBone && timeFrames.ContainsKey(0.0f)) //
-                {
-                    float dstSize = bone.BoneMatrixSet.Pivot.Length();//.BoneTransforms.InverseBindPoseTransform.Inversed().Position.Norm();
-                    float srcSize = timeFrames[0.0f].Position.Length();
-                    return dstSize / srcSize; // 찾으면 즉시 반환
-                }
-            }
-
-            return 1.0f; // 루트 본을 찾지 못한 경우 기본값
-        }
-
-        /// <summary>
         /// * Mixamo에서 Export한 Dae파일을 그대로 읽어온다. <br/>
         /// - Without Skin, Only Armature <br/>
         /// - "3D Mesh Processing and Character Animation", p.183 Animation Retargeting
@@ -197,14 +161,6 @@ namespace Animate
                 {
                     animationData.Add(boneName, keyframe);
                 }
-            }
-
-            // *** [중요] 바닥으로부터 엉덩이 위치를 맞추기 위하여 hipHeightScale을 구한다.
-            // Interpolation Pose만 0초에서 정상적 T-pose를 취하고 있어서 이 부분에서 가져와야 한다.
-            if (motionName == "a-T-Pose") //Interpolation Pose
-            {
-                targetAniRig.Armature.HipHeightScaled = 1.0f;// CalculateHipScaleRatio(animationData, targetAniRig.DicBones);
-                Console.WriteLine($"{targetAniRig.Name} XmeDae HipScaled={targetAniRig.Armature.HipHeightScaled}");
             }
 
             // 애니메이션을 생성한다.

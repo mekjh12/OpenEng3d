@@ -97,30 +97,18 @@ namespace FormTools
             _mixamoRotMotionStorage = new MixamoRotMotionStorage();
 
             // [캐릭터] =========================================
-            PrimateRig aniRig = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Hero\aa_heroNasty.dae", isLoadAnimation: false);
+            PrimateRig aniRig = new PrimateRig(PROJECT_PATH + @"\Res\Actor\abe\abe.dae", isLoadAnimation: false);
+            PrimateRig aniRig1 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Hero\aa_heroNasty.dae", isLoadAnimation: false);
             PrimateRig aniRig2 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Guybrush\Guybrush.dae", isLoadAnimation: false);
 
+            _aniActors.Add(new Human($"abe", aniRig));
+            _aniActors[0].Transform.IncreasePosition(2, 0, 0);
+
             _aniActors.Add(new Human($"Guybrush", aniRig2));
-            _aniActors[0].Transform.IncreasePosition(4, 0.0f, 0);
+            _aniActors[1].Transform.IncreasePosition(4, 0.0f, 0);
 
-            _aniActors.Add(new Human($"Hero", aniRig));
-            _aniActors[1].Transform.IncreasePosition(2, 0, 0);
-
-            // 캐릭터 수를 점진적으로 증가
-            int TEST_CHARACTER_COUNT = 0; // 이 값을 변경하면서 테스트
-            int yDelta = 0;
-            int xDelta = 8;
-            for (int i = 0; i < TEST_CHARACTER_COUNT; i++)
-            {
-                _aniActors.Add(new Human($"test{i}", aniRig2));
-                xDelta += 2; // X 위치를 증가
-                if (i % 10 == 0 && i != 0)
-                {
-                    xDelta = 0; // 20개마다 X 위치를 초기화
-                    yDelta += 2; // Y 위치를 증가
-                }
-                _aniActors[i].Transform.IncreasePosition(xDelta, yDelta, 0);
-            }
+            _aniActors.Add(new Human($"aa_heroNasty", aniRig1));
+            _aniActors[2].Transform.IncreasePosition(6, 0.0f, 0);
 
             // 믹사모 애니메이션 로드
             _mixamoRotMotionStorage.Clear();
@@ -134,21 +122,22 @@ namespace FormTools
             }
 
             // 애니메이션 리타겟팅
-            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig);
-            _mixamoRotMotionStorage.RetargetMotionsTransfer(targetAniRig: aniRig2);
+            _mixamoRotMotionStorage.TransferRetargetMotions(targetAniRig: aniRig, sourceAniRig: aniRig);
+            _mixamoRotMotionStorage.TransferRetargetMotions(targetAniRig: aniRig2, sourceAniRig: aniRig);
+            _mixamoRotMotionStorage.TransferRetargetMotions(targetAniRig: aniRig1, sourceAniRig: aniRig);
 
             // 모션 블렌딩 예제
-            aniRig.AddBlendMotion("Jump-Defeated", "Jump", "Defeated", 1.0f, 2.0f, 0.8f);
+            //aniRig.AddBlendMotion("Jump-Defeated", "Jump", "Defeated", 1.0f, 2.0f, 0.8f);
 
             // 모션 레이어링 예제
-            LayeredMotion layerBlendMotion = new LayeredMotion("layerWalking", aniRig.GetMotion("Capoeira"));
-            layerBlendMotion.AddLayer(MixamoBone.Spine1, aniRig.GetMotion("a-T-Pose"));
-            layerBlendMotion.AddLayer(MixamoBone.LeftShoulder, aniRig.GetMotion("Defeated"));
-            layerBlendMotion.AddLayer(MixamoBone.Neck, aniRig.GetMotion("Jump"));
-            layerBlendMotion.AddLayer(MixamoBone.RightUpLeg, aniRig.GetMotion("Dying"));
-            layerBlendMotion.BuildTraverseBoneNamesCache(aniRig.Armature.RootBone);
-            layerBlendMotion.SetPeriodTime(0.5f);
-            aniRig.AddMotion(layerBlendMotion);
+            //LayeredMotion layerBlendMotion = new LayeredMotion("layerWalking", aniRig.GetMotion("Capoeira"));
+            //layerBlendMotion.AddLayer(MixamoBone.Spine1, aniRig.GetMotion("a-T-Pose"));
+            //layerBlendMotion.AddLayer(MixamoBone.LeftShoulder, aniRig.GetMotion("Defeated"));
+            //layerBlendMotion.AddLayer(MixamoBone.Neck, aniRig.GetMotion("Jump"));
+            //layerBlendMotion.AddLayer(MixamoBone.RightUpLeg, aniRig.GetMotion("Dying"));
+            //layerBlendMotion.BuildTraverseBoneNamesCache(aniRig.Armature.RootBone);
+            //layerBlendMotion.SetPeriodTime(0.5f);
+            //aniRig.AddMotion(layerBlendMotion);
 
             // [당나귀] =========================================
             var donkeyRig = new DonkeyRig(PROJECT_PATH + @"\Res\Actor\Donkey\donkey.dae", isLoadAnimation: false);
@@ -168,7 +157,7 @@ namespace FormTools
             donkey.Transform.SetPosition(-2, 0, 0);
             _aniActors.Add(donkey);
 
-            _mixamoRotMotionStorageB.RetargetMotionsTransfer(targetAniRig: donkeyRig);
+            _mixamoRotMotionStorageB.TransferRetargetMotions(targetAniRig: donkeyRig, sourceAniRig: donkeyRig);
 
             // -------------------------------------------------
             // 이종간 모션 링킹 생성
@@ -183,7 +172,7 @@ namespace FormTools
             {
                 if (aniActor is Human)
                 {
-                    (aniActor as Human).SetMotion(HUMAN_ACTION.A_T_POSE);
+                    (aniActor as Human).SetMotion(HUMAN_ACTION.JUMP_ATTACK);
                 }
                 else if (aniActor is Donkey)
                 {
