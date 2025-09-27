@@ -8,6 +8,7 @@ using Shader;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
 using System.Windows.Forms;
 using ZetaExt;
 
@@ -23,12 +24,17 @@ namespace FormTools
         StaticShader _staticShader;
         AnimateShader _animateShader;
         AxisShader _axisShader;
+        ColorShader _colorShader;
 
         MixamoRotMotionStorage _mixamoRotMotionStorage;
         MixamoRotMotionStorage _mixamoRotMotionStorageB;
         List<IAnimActor> _aniActors = new List<IAnimActor>();
         private int _lastGen0Count = 0;
         private int _tick = 0;
+
+        SingleBoneLookAt _headLookAt;
+        // Chain Look At 설정
+        ChainLookAt chainLookAt = new ChainLookAt();
 
         public FormAnimation()
         {
@@ -77,6 +83,7 @@ namespace FormTools
             if (_staticShader == null) _staticShader = new StaticShader(PROJECT_PATH);
             if (_animateShader == null) _animateShader = new AnimateShader(PROJECT_PATH);
             if (_axisShader == null) _axisShader = new AxisShader(PROJECT_PATH);
+            if (_colorShader == null) _colorShader = new ColorShader(PROJECT_PATH);
         }
 
         private void Init2d(int w, int h)
@@ -142,7 +149,6 @@ namespace FormTools
 
             // [당나귀] =========================================
             var donkeyRig = new DonkeyRig(PROJECT_PATH + @"\Res\Actor\Donkey\donkey.dae", hipBoneName: "CG", isLoadAnimation: false);
-            donkeyRig.SetModelCorrection(Vertex3f.UnitZ, Vertex3f.UnitY, Vertex3f.UnitZ, -Vertex3f.UnitX);
             _mixamoRotMotionStorageB = new MixamoRotMotionStorage();
             _mixamoRotMotionStorageB.Clear();
             foreach (string fileName in Directory.GetFiles(PROJECT_PATH + "\\Res\\Action\\Donkey\\"))
@@ -173,7 +179,7 @@ namespace FormTools
             {
                 if (aniActor is Human)
                 {
-                    (aniActor as Human).SetMotion(HUMAN_ACTION.JUMP_ATTACK);
+                    (aniActor as Human).SetMotion(HUMAN_ACTION.A_T_POSE);
                 }
                 else if (aniActor is Donkey)
                 {
@@ -189,6 +195,22 @@ namespace FormTools
             //_aniActors[0].EquipItem(ATTACHMENT_SLOT.Head,"hat0", "hat", hat, 200.0f, positionY: -6.0f, pitch:-20);
             //_aniActors[0].EquipItem(ATTACHMENT_SLOT.RightHand, "sword1", "sword", sword, 1.0f, yaw: -90);
             //_aniActors[0].EquipItem(ATTACHMENT_SLOT.LeftHand, "sword0", "sword", sword, 1.0f, yaw: 90);
+
+            _headLookAt = new SingleBoneLookAt(_aniActors[0].AniRig.Armature["mixamorig_Head"], Vertex3f.UnitZ, Vertex3f.UnitY);
+
+
+            chainLookAt.SetupHumanLookChain(_aniActors[0].AniRig.Armature, intensity: 0.8f);
+            // 또는 수동으로 체인 구성
+            var spine = _aniActors[0].AniRig.Armature["mixamorig_Spine1"];
+            var neck = _aniActors[0].AniRig.Armature["mixamorig_Neck"];
+            var head = _aniActors[0].AniRig.Armature["mixamorig_Head"];
+
+            ChainLookAt customChain = new ChainLookAt();
+            customChain.AddBone(spine, 0.3f, 20f);  // 척추: 30% 영향, 최대 20도
+            customChain.AddBone(neck, 0.7f, 45f);   // 목: 70% 영향, 최대 45도  
+            customChain.AddBone(head, 1.0f, 60f);   // 머리: 100% 영향, 최대 60도
+
+
 
             // 셰이더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
@@ -217,6 +239,16 @@ namespace FormTools
             {
                 aniActor.Update(deltaTime);
             }
+
+
+            // 머리가 카메라를 바라보도록 설정
+            //Vertex3f p = _headLookAt.LookAt(camera.Position, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+
+
+            // 사용
+            chainLookAt.LookAt(camera.Position, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+            //Renderer3d.RenderPoint(_colorShader, p, camera, Vertex4f.UnitY, 0.05f);
+
 
             /*
             _glControl3.CLabel("cam").Text = 
@@ -251,10 +283,12 @@ namespace FormTools
                 aniActor.Render(camera, vp, _animateShader, _staticShader, isBoneVisible: true);
             }
 
-            //foreach (IAnimActor aniActor in _aniActors)
+            foreach (IAnimActor aniActor in _aniActors)
             {
-               //_axisShader.RenderAxes(aniActor.ModelMatrix, aniActor.Animator.RootTransforms, vp, axisLength: 20.2f);
+               _axisShader.RenderAxes(aniActor.ModelMatrix, aniActor.Animator.RootTransforms, vp, axisLength: 5.2f);
             }
+
+            Renderer3d.RenderPoint(_colorShader, camera.PivotPosition, camera, Vertex4f.UnitY);
 
             // 폴리곤 모드 설정
             Gl.PolygonMode(MaterialFace.FrontAndBack, _glControl3.PolygonMode);

@@ -79,6 +79,8 @@
     <Compile Include="AniModels\Rig\BirdRig.cs" />
     <Compile Include="AniModels\Rig\BearRig.cs" />
     <Compile Include="AniModels\Rig\DonkeyRig.cs" />
+    <Compile Include="IK\ChainLookAt.cs" />
+    <Compile Include="IK\SingleBoneLookAt.cs" />
     <Compile Include="Loader\AniRigLoader.cs" />
     <Compile Include="AniModels\Rig\ATTACHMENT_SLOT .cs" />
     <Compile Include="AniModels\Rig\HorseRig.cs" />

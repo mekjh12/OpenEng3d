@@ -16,7 +16,7 @@ namespace Animate
         public override void SetMotionImmediately(HUMAN_ACTION action)
         {
             if (action == HUMAN_ACTION.RANDOM) action = RandomAction;
-            SetMotion(HumanActions.ActionMap[action], blendingInterval: 0.0f);
+            SetMotion(HumanActions.ActionMap[action], transitionDuration: 0.0f);
         }
 
         public override void SetMotion(HUMAN_ACTION action)

@@ -50,11 +50,6 @@ namespace Shader
             // 각 객체의 좌표축 렌더링 (각각 1번의 draw call)
             for(int i= 0; i < boneTransforms.Length; i++)
             {
-                if (i == 8) break;
-                if (i == 0) Gl.LineWidth(10.0f);
-                if (i == 1) Gl.LineWidth(5.0f);
-                if (i == 2) Gl.LineWidth(lineWidth);
-
                 Matrix4x4f finalTransform = viewProjection * model * boneTransforms[i] * scaleMatrix;
                 LoadUniform(UNIFORM_NAME.mvp, finalTransform);
 
@@ -65,7 +60,7 @@ namespace Shader
                 }
                 else
                 {
-                    Gl.LineWidth(5.0f);
+                    Gl.LineWidth(2.0f);
                     Gl.DrawArrays(PrimitiveType.Lines, 0, 2);
                     Gl.LineWidth(lineWidth);
                     Gl.DrawArrays(PrimitiveType.Lines, 2, 4);

@@ -12,6 +12,31 @@ namespace ZetaExt
         public const float RAD_270 = 3.0f * RAD_90;
 
         /// <summary>
+        /// 방향 벡터를 변환한다 (평행이동 무시, 회전과 스케일만 적용)
+        /// </summary>
+        public static Vertex3f MultiplyDirection(this Matrix4x4f matrix, Vertex3f direction)
+        {
+            // w=0으로 설정하여 평행이동 무시
+            return new Vertex3f(
+                matrix[0, 0] * direction.x + matrix[1, 0] * direction.y + matrix[2, 0] * direction.z,
+                matrix[0, 1] * direction.x + matrix[1, 1] * direction.y + matrix[2, 1] * direction.z,
+                matrix[0, 2] * direction.x + matrix[1, 2] * direction.y + matrix[2, 2] * direction.z
+            );
+        }
+
+        /// <summary>
+        /// 점을 변환한다 (평행이동 포함)
+        /// </summary>
+        public static Vertex3f MultiplyPoint(this Matrix4x4f matrix, Vertex3f point)
+        {
+            return new Vertex3f(
+                matrix[0, 0] * point.x + matrix[1, 0] * point.y + matrix[2, 0] * point.z + matrix[3, 0],
+                matrix[0, 1] * point.x + matrix[1, 1] * point.y + matrix[2, 1] * point.z + matrix[3, 1],
+                matrix[0, 2] * point.x + matrix[1, 2] * point.y + matrix[2, 2] * point.z + matrix[3, 2]
+            );
+        }
+
+        /// <summary>
         /// 행렬이 유효한지 검사한다. 
         /// </summary>
         /// <param name="matrix"></param>

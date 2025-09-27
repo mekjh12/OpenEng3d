@@ -86,8 +86,8 @@ namespace Animate
         /// 모션을 전환한다.
         /// </summary>
         /// <param name="motionName">모션 이름</param>
-        /// <param name="blendingInterval">블렌딩 간격</param>
-        public void SetMotion(string motionName, float blendingInterval = 0.2f)
+        /// <param name="transitionDuration ">모션전환시간</param>
+        public void SetMotion(string motionName, float transitionDuration = 0.2f)
         {
             _animator.OnceFinished = null;
 
@@ -99,7 +99,7 @@ namespace Animate
             }
             else
             {
-                _animator.SetMotion(motion, _aniRig.MotionCache, blendingInterval);
+                _animator.SetMotion(motion, _aniRig.MotionCache, transitionDuration);
             }
             
             _animator.Play();
@@ -130,7 +130,10 @@ namespace Animate
 
             if (_animator.CurrentMotion != null)
             {
+                
+
                 // 현재 모션이 속도를 적용해야 하는 경우, 트랜스폼을 업데이트한다.
+                /*
                 if (_animator.CurrentMotion.MovementType != FootStepAnalyzer.MovementType.Stationary)
                 {
                     // 모션의 속도를 적용하여 애니메이션을 업데이트한다.
@@ -151,7 +154,7 @@ namespace Animate
                         _transform.GoRight(deltaDistance);
                     }
                 }
-
+                */
             }
 
             // 애니메이션 업데이트 후에 호출할 수 있는 콜백 함수
@@ -174,12 +177,6 @@ namespace Animate
 
                 // 기본 모델 행렬
                 Matrix4x4f finalModelMatrix = ModelMatrix;
-
-                // AniRig의 보정 행렬 적용
-                if (_aniRig.UseCorrectionMatrix)
-                {
-                    finalModelMatrix = finalModelMatrix * _aniRig.CorrectionMatrix;
-                }
 
                 if (_renderingMode == RenderingMode.Animation)
                 {

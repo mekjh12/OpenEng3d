@@ -26,6 +26,7 @@ namespace Animate
         public bool UseCorrectionMatrix { get => _useCorrectionMatrix; set => _useCorrectionMatrix = value; }
 
 
+
         // -----------------------------------------------------------------------
         // 생성자
         // -----------------------------------------------------------------------

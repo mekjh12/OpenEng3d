@@ -42,6 +42,7 @@ namespace Animate
     {
         protected Matrix4x4f _transform; // 4x4 변환 행렬
 
+
         public Matrix4x4f Matrix4x4f => _transform;
         public Vertex3f Up => _transform.Column2.xyz();
         public Vertex3f Forward => -_transform.Column1.xyz();
@@ -49,6 +50,8 @@ namespace Animate
         public Vertex3f Left => _transform.Column0.xyz();
         public Vertex3f Position => _transform.Column3.xyz();
         public Matrix4x4f InverseMatrix => _transform.Inversed();
+
+
 
         /// <summary>
         /// 생성자

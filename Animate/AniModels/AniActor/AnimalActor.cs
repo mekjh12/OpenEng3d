@@ -23,7 +23,7 @@ namespace Animate
         {
             var motionName = ActionHandler.GetMotionName(action);
             if (motionName != null)
-                SetMotion(motionName, blendingInterval: 0.0f);
+                SetMotion(motionName, transitionDuration: 0.0f);
         }
 
         public override void SetMotion(TAction action)

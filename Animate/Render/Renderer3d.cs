@@ -34,6 +34,19 @@ namespace Animate
         public static RawModel3d Cylinder = Loader3d.LoadPrism(12, 1, 1, 1, Matrix4x4f.Identity);
         #endregion
 
+        public static void RenderPoint(ColorShader shader, Vertex3f point, Camera camera, Vertex4f color, float size = 0.1f)
+        {
+            shader.Bind();
+            shader.LoadUniform(ColorShader.UNIFORM_NAME.color, color);
+            shader.LoadUniform(ColorShader.UNIFORM_NAME.mvp, camera.ProjectiveMatrix * camera.ViewMatrix * Matrix4x4f.Translated(point.x, point.y, point.z) * Matrix4x4f.Scaled(size, size, size));
+            Gl.BindVertexArray(Sphere.VAO);
+            Gl.EnableVertexAttribArray(0);
+            Gl.DrawArrays(PrimitiveType.Triangles, 0, Sphere.VertexCount);
+            Gl.DisableVertexAttribArray(0);
+            Gl.BindVertexArray(0);
+            shader.Unbind();
+        }
+
         // 1단계: 아이템 대신 간단한 큐브로 테스트
         public static void TestRenderSimpleCube(AnimateShader shader, Matrix4x4f model, Matrix4x4f vp,
             Matrix4x4f[] boneTransforms, int testBoneIndex)
@@ -110,7 +123,7 @@ namespace Animate
             shader.Unbind();
         }
 
-        public static void RenderSkinning(AnimateShader shader, Matrix4x4f model, Matrix4x4f vp, List<TexturedModel> models, Matrix4x4f[] finalAnimatedBoneMatrices)
+        public static void RenderSkinning(AnimateShader shader, Matrix4x4f model, Matrix4x4f vp, List<TexturedModel> texturedModels, Matrix4x4f[] finalAnimatedBoneMatrices)
         {
             shader.Bind();
             shader.LoadVPMatrix(vp);
@@ -118,9 +131,9 @@ namespace Animate
             shader.LoadIsSkinningEnabled(true);
             shader.LoadAllBoneMatrices(finalAnimatedBoneMatrices);
 
-            for (int i = 0; i < models.Count; i++)
+            for (int i = 0; i < texturedModels.Count; i++)
             {
-                TexturedModel texturedModel = models[i];
+                TexturedModel texturedModel = texturedModels[i];
                 Gl.BindVertexArray(texturedModel.VAO);
                 Gl.EnableVertexAttribArray(0);
                 Gl.EnableVertexAttribArray(1);

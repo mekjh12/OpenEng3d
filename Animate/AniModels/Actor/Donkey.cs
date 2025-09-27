@@ -1,4 +1,5 @@
 ﻿using AutoGenEnums;
+using System;
 using System.Collections.Generic;
 using ZetaExt;
 
@@ -16,6 +17,7 @@ namespace Animate
 
         public Donkey(string name, DonkeyRig donkeyRig) : base(name, donkeyRig, DonkeyActionHandler, DONKEY_ACTION.NONE)
         {
+
 
         }
     }
