@@ -8,7 +8,6 @@ using Shader;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Security.Cryptography;
 using System.Windows.Forms;
 using ZetaExt;
 
@@ -32,9 +31,8 @@ namespace FormTools
         private int _lastGen0Count = 0;
         private int _tick = 0;
 
+        ThreeBoneLookAt _neckHeadLookAt;
         SingleBoneLookAt _headLookAt;
-        // Chain Look At 설정
-        ChainLookAt chainLookAt = new ChainLookAt();
 
         public FormAnimation()
         {
@@ -196,21 +194,9 @@ namespace FormTools
             //_aniActors[0].EquipItem(ATTACHMENT_SLOT.RightHand, "sword1", "sword", sword, 1.0f, yaw: -90);
             //_aniActors[0].EquipItem(ATTACHMENT_SLOT.LeftHand, "sword0", "sword", sword, 1.0f, yaw: 90);
 
-            _headLookAt = new SingleBoneLookAt(_aniActors[0].AniRig.Armature["mixamorig_Head"], Vertex3f.UnitZ, Vertex3f.UnitY);
-
-
-            chainLookAt.SetupHumanLookChain(_aniActors[0].AniRig.Armature, intensity: 0.8f);
-            // 또는 수동으로 체인 구성
-            var spine = _aniActors[0].AniRig.Armature["mixamorig_Spine1"];
-            var neck = _aniActors[0].AniRig.Armature["mixamorig_Neck"];
-            var head = _aniActors[0].AniRig.Armature["mixamorig_Head"];
-
-            ChainLookAt customChain = new ChainLookAt();
-            customChain.AddBone(spine, 0.3f, 20f);  // 척추: 30% 영향, 최대 20도
-            customChain.AddBone(neck, 0.7f, 45f);   // 목: 70% 영향, 최대 45도  
-            customChain.AddBone(head, 1.0f, 60f);   // 머리: 100% 영향, 최대 60도
-
-
+            //_headLookAt = new SingleBoneLookAt(_aniActors[3].AniRig.Armature["Head"], Vertex3f.UnitY, Vertex3f.UnitX);
+            _neckHeadLookAt = ThreeBoneLookAt.CreateNeckHead(_aniActors[3].AniRig.Armature,
+                "Neck1", "Neck2", "Head", localForward: Vertex3f.UnitY, localUp: Vertex3f.UnitX);
 
             // 셰이더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
@@ -240,14 +226,10 @@ namespace FormTools
                 aniActor.Update(deltaTime);
             }
 
-
             // 머리가 카메라를 바라보도록 설정
-            //Vertex3f p = _headLookAt.LookAt(camera.Position, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
-
-
-            // 사용
-            chainLookAt.LookAt(camera.Position, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
-            //Renderer3d.RenderPoint(_colorShader, p, camera, Vertex4f.UnitY, 0.05f);
+            //_headLookAt.LookAt(camera.PivotPosition, _aniActors[3].ModelMatrix, _aniActors[3].Animator);
+            //chainLookAt.LookAt(camera.Position, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+            _neckHeadLookAt.AnalyzeLookAt(camera.PivotPosition, _aniActors[3].ModelMatrix, _aniActors[3].Animator);
 
 
             /*

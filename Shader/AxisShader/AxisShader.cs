@@ -53,18 +53,11 @@ namespace Shader
                 Matrix4x4f finalTransform = viewProjection * model * boneTransforms[i] * scaleMatrix;
                 LoadUniform(UNIFORM_NAME.mvp, finalTransform);
 
-                // 한 번의 draw call로 3축 모두 렌더링
-                if (i < 2)
-                {
-                    Gl.DrawArrays(PrimitiveType.Lines, 0, 6);
-                }
-                else
-                {
-                    Gl.LineWidth(2.0f);
-                    Gl.DrawArrays(PrimitiveType.Lines, 0, 2);
-                    Gl.LineWidth(lineWidth);
-                    Gl.DrawArrays(PrimitiveType.Lines, 2, 4);
-                }
+                // X축(빨강) 굵게, Y축(초록), Z축(파랑)
+                Gl.LineWidth(i==8? 5.0f:2.0f);
+                Gl.DrawArrays(PrimitiveType.Lines, 0, 2);
+                Gl.LineWidth(lineWidth);
+                Gl.DrawArrays(PrimitiveType.Lines, 2, 4);
             }
 
             // 정리
