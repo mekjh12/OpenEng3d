@@ -31,11 +31,10 @@ namespace FormTools
         private int _lastGen0Count = 0;
         private int _tick = 0;
 
-        ThreeBoneLookAt _threeLookAt;
         SingleBoneLookAt _headLookAt;
         TwoBoneLookAt _twoLookAt;
+        ThreeBoneLookAt _threeLookAt;
         
-
         public FormAnimation()
         {
             InitializeComponent();
@@ -212,6 +211,9 @@ namespace FormTools
                 thirdMaxYaw: 70f, thirdMaxPitch: 60f    // 머리: 크게
             );
 
+            _headLookAt = new SingleBoneLookAt(_aniActors[0].AniRig.Armature["mixamorig_Head"], localForward: Vertex3f.UnitZ, localUp: Vertex3f.UnitY);
+            _headLookAt.SetAngleLimits(90, 60);
+
             // 셰이더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
         }
@@ -242,10 +244,11 @@ namespace FormTools
 
             // 머리가 카메라를 바라보도록 설정
             //_headLookAt.LookAt(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+            //_headLookAt.SmoothLookAt(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator, duration);
             //_twoLookAt.LookAt(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
-            _threeLookAt.LookAt(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
-            //chainLookAt.LookAt(camera.Position, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
-            //_neckHeadLookAt.AnalyzeLookAt(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+            //_twoLookAt.SmoothLookAt(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator, duration);
+            //_threeLookAt.LookAt(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+            _threeLookAt.SmoothLookAt(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator, duration);
 
 
             /*

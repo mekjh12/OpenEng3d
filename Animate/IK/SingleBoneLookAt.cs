@@ -32,6 +32,11 @@ namespace Animate
         private float _maxYawAngle;                 // 최대 좌우 회전 각도 (도)
         private float _maxPitchAngle;               // 최대 상하 회전 각도 (도)
 
+        // 멤버 변수 추가
+        private float _smoothSpeed = 5.0f;           // 전환 속도 (값이 클수록 빠름)
+        private Quaternion _currentRotation;         // 현재 회전 (내부 상태)
+        private bool _isInitialized = false;         // 초기화 여부
+
         // -----------------------------------------------------------------------
         // 속성
         // -----------------------------------------------------------------------
@@ -48,6 +53,12 @@ namespace Animate
         /// <summary>최대 상하 회전 각도 (도)</summary>
         public float MaxPitchAngle => _maxPitchAngle;
 
+        /// <summary>부드러운 전환 속도 설정 (기본: 5.0)</summary>
+        public float SmoothSpeed
+        {
+            get => _smoothSpeed;
+            set => _smoothSpeed = Math.Max(0.1f, value);
+        }
         // -----------------------------------------------------------------------
         // 생성자
         // -----------------------------------------------------------------------
@@ -127,6 +138,41 @@ namespace Animate
 
             // 계산된 변환 행렬을 본에 적용
             _bone.BoneMatrixSet.LocalTransform = rotationInfo.Matrix;
+            _bone.UpdateAnimatorTransforms(animator, isSelfIncluded: true);
+        }
+
+        /// <summary>
+        /// 부드러운 전환을 적용하여 LookAt 수행
+        /// </summary>
+        public void SmoothLookAt(Vertex3f worldTargetPosition, Matrix4x4f modelMatrix,
+                                 Animator animator, float deltaTime,
+                                 Vertex3f worldUpHint = default)
+        {
+            // 목표 회전 계산 (각도 제한 포함)
+            var rotationInfo = CalculateRotation(worldTargetPosition, modelMatrix, animator, worldUpHint);
+
+            // 초기화
+            if (!_isInitialized)
+            {
+                _currentRotation = rotationInfo.Quaternion;
+                _isInitialized = true;
+            }
+
+            // 부드럽게 보간 (Slerp)
+            float t = Math.Min(1.0f, _smoothSpeed * deltaTime);
+            _currentRotation = _currentRotation.Interpolate(rotationInfo.Quaternion, t);
+
+            // 보간된 회전을 행렬로 변환
+            var smoothMatrix = (Matrix4x4f)_currentRotation;
+
+            // 원래 위치 복원
+            var originalPosition = _bone.BoneMatrixSet.LocalTransform.Position;
+            smoothMatrix[3, 0] = originalPosition.x;
+            smoothMatrix[3, 1] = originalPosition.y;
+            smoothMatrix[3, 2] = originalPosition.z;
+
+            // 최종 적용
+            _bone.BoneMatrixSet.LocalTransform = smoothMatrix;
             _bone.UpdateAnimatorTransforms(animator, isSelfIncluded: true);
         }
 
