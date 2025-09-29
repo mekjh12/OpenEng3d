@@ -27,12 +27,26 @@ namespace Animate
         private readonly Vertex3f _localForward;   // 본의 로컬 전방 벡터 (바라보는 방향)
         private readonly Vertex3f _localUp;        // 본의 로컬 상향 벡터 (업 방향)
 
+        // 각도 제한 설정
+        private bool _useAngleLimits;               // 각도 제한 사용 여부
+        private float _maxYawAngle;                 // 최대 좌우 회전 각도 (도)
+        private float _maxPitchAngle;               // 최대 상하 회전 각도 (도)
+
         // -----------------------------------------------------------------------
         // 속성
         // -----------------------------------------------------------------------
 
         /// <summary>본의 로컬 전방 벡터</summary>
         public Vertex3f LocalForward => _localForward;
+
+        /// <summary>각도 제한 사용 여부</summary>
+        public bool UseAngleLimits => _useAngleLimits;
+
+        /// <summary>최대 좌우 회전 각도 (도)</summary>
+        public float MaxYawAngle => _maxYawAngle;
+
+        /// <summary>최대 상하 회전 각도 (도)</summary>
+        public float MaxPitchAngle => _maxPitchAngle;
 
         // -----------------------------------------------------------------------
         // 생성자
@@ -54,11 +68,36 @@ namespace Animate
             // Forward와 Up 벡터가 평행하면 안 됨
             if (Math.Abs(_localForward.Dot(_localUp)) > 0.99f)
                 throw new ArgumentException("Local Forward와 Up 벡터는 평행하지 않아야 한다.");
+
+            // 각도 제한 기본값 (제한 없음)
+            _useAngleLimits = false;
+            _maxYawAngle = 180f;
+            _maxPitchAngle = 180f;
         }
 
         // -----------------------------------------------------------------------
         // 공개 메서드
         // -----------------------------------------------------------------------
+
+        /// <summary>
+        /// 각도 제한을 설정한다
+        /// </summary>
+        /// <param name="maxYawAngle">최대 좌우 회전 각도 (도, 0~180)</param>
+        /// <param name="maxPitchAngle">최대 상하 회전 각도 (도, 0~180)</param>
+        public void SetAngleLimits(float maxYawAngle, float maxPitchAngle)
+        {
+            _useAngleLimits = true;
+            _maxYawAngle = Math.Max(0f, Math.Min(180f, maxYawAngle));
+            _maxPitchAngle = Math.Max(0f, Math.Min(180f, maxPitchAngle));
+        }
+
+        /// <summary>
+        /// 각도 제한을 해제한다
+        /// </summary>
+        public void DisableAngleLimits()
+        {
+            _useAngleLimits = false;
+        }
 
         /// <summary>
         /// 본에 지정된 회전을 적용한다
@@ -115,6 +154,12 @@ namespace Animate
 
             // Look At 변환 행렬 생성
             var lookAtMatrix = CreateLocalSpaceTransform(targetDirection, worldUpHint, finalWorldTransform);
+
+            // 각도 제한 적용
+            if (_useAngleLimits)
+            {
+                lookAtMatrix = ApplyAngleLimits(lookAtMatrix, targetDirection);
+            }
 
             return new RotationInfo(lookAtMatrix.ToQuaternion(), lookAtMatrix);
         }
@@ -187,6 +232,55 @@ namespace Animate
             basisTransform[3, 2] = originalPosition.z;
 
             return basisTransform;
+        }
+
+        /// <summary>
+        /// 각도 제한을 적용하여 변환 행렬을 조정한다
+        /// </summary>
+        /// <param name="targetTransform">목표 변환 행렬</param>
+        /// <returns>제한된 변환 행렬</returns>
+        private Matrix4x4f ApplyAngleLimits(Matrix4x4f targetTransform, Vertex3f targetDirection)
+        {
+            // 원래 바인드 포즈에서의 Forward 방향
+            var originalForward = _localForward;
+
+            // 목표 변환에서의 Forward 방향
+            Vertex3f targetForward = Vertex3f.UnitX;
+            if (_localForward == Vertex3f.UnitX) targetForward = targetTransform.Column0.xyz().Normalized;
+            if (_localForward == Vertex3f.UnitY) targetForward = targetTransform.Column1.xyz().Normalized;
+            if (_localForward == Vertex3f.UnitZ) targetForward = targetTransform.Column2.xyz().Normalized;
+
+            // 원래 방향과 목표 방향 사이의 각도 계산
+            var angleBetween = Math.Acos(Math.Max(-1f, Math.Min(1f, originalForward.Dot(targetForward)))) * 180f / Math.PI;
+
+            // 각도가 제한을 초과하지 않으면 그대로 반환
+            if (angleBetween <= _maxYawAngle && angleBetween <= _maxPitchAngle)
+            {
+                return targetTransform;
+            }
+
+            // 제한된 각도로 조정
+            var limitedAngle = Math.Min(_maxYawAngle, _maxPitchAngle);// * Math.PI / 180f;
+
+            // 회전축 계산 (원래 방향과 목표 방향의 외적)
+            var rotationAxis = originalForward.Cross(targetForward).Normalized;
+
+            // 축이 0벡터에 가까우면 회전이 필요 없음
+            if (rotationAxis.Length() < 0.001f)
+            {
+                return _bone.BoneMatrixSet.LocalBindTransform;
+            }
+
+            // 제한된 각도로 회전 쿼터니언 생성
+            var limitedRotation = new Quaternion(rotationAxis, (float)limitedAngle);
+            var limitedMatrix = (Matrix4x4f)limitedRotation;
+
+            // 로컬바인딩행렬과의 곱으로 목표 변환 행렬의 위치는 모든 성분이 0이 되어야 함
+            limitedMatrix[3, 0] = 0;
+            limitedMatrix[3, 1] = 0;
+            limitedMatrix[3, 2] = 0;
+
+            return _bone.BoneMatrixSet.LocalBindTransform * limitedMatrix; // 순서 중요
         }
 
         // -----------------------------------------------------------------------

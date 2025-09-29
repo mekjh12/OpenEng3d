@@ -31,8 +31,10 @@ namespace FormTools
         private int _lastGen0Count = 0;
         private int _tick = 0;
 
-        ThreeBoneLookAt _neckHeadLookAt;
+        ThreeBoneLookAt _threeLookAt;
         SingleBoneLookAt _headLookAt;
+        TwoBoneLookAt _twoLookAt;
+        
 
         public FormAnimation()
         {
@@ -104,17 +106,17 @@ namespace FormTools
             // [캐릭터] =========================================
             const string HUMAN_HIP_BONENAME = "mixamorig_Hips";
             PrimateRig aniRig = new PrimateRig(PROJECT_PATH + @"\Res\Actor\abe\abe.dae", HUMAN_HIP_BONENAME, isLoadAnimation: false);
-            PrimateRig aniRig1 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Hero\aa_heroNasty.dae", HUMAN_HIP_BONENAME, isLoadAnimation: false);
-            PrimateRig aniRig2 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Guybrush\Guybrush.dae", HUMAN_HIP_BONENAME, isLoadAnimation: false);
+            //PrimateRig aniRig1 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Hero\aa_heroNasty.dae", HUMAN_HIP_BONENAME, isLoadAnimation: false);
+            //PrimateRig aniRig2 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Guybrush\Guybrush.dae", HUMAN_HIP_BONENAME, isLoadAnimation: false);
 
             _aniActors.Add(new Human($"abe", aniRig));
             _aniActors[0].Transform.IncreasePosition(2, 0, 0);
 
-            _aniActors.Add(new Human($"Guybrush", aniRig2));
-            _aniActors[1].Transform.IncreasePosition(4, 0.0f, 0);
+            //_aniActors.Add(new Human($"Guybrush", aniRig2));
+            //_aniActors[1].Transform.IncreasePosition(4, 0.0f, 0);
 
-            _aniActors.Add(new Human($"aa_heroNasty", aniRig1));
-            _aniActors[2].Transform.IncreasePosition(6, 0.0f, 0);
+            //_aniActors.Add(new Human($"aa_heroNasty", aniRig1));
+            //_aniActors[2].Transform.IncreasePosition(6, 0.0f, 0);
 
             // 믹사모 애니메이션 로드
             _mixamoRotMotionStorage.Clear();
@@ -129,8 +131,8 @@ namespace FormTools
 
             // 애니메이션 리타겟팅
             _mixamoRotMotionStorage.TransferRetargetMotions(targetAniRig: aniRig, sourceAniRig: aniRig);
-            _mixamoRotMotionStorage.TransferRetargetMotions(targetAniRig: aniRig2, sourceAniRig: aniRig);
-            _mixamoRotMotionStorage.TransferRetargetMotions(targetAniRig: aniRig1, sourceAniRig: aniRig);
+            //_mixamoRotMotionStorage.TransferRetargetMotions(targetAniRig: aniRig2, sourceAniRig: aniRig);
+            //_mixamoRotMotionStorage.TransferRetargetMotions(targetAniRig: aniRig1, sourceAniRig: aniRig);
 
             // 모션 블렌딩 예제
             //aniRig.AddBlendMotion("Jump-Defeated", "Jump", "Defeated", 1.0f, 2.0f, 0.8f);
@@ -186,17 +188,29 @@ namespace FormTools
             }
 
             // 아이템 장착
-            Model3d.TextureStorage.NullTextureFileName = PROJECT_PATH + "\\Res\\debug.jpg";
-            TexturedModel hat = LoadModel(PROJECT_PATH + @"\Res\Items\Merchant_Hat.dae")[0];
-            TexturedModel sword = LoadModel(PROJECT_PATH + @"\Res\Items\cutter_gold.dae")[0];
+            //Model3d.TextureStorage.NullTextureFileName = PROJECT_PATH + "\\Res\\debug.jpg";
+            //TexturedModel hat = LoadModel(PROJECT_PATH + @"\Res\Items\Merchant_Hat.dae")[0];
+            //TexturedModel sword = LoadModel(PROJECT_PATH + @"\Res\Items\cutter_gold.dae")[0];
 
             //_aniActors[0].EquipItem(ATTACHMENT_SLOT.Head,"hat0", "hat", hat, 200.0f, positionY: -6.0f, pitch:-20);
             //_aniActors[0].EquipItem(ATTACHMENT_SLOT.RightHand, "sword1", "sword", sword, 1.0f, yaw: -90);
             //_aniActors[0].EquipItem(ATTACHMENT_SLOT.LeftHand, "sword0", "sword", sword, 1.0f, yaw: 90);
 
-            //_headLookAt = new SingleBoneLookAt(_aniActors[3].AniRig.Armature["Head"], Vertex3f.UnitY, Vertex3f.UnitX);
-            _neckHeadLookAt = ThreeBoneLookAt.CreateNeckHead(_aniActors[3].AniRig.Armature,
-                "Neck1", "Neck2", "Head", localForward: Vertex3f.UnitY, localUp: Vertex3f.UnitX);
+            //_headLookAt = new SingleBoneLookAt(_aniActors[0].AniRig.Armature["mixamorig_Head"], Vertex3f.UnitZ, Vertex3f.UnitY);
+            //_headLookAt = new SingleBoneLookAt(_aniActors[1].AniRig.Armature["Head"], Vertex3f.UnitY, Vertex3f.UnitX);
+            //_headLookAt.SetAngleLimits(60, 60);
+            //_neckHeadLookAt = ThreeBoneLookAt.CreateNeckHead(_aniActors[0].AniRig.Armature, 
+            //localForward: Vertex3f.UnitZ, localUp: Vertex3f.UnitY);
+
+            _twoLookAt = new TwoBoneLookAt(_aniActors[0].AniRig.Armature["mixamorig_Neck"], _aniActors[0].AniRig.Armature["mixamorig_Head"], 0.5f, Vertex3f.UnitZ, Vertex3f.UnitY);
+            _twoLookAt.SetAngleLimits(20, 20, 90, 90);
+
+            _threeLookAt = ThreeBoneLookAt.CreateNeckHead(_aniActors[0].AniRig.Armature, firstWeight: 0.2f, secondWeight: 0.3f);
+                _threeLookAt.SetAngleLimits(
+                firstMaxYaw: 20f, firstMaxPitch: 15f,   // 가슴: 작게
+                secondMaxYaw: 40f, secondMaxPitch: 30f,  // 목: 중간
+                thirdMaxYaw: 70f, thirdMaxPitch: 60f    // 머리: 크게
+            );
 
             // 셰이더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
@@ -227,9 +241,11 @@ namespace FormTools
             }
 
             // 머리가 카메라를 바라보도록 설정
-            //_headLookAt.LookAt(camera.PivotPosition, _aniActors[3].ModelMatrix, _aniActors[3].Animator);
+            //_headLookAt.LookAt(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+            //_twoLookAt.LookAt(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+            _threeLookAt.LookAt(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
             //chainLookAt.LookAt(camera.Position, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
-            _neckHeadLookAt.AnalyzeLookAt(camera.PivotPosition, _aniActors[3].ModelMatrix, _aniActors[3].Animator);
+            //_neckHeadLookAt.AnalyzeLookAt(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
 
 
             /*

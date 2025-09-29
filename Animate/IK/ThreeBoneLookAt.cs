@@ -21,6 +21,17 @@ namespace Animate
         private SingleBoneLookAt _firstBoneLookAt;
         private SingleBoneLookAt _thirdBoneLookAt;
 
+        // 각도 제한 설정
+        private bool _useAngleLimits;
+        private float _firstMaxYawAngle;
+        private float _firstMaxPitchAngle;
+        private float _secondMaxYawAngle;
+        private float _secondMaxPitchAngle;
+        private float _thirdMaxYawAngle;
+        private float _thirdMaxPitchAngle;
+
+        public bool UseAngleLimits => _useAngleLimits;
+
 
         public ThreeBoneLookAt(Bone firstBone, Bone secondBone, Bone threeBone,
             float firstWeight = 0.2f, float secondWeight = 0.3f,
@@ -36,6 +47,15 @@ namespace Animate
             _firstBoneLookAt = new SingleBoneLookAt(firstBone, localForward, localUp);
             _secondBoneLookAt = new SingleBoneLookAt(secondBone, localForward, localUp);
             _thirdBoneLookAt = new SingleBoneLookAt(threeBone, localForward, localUp);
+
+            // 각도 제한 기본값 (제한 없음)
+            _useAngleLimits = false;
+            _firstMaxYawAngle = 180f;
+            _firstMaxPitchAngle = 180f;
+            _secondMaxYawAngle = 180f;
+            _secondMaxPitchAngle = 180f;
+            _thirdMaxYawAngle = 180f;
+            _thirdMaxPitchAngle = 180f;
         }
 
         /// <summary>
@@ -65,9 +85,41 @@ namespace Animate
         }
 
         /// <summary>
+        /// 각도 제한을 설정한다
+        /// </summary>
+        public void SetAngleLimits(
+            float firstMaxYaw, float firstMaxPitch,
+            float secondMaxYaw, float secondMaxPitch,
+            float thirdMaxYaw, float thirdMaxPitch)
+        {
+            _useAngleLimits = true;
+            _firstMaxYawAngle = Math.Max(0f, Math.Min(180f, firstMaxYaw));
+            _firstMaxPitchAngle = Math.Max(0f, Math.Min(180f, firstMaxPitch));
+            _secondMaxYawAngle = Math.Max(0f, Math.Min(180f, secondMaxYaw));
+            _secondMaxPitchAngle = Math.Max(0f, Math.Min(180f, secondMaxPitch));
+            _thirdMaxYawAngle = Math.Max(0f, Math.Min(180f, thirdMaxYaw));
+            _thirdMaxPitchAngle = Math.Max(0f, Math.Min(180f, thirdMaxPitch));
+
+            _firstBoneLookAt.SetAngleLimits(_firstMaxYawAngle, _firstMaxPitchAngle);
+            _secondBoneLookAt.SetAngleLimits(_secondMaxYawAngle, _secondMaxPitchAngle);
+            _thirdBoneLookAt.SetAngleLimits(_thirdMaxYawAngle, _thirdMaxPitchAngle);
+        }
+
+        /// <summary>
+        /// 각도 제한을 해제한다
+        /// </summary>
+        public void DisableAngleLimits()
+        {
+            _useAngleLimits = false;
+            _firstBoneLookAt.DisableAngleLimits();
+            _secondBoneLookAt.DisableAngleLimits();
+            _thirdBoneLookAt.DisableAngleLimits();
+        }
+
+        /// <summary>
         /// 특정 월드 위치를 바라보기 위한 회전 분석
         /// </summary>
-        public void AnalyzeLookAt(Vertex3f worldTargetPosition, Matrix4x4f model, Animator animator, Vertex3f worldUpHint = default)
+        public void LookAt(Vertex3f worldTargetPosition, Matrix4x4f model, Animator animator, Vertex3f worldUpHint = default)
         {
             worldUpHint = worldUpHint == default ? Vertex3f.UnitZ : worldUpHint.Normalized;
 

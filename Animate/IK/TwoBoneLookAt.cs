@@ -18,6 +18,15 @@ namespace Animate
         private SingleBoneLookAt _secondBoneLookAt;
         private SingleBoneLookAt _firstBoneLookAt;
 
+        private bool _useAngleLimits;
+        private float _firstMaxYawAngle;
+        private float _firstMaxPitchAngle;
+        private float _secondMaxYawAngle;
+        private float _secondMaxPitchAngle;
+
+        public bool UseAngleLimits => _useAngleLimits;
+
+
         public TwoBoneLookAt(Bone firstBone, Bone secondBone, float firstWeight = 0.5f,
             Vertex3f localForward = default, Vertex3f localUp = default)
         {
@@ -27,6 +36,12 @@ namespace Animate
 
             _firstBoneLookAt = new SingleBoneLookAt(firstBone, localForward, localUp);
             _secondBoneLookAt = new SingleBoneLookAt(secondBone, localForward, localUp);
+
+            _useAngleLimits = false;
+            _firstMaxYawAngle = 180f;
+            _firstMaxPitchAngle = 180f;
+            _secondMaxYawAngle = 180f;
+            _secondMaxPitchAngle = 180f;
         }
 
         /// <summary>
@@ -51,10 +66,30 @@ namespace Animate
             return new TwoBoneLookAt(firstBone, secondBone, neckWeight, localForward, localUp);
         }
 
+        public void SetAngleLimits(float firstMaxYaw, float firstMaxPitch,
+                           float secondMaxYaw, float secondMaxPitch)
+        {
+            _useAngleLimits = true;
+            _firstMaxYawAngle = Math.Max(0f, Math.Min(180f, firstMaxYaw));
+            _firstMaxPitchAngle = Math.Max(0f, Math.Min(180f, firstMaxPitch));
+            _secondMaxYawAngle = Math.Max(0f, Math.Min(180f, secondMaxYaw));
+            _secondMaxPitchAngle = Math.Max(0f, Math.Min(180f, secondMaxPitch));
+
+            _firstBoneLookAt.SetAngleLimits(_firstMaxYawAngle, _firstMaxPitchAngle);
+            _secondBoneLookAt.SetAngleLimits(_secondMaxYawAngle, _secondMaxPitchAngle);
+        }
+
+        public void DisableAngleLimits()
+        {
+            _useAngleLimits = false;
+            _firstBoneLookAt.DisableAngleLimits();
+            _secondBoneLookAt.DisableAngleLimits();
+        }
+
         /// <summary>
         /// 특정 월드 위치를 바라보기 위한 회전 분석
         /// </summary>
-        public void AnalyzeLookAt(Vertex3f worldTargetPosition, Matrix4x4f model, Animator animator, Vertex3f worldUpHint = default)
+        public void LookAt(Vertex3f worldTargetPosition, Matrix4x4f model, Animator animator, Vertex3f worldUpHint = default)
         {
             worldUpHint = worldUpHint == default ? Vertex3f.UnitZ : worldUpHint.Normalized;
 
