@@ -81,6 +81,7 @@
     <Compile Include="AniModels\Rig\DonkeyRig.cs" />
     <Compile Include="Core\EulerConverter.cs" />
     <Compile Include="IK\OneBoneLookAt.cs" />
+    <Compile Include="IK\SingleBoneLookAt.cs" />
     <Compile Include="IK\SingleBoneRotationIK.cs" />
     <Compile Include="IK\ThreeBoneIKFactory.cs" />
     <Compile Include="IK\ThreeBoneLookAt.cs" />

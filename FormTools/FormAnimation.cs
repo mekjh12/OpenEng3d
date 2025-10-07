@@ -8,7 +8,6 @@ using OpenGL;
 using Shader;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Windows.Forms;
 using ZetaExt;
@@ -33,15 +32,7 @@ namespace FormTools
         private int _lastGen0Count = 0;
         private int _tick = 0;
 
-        OneBoneLookAt _oneLookAt;
-        TwoBoneLookAt _twoLookAt;
-        ThreeBoneLookAt _threeBoneLookAt;
-
-        TwoBoneIK _twoBoneIK1;
-        TwoBoneIK _twoBoneIK2;
-
-        SingleBoneRotationIK _singleBoneRotationIK;
-        TwoBoneRotationIK _twoBoneRotationIK;
+        SingleBoneLookAt _singleLookAt;
 
         bool _isLeftTwoBoneIK = true;
         
@@ -213,13 +204,10 @@ namespace FormTools
             //_neckHeadLookAt = ThreeBoneLookAt.CreateNeckHead(_aniActors[0].AniRig.Armature, 
             //localForward: Vertex3f.UnitZ, localUp: Vertex3f.UnitY);
 
+            /*
             _twoLookAt = new TwoBoneLookAt(_aniActors[0].AniRig.Armature["mixamorig_LeftArm"],
                 _aniActors[0].AniRig.Armature["mixamorig_LeftForeArm"], 0.99f, Vertex3f.UnitZ, Vertex3f.UnitY);
             //_twoLookAt.SetAngleLimits(20, 20, 90, 90);
-
-            _oneLookAt = new OneBoneLookAt(_aniActors[0].AniRig.Armature["mixamorig_LeftFoot"], 
-                localForward: Vertex3f.UnitZ, localUp: -Vertex3f.UnitY);
-            _oneLookAt.SetAngleLimits(maxYawAngle: 0, maxPitchAngle: 40);
 
             _threeBoneLookAt = new ThreeBoneLookAt(_aniActors[0].AniRig.Armature["mixamorig_LeftArm"],
                 _aniActors[0].AniRig.Armature["mixamorig_LeftForeArm"],
@@ -235,6 +223,12 @@ namespace FormTools
 
             _twoBoneRotationIK = TwoBoneRotationIK.Create(_aniActors[0].AniRig.Armature["mixamorig_LeftArm"],
                 _aniActors[0].AniRig.Armature["mixamorig_LeftForeArm"]);
+             */
+
+            _singleLookAt = new SingleBoneLookAt(_aniActors[0].AniRig.Armature["mixamorig_Head"], 
+                localForward: Vertex3f.UnitZ);
+            //_singleLookAt.SetAngleLimits(20, 0, 0);
+
 
             _glControl3.CameraStepLength = 0.01f;
 
@@ -279,15 +273,17 @@ namespace FormTools
             //_oneLookAt.SolveWorldTarget(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
             //_oneLookAt.SolveLocalTarget(_aniActors[0].AniRig.Armature.RootBone, camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
 
-            Vertex3f target = camera.PivotPosition;
             //_twoLookAt.LookAt(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
             //s_oneLookAt.SolveWorldTarget(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
             //_vertices = _twoBoneIK1.Solve(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
-            _oneLookAt.SolveWorldTarget(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
-
             //_vertices = _singleBoneRotationIK.Solve(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
             //_vertices = _twoBoneRotationIK.Solve(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
             //_singleBoneRotationIK.Solve(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+
+
+            Vertex3f target = camera.PivotPosition;
+            //_oneLookAt.SolveWorldTarget(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+            _singleLookAt.Solve(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
 
             if (_isLeftTwoBoneIK)
             {
@@ -335,14 +331,13 @@ namespace FormTools
 
             foreach (IAnimActor aniActor in _aniActors)
             {
-                //_axisShader.RenderAxes(aniActor.ModelMatrix, aniActor.Animator.RootTransforms, vp, axisLength: 5.2f);
-
                 if (aniActor is Human)
                 {
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _aniActors[0].AniRig.Armature["mixamorig_LeftFoot"], axisLength: 10f);
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.UpperBone, axisLength: 20f);
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.LowerBone, axisLength: 15f);
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.EndBone, axisLength: 10f);
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _aniActors[0].AniRig.Armature["mixamorig_Head"], axisLength: 3000f);
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _aniActors[0].AniRig.Armature["mixamorig_RightFoot"], axisLength: 10f);
+                    //Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.UpperBone, axisLength: 20f);
+                    //Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.LowerBone, axisLength: 15f);
+                    //Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.EndBone, axisLength: 10f);
                 }
             }
 

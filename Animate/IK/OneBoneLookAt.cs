@@ -143,6 +143,35 @@ namespace Animate
             _bone.UpdateAnimatorTransforms(animator, isSelfIncluded: true);
         }
 
+        public void Solve(Vertex3f worldTargetPosition, Matrix4x4f modelMatrix, Animator animator)
+        {
+            // 부모 본의 월드 변환 계산
+            Matrix4x4f parentWorldTransform = _bone.Parent == null ?
+                modelMatrix : modelMatrix * animator.GetRootTransform(_bone.Parent);
+
+            // 부모 본에 대한 로컬 공간 변환 행렬
+            Matrix4x4f worldToParentLocal = parentWorldTransform.Inversed();
+
+            // 월드 타겟 위치를 부모 본의 로컬 공간으로 변환
+            Vertex4f localTarget = worldToParentLocal * new Vertex4f(worldTargetPosition.x, worldTargetPosition.y, worldTargetPosition.z, 1);
+            Vertex3f localTargetPosition = new Vertex3f(localTarget.x, localTarget.y, localTarget.z);
+
+            Vertex3f targetLocal = (localTargetPosition - _bone.BoneMatrixSet.LocalTransform.Position).Normalized;
+
+            Vertex3f rotationAxis = _localForward.Cross(targetLocal).Normalized;
+            float angle = ((float)Math.Acos(_localForward.Dot(targetLocal).Clamp(-1f, 1f))).ToDegree();
+
+            Quaternion rotation = new Quaternion(rotationAxis, angle);
+            Matrix4x4f rotationMatrix = (Matrix4x4f)rotation;
+
+            _bone.BoneMatrixSet.LocalTransform = rotationMatrix * _bone.BoneMatrixSet.LocalTransform;
+            _bone.UpdateAnimatorTransforms(animator, isSelfIncluded: true);
+
+            Console.WriteLine($"{rotation.RotationVector} {angle}");
+
+
+        }
+
         /// <summary>
         /// 지정한 본의 로컬 공간에서의 타겟 위치를 바라보도록 본을 회전시킨다
         /// </summary>
