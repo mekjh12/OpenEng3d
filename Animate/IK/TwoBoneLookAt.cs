@@ -30,9 +30,9 @@ namespace Animate
         private Bone _secondBone;     // 두 번째 본 (머리)
         private float _firstWeight;   // 첫 번째 본의 가중치 (0~1)
 
-        // 각 본의 SingleBoneLookAt (회전 계산 및 적용용)
-        private SingleBoneLookAt _firstBoneLookAt;
-        private SingleBoneLookAt _secondBoneLookAt;
+        // 각 본의 OneBoneLookAt (회전 계산 및 적용용)
+        private OneBoneLookAt _firstBoneLookAt;
+        private OneBoneLookAt _secondBoneLookAt;
 
         // 각도 제한 설정
         private bool _useAngleLimits;              // 각도 제한 사용 여부
@@ -78,8 +78,8 @@ namespace Animate
             _secondBone = secondBone;
             _firstWeight = firstWeight;
 
-            _firstBoneLookAt = new SingleBoneLookAt(firstBone, localForward, localUp);
-            _secondBoneLookAt = new SingleBoneLookAt(secondBone, localForward, localUp);
+            _firstBoneLookAt = new OneBoneLookAt(firstBone, localForward, localUp);
+            _secondBoneLookAt = new OneBoneLookAt(secondBone, localForward, localUp);
 
             // 각도 제한 기본값 (제한 없음)
             _useAngleLimits = false;
@@ -138,7 +138,7 @@ namespace Animate
             _secondMaxYawAngle = Math.Max(0f, Math.Min(180f, secondMaxYaw));
             _secondMaxPitchAngle = Math.Max(0f, Math.Min(180f, secondMaxPitch));
 
-            // 각 SingleBoneLookAt에 각도 제한 적용
+            // 각 OneBoneLookAt에 각도 제한 적용
             _firstBoneLookAt.SetAngleLimits(_firstMaxYawAngle, _firstMaxPitchAngle);
             _secondBoneLookAt.SetAngleLimits(_secondMaxYawAngle, _secondMaxPitchAngle);
         }
@@ -165,14 +165,14 @@ namespace Animate
             worldUpHint = worldUpHint == default ? Vertex3f.UnitZ : worldUpHint.Normalized;
 
             // 1단계: 두 번째 본(머리)의 전체 회전 정보 계산
-            SingleBoneLookAt.RotationInfo rotationInfo = _secondBoneLookAt.CalculateRotation(worldTargetPosition, model, animator, worldUpHint);
+            OneBoneLookAt.RotationInfo rotationInfo = _secondBoneLookAt.CalculateRotation(worldTargetPosition, model, animator, worldUpHint);
 
             // 2단계: 첫 번째 본(목)의 회전량 계산 및 적용 (가중치만큼만 회전)
             Quaternion rotation = Quaternion.Identity.Interpolate(rotationInfo.Quaternion, _firstWeight);
             _firstBoneLookAt.Rotate(animator, rotation);
 
             // 3단계: 두 번째 본(머리)의 회전량 계산 및 적용 (나머지 회전 담당)
-            _secondBoneLookAt.LookAt(worldTargetPosition, model, animator, worldUpHint);
+            _secondBoneLookAt.SolveWorldTarget(worldTargetPosition, model, animator, worldUpHint);
         }
 
         /// <summary>
@@ -184,12 +184,12 @@ namespace Animate
         {
             worldUpHint = worldUpHint == default ? Vertex3f.UnitZ : worldUpHint.Normalized;
 
-            // 각 본의 SingleBoneLookAt에 SmoothSpeed 전달
+            // 각 본의 OneBoneLookAt에 SmoothSpeed 전달
             _firstBoneLookAt.SmoothSpeed = _smoothSpeed;
             _secondBoneLookAt.SmoothSpeed = _smoothSpeed;
 
             // 1단계: 두 번째 본(머리)의 전체 회전 정보 계산
-            SingleBoneLookAt.RotationInfo rotationInfo =
+            OneBoneLookAt.RotationInfo rotationInfo =
                 _secondBoneLookAt.CalculateRotation(worldTargetPosition, model, animator, worldUpHint);
 
             // 2단계: 첫 번째 본(목)의 회전량 계산 및 적용 (가중치만큼만 회전)
@@ -197,7 +197,7 @@ namespace Animate
             _firstBoneLookAt.Rotate(animator, firstRotation);
 
             // 3단계: 두 번째 본(머리)의 회전량 계산 및 적용 (부드럽게)
-            _secondBoneLookAt.SmoothLookAt(worldTargetPosition, model, animator, deltaTime, worldUpHint);
+            _secondBoneLookAt.SolveSmooth(worldTargetPosition, model, animator, deltaTime, worldUpHint);
         }
     }
 }

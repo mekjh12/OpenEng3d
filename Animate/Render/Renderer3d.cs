@@ -34,6 +34,19 @@ namespace Animate
         public static RawModel3d Cylinder = Loader3d.LoadPrism(12, 1, 1, 1, Matrix4x4f.Identity);
         #endregion
 
+        public static void RenderBone(AxisShader shader, ColorShader cshader, Camera camera,  IAnimActor actor, Bone bone,
+            float lineWidth = 2.0f, float axisLength = 30.0f)
+        {
+            Matrix4x4f vp = camera.VPMatrix;
+            int boneIndex = bone.Index;
+            Matrix4x4f rootTransform = actor.Animator.RootTransforms[boneIndex];
+            shader.RenderAxes(actor.ModelMatrix, rootTransform, vp, axisLength, lineWidth);
+
+            Matrix4x4f finalMatrix = actor.ModelMatrix * rootTransform;
+            Vertex3f p = finalMatrix.Position;
+            Renderer3d.RenderPoint(cshader, p, camera, new Vertex4f(0, 1, 1, 1), 0.02f);
+        }
+
         public static void RenderPoint(ColorShader shader, Vertex3f point, Camera camera, Vertex4f color, float size = 0.1f)
         {
             shader.Bind();

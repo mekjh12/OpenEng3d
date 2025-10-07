@@ -1,4 +1,5 @@
 ﻿using Animate;
+using Animate.IK;
 using AutoGenEnums;
 using Common.Abstractions;
 using GlWindow;
@@ -7,6 +8,7 @@ using OpenGL;
 using Shader;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Windows.Forms;
 using ZetaExt;
@@ -31,9 +33,17 @@ namespace FormTools
         private int _lastGen0Count = 0;
         private int _tick = 0;
 
-        SingleBoneLookAt _headLookAt;
+        OneBoneLookAt _oneLookAt;
         TwoBoneLookAt _twoLookAt;
-        ThreeBoneLookAt _threeLookAt;
+        ThreeBoneLookAt _threeBoneLookAt;
+
+        TwoBoneIK _twoBoneIK1;
+        TwoBoneIK _twoBoneIK2;
+
+        SingleBoneRotationIK _singleBoneRotationIK;
+        TwoBoneRotationIK _twoBoneRotationIK;
+
+        bool _isLeftTwoBoneIK = true;
         
         public FormAnimation()
         {
@@ -147,6 +157,7 @@ namespace FormTools
             //aniRig.AddMotion(layerBlendMotion);
 
             // [당나귀] =========================================
+            /*
             var donkeyRig = new DonkeyRig(PROJECT_PATH + @"\Res\Actor\Donkey\donkey.dae", hipBoneName: "CG", isLoadAnimation: false);
             _mixamoRotMotionStorageB = new MixamoRotMotionStorage();
             _mixamoRotMotionStorageB.Clear();
@@ -164,6 +175,7 @@ namespace FormTools
             _aniActors.Add(donkey);
 
             _mixamoRotMotionStorageB.TransferRetargetMotions(targetAniRig: donkeyRig, sourceAniRig: donkeyRig);
+            */
 
             // -------------------------------------------------
             // 이종간 모션 링킹 생성
@@ -201,22 +213,36 @@ namespace FormTools
             //_neckHeadLookAt = ThreeBoneLookAt.CreateNeckHead(_aniActors[0].AniRig.Armature, 
             //localForward: Vertex3f.UnitZ, localUp: Vertex3f.UnitY);
 
-            _twoLookAt = new TwoBoneLookAt(_aniActors[0].AniRig.Armature["mixamorig_Neck"], _aniActors[0].AniRig.Armature["mixamorig_Head"], 0.5f, Vertex3f.UnitZ, Vertex3f.UnitY);
-            _twoLookAt.SetAngleLimits(20, 20, 90, 90);
+            _twoLookAt = new TwoBoneLookAt(_aniActors[0].AniRig.Armature["mixamorig_LeftArm"],
+                _aniActors[0].AniRig.Armature["mixamorig_LeftForeArm"], 0.99f, Vertex3f.UnitZ, Vertex3f.UnitY);
+            //_twoLookAt.SetAngleLimits(20, 20, 90, 90);
 
-            _threeLookAt = ThreeBoneLookAt.CreateNeckHead(_aniActors[0].AniRig.Armature, firstWeight: 0.2f, secondWeight: 0.3f);
-                _threeLookAt.SetAngleLimits(
-                firstMaxYaw: 20f, firstMaxPitch: 15f,   // 가슴: 작게
-                secondMaxYaw: 40f, secondMaxPitch: 30f,  // 목: 중간
-                thirdMaxYaw: 70f, thirdMaxPitch: 60f    // 머리: 크게
-            );
+            _oneLookAt = new OneBoneLookAt(_aniActors[0].AniRig.Armature["mixamorig_LeftFoot"], 
+                localForward: Vertex3f.UnitZ, localUp: -Vertex3f.UnitY);
+            _oneLookAt.SetAngleLimits(maxYawAngle: 0, maxPitchAngle: 40);
 
-            _headLookAt = new SingleBoneLookAt(_aniActors[0].AniRig.Armature["mixamorig_Head"], localForward: Vertex3f.UnitZ, localUp: Vertex3f.UnitY);
-            _headLookAt.SetAngleLimits(90, 60);
+            _threeBoneLookAt = new ThreeBoneLookAt(_aniActors[0].AniRig.Armature["mixamorig_LeftArm"],
+                _aniActors[0].AniRig.Armature["mixamorig_LeftForeArm"],
+                _aniActors[0].AniRig.Armature["mixamorig_LeftHand"],
+                0.5f, 0.3f, Vertex3f.UnitZ, Vertex3f.UnitY);
+
+
+            _twoBoneIK1 = TwoBoneIKFactory.CreateLeftLegIK(_aniActors[0].AniRig.Armature);
+            _twoBoneIK2 = TwoBoneIKFactory.CreateLeftLegIK(_aniActors[0].AniRig.Armature);
+
+            _singleBoneRotationIK = SingleBoneRotationIK.Create(_aniActors[0].AniRig.Armature["mixamorig_LeftFoot"],
+                Vertex3f.UnitX, Vertex3f.UnitY);
+
+            _twoBoneRotationIK = TwoBoneRotationIK.Create(_aniActors[0].AniRig.Armature["mixamorig_LeftArm"],
+                _aniActors[0].AniRig.Armature["mixamorig_LeftForeArm"]);
+
+            _glControl3.CameraStepLength = 0.01f;
 
             // 셰이더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
         }
+
+        Vertex3f[] _vertices;
 
         /// <summary>
         /// 프레임 업데이트를 처리합니다.
@@ -243,13 +269,36 @@ namespace FormTools
             }
 
             // 머리가 카메라를 바라보도록 설정
-            //_headLookAt.LookAt(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+            //_headLookAt.LookAt(new Vertex3f(0,0,1000), _aniActors[0].ModelMatrix, _aniActors[0].Animator);
             //_headLookAt.SmoothLookAt(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator, duration);
             //_twoLookAt.LookAt(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
             //_twoLookAt.SmoothLookAt(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator, duration);
             //_threeLookAt.LookAt(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
-            _threeLookAt.SmoothLookAt(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator, duration);
+            //_threeLookAt.SmoothLookAt(camera.Position, _aniActors[0].ModelMatrix, _aniActors[0].Animator, duration);
 
+            //_oneLookAt.SolveWorldTarget(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+            //_oneLookAt.SolveLocalTarget(_aniActors[0].AniRig.Armature.RootBone, camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+
+            Vertex3f target = camera.PivotPosition;
+            //_twoLookAt.LookAt(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+            //s_oneLookAt.SolveWorldTarget(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+            //_vertices = _twoBoneIK1.Solve(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+            _oneLookAt.SolveWorldTarget(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+
+            //_vertices = _singleBoneRotationIK.Solve(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+            //_vertices = _twoBoneRotationIK.Solve(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+            //_singleBoneRotationIK.Solve(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+
+            if (_isLeftTwoBoneIK)
+            {
+            }
+            else
+            {
+                //_vertices = _twoBoneIK2.Solve(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+                //Console.WriteLine(_twoBoneIK1.UpperBone.JointAngle);
+            }
+
+            //_twoBoneIK.SolveRootOnly(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
 
             /*
             _glControl3.CLabel("cam").Text = 
@@ -286,10 +335,45 @@ namespace FormTools
 
             foreach (IAnimActor aniActor in _aniActors)
             {
-               _axisShader.RenderAxes(aniActor.ModelMatrix, aniActor.Animator.RootTransforms, vp, axisLength: 5.2f);
+                //_axisShader.RenderAxes(aniActor.ModelMatrix, aniActor.Animator.RootTransforms, vp, axisLength: 5.2f);
+
+                if (aniActor is Human)
+                {
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _aniActors[0].AniRig.Armature["mixamorig_LeftFoot"], axisLength: 10f);
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.UpperBone, axisLength: 20f);
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.LowerBone, axisLength: 15f);
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.EndBone, axisLength: 10f);
+                }
             }
 
-            Renderer3d.RenderPoint(_colorShader, camera.PivotPosition, camera, Vertex4f.UnitY);
+            Renderer3d.RenderPoint(_colorShader, camera.PivotPosition, camera, new Vertex4f(1, 0, 0, 1), 0.025f);
+
+            if (_vertices != null)
+            {
+                if (_vertices.Length > 0)
+                    Renderer3d.RenderPoint(_colorShader, _vertices[0], camera, new Vertex4f(0, 1, 0, 1), 0.05f);
+                if (_vertices.Length > 1)
+                    Renderer3d.RenderPoint(_colorShader, _vertices[1], camera, new Vertex4f(0, 1, 0, 1), 0.05f);
+                if (_vertices.Length > 2)
+                    Renderer3d.RenderPoint(_colorShader, _vertices[2], camera, new Vertex4f(0, 1, 0, 1), 0.05f);
+
+                // 현재 동작 뼈대
+                if (_vertices.Length > 1)
+                    Renderer.Renderer3d.RenderLine(_colorShader, camera, _vertices[0], _vertices[1], new Vertex4f(0, 1, 0, 1), 1f);
+                if (_vertices.Length > 2)
+                    Renderer.Renderer3d.RenderLine(_colorShader, camera, _vertices[1], _vertices[2], new Vertex4f(0, 1, 0, 1), 1f);
+
+                // 폴벡터
+                if (_vertices.Length > 3)
+                    Renderer.Renderer3d.RenderLine(_colorShader, camera, _vertices[0], _vertices[3], new Vertex4f(0, 1, 1, 1), 1f);
+
+                if (_vertices.Length > 4)
+                    Renderer.Renderer3d.RenderLine(_colorShader, camera, _vertices[0], _vertices[4], new Vertex4f(0, 1, 1, 1), 1f);
+
+                if (_vertices.Length > 0)
+                    Renderer.Renderer3d.RenderLine(_colorShader, camera, _vertices[0], camera.PivotPosition, new Vertex4f(1, 1, 0, 1), 5f);
+
+            }
 
             // 폴리곤 모드 설정
             Gl.PolygonMode(MaterialFace.FrontAndBack, _glControl3.PolygonMode);
@@ -344,7 +428,7 @@ namespace FormTools
                     }
                     if (_aniActors[i] is Human)
                     {
-                        (_aniActors[i] as Human).SetMotion(HUMAN_ACTION.RANDOM);
+                        (_aniActors[i] as Human).SetMotion(HUMAN_ACTION.A_T_POSE);
                     }
                 }
             }
@@ -368,6 +452,10 @@ namespace FormTools
                 _aniActors[0].Transform.SetPosition(-2, 0, 0);
                 _aniActors[1].Transform.SetPosition(2, 0, 0);
             }
+            else if (e.KeyCode == Keys.L)
+            {
+                _isLeftTwoBoneIK = !_isLeftTwoBoneIK;
+            }
             else if (e.KeyCode == Keys.R)
             {
                 if (_aniActors[0].Animator.IsPlaying)
@@ -379,10 +467,22 @@ namespace FormTools
             {
                 _glControl3.Camera.PivotPosition = new Vertex3f(0, 0, 1.0f);
             }
+            else if (e.KeyCode == Keys.M)
+            {
+                if (_aniActors[0].Animator.IsPlaying)
+                {
+                    _aniActors[0].Animator.Stop();
+                }
+                else
+                {
+                    _aniActors[0].Animator.Play();
+                }
+            }
         }
 
         public void KeyDownEvent(object sender, KeyEventArgs e)
         {
+            
 
         }
 

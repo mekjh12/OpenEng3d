@@ -45,7 +45,7 @@ namespace Animate
             return 0.0f;//return theta;
         }
 
-
+        /*
         public static void ModifyPitch(this Bone bone, float phi)
         {
             if (phi < bone.BoneKinematics.RestrictAngle.ConstraintAngle.x)
@@ -123,7 +123,7 @@ namespace Animate
                 //bone.UpdateRootTransforms(isSelfIncluded: true);
             }
         }
-
+        */
 
         /// <summary>
         /// 피봇의 위치로부터 보는 곳의 위치로 좌표프레임을 변환한다.
@@ -150,9 +150,9 @@ namespace Animate
             if (isRestrictAngle)
             {
                 Vertex3f angleVector = Kinetics.EulerAngleFromRotationMatrixZYX(bone.BoneMatrixSet.LocalBindTransform.Rot3x3f())[0]; // 오일러 각을 가져온다.
-                angleVector.x = angleVector.x.Clamp(bone.BoneKinematics.RestrictAngle.ConstraintAngle.x, bone.BoneKinematics.RestrictAngle.ConstraintAngle.y);
-                angleVector.y = angleVector.y.Clamp(bone.BoneKinematics.RestrictAngle.TwistAngle.x, bone.BoneKinematics.RestrictAngle.TwistAngle.y);
-                angleVector.z = angleVector.z.Clamp(bone.BoneKinematics.RestrictAngle.ConstraintAngle.z, bone.BoneKinematics.RestrictAngle.ConstraintAngle.w);
+                //angleVector.x = angleVector.x.Clamp(bone.BoneKinematics.RestrictAngle.ConstraintAngle.x, bone.BoneKinematics.RestrictAngle.ConstraintAngle.y);
+                //angleVector.y = angleVector.y.Clamp(bone.BoneKinematics.RestrictAngle.TwistAngle.x, bone.BoneKinematics.RestrictAngle.TwistAngle.y);
+                //angleVector.z = angleVector.z.Clamp(bone.BoneKinematics.RestrictAngle.ConstraintAngle.z, bone.BoneKinematics.RestrictAngle.ConstraintAngle.w);
                 Matrix4x4f RotX = Matrix4x4f.RotatedX(angleVector.x);
                 Matrix4x4f RotY = Matrix4x4f.RotatedY(angleVector.y);
                 Matrix4x4f RotZ = Matrix4x4f.RotatedZ(angleVector.z); // 회전을 계산한다.

@@ -44,10 +44,10 @@ namespace Animate
             // 뼈대명 배열을 만들고 뼈대 인덱스 딕셔너리를 만든다.
             armature.SetupBoneMapping(boneNames.ToArray());
 
-            // (4) library_animations = 애니메이션 정보
+            // library_animations = 애니메이션 정보
             //AniXmlLoader.LibraryAnimations(xml);
 
-            // (5) library_visual_scenes = bone hierarchy + rootBone
+            // library_visual_scenes = bone hierarchy + rootBone
             AniColladaLoader.LibraryVisualScenes(xml, invBindPoses, ref armature, out Matrix4x4f bind);
 
             // 힙본을 설정한다.

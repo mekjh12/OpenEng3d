@@ -24,23 +24,23 @@ namespace Animate
         private const float MIN_MOTION_TIME = 0.0f;
 
         // 멤버 변수 (Update함수를 통해서 행렬이 업데이트되어서 임시로 수정하지 않는다.)
-        private Matrix4x4f[] _animatedTransforms; // 애니메이션된 행렬
-        private Matrix4x4f[] _rootTransforms ; // 뼈대의 캐릭터공간 변환 행렬들
+        private Matrix4x4f[] _animatedTransforms;       // 애니메이션된 행렬
+        private Matrix4x4f[] _rootTransforms;           // 뼈대의 캐릭터공간 변환 행렬들
 
-        private float _motionTime = 0.0f; // 현재 모션 시간
-        private bool _isPlaying = true; // 재생 상태
+        private float _motionTime = 0.0f;               // 현재 모션 시간
+        private bool _isPlaying = true;                 // 재생 상태
 
         // 모션 관련 변수
         private AnimationState _animationState = AnimationState.Normal; // 현재 애니메이션 상태
-        private Motionable _currentMotion; // 현재 모션
-        private Motionable _blendMotion; // 블렌딩 모션
-        private Motionable _nextMotion; // 다음 모션
+        private Motionable _currentMotion;              // 현재 모션
+        private Motionable _blendMotion;                // 블렌딩 모션
+        private Motionable _nextMotion;                 // 다음 모션
 
-        private Bone _rootBone; // 루트 본
+        private Bone _rootBone;                         // 루트 본
 
         // 클래스내 처리 변수
-        private Action _actionOnceFinished = null; // 한번 실행 완료 콜백
-        private Action _animatorLoopFinished = null; // 애니메이터 루프 완료 콜백
+        private Action _actionOnceFinished = null;      // 한번 실행 완료 콜백
+        private Action _animatorLoopFinished = null;    // 애니메이터 루프 완료 콜백
 
         // 최적화용 변수
         Dictionary<string, Matrix4x4f> _currentPose;
@@ -162,6 +162,17 @@ namespace Animate
         public Matrix4x4f GetRootTransform(Bone bone)
         {
             return _rootTransforms[bone.Index];
+        }
+
+        /// <summary>
+        /// 캐릭터 공간에서의 본을 월드 공간으로 변환한 행렬을 가져온다.
+        /// </summary>
+        /// <param name="bone"></param>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        public Matrix4x4f GetAnimatedWorldTransform(Bone bone, Matrix4x4f model)
+        {
+            return model * _rootTransforms[bone.Index];
         }
 
         public void SetRootTransform(int index, Matrix4x4f transform)

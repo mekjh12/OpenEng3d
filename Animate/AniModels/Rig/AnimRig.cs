@@ -21,7 +21,6 @@ namespace Animate
         private readonly string _name;      // 리그 이름
 
         // 핵심 데이터
-        private Matrix4x4f _bindShapeMatrix;            // 바인드 형태 행렬
         private MotionStorage _motions;                 // 모션 저장소
         private MotionCache _motionCache;               // 모션 캐시 (블렌딩 모션 캐시)
 
@@ -43,7 +42,6 @@ namespace Animate
         public int BoneCount => _armature.BoneNames.Length;
         public List<TexturedModel> TexturedModels => _texturedModels;
         public string Name => _name;
-        public Matrix4x4f BindShapeMatrix => _bindShapeMatrix;
 
         // -----------------------------------------------------------------------
         // 생성자
@@ -79,7 +77,6 @@ namespace Animate
             }
 
             // 로드된 데이터로 초기화
-            _bindShapeMatrix = bindShapeMatrix;
             _motions = motions;
             _armature = armature;
             _texturedModels = models;

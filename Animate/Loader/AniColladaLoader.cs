@@ -580,7 +580,6 @@ namespace Animate
                 string parentName = parentNode.HasAttribute("sid") ?
                     parentNode.Attributes["sid"].Value : "Armature";
 
-
                 int boneIndex = armature.IsExistBoneIndex(boneName) ? armature.GetBoneIndex(boneName) : -1;
                 string boneID = node.Attributes["id"].Value;
                 Bone bone = new Bone(boneName, 0)
@@ -599,13 +598,13 @@ namespace Animate
                 armature.AddBone(bone);
                 boneDics[boneName] = bone;
 
+                // 부모-자식 관계를 설정한다.
                 if (boneDics.ContainsKey(parentName))
                 {
                     Bone parentBone = boneDics[parentName];
                     parentBone.AddChild(bone);
                     bone.Parent = parentBone;
                 }
-
             }
 
             bind = startMatrix;

@@ -13,11 +13,11 @@ namespace Animate
     /// 
     /// <code>
     /// 사용 예시:
-    /// var headLookAt = new SingleBoneLookAt(headBone, Vertex3f.UnitY, Vertex3f.UnitZ);
+    /// var headLookAt = new OneBoneLookAt(headBone, Vertex3f.UnitY, Vertex3f.UnitZ);
     /// headLookAt.LookAt(targetPosition, modelMatrix, animator);
     /// </code>
     /// </summary>
-    public class SingleBoneLookAt
+    public class OneBoneLookAt
     {
         // -----------------------------------------------------------------------
         // 멤버 변수
@@ -30,7 +30,9 @@ namespace Animate
         // 각도 제한 설정
         private bool _useAngleLimits;               // 각도 제한 사용 여부
         private float _maxYawAngle;                 // 최대 좌우 회전 각도 (도)
+        private float _minYawAngle;                 // 최소 좌우 회전 각도 (도)
         private float _maxPitchAngle;               // 최대 상하 회전 각도 (도)
+        private float _minPitchAngle;               // 최소 상하 회전 각도 (도)
 
         // 멤버 변수 추가
         private float _smoothSpeed = 5.0f;           // 전환 속도 (값이 클수록 빠름)
@@ -64,13 +66,13 @@ namespace Animate
         // -----------------------------------------------------------------------
 
         /// <summary>
-        /// SingleBoneLookAt 생성자
+        /// OneBoneLookAt 생성자
         /// </summary>
         /// <param name="bone">제어할 본</param>
         /// <param name="localForward">본의 로컬 전방 벡터 (기본: Y축)</param>
         /// <param name="localUp">본의 로컬 상향 벡터 (기본: Z축)</param>
         /// <exception cref="ArgumentException">Forward와 Up 벡터가 평행한 경우</exception>
-        public SingleBoneLookAt(Bone bone, Vertex3f localForward = default, Vertex3f localUp = default)
+        public OneBoneLookAt(Bone bone, Vertex3f localForward = default, Vertex3f localUp = default)
         {
             _bone = bone ?? throw new ArgumentNullException(nameof(bone));
             _localForward = (localForward == default ? Vertex3f.UnitY : localForward).Normalized;
@@ -131,10 +133,10 @@ namespace Animate
         /// <param name="modelMatrix">모델 변환 행렬</param>
         /// <param name="animator">애니메이터</param>
         /// <param name="worldUpHint">월드 업 벡터 힌트 (기본: Z축)</param>
-        public void LookAt(Vertex3f worldTargetPosition, Matrix4x4f modelMatrix, Animator animator,
-                          Vertex3f worldUpHint = default)
+        public void SolveWorldTarget(Vertex3f worldTargetPosition, Matrix4x4f modelMatrix, Animator animator, Vertex3f worldUpHint = default)
         {
-            var rotationInfo = CalculateRotation(worldTargetPosition, modelMatrix, animator, worldUpHint);
+            // 목표 회전 계산 (각도 제한 포함)
+            RotationInfo rotationInfo = CalculateRotation(worldTargetPosition, modelMatrix, animator, worldUpHint);
 
             // 계산된 변환 행렬을 본에 적용
             _bone.BoneMatrixSet.LocalTransform = rotationInfo.Matrix;
@@ -142,9 +144,31 @@ namespace Animate
         }
 
         /// <summary>
+        /// 지정한 본의 로컬 공간에서의 타겟 위치를 바라보도록 본을 회전시킨다
+        /// </summary>
+        /// <param name="localBone"></param>
+        /// <param name="localTargetPosition"></param>
+        /// <param name="modelMatrix"></param>
+        /// <param name="animator"></param>
+        /// <param name="worldUpHint"></param>
+        public void SolveLocalTarget(Bone localBone, Vertex3f localTargetPosition, Matrix4x4f modelMatrix, Animator animator, Vertex3f worldUpHint = default)
+        {
+            // 지정한 본의 유효성 검사
+            if (localBone == null) throw new ArgumentNullException(nameof(localBone));
+
+            // 부모 본의 월드 변환 계산
+            Matrix4x4f parentWorldTransform = localBone == null ?
+                modelMatrix : modelMatrix * animator.GetRootTransform(_bone.Parent);
+
+            // 로컬 타겟 위치를 월드 공간으로 변환
+            Vertex3f worldTargetPosition = (parentWorldTransform * new Vertex4f(localTargetPosition.x, localTargetPosition.y, localTargetPosition.z, 1)).xyz();
+            SolveWorldTarget(worldTargetPosition, modelMatrix, animator, worldUpHint);
+        }
+
+        /// <summary>
         /// 부드러운 전환을 적용하여 LookAt 수행
         /// </summary>
-        public void SmoothLookAt(Vertex3f worldTargetPosition, Matrix4x4f modelMatrix,
+        public void SolveSmooth(Vertex3f worldTargetPosition, Matrix4x4f modelMatrix,
                                  Animator animator, float deltaTime,
                                  Vertex3f worldUpHint = default)
         {

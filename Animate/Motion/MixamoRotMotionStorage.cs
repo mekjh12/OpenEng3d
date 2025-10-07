@@ -37,7 +37,7 @@ namespace Animate
         }
 
         [Obsolete("테스트 중...")]
-        public void Transfer(ArmatureLinker armatureLinker, AnimRig targetAniRig)
+        public void TransferByNamePairs(ArmatureLinker armatureLinker, AnimRig targetAniRig)
         {
             // 모션을 리타겟팅
             foreach (KeyValuePair<string, Motionable> motionItem in _motions)

@@ -1,6 +1,5 @@
-﻿using System;
-using OpenGL;
-using ZetaExt;
+﻿using OpenGL;
+using System;
 
 namespace ZetaExt
 {
@@ -125,6 +124,14 @@ namespace ZetaExt
             _CosAngle = 0.0;
             SetEuler(rVector, rAngle);
         }
+
+        public static Matrix4x4f CreateRotationMatrix(Vertex3f rVector, float rAngle)
+        {
+            Quaternion q = new Quaternion(rVector, rAngle);
+            q.Normalize();
+            return (Matrix4x4f)q;
+        }
+
 
         public Quaternion(Quaternion other)
         {

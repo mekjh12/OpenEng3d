@@ -1,6 +1,5 @@
 ﻿using Camera3d;
 using Common.Abstractions;
-using GlWindow.Properties;
 using OpenGL;
 using Shader;
 using System;
@@ -8,7 +7,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Windows.Forms;
 using System.Windows.Input;
 using Ui2d;
@@ -111,6 +109,12 @@ namespace GlWindow
         public string HelpText
         {
             set => _helpText += value.Replace("/", "<br>");
+        }
+
+        public float CameraStepLength
+        {
+            get => _cameraStepLength;
+            set => _cameraStepLength = value;
         }
 
         public bool IsUi2dMode
@@ -264,13 +268,50 @@ namespace GlWindow
             Console.WriteLine($"FPS 캐시 메모리: {_fpsCache.EstimatedMemoryUsage} bytes");
             // 144개 * 평균 8글자 * 2byte = 약 2.3KB
 
-            // 시스템 정보 출력
-            Console.WriteLine("========================================================");
-            Console.WriteLine("                  OpenGL3d 시스템 정보");
-            Console.WriteLine("========================================================");
-            Console.WriteLine(" * 오른손 좌표계 사용: x축 right, y축 forward, z축 up.");
-            Console.WriteLine(" * 지형시스템: x축 양의 방향 동쪽, y축 양의 방향 북쪽");
-            Console.WriteLine("========================================================");
+            Console.WriteLine("=======================================================");
+            Console.WriteLine("  OpenGL3D 시스템 정보");
+            Console.WriteLine("=======================================================");
+            Console.WriteLine();
+            Console.WriteLine("[ 좌표계 ]");
+            Console.WriteLine("  오른손 좌표계: X(right) Y(forward) Z(up)");
+            Console.WriteLine();
+            Console.WriteLine("[ 지형 시스템 ]");
+            Console.WriteLine("  X축(+) → 동쪽 | Y축(+) → 북쪽");
+            Console.WriteLine();
+            Console.WriteLine("[ 행렬 정보 - OpenGL.Net ]");
+            Console.WriteLine("  ㅇ 열 우선(Column-Major) 저장");
+            Console.WriteLine("  ㅇ 인덱싱: [열, 행]");
+            Console.WriteLine("  ㅇ M × N 연산 = 일반적인MN연산");
+            Console.WriteLine("  ㅇ 벡터 v를 MNv는 N 변환 후 M 변환");
+            Console.WriteLine();
+            Console.WriteLine("=======================================================");
+            Console.WriteLine();
+            Console.WriteLine("-------------------------------------------------------");
+            Console.WriteLine("  C# 행렬 복합 대입 연산자 (M *= N)");
+            Console.WriteLine("-------------------------------------------------------");
+            Console.WriteLine();
+            Console.WriteLine("[ 기본 의미 ]");
+            Console.WriteLine("  M *= N;  →  M = M * N;");
+            Console.WriteLine("  (M에 N을 오른쪽에서 곱한 결과를 M에 저장)");
+            Console.WriteLine();
+            Console.WriteLine("[ 변환 적용 순서 ]");
+            Console.WriteLine("  M *= N;");
+            Console.WriteLine("  → 1단계: N 변환 적용 (먼저)");
+            Console.WriteLine("  → 2단계: M 변환 적용 (나중)");
+            Console.WriteLine();
+            Console.WriteLine("[ 예시 ]");
+            Console.WriteLine("  Matrix4x4 M = CreateTranslation(10, 0, 0);  // 이동");
+            Console.WriteLine("  Matrix4x4 N = CreateRotationZ(45);          // 회전");
+            Console.WriteLine("  M *= N;");
+            Console.WriteLine("  결과: 45도 회전(N) → (10,0,0) 이동(M)");
+            Console.WriteLine();
+            Console.WriteLine("[ 비교 ]");
+            Console.WriteLine("  M *= N;      // N 먼저 → M 나중");
+            Console.WriteLine("  M = N * M;   // M 먼저 → N 나중 (순서 반대!)");
+            Console.WriteLine();
+            Console.WriteLine("[ 결론 ]");
+            Console.WriteLine("  M *= N은 기존 M 변환 앞에 N 변환을 추가하는 의미");
+            Console.WriteLine("-------------------------------------------------------");
 
         }
 

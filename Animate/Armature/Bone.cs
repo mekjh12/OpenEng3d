@@ -11,92 +11,35 @@ namespace Animate
     /// </summary>
     public class Bone
     {
-        private const float DEFAULT_BONE_LENGTH = 15.0f;            // 자식이 없는 뼈대의 기본 길이 (Y축 방향)
-        //private const string ARMATURE_HIPS_NAME = "mixamorig_Hips"; // Mixamo 리그에서 엉덩이(Hips) 뼈대의 이름
-        //private const string ARMATURE_CG_NAME = "CG"; // Mixamo 리그에서 엉덩이(Hips) 뼈대의 이름
-
         // 기본 정보
-        private int _index;
-        private string _name;
-        private string _id;
+        private int _index;                     // 뼈대의 고유 인덱스
+        private string _name;                   // 뼈대의 이름
+        private string _id;                     // 뼈대의 고유 ID (외부 시스템과의 연동용)
+        private float _length = 1.0f;     // 뼈대의 길이        
 
         // 계층 구조
-        private List<Bone> _children;
-        private Bone _parent;
-        private bool _isHipBone = false;
-        private BoneMatrixSet _boneMatrixSet; // 뼈대의 변환 정보 (애니메이션 및 바인딩 포즈 변환 행렬들)
-        private BoneKinematics _boneKinematics; // 뼈대의 운동학 정보 (추가 기능)
+        private List<Bone> _children;           // 자식 뼈대들
+        private Bone _parent;                   // 부모 뼈대 (null이면 루트 뼈대)
+        private bool _isHipBone = false;        // 힙본 여부 (캐릭터의 중심 뼈대인지 여부)
+        private BoneMatrixSet _boneMatrixSet;   // 뼈대의 변환 정보 (애니메이션 및 바인딩 포즈 변환 행렬들)
+        private JointAngle _jointAngle;         // 관절 각도 제한 (옵션)
 
-        // 성능 향상을 위한 캐릭터 공간 변환 행렬들
-        Matrix4x4f _rootTransform;
-        Matrix4x4f _parentRootTransform;
+        // 캐릭터 공간 변환 행렬(성능 최적화용)
+        Matrix4x4f _rootTransform;              // 캐릭터 공간의 본 변환 행렬
+        Matrix4x4f _parentRootTransform;        // 부모 뼈대의 캐릭터 공간 본 변환 행렬(**자신의 본 변환 행렬 계산에 사용**)
 
-        /// <summary>
-        /// 뼈대의 운동학 정보를 포함하는 객체
-        /// </summary>
-        public BoneKinematics BoneKinematics => _boneKinematics;
-
-        /// <summary>
-        /// 뼈대의 변환 정보를 포함하는 객체
-        /// </summary>
+        // 속성
         public BoneMatrixSet BoneMatrixSet => _boneMatrixSet;
-
-        /// <summary>
-        /// 힙본인지 여부를 반환
-        /// </summary>
-        public bool IsHipBone
-        {
-            get => _isHipBone;
-            set => _isHipBone = value;
-        }
-
-        public string ID
-        {
-            get => _id;
-            set => _id = value;
-        }
-
-        /// <summary>
-        /// 뼈대의 고유 인덱스
-        /// </summary>
-        public int Index
-        {
-            get => _index;
-            set => _index = value;
-        }
-
-        /// <summary>
-        /// 뼈대의 이름
-        /// </summary>
-        public string Name
-        {
-            get => _name;
-            set => _name = value;
-        }
-
-        /// <summary>
-        /// 부모 뼈대 (null이면 루트 뼈대)
-        /// </summary>
-        public Bone Parent
-        {
-            get => _parent;
-            set => _parent = value;
-        }
-
-        /// <summary>
-        /// 자식 뼈대들의 리스트 (읽기 전용)
-        /// </summary>
+        public JointAngle JointAngle { get => _jointAngle; set => _jointAngle = value; }
+        public bool IsHipBone { get => _isHipBone; set => _isHipBone = value; }
+        public string ID { get => _id; set => _id = value; }
+        public int Index { get => _index; set => _index = value; }
+        public string Name { get => _name; set => _name = value; }
+        public Bone Parent { get => _parent; set => _parent = value; }
         public IReadOnlyList<Bone> Children => _children.AsReadOnly();
-
-        /// <summary>
-        /// 자식이 없는 말단 뼈대인지 여부
-        /// </summary>
         public bool IsLeaf => _children.Count == 0;
-
-        /// <summary>
-        /// 루트 뼈대인지 여부 (부모가 없는 뼈대)
-        /// </summary>
         public bool IsRoot => _parent == null;
+        public float Length { get => _length; set => _length = value; }
 
         /// <summary>
         /// 새로운 뼈대를 생성한다
@@ -117,8 +60,12 @@ namespace Animate
             _name = name;
             _index = index;
             _boneMatrixSet = new BoneMatrixSet();
-            _boneKinematics = new BoneKinematics(); // 뼈대의 운동학 정보 초기화
+            _jointAngle = null;
+        }
 
+        public void AttachJointAngle(JointAngle jointAngle)
+        {
+            _jointAngle = jointAngle;
         }
 
         /// <summary>

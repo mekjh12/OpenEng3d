@@ -79,9 +79,16 @@
     <Compile Include="AniModels\Rig\BirdRig.cs" />
     <Compile Include="AniModels\Rig\BearRig.cs" />
     <Compile Include="AniModels\Rig\DonkeyRig.cs" />
-    <Compile Include="IK\SingleBoneLookAt.cs" />
+    <Compile Include="Core\EulerConverter.cs" />
+    <Compile Include="IK\OneBoneLookAt.cs" />
+    <Compile Include="IK\SingleBoneRotationIK.cs" />
+    <Compile Include="IK\ThreeBoneIKFactory.cs" />
     <Compile Include="IK\ThreeBoneLookAt.cs" />
+    <Compile Include="IK\ThreeBoneIK.cs" />
+    <Compile Include="IK\TwoBoneIK.cs" />
+    <Compile Include="IK\TwoBoneIKFactory.cs" />
     <Compile Include="IK\TwoBoneLookAt.cs" />
+    <Compile Include="IK\TwoBoneRotationIK.cs" />
     <Compile Include="Loader\AniRigLoader.cs" />
     <Compile Include="AniModels\Rig\ATTACHMENT_SLOT .cs" />
     <Compile Include="AniModels\Rig\HorseRig.cs" />
@@ -89,7 +96,6 @@
     <Compile Include="AniModels\ItemAttachment.cs" />
     <Compile Include="Armature\Armature.cs" />
     <Compile Include="Armature\BoneExtension.cs" />
-    <Compile Include="Armature\BoneKinematics.cs" />
     <Compile Include="Armature\BoneMatrixSet.cs" />
     <Compile Include="Armature\BoneTraverse.cs" />
     <Compile Include="Armature\HorseBone.cs" />
@@ -101,7 +107,7 @@
     <Compile Include="Loader\SimpleDaeLoader.cs" />
     <Compile Include="Loader\AniColladaLoader.cs" />
     <Compile Include="Armature\Bone.cs" />
-    <Compile Include="Core\BoneAngle.cs" />
+    <Compile Include="Core\JointAngle.cs" />
     <Compile Include="Core\BoneTransform.cs" />
     <Compile Include="Kinematic\Clothes.cs" />
     <Compile Include="Core\ColorPoint.cs" />

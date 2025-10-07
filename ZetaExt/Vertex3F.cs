@@ -20,6 +20,41 @@ namespace ZetaExt
         }
 
         /// <summary>
+        /// 벡터 길이의 제곱을 반환한다 (제곱근 연산 없이 빠른 계산)
+        /// </summary>
+        /// <param name="v">벡터</param>
+        /// <returns>길이의 제곱 (x² + y² + z²)</returns>
+        public static float LengthSquared(this Vertex3f v)
+        {
+            return v.x * v.x + v.y * v.y + v.z * v.z;
+        }
+
+        /// <summary>
+        /// 두 벡터 사이의 거리의 제곱을 반환한다
+        /// </summary>
+        /// <param name="a">첫 번째 벡터</param>
+        /// <param name="b">두 번째 벡터</param>
+        /// <returns>거리의 제곱</returns>
+        public static float DistanceSquared(this Vertex3f a, Vertex3f b)
+        {
+            float dx = a.x - b.x;
+            float dy = a.y - b.y;
+            float dz = a.z - b.z;
+            return dx * dx + dy * dy + dz * dz;
+        }
+
+        /// <summary>
+        /// 벡터가 거의 0인지 확인한다 (epsilon 기반)
+        /// </summary>
+        /// <param name="v">벡터</param>
+        /// <param name="epsilon">허용 오차 (기본: 0.000001f)</param>
+        /// <returns>거의 0이면 true</returns>
+        public static bool IsNearZero(this Vertex3f v, float epsilon = 0.000001f)
+        {
+            return v.LengthSquared() < epsilon * epsilon;
+        }
+
+        /// <summary>
         /// 벡터의 성분들의 최솟값
         /// </summary>
         /// <param name="a"></param>
@@ -84,12 +119,6 @@ namespace ZetaExt
         {
             Vertex3f d = a - b;
             return (float)Math.Sqrt(d.Dot(d));
-        }
-
-        public static Vertex3f Reject(this Vertex3f a, Vertex3f b)
-        {
-            float k = a.Dot(b) / b.Dot(b);
-            return a - b * k;
         }
 
         /// <summary>
@@ -249,6 +278,41 @@ namespace ZetaExt
         {
             return new Vertex3f(a.x * b.x, a.y * b.y, a.z * b.z);
         }
+
+        /// <summary>
+        /// 벡터 a를 벡터 b에 투영(projection)한 결과를 반환합니다.
+        /// </summary>
+        /// <param name="a">투영될 벡터</param>
+        /// <param name="b">투영 기준 벡터</param>
+        /// <returns>벡터 a의 벡터 b 방향 투영 벡터</returns>
+        public static Vertex3f Project(this Vertex3f a, Vertex3f b)
+        {
+            float dotBB = b.Dot(b);
+
+            // b가 영벡터에 가까운 경우 처리
+            if (dotBB < float.Epsilon)
+            {
+                return Vertex3f.Zero; // 또는 예외 처리
+            }
+
+            float dotAB = a.Dot(b);
+            float scalar = dotAB / dotBB;
+
+            return b * scalar;
+        }
+
+        /// <summary>
+        /// 벡터 a에서 벡터 b 방향 성분을 제거한 직교(수직) 성분을 반환합니다.
+        /// 이는 벡터 a를 b에 평행한 성분과 수직인 성분으로 분해했을 때, 수직 성분에 해당합니다.
+        /// </summary>
+        /// <param name="a">분해할 원본 벡터</param>
+        /// <param name="b">기준 방향 벡터</param>
+        /// <returns>벡터 a의 벡터 b에 대한 rejection(직교 성분)</returns>
+        public static Vertex3f Reject(this Vertex3f a, Vertex3f b)
+        {
+            return a - a.Project(b);
+        }
+
 
     }
 }
