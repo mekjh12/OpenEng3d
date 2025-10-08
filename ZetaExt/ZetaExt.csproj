@@ -63,7 +63,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Matrix4x4fExtensions.cs" />
+    <Compile Include="Matrix4x4NoGC.cs" />
     <Compile Include="MemoryProfiler.cs" />
+    <Compile Include="Vertex3NoGC.cs" />
     <Compile Include="XmlNode.cs" />
     <Compile Include="Debug.cs" />
     <Compile Include="BoolF.cs" />

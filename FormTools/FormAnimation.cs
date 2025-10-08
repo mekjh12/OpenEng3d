@@ -225,8 +225,7 @@ namespace FormTools
                 _aniActors[0].AniRig.Armature["mixamorig_LeftForeArm"]);
              */
 
-            _singleLookAt = new SingleBoneLookAt(_aniActors[0].AniRig.Armature["mixamorig_Head"], 
-                localForward: Vertex3f.UnitZ);
+            _singleLookAt = new SingleBoneLookAt(_aniActors[0].AniRig.Armature["mixamorig_Head"], SingleBoneLookAt.ForwardAxis.Z);
             //_singleLookAt.SetAngleLimits(20, 0, 0);
 
 

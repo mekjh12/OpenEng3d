@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using Assimp;
+using OpenGL;
 using System;
 using System.Collections.Generic;
 using ZetaExt;
@@ -7,6 +8,22 @@ namespace Animate
 {
     public static class BoneExtension
     {
+        /// <summary>
+        /// 지정한 본의 부모 본의 로컬 변환 행렬을 월드 공간에서 가져온다.
+        /// </summary>
+        /// <param name="bone">본</param>
+        /// <param name="modelMatrix">모델 행렬</param>
+        /// <param name="animator">애니메이터</param>
+        /// <returns></returns>
+        public static void WorldToParentLocal(this Bone bone, Matrix4x4f modelMatrix, Animator animator, ref Matrix4x4f result)
+        {
+            // 지정한 본의 부모 본의 월드 변환 계산
+            Matrix4x4f parentWorldTransform = bone.Parent == null ?
+                modelMatrix : modelMatrix * animator.GetRootTransform(bone.Parent);
+
+            parentWorldTransform.Inverse(ref result);
+        }
+
         public static string ToString(this Bone bone)
         {
             string txt = "";

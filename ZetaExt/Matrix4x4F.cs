@@ -143,14 +143,30 @@ namespace ZetaExt
         }
 
         /// <summary>
-        /// 역행렬을 구한다.
-        /// <para>행렬의 역행렬을 구할 때, 소수점 오차를 줄이기 위해 1000.0f로 곱한 후 역행렬을 구하고 다시 1000.0f으로 나눈다.</para>
+        /// 역행렬을 계산합니다.
+        /// <para>행렬식이 매우 작을 때 발생하는 언더플로우를 방지하기 위해
+        /// 스케일링(1000배)을 적용한 후 역행렬을 계산합니다.</para>
         /// </summary>
-        /// <param name="mat"></param>
-        /// <returns></returns>
+        public static void Inverse(in this Matrix4x4f mat, ref Matrix4x4f result)
+        {
+            const float scale = 1000.0f;
+
+            // 임시 변수 (스택 할당)
+            Matrix4x4f scaled = mat * scale;
+            Matrix4x4f invScaled = scaled.Inverse;
+
+            result = invScaled * scale;
+        }
+
+        /// <summary>
+        /// 역행렬을 계산합니다.
+        /// <para>행렬식이 매우 작을 때 발생하는 언더플로우를 방지하기 위해
+        /// 스케일링(1000배)을 적용한 후 역행렬을 계산합니다.</para>
+        /// </summary>
         public static Matrix4x4f Inversed(this Matrix4x4f mat)
         {
-            return (mat * 1000.0f).Inverse * 1000.0f;
+            const float scale = 1000.0f;
+            return (mat * scale).Inverse * scale;
         }
 
         /// <summary>
