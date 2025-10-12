@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using Assimp;
+using OpenGL;
 using System;
 using System.Collections.Generic;
 using ZetaExt;

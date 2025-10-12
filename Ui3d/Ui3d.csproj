@@ -4,15 +4,14 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{878CF1D9-16CE-4E58-A6E7-165D00C56D1F}</ProjectGuid>
+    <ProjectGuid>{3D387E27-92DF-4512-A216-FBF32FF610EA}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ZetaExt</RootNamespace>
-    <AssemblyName>ZetaExt</AssemblyName>
+    <RootNamespace>Ui3d</RootNamespace>
+    <AssemblyName>Ui3d</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -22,8 +21,6 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Debug\ZetaExt.xml</DocumentationFile>
-    <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -40,9 +37,6 @@
     <Reference Include="OpenGL.Net.Math, Version=0.8.4.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\OpenGL.Net.Math.0.8.4\lib\net461\OpenGL.Net.Math.dll</HintPath>
     </Reference>
-    <Reference Include="OpenGL.Net.WinForms, Version=0.8.4.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\OpenGL.Net.WinForms.0.8.4\lib\net461\OpenGL.Net.WinForms.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -53,7 +47,6 @@
     <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.3.0\lib\netstandard1.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
     </Reference>
-    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -62,40 +55,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="EulerConverter.cs" />
-    <Compile Include="Matrix4x4fExtensions.cs" />
-    <Compile Include="Matrix4x4NoGC.cs" />
-    <Compile Include="MemoryProfiler.cs" />
-    <Compile Include="Vertex3NoGC.cs" />
-    <Compile Include="XmlNode.cs" />
-    <Compile Include="Debug.cs" />
-    <Compile Include="BoolF.cs" />
-    <Compile Include="EulerAngle.cs" />
-    <Compile Include="FileHashManager.cs" />
-    <Compile Include="FramePerSecond.cs" />
-    <Compile Include="GPUDownload.cs" />
-    <Compile Include="IniFile.cs" />
-    <Compile Include="ListExtensions.cs" />
-    <Compile Include="LogProfile.cs" />
-    <Compile Include="MathF.cs" />
-    <Compile Include="Matrix3x3F.cs" />
-    <Compile Include="Matrix4x4F.cs" />
+    <Compile Include="Billboard3D.cs" />
+    <Compile Include="BillboardShader.cs" />
+    <Compile Include="CharacterNameplate.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Quaternion.cs" />
-    <Compile Include="Quaternion4.cs" />
-    <Compile Include="Rand.cs" />
-    <Compile Include="Float1F.cs" />
-    <Compile Include="RenderPont.cs" />
-    <Compile Include="RenderLine.cs" />
-    <Compile Include="ScreenCapture.cs" />
-    <Compile Include="Color4f.cs" />
-    <Compile Include="TgaDecoder.cs" />
-    <Compile Include="Vertex4F.cs" />
-    <Compile Include="Vertex2F.cs" />
-    <Compile Include="Vertex3F.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Common\Common.csproj">
+      <Project>{a88a06c4-c819-47a1-828f-db054c066bee}</Project>
+      <Name>Common</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

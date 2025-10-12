@@ -1,108 +1,191 @@
-﻿using OpenGL;
-using System;
+﻿using System;
 
 namespace ZetaExt
 {
     /// <summary>
     /// ZYX 오일러 각도 구조체
-    /// 회전 순서: Z축(psi) → Y축(theta) → X축(phi)
+    /// <para>
+    /// 3D 공간에서의 회전을 세 개의 각도로 표현한다.
+    /// </para>
+    /// <remarks>
+    /// 오일러 각도는 짐벌 락(Gimbal Lock) 문제가 있을 수 있으므로
+    /// 복잡한 회전 보간에는 쿼터니언 사용을 권장한다.
+    /// </remarks>
     /// </summary>
     public struct EulerAngle
     {
-        float _theta;
-        float _phi;
-        float _psi;
-        Matrix4x4f _transform;
+        // -----------------------------------------------------------------------
+        // 멤버 변수
+        // -----------------------------------------------------------------------
+
+        private float _pitch;  // X축 회전 (피치)
+        private float _roll;   // Y축 회전 (롤)
+        private float _yaw;    // Z축 회전 (요)
+
+        // -----------------------------------------------------------------------
+        // 속성
+        // -----------------------------------------------------------------------
 
         /// <summary>
-        /// 변환 행렬
+        /// X축 회전 각도 (Pitch)
+        /// <para>범위: -180° ~ 180° (라디안: -π ~ π)</para>
+        /// <para>고개를 끄덕이는 동작 (위/아래)</para>
         /// </summary>
-        public Matrix4x4f Transform => _transform;
-
-        /// <summary>
-        /// Y axis rotation, -90<deg<90
-        /// </summary>
-        public float Theta
+        public float Pitch
         {
-            get => _theta;
-            set => _theta = value;
-        }
-
-        /// <summary>
-        /// Z axis rotation, -180<deg<180
-        /// </summary>
-        public float Psi
-        {
-            get => _psi;
-            set => _psi = value;
+            get => _pitch;
+            set => _pitch = value;
         }
 
         /// <summary>
-        /// X axis rotation, -180<deg<180
+        /// Y축 회전 각도 (Roll)
+        /// <para>범위: -90° ~ 90° (라디안: -π/2 ~ π/2)</para>
+        /// <para>몸을 좌우로 기울이는 동작</para>
         /// </summary>
-        public float Phi
+        public float Roll
         {
-            get => _phi;
-            set => _phi = value;
+            get => _roll;
+            set => _roll = value;
         }
 
-        public EulerAngle(float theta, float phi, float psi)
+        /// <summary>
+        /// Z축 회전 각도 (Yaw)
+        /// <para>범위: -180° ~ 180° (라디안: -π ~ π)</para>
+        /// <para>고개를 좌우로 돌리는 동작 (회전)</para>
+        /// </summary>
+        public float Yaw
         {
-            _theta = theta;
-            _phi = phi;
-            _psi = psi;
-            _transform = Matrix4x4f.Identity;
+            get => _yaw;
+            set => _yaw = value;
         }
 
-        public EulerAngle(Vertex3f v, Vertex3f up)
+        // -----------------------------------------------------------------------
+        // 생성자
+        // -----------------------------------------------------------------------
+
+        /// <summary>
+        /// 지정된 오일러 각도로 초기화한다
+        /// </summary>
+        /// <param name="pitch">X축 회전 (Pitch, 도 단위)</param>
+        /// <param name="roll">Y축 회전 (Roll, 도 단위)</param>
+        /// <param name="yaw">Z축 회전 (Yaw, 도 단위)</param>
+        public EulerAngle(float pitch, float roll, float yaw)
         {
-            Vertex3f x = v.Normalized;
-            Vertex3f y = up.Cross(v).Normalized;
-            Vertex3f z = x.Cross(y).Normalized;
-
-            Matrix3x3f rot = Matrix3x3f.Identity;
-            rot.Framed(x, y, z);
-
-            _transform = Matrix4x4f.Identity;
-            _transform = _transform.Frame(x, y, z, Vertex3f.Zero);
-
-            float R11 = rot[0, 0];
-            float R12 = rot[1, 0];
-            float R13 = rot[2, 0];
-            float R21 = rot[0, 1];
-            float R22 = rot[1, 1];
-            float R23 = rot[2, 1];
-            float R31 = rot[0, 2];
-            float R32 = rot[1, 2];
-            float R33 = rot[2, 2];
-
-            _phi = ((float)Math.Atan2(R32, R33)).ToDegree();
-            _theta = ((float)Math.Atan2(-R31, Math.Sqrt(R32 * R32 + R33 * R33))).ToDegree();
-            _psi = ((float)Math.Atan2(R21, R11)).ToDegree();
+            _pitch = pitch;
+            _roll = roll;
+            _yaw = yaw;
         }
 
-        public EulerAngle(Matrix4x4f mat)
-        {
-            _transform = mat;
+        // -----------------------------------------------------------------------
+        // 공개 메서드
+        // -----------------------------------------------------------------------
 
-            float R11 = mat[0, 0];
-            float R12 = mat[1, 0];
-            float R13 = mat[2, 0];
-            float R21 = mat[0, 1];
-            float R22 = mat[1, 1];
-            float R23 = mat[2, 1];
-            float R31 = mat[0, 2];
-            float R32 = mat[1, 2];
-            float R33 = mat[2, 2];
-
-            _phi = ((float)Math.Atan2(R32, R33)).ToDegree();
-            _theta = ((float)Math.Atan2(-R31, Math.Sqrt(R32 * R32 + R33 * R33))).ToDegree();
-            _psi = ((float)Math.Atan2(R21, R11)).ToDegree();
-        }
-
+        /// <summary>
+        /// 오일러 각도를 문자열로 변환한다
+        /// </summary>
+        /// <returns>각도 정보 문자열 (소수점 3자리)</returns>
         public override string ToString()
         {
-            return $"psi={_psi.ToString("F3")}, theta={_theta.ToString("F3")}, phi={_phi.ToString("F3")}";
+            return $"Pitch(X)={_pitch:F3}°, Roll(Y)={_roll:F3}°, Yaw(Z)={_yaw:F3}°";
+        }
+
+        /// <summary>
+        /// 두 오일러 각도가 같은지 비교한다
+        /// </summary>
+        public override bool Equals(object obj)
+        {
+            if (obj is EulerAngle other)
+            {
+                return Math.Abs(_pitch - other._pitch) < 0.0001f &&
+                       Math.Abs(_roll - other._roll) < 0.0001f &&
+                       Math.Abs(_yaw - other._yaw) < 0.0001f;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 해시 코드를 반환한다
+        /// </summary>
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 23 + _pitch.GetHashCode();
+                hash = hash * 23 + _roll.GetHashCode();
+                hash = hash * 23 + _yaw.GetHashCode();
+                return hash;
+            }
+        }
+
+        // -----------------------------------------------------------------------
+        // 정적 메서드
+        // -----------------------------------------------------------------------
+
+        /// <summary>
+        /// 제로 회전 (모든 각도가 0인 상태)
+        /// </summary>
+        public static EulerAngle Zero => new EulerAngle(0, 0, 0);
+
+        /// <summary>
+        /// 각도를 정규화한다
+        /// </summary>
+        public EulerAngle Normalized()
+        {
+            return new EulerAngle(
+                NormalizeAngle(_pitch, -180f, 180f),
+                NormalizeAngle(_roll, -90f, 90f),     // Roll은 -90~90 범위
+                NormalizeAngle(_yaw, -180f, 180f)
+            );
+        }
+
+        /// <summary>
+        /// 각도를 지정된 범위로 정규화한다
+        /// </summary>
+        private static float NormalizeAngle(float angle, float min, float max)
+        {
+            float range = max - min;
+            while (angle > max) angle -= range;
+            while (angle < min) angle += range;
+            return angle;
+        }
+
+        // -----------------------------------------------------------------------
+        // 연산자 오버로딩
+        // -----------------------------------------------------------------------
+
+        public static bool operator ==(EulerAngle left, EulerAngle right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(EulerAngle left, EulerAngle right)
+        {
+            return !left.Equals(right);
+        }
+
+        /// <summary>
+        /// 두 오일러 각도를 더한다
+        /// </summary>
+        public static EulerAngle operator +(EulerAngle a, EulerAngle b)
+        {
+            return new EulerAngle(a._pitch + b._pitch, a._roll + b._roll, a._yaw + b._yaw);
+        }
+
+        /// <summary>
+        /// 두 오일러 각도를 뺀다
+        /// </summary>
+        public static EulerAngle operator -(EulerAngle a, EulerAngle b)
+        {
+            return new EulerAngle(a._pitch - b._pitch, a._roll - b._roll, a._yaw - b._yaw);
+        }
+
+        /// <summary>
+        /// 오일러 각도에 스칼라를 곱한다
+        /// </summary>
+        public static EulerAngle operator *(EulerAngle angle, float scalar)
+        {
+            return new EulerAngle(angle._pitch * scalar, angle._roll * scalar, angle._yaw * scalar);
         }
     }
 }

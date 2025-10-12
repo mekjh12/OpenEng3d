@@ -142,6 +142,7 @@
     <Compile Include="UICore\UIEngine.WinApi.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="NewFolder1\" />
     <Folder Include="UICore\Fonts\" />
   </ItemGroup>
   <ItemGroup>

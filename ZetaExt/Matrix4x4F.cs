@@ -207,8 +207,10 @@ namespace ZetaExt
             return (mat * p).Vertex3f();
         }
 
-        public static Matrix4x4f Frame(this Matrix4x4f mat, Vertex3f x, Vertex3f y, Vertex3f z, Vertex3f p)
+        public static Matrix4x4f Frame(this Matrix4x4f mat, Vertex3f x, Vertex3f y, Vertex3f z, Vertex3f p = default)
         {
+            if (p == default) p = Vertex3f.Zero;
+
             mat[0, 0] = x.x;
             mat[0, 1] = x.y;
             mat[0, 2] = x.z;

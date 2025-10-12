@@ -18,10 +18,11 @@ namespace Animate
 
         // 바인딩 포즈 행렬들
         Matrix4x4f _localBindTransform = Matrix4x4f.Identity;           // 부모 뼈 공간에서의 바인딩 포즈 행렬
-        Matrix4x4f _inverseBindPoseTransform = Matrix4x4f.Identity;     // 캐릭터 공간에서의 바인딩 포즈 역행렬
+        Matrix4x4f _localBindInverseTransform = Matrix4x4f.Identity;    // 부모 뼈 공간에서의 바인딩 포즈 역행렬
 
         // 성능 향샹을 위한 변환 행렬들
-        Matrix4x4f _bindPoseTransform = Matrix4x4f.Identity; // 바인딩 포즈 변환 행렬 (캐릭터 공간에서)
+        Matrix4x4f _bindPoseTransform = Matrix4x4f.Identity;            // 바인딩 포즈 변환 행렬 (캐릭터 공간에서)
+        Matrix4x4f _inverseBindPoseTransform = Matrix4x4f.Identity;     // 캐릭터 공간에서의 바인딩 포즈 역행렬
 
         // 속성
         public Vertex3f Pivot => _bindPoseTransform.Position;
@@ -31,6 +32,10 @@ namespace Animate
         /// </summary>
         public Vertex3f LocalBindPosition => _localBindTransform.Position;
 
+        /// <summary>
+        /// 바인딩 포즈 변환 행렬 (캐릭터 공간에서)
+        /// </summary>
+        public Matrix4x4f BindPoseTransform => _bindPoseTransform;
 
         /// <summary>
         /// 부모 뼈대 공간에서의 로컬 변환 행렬
@@ -47,7 +52,19 @@ namespace Animate
         public Matrix4x4f LocalBindTransform
         {
             get => _localBindTransform;
-            set => _localBindTransform = value;
+            set
+            {
+                _localBindTransform = value;
+                //_localBindInverseTransform = _localBindTransform.Inversed();
+            }
+        }
+
+        /// <summary>
+        /// 부모 뼈대 공간에서의 바인딩 포즈 역행렬 (스키닝에 사용)
+        /// </summary>
+        public Matrix4x4f LocalBindInverseTransform
+        {
+            get => _localBindInverseTransform;
         }
 
         /// <summary>

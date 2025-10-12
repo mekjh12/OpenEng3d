@@ -277,6 +277,10 @@
       <Project>{c7531007-5419-46d3-a5bc-0a6ba926d05c}</Project>
       <Name>Terrain</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Ui3d\Ui3d.csproj">
+      <Project>{3d387e27-92df-4512-a216-fbf32ff610ea}</Project>
+      <Name>Ui3d</Name>
+    </ProjectReference>
     <ProjectReference Include="..\UIDesign2d\Ui2d.csproj">
       <Project>{a3041dc7-72af-4ab4-aae1-1624a1549cc4}</Project>
       <Name>Ui2d</Name>

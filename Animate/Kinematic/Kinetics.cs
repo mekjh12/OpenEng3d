@@ -6,6 +6,7 @@ using ZetaExt;
 namespace Animate
 {
     /// <summary>
+    /// <code>
     /// -------------------------------------------------------------------
     ///                          행렬의 표현방법
     /// -------------------------------------------------------------------
@@ -13,7 +14,9 @@ namespace Animate
     /// * 뼈공간(로컬공간)에서의 행렬 접미사: LMat
     /// * 월드공간에서의 행렬 접미사: WMat
     /// -------------------------------------------------------------------
+    /// </code>
     /// </summary>
+    [Obsolete("이 클래스는 테스트용으로만 사용하고 추후에 삭제될 수 있습니다.")]
     public static class Kinetics
     {
         //public static float Norm(this Vertex3f vec) => (float)Math.Sqrt(vec.Dot(vec));

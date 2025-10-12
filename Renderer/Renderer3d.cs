@@ -164,6 +164,8 @@ namespace Renderer
             Gl.Enable(EnableCap.Blend);
         }
 
+        static EulerAngle _eulerEngle = new EulerAngle();
+
         public static void RenderLine(ColorShader shader, Camera camera, Vertex3f start, Vertex3f end, Vertex4f color, float thick)
         {            
             shader.Bind();
@@ -174,18 +176,13 @@ namespace Renderer
             Gl.EnableVertexAttribArray(0);
             Gl.EnableVertexAttribArray(2);
 
-            Vertex3f v = end - start;
-            float size = v.Magnitude();
-            Matrix4x4f scaled = Matrix4x4f.Scaled(size, 1, 1);
-            EulerAngle angle = new EulerAngle(v, Vertex3f.UnitZ);
-            Matrix4x4f rot = angle.Transform;
-            Matrix4x4f fMat = rot * scaled;
-            fMat[3, 0] = start.x;
-            fMat[3, 1] = start.y;
-            fMat[3, 2] = start.z;
+            Vertex3f forward = end - start;
+            Matrix4x4f scaled = Matrix4x4f.Scaled(forward.Length(), 1, 1);
+            Matrix4x4f rot = Matrix4x4f.LookAtDirection(start, forward, Vertex3f.UnitZ);
+            Matrix4x4f model = rot * scaled;
 
             Gl.LineWidth(thick);
-            shader.LoadUniform(ColorShader.UNIFORM_NAME.mvp, camera.ProjectiveMatrix * camera.ViewMatrix * fMat);
+            shader.LoadUniform(ColorShader.UNIFORM_NAME.mvp, camera.ProjectiveMatrix * camera.ViewMatrix * model);
             Gl.DrawArrays(PrimitiveType.Lines, 0, Line.VertexCount);
 
             Gl.DisableVertexAttribArray(2);

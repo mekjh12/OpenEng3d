@@ -11,39 +11,80 @@ namespace Animate
     /// </summary>
     public class JointAngle
     {
-        private Bone _bone;                                 // 제어할 본 (부모 본은 bone.Parent로 접근 가능)
+        // -----------------------------------------------------------------------
+        // 멤버 변수
+        // -----------------------------------------------------------------------
 
-        // 회전 제한 (오일러 각도 기준)
-        private Vertex2f _pitch;                            // (pitchMin, pitchMax)
-        private Vertex2f _yaw;                              // (yawMin, yawMax)
-        private Vertex2f _roll;                             // (rollMin, rollMax)
+        private Bone _bone;                     // 제어할 본 (부모 본은 bone.Parent로 접근 가능)
+
+        // 회전 제한 (오일러 각도 기준, 도 단위)
+        private Vertex2f _pitchLimit;           // (min, max)
+        private Vertex2f _yawLimit;             // (min, max)
+        private Vertex2f _rollLimit;            // (min, max)
 
         // 현재 각도 캐시
-        private Vertex3f _currentAngles;                    // (pitch, yaw, roll) - 도 단위
-        private EulerOrder _eulerOrder;                     // 오일러 각 계산 순서
+        private EulerAngle _currentAngles;      // 현재 관절 각도
+        private EulerOrder _eulerOrder;         // 오일러 각 계산 순서
 
-        public Vertex3f CurrentAngles => _currentAngles;    // 현재 관절 각도 (pitch, yaw, roll) - 도 단위
-        public Bone Bone => _bone;                          // 제어 대상 본
+        // -----------------------------------------------------------------------
+        // 속성
+        // -----------------------------------------------------------------------
 
+        /// <summary>현재 관절 각도 (pitch, roll, yaw) - 도 단위</summary>
+        public EulerAngle CurrentAngles => _currentAngles;
+
+        /// <summary>제어 대상 본</summary>
+        public Bone Bone => _bone;
+
+        /// <summary>오일러 각도 순서</summary>
+        public EulerOrder EulerOrder => _eulerOrder;
+
+        // -----------------------------------------------------------------------
+        // 생성자
+        // -----------------------------------------------------------------------
+
+        /// <summary>
+        /// 관절 각도 제한 객체 생성
+        /// </summary>
+        /// <param name="bone">제어할 본</param>
+        /// <param name="eulerOrder">오일러 각도 순서</param>
+        /// <param name="pitchMin">Pitch 최소값 (도)</param>
+        /// <param name="pitchMax">Pitch 최대값 (도)</param>
+        /// <param name="rollMin">Roll 최소값 (도)</param>
+        /// <param name="rollMax">Roll 최대값 (도)</param>
+        /// <param name="yawMin">Yaw 최소값 (도)</param>
+        /// <param name="yawMax">Yaw 최대값 (도)</param>
         public JointAngle(Bone bone, EulerOrder eulerOrder,
                          float pitchMin = -180f, float pitchMax = 180f,
-                         float yawMin = -180f, float yawMax = 180f,
-                         float rollMin = -90f, float rollMax = 90f)
+                         float rollMin = -90f, float rollMax = 90f,
+                         float yawMin = -180f, float yawMax = 180f)
         {
             _bone = bone ?? throw new ArgumentNullException(nameof(bone));
-            _pitch = new Vertex2f(pitchMin, pitchMax);
-            _yaw = new Vertex2f(yawMin, yawMax);
-            _roll = new Vertex2f(rollMin, rollMax);
+            _pitchLimit = new Vertex2f(pitchMin, pitchMax);
+            _rollLimit = new Vertex2f(rollMin, rollMax);
+            _yawLimit = new Vertex2f(yawMin, yawMax);
             _eulerOrder = eulerOrder;
+            _currentAngles = EulerAngle.Zero;
         }
 
+        // -----------------------------------------------------------------------
+        // 정적 생성 메서드
+        // -----------------------------------------------------------------------
+
+        /// <summary>
+        /// 관절 각도 제한 객체 생성 (정적 팩토리 메서드)
+        /// </summary>
         public static JointAngle CreateJointAngle(Bone bone, EulerOrder eulerOrder,
-                                                     float pitchMin = -180f, float pitchMax = 180f,
-                                                     float yawMin = -180f, float yawMax = 180f,
-                                                     float rollMin = -90f, float rollMax = 90f)
+                                                   float pitchMin = -180f, float pitchMax = 180f,
+                                                   float rollMin = -90f, float rollMax = 90f,
+                                                   float yawMin = -180f, float yawMax = 180f)
         {
-            return new JointAngle(bone, eulerOrder, pitchMin, pitchMax, yawMin, yawMax, rollMin, rollMax);
+            return new JointAngle(bone, eulerOrder, pitchMin, pitchMax, rollMin, rollMax, yawMin, yawMax);
         }
+
+        // -----------------------------------------------------------------------
+        // 공개 메서드
+        // -----------------------------------------------------------------------
 
         /// <summary>
         /// LocalTransform으로부터 부모 본 대비 상대 각도를 추출하고 제한 적용
@@ -54,35 +95,75 @@ namespace Animate
             Matrix4x4f localTransform = _bone.BoneMatrixSet.LocalTransform;
 
             // 2. 오일러 각도 추출 (설정된 순서대로)
-            _currentAngles = EulerConverter.MatrixToEuler(localTransform, _eulerOrder);
+            EulerAngle extractedAngles = EulerConverter.MatrixToEuler(localTransform, _eulerOrder);
 
-            Console.WriteLine("원본=" + _currentAngles);
+            Console.WriteLine($"[{_bone.Name}] 원본 각도: {extractedAngles}");
 
             // 3. 각도 제한 적용
-            Vertex3f clampedAngles = ClampRotation(_currentAngles.x, _currentAngles.y, _currentAngles.z);
+            EulerAngle clampedAngles = ClampRotation(extractedAngles);
 
             // 4. 각도가 변경되었으면 LocalTransform 업데이트
             if (!IsApproximatelyEqual(_currentAngles, clampedAngles))
             {
                 _currentAngles = clampedAngles;
                 ApplyClampedRotation();
-                Console.WriteLine("변경=" + clampedAngles);
+                Console.WriteLine($"[{_bone.Name}] 제한 적용: {clampedAngles}");
             }
 
             Console.WriteLine("-------------------");
         }
 
         /// <summary>
-        /// 각도 제한 적용
+        /// 각도 제한을 적용한 새로운 EulerAngle 반환
         /// </summary>
-        public Vertex3f ClampRotation(float pitch, float yaw, float roll)
+        public EulerAngle ClampRotation(EulerAngle angle)
         {
-            float clampedPitch = pitch.Clamp(_pitch.x, _pitch.y);
-            float clampedYaw = yaw.Clamp(_yaw.x, _yaw.y);
-            float clampedRoll = roll.Clamp(_roll.x, _roll.y);
+            float clampedPitch = angle.Pitch.Clamp(_pitchLimit.x, _pitchLimit.y);
+            float clampedRoll = angle.Roll.Clamp(_rollLimit.x, _rollLimit.y);
+            float clampedYaw = angle.Yaw.Clamp(_yawLimit.x, _yawLimit.y);
 
-            return new Vertex3f(clampedPitch, clampedYaw, clampedRoll);
+            return new EulerAngle(clampedPitch, clampedRoll, clampedYaw);
         }
+
+        /// <summary>
+        /// 각도 제한 범위 설정
+        /// </summary>
+        public void SetLimits(float pitchMin, float pitchMax,
+                            float rollMin, float rollMax,
+                            float yawMin, float yawMax)
+        {
+            _pitchLimit = new Vertex2f(pitchMin, pitchMax);
+            _rollLimit = new Vertex2f(rollMin, rollMax);
+            _yawLimit = new Vertex2f(yawMin, yawMax);
+        }
+
+        /// <summary>
+        /// Pitch 제한 범위만 설정
+        /// </summary>
+        public void SetPitchLimit(float min, float max)
+        {
+            _pitchLimit = new Vertex2f(min, max);
+        }
+
+        /// <summary>
+        /// Roll 제한 범위만 설정
+        /// </summary>
+        public void SetRollLimit(float min, float max)
+        {
+            _rollLimit = new Vertex2f(min, max);
+        }
+
+        /// <summary>
+        /// Yaw 제한 범위만 설정
+        /// </summary>
+        public void SetYawLimit(float min, float max)
+        {
+            _yawLimit = new Vertex2f(min, max);
+        }
+
+        // -----------------------------------------------------------------------
+        // 내부 메서드
+        // -----------------------------------------------------------------------
 
         /// <summary>
         /// 제한된 각도를 LocalTransform에 재적용 (EulerOrder에 따라)
@@ -97,13 +178,8 @@ namespace Animate
             float scaleY = localTransform.Column1.xyz().Length();
             float scaleZ = localTransform.Column2.xyz().Length();
 
-            // 개별 회전 행렬 생성
-            Matrix4x4f rotX = Matrix4x4f.RotatedX(-_currentAngles.x);
-            Matrix4x4f rotY = Matrix4x4f.RotatedY(-_currentAngles.y);
-            Matrix4x4f rotZ = Matrix4x4f.RotatedZ(-_currentAngles.z);
-
-            // EulerOrder에 따라 회전 조합 (오른쪽부터 적용)
-            Matrix4x4f rotation = CombineRotations(rotX, rotY, rotZ);
+            // 제한된 각도로 회전 행렬 생성
+            Matrix4x4f rotation = EulerConverter.EulerToMatrix(_currentAngles, _eulerOrder);
 
             // 스케일 재적용
             Matrix4x4f scale = Matrix4x4f.Scaled(scaleX, scaleY, scaleZ);
@@ -118,53 +194,29 @@ namespace Animate
         }
 
         /// <summary>
-        /// EulerOrder에 따라 회전 행렬들을 올바른 순서로 조합
+        /// 두 오일러 각도가 거의 같은지 확인 (부동소수점 오차 고려)
         /// </summary>
-        private Matrix4x4f CombineRotations(Matrix4x4f rotX, Matrix4x4f rotY, Matrix4x4f rotZ)
+        private bool IsApproximatelyEqual(EulerAngle a, EulerAngle b, float epsilon = 0.01f)
         {
-            switch (_eulerOrder)
-            {
-                case EulerOrder.XYZ:
-                    return rotZ * rotY * rotX;  // Z * Y * X (오른쪽부터)
-
-                case EulerOrder.XZY:
-                    return rotY * rotZ * rotX;  // Y * Z * X
-
-                case EulerOrder.YXZ:
-                    return rotZ * rotX * rotY;  // Z * X * Y
-
-                case EulerOrder.YZX:
-                    return rotX * rotZ * rotY;  // X * Z * Y
-
-                case EulerOrder.ZXY:
-                    return rotY * rotX * rotZ;  // Y * X * Z
-
-                case EulerOrder.ZYX:
-                    return rotX * rotY * rotZ;  // X * Y * Z
-
-                default:
-                    throw new ArgumentException($"지원하지 않는 EulerOrder: {_eulerOrder}");
-            }
+            return Math.Abs(a.Pitch - b.Pitch) < epsilon &&
+                   Math.Abs(a.Roll - b.Roll) < epsilon &&
+                   Math.Abs(a.Yaw - b.Yaw) < epsilon;
         }
 
-        /// <summary>
-        /// 두 각도 벡터가 거의 같은지 확인 (부동소수점 오차 고려)
-        /// </summary>
-        private bool IsApproximatelyEqual(Vertex3f a, Vertex3f b, float epsilon = 0.01f)
-        {
-            return Math.Abs(a.x - b.x) < epsilon &&
-                   Math.Abs(a.y - b.y) < epsilon &&
-                   Math.Abs(a.z - b.z) < epsilon;
-        }
+        // -----------------------------------------------------------------------
+        // ToString
+        // -----------------------------------------------------------------------
 
         /// <summary>
-        /// 현재 각도를 문자열로 반환
+        /// 현재 각도와 제한 범위를 문자열로 반환
         /// </summary>
         public override string ToString()
         {
-            return $"[{_eulerOrder}] pitch(X)={_currentAngles.x:F1}°, " +
-                $"yaw(Y)={_currentAngles.y:F1}°, " +
-                $"roll(Z)={_currentAngles.z:F1}°";
+            return $"JointAngle[{_bone.Name}, {_eulerOrder}]\n" +
+                   $"  Current: {_currentAngles}\n" +
+                   $"  Limits: Pitch[{_pitchLimit.x:F1}°~{_pitchLimit.y:F1}°], " +
+                   $"Roll[{_rollLimit.x:F1}°~{_rollLimit.y:F1}°], " +
+                   $"Yaw[{_yawLimit.x:F1}°~{_yawLimit.y:F1}°]";
         }
     }
 }

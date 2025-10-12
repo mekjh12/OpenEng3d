@@ -184,9 +184,9 @@ namespace ZetaExt
         /// </summary>
         public static Matrix4x4f EulerToMatrixXYZ(float pitch, float roll, float yaw)
         {
-            Matrix4x4f rotX = Matrix4x4f.RotatedX(pitch * DEG_TO_RAD);
-            Matrix4x4f rotY = Matrix4x4f.RotatedY(roll * DEG_TO_RAD);
-            Matrix4x4f rotZ = Matrix4x4f.RotatedZ(yaw * DEG_TO_RAD);
+            Matrix4x4f rotX = Matrix4x4f.RotatedX(pitch);
+            Matrix4x4f rotY = Matrix4x4f.RotatedY(roll);
+            Matrix4x4f rotZ = Matrix4x4f.RotatedZ(yaw);
             return rotZ * rotY * rotX;
         }
 
@@ -203,9 +203,9 @@ namespace ZetaExt
         /// </summary>
         public static Matrix4x4f EulerToMatrixXZY(float pitch, float roll, float yaw)
         {
-            Matrix4x4f rotX = Matrix4x4f.RotatedX(pitch * DEG_TO_RAD);
-            Matrix4x4f rotY = Matrix4x4f.RotatedY(yaw * DEG_TO_RAD);
-            Matrix4x4f rotZ = Matrix4x4f.RotatedZ(roll * DEG_TO_RAD);
+            Matrix4x4f rotX = Matrix4x4f.RotatedX(pitch);
+            Matrix4x4f rotY = Matrix4x4f.RotatedY(yaw);
+            Matrix4x4f rotZ = Matrix4x4f.RotatedZ(roll);
             return rotY * rotZ * rotX;
         }
 
@@ -222,9 +222,9 @@ namespace ZetaExt
         /// </summary>
         public static Matrix4x4f EulerToMatrixYXZ(float pitch, float roll, float yaw)
         {
-            Matrix4x4f rotX = Matrix4x4f.RotatedX(pitch * DEG_TO_RAD);
-            Matrix4x4f rotY = Matrix4x4f.RotatedY(yaw * DEG_TO_RAD);
-            Matrix4x4f rotZ = Matrix4x4f.RotatedZ(roll * DEG_TO_RAD);
+            Matrix4x4f rotX = Matrix4x4f.RotatedX(pitch);
+            Matrix4x4f rotY = Matrix4x4f.RotatedY(yaw);
+            Matrix4x4f rotZ = Matrix4x4f.RotatedZ(roll);
             return rotZ * rotX * rotY;
         }
 
@@ -241,9 +241,9 @@ namespace ZetaExt
         /// </summary>
         public static Matrix4x4f EulerToMatrixYZX(float pitch, float roll, float yaw)
         {
-            Matrix4x4f rotX = Matrix4x4f.RotatedX(pitch * DEG_TO_RAD);
-            Matrix4x4f rotY = Matrix4x4f.RotatedY(yaw * DEG_TO_RAD);
-            Matrix4x4f rotZ = Matrix4x4f.RotatedZ(roll * DEG_TO_RAD);
+            Matrix4x4f rotX = Matrix4x4f.RotatedX(pitch);
+            Matrix4x4f rotY = Matrix4x4f.RotatedY(yaw);
+            Matrix4x4f rotZ = Matrix4x4f.RotatedZ(roll);
             return rotX * rotZ * rotY;
         }
 
@@ -260,9 +260,9 @@ namespace ZetaExt
         /// </summary>
         public static Matrix4x4f EulerToMatrixZXY(float pitch, float roll, float yaw)
         {
-            Matrix4x4f rotX = Matrix4x4f.RotatedX(pitch * DEG_TO_RAD);
-            Matrix4x4f rotY = Matrix4x4f.RotatedY(yaw * DEG_TO_RAD);
-            Matrix4x4f rotZ = Matrix4x4f.RotatedZ(roll * DEG_TO_RAD);
+            Matrix4x4f rotX = Matrix4x4f.RotatedX(pitch);
+            Matrix4x4f rotY = Matrix4x4f.RotatedY(yaw);
+            Matrix4x4f rotZ = Matrix4x4f.RotatedZ(roll);
             return rotY * rotX * rotZ;
         }
 
@@ -279,9 +279,9 @@ namespace ZetaExt
         /// </summary>
         public static Matrix4x4f EulerToMatrixZYX(float pitch, float roll, float yaw)
         {
-            Matrix4x4f rotX = Matrix4x4f.RotatedX(pitch * DEG_TO_RAD);
-            Matrix4x4f rotY = Matrix4x4f.RotatedY(yaw * DEG_TO_RAD);
-            Matrix4x4f rotZ = Matrix4x4f.RotatedZ(roll * DEG_TO_RAD);
+            Matrix4x4f rotX = Matrix4x4f.RotatedX(pitch);
+            Matrix4x4f rotY = Matrix4x4f.RotatedY(yaw);
+            Matrix4x4f rotZ = Matrix4x4f.RotatedZ(roll);
             return rotX * rotY * rotZ;
         }
 

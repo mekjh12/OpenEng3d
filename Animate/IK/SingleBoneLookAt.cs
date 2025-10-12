@@ -21,7 +21,8 @@ namespace Animate
         private float _maxYawAngle;                 // 최대 좌우 회전 각도 (도)
         private float _maxPitchAngle;               // 최대 상하 회전 각도 (도)
         private float _maxRollAngle;                // 최대 롤 각도 (도)
-
+        private EulerOrder _eulerOrder
+            = EulerOrder.ZXY;                       // 오일러 각 순서 (ZXY가 일반적)
 
         // 멤버 변수 추가
         private float _smoothSpeed = 5.0f;           // 전환 속도 (값이 클수록 빠름)
@@ -41,6 +42,12 @@ namespace Animate
         Matrix4x4f _finalLocalTransform;
         Vertex3f _forwardLocal = Vertex3f.UnitY;
         float _tempLength;
+
+        // 계산용 임시 변수 추가
+        private EulerAngle _currentAngles;
+        private EulerAngle _clampedAngles;
+        private Matrix4x4f _constrainedRotation;
+        private float _scaleX, _scaleY, _scaleZ;
 
         // -----------------------------------------------------------------------
         // 속성
@@ -76,12 +83,13 @@ namespace Animate
         /// <summary>
         /// 각도 제한을 설정한다
         /// </summary>
-        /// <param name="maxYawAngle">최대 좌우 회전 각도 (도, 0~180)</param>
         /// <param name="maxPitchAngle">최대 상하 회전 각도 (도, 0~180)</param>
+        /// <param name="maxYawAngle">최대 좌우 회전 각도 (도, 0~180)</param>
         /// <param name="maxRollAngle">최대 롤 회전 각도 (도, 0~90)</param>
-        public void SetAngleLimits(float maxYawAngle, float maxPitchAngle, float maxRollAngle)
+        public void SetAngleLimits(float maxPitchAngle, float maxYawAngle, float maxRollAngle, EulerOrder eulerOrder = EulerOrder.ZXY)
         {
             _useAngleLimits = true;
+            _eulerOrder = eulerOrder;
             _maxYawAngle = Math.Max(0f, Math.Min(180f, maxYawAngle));
             _maxPitchAngle = Math.Max(0f, Math.Min(180f, maxPitchAngle));
             _maxRollAngle = Math.Max(0f, Math.Min(90f, maxRollAngle));
@@ -140,6 +148,52 @@ namespace Animate
             finalLocalTransform[3, 0] = _originalPositionLocal.x;
             finalLocalTransform[3, 1] = _originalPositionLocal.y;
             finalLocalTransform[3, 2] = _originalPositionLocal.z;
+
+            // 본에 적용된 오일러각을 계산한다.
+            if (_useAngleLimits)
+            {
+                // 1. 현재 LocalTransform을 오일러 각도로 분해
+                _currentAngles = EulerConverter.MatrixToEuler(finalLocalTransform, _eulerOrder);
+
+                // 2. 각도 제한 적용
+                float clampedPitch = _currentAngles.Pitch.Clamp(-_maxPitchAngle, _maxPitchAngle);
+                float clampedRoll = _currentAngles.Roll.Clamp(-_maxRollAngle, _maxRollAngle);
+                float clampedYaw = _currentAngles.Yaw.Clamp(-_maxYawAngle, _maxYawAngle);
+
+                _clampedAngles = new EulerAngle(clampedPitch, clampedRoll, clampedYaw);
+
+                // 3. 각도가 실제로 변경되었는지 확인
+                const float epsilon = 0.01f;
+                bool anglesChanged =
+                    Math.Abs(_currentAngles.Pitch - _clampedAngles.Pitch) > epsilon ||
+                    Math.Abs(_currentAngles.Roll - _clampedAngles.Roll) > epsilon ||
+                    Math.Abs(_currentAngles.Yaw - _clampedAngles.Yaw) > epsilon;
+
+                Console.WriteLine(_currentAngles);
+
+                if (anglesChanged)
+                {
+                    // 4. 스케일 추출 (원본에서)
+                    _scaleX = finalLocalTransform.Column0.xyz().Length();
+                    _scaleY = finalLocalTransform.Column1.xyz().Length();
+                    _scaleZ = finalLocalTransform.Column2.xyz().Length();
+
+                    // 5. 제한된 각도로 회전 행렬 생성
+                    _constrainedRotation = EulerConverter.EulerToMatrix(_clampedAngles, _eulerOrder);
+
+                    // 6. 스케일 재적용
+                    _constrainedRotation = _constrainedRotation * Matrix4x4f.Scaled(_scaleX, _scaleY, _scaleZ);
+
+                    // 7. 위치 복원
+                    _constrainedRotation[3, 0] = _originalPositionLocal.x;
+                    _constrainedRotation[3, 1] = _originalPositionLocal.y;
+                    _constrainedRotation[3, 2] = _originalPositionLocal.z;
+
+                    // 8. 제한된 변환 적용
+                    finalLocalTransform = _constrainedRotation;
+                    //_bone.BoneMatrixSet.LocalTransform = finalLocalTransform;
+                }
+            }
 
             // 본에 적용
             _bone.BoneMatrixSet.LocalTransform = finalLocalTransform;

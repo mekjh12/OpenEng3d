@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
+using Ui3d;
 using ZetaExt;
 
 namespace FormTools
@@ -25,6 +26,11 @@ namespace FormTools
         AnimateShader _animateShader;
         AxisShader _axisShader;
         ColorShader _colorShader;
+
+        // ★ 빌보드 관련 필드 추가
+        private Ui3d.BillboardShader _billboardShader;
+        private CharacterNameplate _characterNameplate;
+
 
         MixamoRotMotionStorage _mixamoRotMotionStorage;
         MixamoRotMotionStorage _mixamoRotMotionStorageB;
@@ -84,6 +90,8 @@ namespace FormTools
             if (_animateShader == null) _animateShader = new AnimateShader(PROJECT_PATH);
             if (_axisShader == null) _axisShader = new AxisShader(PROJECT_PATH);
             if (_colorShader == null) _colorShader = new ColorShader(PROJECT_PATH);
+
+            if (_billboardShader == null) _billboardShader = new Ui3d.BillboardShader();
         }
 
         private void Init2d(int w, int h)
@@ -189,6 +197,18 @@ namespace FormTools
                 }
             }
 
+            // ★ 캐릭터 이름표 생성
+            _characterNameplate = new CharacterNameplate(
+                _glControl3.Camera,
+                characterName: "Abe",
+                guildName: "Warriors"
+            );
+
+            // 캐릭터 위치에 빌보드 위치 설정
+            _characterNameplate.WorldPosition = _aniActors[0].Transform.Position;
+            _characterNameplate.Offset = new Vertex3f(0, 0, 2.5f); // 머리 위
+
+
             // 아이템 장착
             //Model3d.TextureStorage.NullTextureFileName = PROJECT_PATH + "\\Res\\debug.jpg";
             //TexturedModel hat = LoadModel(PROJECT_PATH + @"\Res\Items\Merchant_Hat.dae")[0];
@@ -225,8 +245,8 @@ namespace FormTools
                 _aniActors[0].AniRig.Armature["mixamorig_LeftForeArm"]);
              */
 
-            _singleLookAt = new SingleBoneLookAt(_aniActors[0].AniRig.Armature["mixamorig_Head"], SingleBoneLookAt.ForwardAxis.Z);
-            //_singleLookAt.SetAngleLimits(20, 0, 0);
+            _singleLookAt = new SingleBoneLookAt(_aniActors[0].AniRig.Armature["mixamorig_LeftArm"], SingleBoneLookAt.ForwardAxis.Z);
+            _singleLookAt.SetAngleLimits(45, 180, 90);
 
 
             _glControl3.CameraStepLength = 0.01f;
@@ -236,6 +256,7 @@ namespace FormTools
         }
 
         Vertex3f[] _vertices;
+        Matrix4x4f _temp;
 
         /// <summary>
         /// 프레임 업데이트를 처리합니다.
@@ -261,6 +282,15 @@ namespace FormTools
                 aniActor.Update(deltaTime);
             }
 
+            // ★ 빌보드 업데이트 (캐릭터 위치 추적)
+            if (_characterNameplate != null)
+            {
+                _characterNameplate.WorldPosition = _aniActors[0].Transform.Position;
+                _characterNameplate.Update(deltaTime);
+            }
+
+
+
             // 머리가 카메라를 바라보도록 설정
             //_headLookAt.LookAt(new Vertex3f(0,0,1000), _aniActors[0].ModelMatrix, _aniActors[0].Animator);
             //_headLookAt.SmoothLookAt(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator, duration);
@@ -282,6 +312,8 @@ namespace FormTools
 
             Vertex3f target = camera.PivotPosition;
             //_oneLookAt.SolveWorldTarget(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+
+            _temp = _aniActors[0].Animator.RootTransforms[7];
             _singleLookAt.Solve(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
 
             if (_isLeftTwoBoneIK)
@@ -332,8 +364,10 @@ namespace FormTools
             {
                 if (aniActor is Human)
                 {
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _aniActors[0].AniRig.Armature["mixamorig_Head"], axisLength: 3000f);
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _aniActors[0].AniRig.Armature["mixamorig_RightFoot"], axisLength: 10f);
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _aniActors[0].AniRig.Armature["mixamorig_LeftArm"], axisLength: 3000f);
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _aniActors[0].AniRig.Armature["mixamorig_LeftShoulder"], axisLength: 10f);
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _aniActors[0].AniRig.Armature["mixamorig_RightArm"], axisLength: 10f);
+
                     //Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.UpperBone, axisLength: 20f);
                     //Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.LowerBone, axisLength: 15f);
                     //Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.EndBone, axisLength: 10f);
@@ -368,6 +402,20 @@ namespace FormTools
                     Renderer.Renderer3d.RenderLine(_colorShader, camera, _vertices[0], camera.PivotPosition, new Vertex4f(1, 1, 0, 1), 5f);
 
             }
+
+            // ★ 빌보드 렌더링 (마지막에)
+            if (_characterNameplate != null)
+            {
+                Gl.Enable(EnableCap.Blend);
+                Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+                Gl.Disable(EnableCap.DepthTest); // 항상 위에 표시
+
+                _characterNameplate.Render(_billboardShader);
+
+                Gl.Enable(EnableCap.DepthTest);
+                Gl.Disable(EnableCap.Blend);
+            }
+
 
             // 폴리곤 모드 설정
             Gl.PolygonMode(MaterialFace.FrontAndBack, _glControl3.PolygonMode);

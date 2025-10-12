@@ -81,6 +81,7 @@ namespace Animate
                 // 부모 뼈대의 애니메이션 바인드 포즈를 계산한다.
                 Matrix4x4f prevAnimatedMat = Matrix4x4f.Identity;
 
+                // 부모 뼈대가 존재하면 부모 뼈대의 애니메이션 바인드 포즈를 가져온다.
                 if (cBone.Parent != null)
                 {
                     prevAnimatedMat = boneDict[cBone.Parent.Name];
