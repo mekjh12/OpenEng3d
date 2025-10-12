@@ -115,7 +115,7 @@ namespace Animate
         /// 업데이트를 통하여 애니메이션 행렬을 업데이트한다.
         /// </summary>
         /// <param name="deltaTime">델타 시간</param>
-        public void Update(int deltaTime)
+        public virtual void Update(int deltaTime)
         {
             // 애니메이션 업데이트를 위한 시간 간격을 계산한다.
             float duration = 0.001f * deltaTime;
@@ -167,7 +167,7 @@ namespace Animate
         /// <summary>
         /// 렌더링을 수행한다.
         /// </summary>
-        public void Render(Camera camera, Matrix4x4f vp, AnimateShader ashader, StaticShader sshader,
+        public virtual void Render(Camera camera, Matrix4x4f vp, AnimateShader ashader, StaticShader sshader,
             bool isSkinVisible = true, bool isBoneVisible = false, bool isBoneParentCurrentVisible = false)
         {
             if (isSkinVisible)

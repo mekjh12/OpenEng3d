@@ -57,7 +57,8 @@
   <ItemGroup>
     <Compile Include="Billboard3D.cs" />
     <Compile Include="BillboardShader.cs" />
-    <Compile Include="CharacterNameplate.cs" />
+    <Compile Include="CharacterNamePlate.cs" />
+    <Compile Include="FontManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -67,6 +68,10 @@
     <ProjectReference Include="..\Common\Common.csproj">
       <Project>{a88a06c4-c819-47a1-828f-db054c066bee}</Project>
       <Name>Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ZetaExt\ZetaExt.csproj">
+      <Project>{878cf1d9-16ce-4e58-a6e7-165d00c56d1f}</Project>
+      <Name>ZetaExt</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

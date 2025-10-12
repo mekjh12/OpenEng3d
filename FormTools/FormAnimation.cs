@@ -27,11 +27,6 @@ namespace FormTools
         AxisShader _axisShader;
         ColorShader _colorShader;
 
-        // ★ 빌보드 관련 필드 추가
-        private Ui3d.BillboardShader _billboardShader;
-        private CharacterNameplate _characterNameplate;
-
-
         MixamoRotMotionStorage _mixamoRotMotionStorage;
         MixamoRotMotionStorage _mixamoRotMotionStorageB;
         List<IAnimActor> _aniActors = new List<IAnimActor>();
@@ -91,7 +86,8 @@ namespace FormTools
             if (_axisShader == null) _axisShader = new AxisShader(PROJECT_PATH);
             if (_colorShader == null) _colorShader = new ColorShader(PROJECT_PATH);
 
-            if (_billboardShader == null) _billboardShader = new Ui3d.BillboardShader();
+            // ✅ 앱 시작 시 한 번만 초기화
+            Ui3d.BillboardShader.Initialize();
         }
 
         private void Init2d(int w, int h)
@@ -117,8 +113,21 @@ namespace FormTools
             //PrimateRig aniRig1 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Hero\aa_heroNasty.dae", HUMAN_HIP_BONENAME, isLoadAnimation: false);
             //PrimateRig aniRig2 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Guybrush\Guybrush.dae", HUMAN_HIP_BONENAME, isLoadAnimation: false);
 
-            _aniActors.Add(new Human($"abe", aniRig));
-            _aniActors[0].Transform.IncreasePosition(2, 0, 0);
+            int px = -30;
+            int py = -30;
+
+            for (int i=0; i<150; i++)
+            {
+                Human human = new Human($"abe_{i}", aniRig);
+                px += 3;
+                human.Transform.IncreasePosition(px, py, 0);
+                _aniActors.Add(human);
+                if (i % 10 == 0)
+                {
+                    px = 0;
+                    py += 3;
+                }
+            }
 
             //_aniActors.Add(new Human($"Guybrush", aniRig2));
             //_aniActors[1].Transform.IncreasePosition(4, 0.0f, 0);
@@ -197,17 +206,6 @@ namespace FormTools
                 }
             }
 
-            // ★ 캐릭터 이름표 생성
-            _characterNameplate = new CharacterNameplate(
-                _glControl3.Camera,
-                characterName: "Abe",
-                guildName: "Warriors"
-            );
-
-            // 캐릭터 위치에 빌보드 위치 설정
-            _characterNameplate.WorldPosition = _aniActors[0].Transform.Position;
-            _characterNameplate.Offset = new Vertex3f(0, 0, 2.5f); // 머리 위
-
 
             // 아이템 장착
             //Model3d.TextureStorage.NullTextureFileName = PROJECT_PATH + "\\Res\\debug.jpg";
@@ -282,13 +280,6 @@ namespace FormTools
                 aniActor.Update(deltaTime);
             }
 
-            // ★ 빌보드 업데이트 (캐릭터 위치 추적)
-            if (_characterNameplate != null)
-            {
-                _characterNameplate.WorldPosition = _aniActors[0].Transform.Position;
-                _characterNameplate.Update(deltaTime);
-            }
-
 
 
             // 머리가 카메라를 바라보도록 설정
@@ -310,11 +301,11 @@ namespace FormTools
             //_singleBoneRotationIK.Solve(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
 
 
-            Vertex3f target = camera.PivotPosition;
+            //Vertex3f target = camera.PivotPosition;
             //_oneLookAt.SolveWorldTarget(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
 
-            _temp = _aniActors[0].Animator.RootTransforms[7];
-            _singleLookAt.Solve(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+            //_temp = _aniActors[0].Animator.RootTransforms[7];
+            //_singleLookAt.Solve(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
 
             if (_isLeftTwoBoneIK)
             {
@@ -372,6 +363,7 @@ namespace FormTools
                     //Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.LowerBone, axisLength: 15f);
                     //Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.EndBone, axisLength: 10f);
                 }
+                break;
             }
 
             Renderer3d.RenderPoint(_colorShader, camera.PivotPosition, camera, new Vertex4f(1, 0, 0, 1), 0.025f);
@@ -401,19 +393,6 @@ namespace FormTools
                 if (_vertices.Length > 0)
                     Renderer.Renderer3d.RenderLine(_colorShader, camera, _vertices[0], camera.PivotPosition, new Vertex4f(1, 1, 0, 1), 5f);
 
-            }
-
-            // ★ 빌보드 렌더링 (마지막에)
-            if (_characterNameplate != null)
-            {
-                Gl.Enable(EnableCap.Blend);
-                Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-                Gl.Disable(EnableCap.DepthTest); // 항상 위에 표시
-
-                _characterNameplate.Render(_billboardShader);
-
-                Gl.Enable(EnableCap.DepthTest);
-                Gl.Disable(EnableCap.Blend);
             }
 
 

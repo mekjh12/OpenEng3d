@@ -5,11 +5,21 @@ using System.Text;
 namespace Ui3d
 {
     /// <summary>
-    /// 빌보드 렌더링용 셰이더
+    /// 빌보드 렌더링용 정적 셰이더
+    /// 모든 빌보드가 하나의 셰이더 인스턴스를 공유
     /// </summary>
-    public class BillboardShader : IDisposable
+    public static class BillboardShader
     {
-        private uint _programId;
+        private static uint _programId;
+        private static bool _isInitialized = false;
+
+        // Uniform location 캐시
+        private static int _mvpLocation;
+        private static int _alphaLocation;
+        private static int _textureLocation;
+
+        // 계산용 임시 변수
+        private static float[] _matrixBuffer = new float[16];
 
         private const string VERTEX_SHADER = @"
 #version 430 core
@@ -30,24 +40,44 @@ void main()
 
         private const string FRAGMENT_SHADER = @"
 #version 430 core
+
 in vec2 TexCoord;
+
 out vec4 FragColor;
+
 uniform sampler2D billboardTexture;
 uniform float alpha;
-void main() {
+
+void main() 
+{
     vec4 texCol = texture(billboardTexture, TexCoord);
     texCol.a *= alpha;
     if(texCol.a < 0.01) discard;    
     FragColor = texCol;
-}";
+}
+";
 
-
-        public BillboardShader()
+        /// <summary>
+        /// 셰이더 초기화 (앱 시작 시 한 번만 호출)
+        /// </summary>
+        public static void Initialize()
         {
+            if (_isInitialized)
+            {
+                Console.WriteLine("Warning: BillboardShader already initialized");
+                return;
+            }
+
             CompileShader();
+            _isInitialized = true;
         }
 
-        private void CompileShader()
+        /// <summary>
+        /// 셰이더가 초기화되었는지 확인
+        /// </summary>
+        public static bool IsInitialized => _isInitialized;
+
+        private static void CompileShader()
         {
             // 버텍스 셰이더 컴파일
             uint vertexShader = Gl.CreateShader(ShaderType.VertexShader);
@@ -71,28 +101,32 @@ void main() {
             // 셰이더 삭제 (이미 링크됨)
             Gl.DeleteShader(vertexShader);
             Gl.DeleteShader(fragmentShader);
+
+            // Uniform location 한 번만 조회
+            _mvpLocation = Gl.GetUniformLocation(_programId, "mvp");
+            _alphaLocation = Gl.GetUniformLocation(_programId, "alpha");
+            _textureLocation = Gl.GetUniformLocation(_programId, "billboardTexture");
+
+            // 디버깅용 경고
+            if (_mvpLocation == -1) Console.WriteLine("Warning: uniform 'mvp' not found");
+            if (_alphaLocation == -1) Console.WriteLine("Warning: uniform 'alpha' not found");
+            if (_textureLocation == -1) Console.WriteLine("Warning: uniform 'billboardTexture' not found");
         }
 
-        /// <summary>
-        /// 셰이더 컴파일 에러 체크
-        /// </summary>
-        private void CheckShaderCompileErrors(uint shader, string type)
+        private static void CheckShaderCompileErrors(uint shader, string type)
         {
             int[] success = new int[1];
             Gl.GetShader(shader, ShaderParameterName.CompileStatus, success);
 
             if (success[0] == 0)
             {
-                // 로그 길이 얻기
                 int[] logLength = new int[1];
                 Gl.GetShader(shader, ShaderParameterName.InfoLogLength, logLength);
 
                 if (logLength[0] > 0)
                 {
-                    // 로그 가져오기
                     StringBuilder infoLog = new StringBuilder(logLength[0]);
                     Gl.GetShaderInfoLog(shader, logLength[0], out int length, infoLog);
-
                     Console.WriteLine($"셰이더 컴파일 에러 ({type}):");
                     Console.WriteLine(infoLog.ToString());
                 }
@@ -103,26 +137,20 @@ void main() {
             }
         }
 
-        /// <summary>
-        /// 프로그램 링크 에러 체크
-        /// </summary>
-        private void CheckProgramLinkErrors(uint program)
+        private static void CheckProgramLinkErrors(uint program)
         {
             int[] success = new int[1];
             Gl.GetProgram(program, ProgramProperty.LinkStatus, success);
 
             if (success[0] == 0)
             {
-                // 로그 길이 얻기
                 int[] logLength = new int[1];
                 Gl.GetProgram(program, ProgramProperty.InfoLogLength, logLength);
 
                 if (logLength[0] > 0)
                 {
-                    // 로그 가져오기
                     StringBuilder infoLog = new StringBuilder(logLength[0]);
                     Gl.GetProgramInfoLog(program, logLength[0], out int length, infoLog);
-
                     Console.WriteLine("프로그램 링크 에러:");
                     Console.WriteLine(infoLog.ToString());
                 }
@@ -133,21 +161,18 @@ void main() {
             }
         }
 
-        public void Use()
+        public static void Use()
         {
+            if (!_isInitialized)
+            {
+                throw new InvalidOperationException("BillboardShader not initialized. Call Initialize() first.");
+            }
             Gl.UseProgram(_programId);
         }
 
-        private float[] _matrixBuffer = new float[16];
-
-        public void SetMatrix(string name, Matrix4x4f matrix)
+        public static void SetMVPMatrix(Matrix4x4f matrix)
         {
-            int location = Gl.GetUniformLocation(_programId, name);
-            if (location == -1)
-            {
-                Console.WriteLine($"Warning: uniform '{name}' not found");
-                return;
-            }
+            if (_mvpLocation == -1) return;
 
             _matrixBuffer[0] = matrix[0, 0];
             _matrixBuffer[1] = matrix[0, 1];
@@ -165,10 +190,26 @@ void main() {
             _matrixBuffer[13] = matrix[3, 1];
             _matrixBuffer[14] = matrix[3, 2];
             _matrixBuffer[15] = matrix[3, 3];
-            Gl.UniformMatrix4(location, false, _matrixBuffer);
+
+            Gl.UniformMatrix4(_mvpLocation, false, _matrixBuffer);
         }
 
-        public void SetFloat(string name, float value)
+        public static void SetAlpha(float value)
+        {
+            if (_alphaLocation == -1) return;
+            Gl.Uniform1(_alphaLocation, value);
+        }
+
+        public static void SetBillboardTexture(uint textureId, int slot = 0)
+        {
+            if (_textureLocation == -1) return;
+
+            Gl.ActiveTexture(TextureUnit.Texture0 + slot);
+            Gl.BindTexture(TextureTarget.Texture2d, textureId);
+            Gl.Uniform1(_textureLocation, slot);
+        }
+
+        public static void SetFloat(string name, float value)
         {
             int location = Gl.GetUniformLocation(_programId, name);
             if (location == -1)
@@ -179,7 +220,7 @@ void main() {
             Gl.Uniform1(location, value);
         }
 
-        public void SetInt(string name, int value)
+        public static void SetInt(string name, int value)
         {
             int location = Gl.GetUniformLocation(_programId, name);
             if (location == -1)
@@ -190,7 +231,7 @@ void main() {
             Gl.Uniform1(location, value);
         }
 
-        public void SetTexture(string name, uint textureId, int slot)
+        public static void SetTexture(string name, uint textureId, int slot)
         {
             int location = Gl.GetUniformLocation(_programId, name);
             if (location == -1)
@@ -204,13 +245,17 @@ void main() {
             Gl.Uniform1(location, slot);
         }
 
-        public void Dispose()
+        /// <summary>
+        /// 셰이더 리소스 정리 (앱 종료 시 호출)
+        /// </summary>
+        public static void Cleanup()
         {
             if (_programId != 0)
             {
                 Gl.DeleteProgram(_programId);
                 _programId = 0;
             }
+            _isInitialized = false;
         }
     }
 }
