@@ -25,7 +25,7 @@ namespace Animate
         Dictionary<string, ItemAttachment> _items;
 
         // 속성
-        public string Name => _name;
+        public string Name { get => _name; set => _name = value; }
         public AnimRig AniRig => _aniRig;
         public Animator Animator => _animator;
         public Transform Transform => _transform;

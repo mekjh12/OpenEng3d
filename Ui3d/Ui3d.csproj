@@ -58,7 +58,10 @@
     <Compile Include="Billboard3D.cs" />
     <Compile Include="BillboardShader.cs" />
     <Compile Include="CharacterNamePlate.cs" />
+    <Compile Include="ChatBubble.cs" />
+    <Compile Include="DamageNumber.cs" />
     <Compile Include="FontManager.cs" />
+    <Compile Include="HealthBar.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

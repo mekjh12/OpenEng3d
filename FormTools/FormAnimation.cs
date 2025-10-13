@@ -1,5 +1,4 @@
 ﻿using Animate;
-using Animate.IK;
 using AutoGenEnums;
 using Common.Abstractions;
 using GlWindow;
@@ -10,7 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
-using Ui3d;
 using ZetaExt;
 
 namespace FormTools
@@ -118,6 +116,7 @@ namespace FormTools
 
             for (int i=0; i<150; i++)
             {
+                break;
                 Human human = new Human($"abe_{i}", aniRig);
                 px += 3;
                 human.Transform.IncreasePosition(px, py, 0);
@@ -128,6 +127,9 @@ namespace FormTools
                     py += 3;
                 }
             }
+
+            _aniActors.Add(new Human("abe1abe1아베abe1abe1아베abe1abe1아베abe1abe1아베abe1abe1아베abe1abe1아베", aniRig));
+            _aniActors[0].Transform.IncreasePosition(1, 1, 0);
 
             //_aniActors.Add(new Human($"Guybrush", aniRig2));
             //_aniActors[1].Transform.IncreasePosition(4, 0.0f, 0);
@@ -465,13 +467,39 @@ namespace FormTools
             }
             else if (e.KeyCode == Keys.D4)
             {
-                _aniActors[0].SetMotion("Jump-Defeated");
-                _aniActors[1].SetMotion("layerWalking");
+                for (int i = 0; i < _aniActors.Count; i++)
+                {
+                    if (_aniActors[i] is Human)
+                    {
+                        Human human = _aniActors[i] as Human;
+                        human.CharacterNameplate.CharacterName = "아베이당";
+                        human.CharacterNameplate.Refresh();
+                        human.ShowChat(_glControl3.Camera, "창밖으로 빗방울이 유리창을 따라 주르륵 미끄러져 내려간다. \r\n" +
+                            "마치 미로를 헤매는 작은 땀방울처럼, 각자 다른 길을 가다가 결국 하나의 물줄기가 되어 사라진다. \r\n" +
+                            "그런 모습을 한참 바라보다 문득 커피포트의 끓는 소리가 들려온다.\r\n" +
+                            " 윙윙거리는 낮은 소리, 곧이어 치솟는 하얀 수증기가 몽환적으로 주방 공기를 채운다.\r\n" +
+                            "커피믹스를 뜯으려다 말고 어제 읽던 책의 한 구절이 떠올랐다. \r\n" +
+                            "주인공은 왜 그런 선택을 했을까. 그 선택이 결국 돌이킬 수 없는 파국을 불러왔는데, 그는 정말 행복했을까. \r\n" +
+                            "책을 덮고 나면 늘 그런 물음들이 잔향처럼 남아 머릿속을 맴돈다.\r\n" +
+                            " 그런데 사실, 꼭 의미가 있어야만 하는 건 아니다. \r\n" +
+                            "그냥 흘러가는 대로 생각해도 괜찮다.\r\n" +
+                            " 의미를 찾으려는 노력이 때로는 더 큰 의미를 잃게 만들 때도 있으니까.\r\n" +
+                            "가만히 앉아 있으니 발바닥이 간지럽다.", 5000);
+                        human.ShowDamage(_glControl3.Camera, 150);
+                    }
+                }
             }
             else if (e.KeyCode == Keys.D5)
             {
-                _aniActors[0].Transform.SetPosition(-2, 0, 0);
-                _aniActors[1].Transform.SetPosition(2, 0, 0);
+                for (int i = 0; i < _aniActors.Count; i++)
+                {
+                    if (_aniActors[i] is Human)
+                    {
+                        Human human = _aniActors[i] as Human;
+                        human.CharacterNameplate.CharacterName = "human.CharacterNameplate.CharacterName";
+                        human.CharacterNameplate.Refresh();
+                    }
+                }
             }
             else if (e.KeyCode == Keys.L)
             {
