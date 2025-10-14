@@ -11,7 +11,7 @@ namespace Ui3d
     /// 3D 공간에 표시되는 데미지/힐량 숫자
     /// 위로 떠오르면서 페이드아웃 애니메이션이 적용됩니다.
     /// </summary>
-    public class DamageNumber : Billboard3D
+    public class CDamageNumber : Billboard3D
     {
         // 기본 텍스처 크기
         private const int TEXTURE_WIDTH = 256;
@@ -72,7 +72,7 @@ namespace Ui3d
         /// <param name="position">표시할 월드 위치</param>
         /// <param name="isCritical">크리티컬 여부</param>
         /// <param name="isHeal">힐 여부</param>
-        public DamageNumber(Camera camera, float damage, Vertex3f position, bool isCritical = false, bool isHeal = false)
+        public CDamageNumber(Camera camera, float damage, Vertex3f position, bool isCritical = false, bool isHeal = false)
             : base(camera)
         {
             _displayText = isHeal ? $"+{(int)damage}" : $"{(int)damage}";

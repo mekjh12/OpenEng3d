@@ -59,10 +59,19 @@
     <Compile Include="BillboardShader.cs" />
     <Compile Include="CharacterNamePlate.cs" />
     <Compile Include="ChatBubble.cs" />
-    <Compile Include="DamageNumber.cs" />
+    <Compile Include="CDamageNumber.cs" />
+    <Compile Include="FloatingItem.cs" />
     <Compile Include="FontManager.cs" />
+    <Compile Include="FPSDisplay.cs" />
     <Compile Include="HealthBar.cs" />
+    <Compile Include="HitMarker.cs" />
+    <Compile Include="InteractionPrompt.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TextAtlas\CharacterTextureAtlas.cs" />
+    <Compile Include="TextAtlas\DamageNumber.cs" />
+    <Compile Include="TextAtlas\TextNamePlate .cs" />
+    <Compile Include="TextAtlas\TextInstanceBuilder.cs" />
+    <Compile Include="TextAtlas\TextBillboardShader.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

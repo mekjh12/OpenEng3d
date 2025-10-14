@@ -53,18 +53,18 @@ namespace Ui3d
         protected uint _vbo;                            // Vertex Buffer Object
 
         // 최적화용 임시변수
-        private Vertex3f _finalWorldPosition;           // 월드 좌표 (오프셋 적용)
-        private Vertex3f _finalTextWorldPosition;       // 텍스처가 그려질 최종 월드 좌표 (오프셋 적용)
-        private float _distanceToCamera;                // 카메라와의 거리
-        private Matrix4x4f _modelMatrix;                // 모델 행렬
-        private Matrix4x4f _mvp;                        // MVP 행렬
+        protected Vertex3f _finalWorldPosition;           // 월드 좌표 (오프셋 적용)
+        protected Vertex3f _finalTextWorldPosition;       // 텍스처가 그려질 최종 월드 좌표 (오프셋 적용)
+        protected float _distanceToCamera;                // 카메라와의 거리
+        protected Matrix4x4f _modelMatrix;                // 모델 행렬
+        protected Matrix4x4f _mvp;                        // MVP 행렬
 
         // 빌보드 행렬 계산용 캐시
-        private Vertex3f _cachedCameraPosition;         // 이전 프레임 카메라 위치
-        private Vertex3f _cachedToCamera;               // 카메라 방향 벡터 (정규화됨)
-        private Vertex3f _cachedRight;                  // Right 벡터 (정규화됨)
-        private Vertex3f _cachedUp;                     // Up 벡터 (정규화됨)
-        private bool _needRecalculateBasis = true;      // 기저 벡터 재계산 필요 여부
+        protected Vertex3f _cachedCameraPosition;         // 이전 프레임 카메라 위치
+        protected Vertex3f _cachedToCamera;               // 카메라 방향 벡터 (정규화됨)
+        protected Vertex3f _cachedRight;                  // Right 벡터 (정규화됨)
+        protected Vertex3f _cachedUp;                     // Up 벡터 (정규화됨)
+        protected bool _needRecalculateBasis = true;      // 기저 벡터 재계산 필요 여부
 
         // -----------------------------------------------------------------------
         // 속성
