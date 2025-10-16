@@ -11,10 +11,10 @@ namespace Animate
                 BirdActions.ActionMap,
                 () => (BIRD_ACTION)Rand.NextInt(0, (int)(BIRD_ACTION.RANDOM - 1)),
                 BIRD_ACTION.RANDOM,
-                new HashSet<string> { "RANDOM", "STOP", "NONE", "COUNT" }
+                new HashSet<string> { "RANDOM", "STOP", "BindPose", "COUNT" }
             );
 
-        public Bird(string name, AnimRig animRig) : base(name, animRig, BirdActionHandler, BIRD_ACTION.NONE)
+        public Bird(string name, AnimRig animRig) : base(name, animRig, BirdActionHandler, BIRD_ACTION.BindPose)
         {
 
         }

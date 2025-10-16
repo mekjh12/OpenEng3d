@@ -12,10 +12,10 @@ namespace Animate
                 DonkeyActions.ActionMap,
                 () => (DONKEY_ACTION)Rand.NextInt(0, (int)(DONKEY_ACTION.RANDOM - 1)),
                 DONKEY_ACTION.RANDOM,
-                new HashSet<string> { "RANDOM", "STOP", "NONE", "COUNT" }
+                new HashSet<string> { "RANDOM", "STOP", "BindPose", "COUNT" }
             );
 
-        public Donkey(string name, DonkeyRig donkeyRig) : base(name, donkeyRig, DonkeyActionHandler, DONKEY_ACTION.NONE)
+        public Donkey(string name, DonkeyRig donkeyRig) : base(name, donkeyRig, DonkeyActionHandler, DONKEY_ACTION.BindPose)
         {
 
 

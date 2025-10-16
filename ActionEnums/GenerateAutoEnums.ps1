@@ -160,6 +160,7 @@ foreach ($actionTypeData in $AllActionTypes) {
 "@
 
     # Dictionary 항목들
+    $code += "`n            {$($actionType.EnumName).BindPose, `"BindPose`"},"
     foreach ($action in $actions) {
         $code += "`n            {$($actionType.EnumName).$($action.Enum), `"$($action.Original)`"},"
     }
@@ -188,7 +189,7 @@ foreach ($actionTypeData in $AllActionTypes) {
         // 추가된 액션들
         RANDOM,
         STOP,
-        NONE,
+        BindPose,
         COUNT,
     }
 "@
@@ -203,7 +204,7 @@ $code += @"
     {
         private static readonly HashSet<string> CommonActions = new HashSet<string>
         {
-            "RANDOM", "STOP", "NONE", "COUNT"
+            "RANDOM", "STOP", "BindPose", "COUNT"
         };
 "@
 

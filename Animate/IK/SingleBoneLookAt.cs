@@ -83,9 +83,9 @@ namespace Animate
         /// <summary>
         /// 각도 제한을 설정한다
         /// </summary>
-        /// <param name="maxPitchAngle">최대 상하 회전 각도 (도, 0~180)</param>
-        /// <param name="maxYawAngle">최대 좌우 회전 각도 (도, 0~180)</param>
-        /// <param name="maxRollAngle">최대 롤 회전 각도 (도, 0~90)</param>
+        /// <param name="maxPitchAngle">최대 상하 회전 각도 (도, 0~180) X</param>
+        /// <param name="maxYawAngle">최대 좌우 회전 각도 (도, 0~180) Y</param>
+        /// <param name="maxRollAngle">최대 롤 회전 각도 (도, 0~90) Z</param>
         public void SetAngleLimits(float maxPitchAngle, float maxYawAngle, float maxRollAngle, EulerOrder eulerOrder = EulerOrder.ZXY)
         {
             _useAngleLimits = true;
@@ -105,7 +105,7 @@ namespace Animate
 
         public void Solve(Vertex3f worldTargetPosition, Matrix4x4f modelMatrix, Animator animator)
         {
-            // 부모 본에 대한 로컬 공간 변환 행렬
+            // 부모 본에 대한 로컬 공간으로의 변환 행렬
             _bone.WorldToParentLocal(modelMatrix, animator, ref _worldToParentLocal);
 
             // 월드 타겟 위치를 부모 본의 로컬 공간으로 변환 (먼저 계산!)
@@ -169,7 +169,8 @@ namespace Animate
                     Math.Abs(_currentAngles.Roll - _clampedAngles.Roll) > epsilon ||
                     Math.Abs(_currentAngles.Yaw - _clampedAngles.Yaw) > epsilon;
 
-                Console.WriteLine(_currentAngles);
+                Console.WriteLine("currentAngles" + _currentAngles);
+                Console.WriteLine("|-----clampedAngles" + _clampedAngles);
 
                 if (anglesChanged)
                 {

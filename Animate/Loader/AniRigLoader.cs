@@ -10,6 +10,51 @@ namespace Animate
 {
     public class AniRigLoader
     {
+        public static Motionable LoadBindPoseMotion(AnimRig animRig)
+        {
+            // AnimRig를 이용하여 기본 바인딩 포즈를 1초 Motion으로 생성한다.
+            Motion bindPoseMotion = new Motion("BindPose", 1.0f);
+            // 0초와 1초에 키프레임을 생성한다.
+            bindPoseMotion.AddKeyFrame(0.0f);
+            bindPoseMotion.AddKeyFrame(1.0f);
+
+            // 모든 뼈대에 대해 바인딩 포즈를 적용한다.
+            foreach (Bone bone in animRig.Armature.RootBone.ToBFSList())
+            {
+                // 바인딩 포즈의 로컬 변환 행렬에서 위치, 회전, 스케일을 추출한다.
+                Matrix4x4f localBindTransform = bone.BoneMatrixSet.LocalBindTransform;
+
+                // 스케일 추출 (각 열벡터의 크기)
+                float dist0 = localBindTransform.Column0.xyz().Length();
+                float dist1 = localBindTransform.Column1.xyz().Length();
+                float dist2 = localBindTransform.Column2.xyz().Length();
+
+                // 회전행렬에서 열벡터를 정규화한다.
+                Matrix4x4f normalizedMatrix = localBindTransform;
+                normalizedMatrix.NormalizeColumn(0);
+                normalizedMatrix.NormalizeColumn(1);
+                normalizedMatrix.NormalizeColumn(2);
+
+                // 위치 추출
+                Vertex3f position = normalizedMatrix.Position;
+
+                // 회전 쿼터니언 추출 및 정규화
+                ZetaExt.Quaternion rotation = normalizedMatrix.ToQuaternion();
+                rotation.Normalize();
+
+                // 스케일 벡터 생성
+                Vertex3f scaling = new Vertex3f(dist0, dist1, dist2);
+
+                // 본 변환 객체 생성 (위치, 회전, 스케일 모두 포함)
+                BoneTransform boneTransform = new BoneTransform(position, rotation, scaling);
+
+                // 0초와 1초 키프레임에 동일한 바인딩 포즈를 추가한다.
+                bindPoseMotion[0.0f].AddBoneTransform(bone.Name, boneTransform);
+                bindPoseMotion[1.0f].AddBoneTransform(bone.Name, boneTransform);
+            }
+            return bindPoseMotion;
+        }
+
         public static (Armature, MotionStorage, List<TexturedModel>, Matrix4x4f) LoadFile(string filename, string hipBoneName) 
         {
             // dae 파일을 읽어온다.
@@ -43,9 +88,6 @@ namespace Animate
 
             // 뼈대명 배열을 만들고 뼈대 인덱스 딕셔너리를 만든다.
             armature.SetupBoneMapping(boneNames.ToArray());
-
-            // library_animations = 애니메이션 정보
-            //AniXmlLoader.LibraryAnimations(xml);
 
             // library_visual_scenes = bone hierarchy + rootBone
             AniColladaLoader.LibraryVisualScenes(xml, invBindPoses, ref armature, out Matrix4x4f bind);

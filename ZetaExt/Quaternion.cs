@@ -388,9 +388,6 @@ namespace ZetaExt
             return result;
         }
 
-
-
-
         /// <param name="q2">두 번째 쿼터니언</param>
         /// <returns>두 쿼터니언의 내적 값</returns>
         public static float Dot(Quaternion q1, Quaternion q2)

@@ -12,9 +12,11 @@ namespace Ui3d
     public class TextNamePlate : Billboard3D
     {
         // 정적 공유 쿼드 (모든 TextNamePlate가 공유)
-        private static uint _sharedQuadVAO;
         private static uint _sharedQuadVBO;
         private static int _sharedQuadRefCount = 0;
+
+        // 인스턴스가 자신만의 VAO를 가짐
+        private uint _vao;
 
         // 인스턴스 빌더 (각 NamePlate마다)
         private TextInstanceBuilder _instanceBuilder;
@@ -84,6 +86,9 @@ namespace Ui3d
             // 인스턴스 빌더 생성
             _instanceBuilder = new TextInstanceBuilder();
 
+            // 자신만의 VAO 생성
+            _vao = Gl.GenVertexArray();
+
             // 공유 쿼드 초기화 (최초 1회)
             InitializeSharedQuad();
 
@@ -116,28 +121,36 @@ namespace Ui3d
         /// </summary>
         private static void CreateSharedQuad()
         {
-            // 정점 데이터 (위치 + UV)
-            // x, y, z, u, v
             float[] vertices = new float[]
             {
-                // 위치                      UV
-                -0.5f,  0.5f, 0.0f,   0.0f, 0.0f,  // 좌상
-                -0.5f, -0.5f, 0.0f,   0.0f, 1.0f,  // 좌하
-                 0.5f, -0.5f, 0.0f,   1.0f, 1.0f,  // 우하
-
-                -0.5f,  0.5f, 0.0f,   0.0f, 0.0f,  // 좌상
-                 0.5f, -0.5f, 0.0f,   1.0f, 1.0f,  // 우하
-                 0.5f,  0.5f, 0.0f,   1.0f, 0.0f   // 우상
+        -0.5f,  0.5f, 0.0f,   0.0f, 0.0f,
+        -0.5f, -0.5f, 0.0f,   0.0f, 1.0f,
+         0.5f, -0.5f, 0.0f,   1.0f, 1.0f,
+        -0.5f,  0.5f, 0.0f,   0.0f, 0.0f,
+         0.5f, -0.5f, 0.0f,   1.0f, 1.0f,
+         0.5f,  0.5f, 0.0f,   1.0f, 0.0f
             };
 
-            _sharedQuadVAO = Gl.GenVertexArray();
-            Gl.BindVertexArray(_sharedQuadVAO);
-
+            // ✅ VAO 생성 제거, VBO만 생성
             _sharedQuadVBO = Gl.GenBuffer();
             Gl.BindBuffer(BufferTarget.ArrayBuffer, _sharedQuadVBO);
             Gl.BufferData(BufferTarget.ArrayBuffer,
                 (uint)(vertices.Length * sizeof(float)),
                 vertices, BufferUsage.StaticDraw);
+            Gl.BindBuffer(BufferTarget.ArrayBuffer, 0);
+
+            Console.WriteLine("Shared quad VBO created for TextNamePlate");
+        }
+
+        /// <summary>
+        /// 자신의 VAO를 설정하는 메서드
+        /// </summary>
+        private void SetupVAO()
+        {
+            Gl.BindVertexArray(_vao);
+
+            // 공유 VBO 바인딩 (위치 + UV)
+            Gl.BindBuffer(BufferTarget.ArrayBuffer, _sharedQuadVBO);
 
             // 위치 속성 (location = 0)
             Gl.EnableVertexAttribArray(0);
@@ -149,10 +162,11 @@ namespace Ui3d
             Gl.VertexAttribPointer(1, 2, VertexAttribType.Float, false,
                 5 * sizeof(float), (IntPtr)(3 * sizeof(float)));
 
+            // 자신의 인스턴스 속성 설정
+            _instanceBuilder.SetupVAOAttributes(_vao);
+
             Gl.BindVertexArray(0);
             Gl.BindBuffer(BufferTarget.ArrayBuffer, 0);
-
-            Console.WriteLine("Shared quad created for TextNamePlate");
         }
 
         /// <summary>
@@ -178,8 +192,8 @@ namespace Ui3d
                 CharacterTextureAtlas.Instance,
                 _centerAlign);
 
-            // VAO에 인스턴스 속성 설정
-            _instanceBuilder.SetupVAOAttributes(_sharedQuadVAO);
+            // 자신의 VAO 설정
+            SetupVAO();
         }
 
         /// <summary>
@@ -242,8 +256,8 @@ namespace Ui3d
             // ✅ 커스텀 거리 범위 설정 (선택사항)
             // TextBillboardShader.SetDistanceRange(3.0f, 50.0f);
 
-            // 인스턴싱 렌더링
-            Gl.BindVertexArray(_sharedQuadVAO);
+            // ✅ 자신의 VAO로 렌더링
+            Gl.BindVertexArray(_vao);
             Gl.DrawArraysInstanced(PrimitiveType.Triangles, 0, 6, _instanceBuilder.InstanceCount);
             Gl.BindVertexArray(0);
         }
@@ -277,6 +291,13 @@ namespace Ui3d
         {
             _instanceBuilder?.Dispose();
 
+            // 자신의 VAO 삭제
+            if (_vao != 0)
+            {
+                Gl.DeleteVertexArrays(_vao);
+                _vao = 0;
+            }
+
             // 공유 쿼드 참조 카운트 감소
             _sharedQuadRefCount--;
             if (_sharedQuadRefCount == 0)
@@ -292,12 +313,6 @@ namespace Ui3d
         /// </summary>
         private static void CleanupSharedQuad()
         {
-            if (_sharedQuadVAO != 0)
-            {
-                Gl.DeleteVertexArrays(_sharedQuadVAO);
-                _sharedQuadVAO = 0;
-            }
-
             if (_sharedQuadVBO != 0)
             {
                 Gl.DeleteBuffers(_sharedQuadVBO);

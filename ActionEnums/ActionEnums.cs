@@ -11,7 +11,7 @@
 //    ../Res/Action/Horse/*.dae → HORSE_ACTION enum
 //    ../Res/Action/Human/*.dae → HUMAN_ACTION enum
 // ===================================
-// 자동생성 by GenerateMultiActionEnums.ps1: 2025-09-27 08:37:40
+// 자동생성 by GenerateMultiActionEnums.ps1: 2025-10-16 09:26:44
 
 using System;
 using System.Linq;
@@ -33,6 +33,7 @@ namespace AutoGenEnums
     {
         public static Dictionary<BEAR_ACTION, string> ActionMap = new Dictionary<BEAR_ACTION, string>()
         {
+            {BEAR_ACTION.BindPose, "BindPose"},
             {BEAR_ACTION.IDLE, "Idle"},
             {BEAR_ACTION.RUN, "Run"},
         };
@@ -50,7 +51,7 @@ namespace AutoGenEnums
         // 추가된 액션들
         RANDOM,
         STOP,
-        NONE,
+        BindPose,
         COUNT,
     }
     // ==================== BIRD ACTIONS ====================
@@ -59,6 +60,7 @@ namespace AutoGenEnums
     {
         public static Dictionary<BIRD_ACTION, string> ActionMap = new Dictionary<BIRD_ACTION, string>()
         {
+            {BIRD_ACTION.BindPose, "BindPose"},
             {BIRD_ACTION.FLY, "Fly"},
             {BIRD_ACTION.WALK, "Walk"},
         };
@@ -76,7 +78,7 @@ namespace AutoGenEnums
         // 추가된 액션들
         RANDOM,
         STOP,
-        NONE,
+        BindPose,
         COUNT,
     }
     // ==================== DONKEY ACTIONS ====================
@@ -85,6 +87,7 @@ namespace AutoGenEnums
     {
         public static Dictionary<DONKEY_ACTION, string> ActionMap = new Dictionary<DONKEY_ACTION, string>()
         {
+            {DONKEY_ACTION.BindPose, "BindPose"},
             {DONKEY_ACTION.A_T_POSE, "a-T-Pose"},
             {DONKEY_ACTION.H_AMBLE, "H_Amble"},
             {DONKEY_ACTION.H_ATTACK_BACK_LEGS, "H_Attack_Back_Legs"},
@@ -132,7 +135,7 @@ namespace AutoGenEnums
         // 추가된 액션들
         RANDOM,
         STOP,
-        NONE,
+        BindPose,
         COUNT,
     }
     // ==================== HORSE ACTIONS ====================
@@ -141,6 +144,7 @@ namespace AutoGenEnums
     {
         public static Dictionary<HORSE_ACTION, string> ActionMap = new Dictionary<HORSE_ACTION, string>()
         {
+            {HORSE_ACTION.BindPose, "BindPose"},
             {HORSE_ACTION.ABC, "abc"},
             {HORSE_ACTION.ASEAT, "aSeat"},
             {HORSE_ACTION.CDE, "cde"},
@@ -160,7 +164,7 @@ namespace AutoGenEnums
         // 추가된 액션들
         RANDOM,
         STOP,
-        NONE,
+        BindPose,
         COUNT,
     }
     // ==================== HUMAN ACTIONS ====================
@@ -169,6 +173,7 @@ namespace AutoGenEnums
     {
         public static Dictionary<HUMAN_ACTION, string> ActionMap = new Dictionary<HUMAN_ACTION, string>()
         {
+            {HUMAN_ACTION.BindPose, "BindPose"},
             {HUMAN_ACTION.A_T_POSE, "a-T-Pose"},
             {HUMAN_ACTION.CROSS_JUMPS_ROTATION, "Cross Jumps Rotation"},
             {HUMAN_ACTION.GOALKEEPER_BODY_BLOCK, "Goalkeeper Body Block"},
@@ -198,7 +203,7 @@ namespace AutoGenEnums
         // 추가된 액션들
         RANDOM,
         STOP,
-        NONE,
+        BindPose,
         COUNT,
     }
     // ==================== 확장 메서드로 인터페이스 구현 ====================
@@ -207,7 +212,7 @@ namespace AutoGenEnums
     {
         private static readonly HashSet<string> CommonActions = new HashSet<string>
         {
-            "RANDOM", "STOP", "NONE", "COUNT"
+            "RANDOM", "STOP", "BindPose", "COUNT"
         };
         public static int GetValue(this BEAR_ACTION action) => (int)action;
         public static string GetName(this BEAR_ACTION action) => action.ToString();

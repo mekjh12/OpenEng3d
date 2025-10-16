@@ -42,11 +42,11 @@ namespace Ui3d
         }
 
         // ✅ 최적화된 설정 (메모리 67MB, 초기화 2~3초)
-        private const int ATLAS_WIDTH = 8192;
-        private const int ATLAS_HEIGHT = 3072;
-        private const float PADDING = 3f;
-        private const float ATLAS_FONT_SIZE = 48f;
-        private const float WORLD_SCALE = 0.0012f;
+        private const int ATLAS_WIDTH = 2048;
+        private const int ATLAS_HEIGHT = 768;
+        private const float PADDING = 1f;
+        private const float ATLAS_FONT_SIZE = 12f;
+        private const float WORLD_SCALE = 0.0048f;
 
         // ✅ 한글 완성형 2,350자 (KS X 1001)
         private const string HANGUL_2350 =

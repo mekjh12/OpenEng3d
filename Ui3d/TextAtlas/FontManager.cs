@@ -5,9 +5,9 @@ namespace Ui3d
 {
     public static class FontManager
     {
-        public static readonly string DefaultFontFamily = "조선100년체";
+        public static readonly string DefaultFontFamily = "조선100년체";//
         public static readonly float DefaultFontSize = 23.0f;
-        public static readonly FontStyle DefaultFontStyle = FontStyle.Italic;
+        public static readonly FontStyle DefaultFontStyle = FontStyle.Bold;
         public static Font DefaultFont = new Font(DefaultFontFamily, DefaultFontSize, DefaultFontStyle);
 
         private static Dictionary<string, Font> _fontCache = new Dictionary<string, Font>();
@@ -16,6 +16,7 @@ namespace Ui3d
         {
             // 기본 폰트 등록
             AddFont(DefaultFontFamily, DefaultFont);
+            AddFont("Consolas", new Font("Consolas", DefaultFontSize, FontStyle.Bold));
         }
 
         public static void AddFont(string fontName, Font font)

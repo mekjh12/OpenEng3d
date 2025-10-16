@@ -11,10 +11,10 @@ namespace Animate
                 HorseActions.ActionMap,
                 () => (HORSE_ACTION)Rand.NextInt(0, (int)(HORSE_ACTION.RANDOM - 1)),
                 HORSE_ACTION.RANDOM,
-                new HashSet<string> { "RANDOM", "STOP", "NONE", "COUNT" }
+                new HashSet<string> { "RANDOM", "STOP", "BindPose", "COUNT" }
             );
 
-        public Horse(string name, AnimRig aniRig) : base(name, aniRig, HorseActionHandler, HORSE_ACTION.NONE)
+        public Horse(string name, AnimRig aniRig) : base(name, aniRig, HorseActionHandler, HORSE_ACTION.BindPose)
         {
 
         }

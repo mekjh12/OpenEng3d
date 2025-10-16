@@ -1,5 +1,4 @@
-﻿using Microsoft.SqlServer.Server;
-using Model3d;
+﻿using Model3d;
 using OpenGL;
 using System;
 using System.Collections.Generic;
@@ -23,6 +22,7 @@ namespace Animate
         // 핵심 데이터
         private MotionStorage _motions;                 // 모션 저장소
         private MotionCache _motionCache;               // 모션 캐시 (블렌딩 모션 캐시)
+        private Motion _bindMotion;                     // 바인딩 모션
 
         private List<TexturedModel> _texturedModels;    // 텍스처 모델 목록
         private Armature _armature;                     // 골격 구조
@@ -42,7 +42,7 @@ namespace Animate
         public int BoneCount => _armature.BoneNames.Length;
         public List<TexturedModel> TexturedModels => _texturedModels;
         public string Name => _name;
-
+        public Motion BindMotion => _bindMotion;
         // -----------------------------------------------------------------------
         // 생성자
         // -----------------------------------------------------------------------
@@ -67,7 +67,7 @@ namespace Animate
                 = AniRigLoader.LoadFile(filename, hipBoneName);
 
             // 가져온 골격에서 힙 높이를 설정한다.
-            foreach(Bone bone in armature.DicBones.Values)
+            foreach (Bone bone in armature.DicBones.Values)
             {
                 if (bone.IsHipBone)
                 {
@@ -94,6 +94,9 @@ namespace Animate
 
             // 추가 본 부위 인덱스 딕셔너리 초기화
             _dicIndices = new Dictionary<ATTACHMENT_SLOT, int>();
+
+            // A or T-Pose 모션을 추가한다.
+            _bindMotion = (Motion)AniRigLoader.LoadBindPoseMotion(this);
         }
 
         public int this[ATTACHMENT_SLOT bodyPart]

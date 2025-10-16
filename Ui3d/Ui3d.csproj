@@ -61,7 +61,7 @@
     <Compile Include="ChatBubble.cs" />
     <Compile Include="CDamageNumber.cs" />
     <Compile Include="FloatingItem.cs" />
-    <Compile Include="FontManager.cs" />
+    <Compile Include="TextAtlas\FontManager.cs" />
     <Compile Include="FPSDisplay.cs" />
     <Compile Include="HealthBar.cs" />
     <Compile Include="HitMarker.cs" />

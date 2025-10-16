@@ -28,7 +28,7 @@ namespace Ui3d
 
         // 렌더링 옵션
         protected bool _faceCamera = true;              // 카메라를 향할지 여부
-        protected bool _scaleWithDistance = false;       // 거리에 따른 스케일 조절
+        protected bool _scaleWithDistance = true;       // 거리에 따른 스케일 조절
         protected bool _fadeWithDistance = true;        // 거리에 따른 페이드 효과
 
         // 거리 설정

@@ -134,54 +134,62 @@ namespace Animate
                 // 주기시간이 없거나 애니메이션 DAE에 본이 없으면 건너뜀
                 if (srcMotion.PeriodTime <= 0 || targetAniRig.DicBones == null) continue;
 
-                // src 모션의 첫번째 키프레임에서 본 포즈를 가져온다.
-                BoneTransform[] bonePoses = srcMotion.FirstKeyFrame.BoneTransforms;
-                string[] boneNames = srcMotion.ExtractBoneName();
-                Dictionary<string, float> bonesLength = new Dictionary<string, float>();
+                // 개별 모션을 리타겟팅한다.
+                TransferRetargetMotion(srcMotion, sourceAniRig, targetAniRig);
+            }
 
-                // 각 본의 길이를 1로 초기화
-                for (int i = 0; i < boneNames.Length; i++) 
-                    bonesLength[boneNames[i]] = 1.0f;
+            TransferRetargetMotion(sourceAniRig.BindMotion, sourceAniRig, targetAniRig);
+            
+            return;
+        }
 
-                // 새로운 모션 객체를 생성하고, src 모션의 키프레임을 복사한다.
-                Motion destMotion = srcMotion.Clone();
+        private void TransferRetargetMotion(Motion srcMotion, AnimRig sourceAniRig, AnimRig targetAniRig)
+        {
+            // src 모션의 첫번째 키프레임에서 본 포즈를 가져온다.
+            BoneTransform[] bonePoses = srcMotion.FirstKeyFrame.BoneTransforms;
+            string[] boneNames = srcMotion.ExtractBoneName();
+            Dictionary<string, float> bonesLength = new Dictionary<string, float>();
 
-                foreach (KeyFrame keyframe in destMotion.Keyframes.Values)
+            // 각 본의 길이를 1로 초기화
+            for (int i = 0; i < boneNames.Length; i++)
+                bonesLength[boneNames[i]] = 1.0f;
+
+            // 새로운 모션 객체를 생성하고, src 모션의 키프레임을 복사한다.
+            Motion destMotion = srcMotion.Clone();
+
+            foreach (KeyFrame keyframe in destMotion.Keyframes.Values)
+            {
+                for (int i = 0; i < boneNames.Length; i++)
                 {
-                    for (int i = 0; i < boneNames.Length; i++)
+                    string boneName = boneNames[i];
+
+                    // [키프레임---본]
+                    if (targetAniRig.DicBones.ContainsKey(boneName))
                     {
-                        string boneName = boneNames[i];
+                        // 각 본의 위치를 믹사모에서 가져온 길이로 설정
+                        Bone targetBone = targetAniRig.DicBones[boneName];
+                        BoneTransform dstBonePose = keyframe[boneName];
 
-                        // [키프레임---본]
-                        if (targetAniRig.DicBones.ContainsKey(boneName))
+                        // 새로운 위치로 BoneTransform 생성하여 다시 할당
+                        if (targetBone.IsHipBone)
                         {
-                            // 각 본의 위치를 믹사모에서 가져온 길이로 설정
-                            Bone targetBone = targetAniRig.DicBones[boneName];
-                            BoneTransform dstBonePose = keyframe[boneName];
-
-                            // 새로운 위치로 BoneTransform 생성하여 다시 할당
-                            if (targetBone.IsHipBone)
-                            {
-                                float ratio = targetAniRig.Armature.HipHeight / sourceAniRig.Armature.HipHeight;
-                                Vertex3f newPosition = dstBonePose.Position * ratio;
-                                keyframe[boneName] = dstBonePose.WithPosition(newPosition);
-                            }
-                            else
-                            {
-                                if (dstBonePose.Position.Length() < ZERO_EPSILON) continue;
-                                float destBoneLength = targetBone.BoneMatrixSet.LocalBindPosition.Length();
-                                Vertex3f newPosition = dstBonePose.Position.Normalized * destBoneLength;
-                                keyframe[boneName] = dstBonePose.WithPosition(newPosition);
-                            }
+                            float ratio = targetAniRig.Armature.HipHeight / sourceAniRig.Armature.HipHeight;
+                            Vertex3f newPosition = dstBonePose.Position * ratio;
+                            keyframe[boneName] = dstBonePose.WithPosition(newPosition);
+                        }
+                        else
+                        {
+                            if (dstBonePose.Position.Length() < ZERO_EPSILON) continue;
+                            float destBoneLength = targetBone.BoneMatrixSet.LocalBindPosition.Length();
+                            Vertex3f newPosition = dstBonePose.Position.Normalized * destBoneLength;
+                            keyframe[boneName] = dstBonePose.WithPosition(newPosition);
                         }
                     }
                 }
-
-                // 지정된 애니메이션 모델에 모션을 추가한다.
-                targetAniRig.AddMotion(destMotion);
             }
 
-            return;
+            // 지정된 애니메이션 모델에 모션을 추가한다.
+            targetAniRig.AddMotion(destMotion);
         }
 
         /// <summary>
