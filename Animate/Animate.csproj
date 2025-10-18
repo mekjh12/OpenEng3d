@@ -80,6 +80,7 @@
     <Compile Include="AniModels\Rig\BearRig.cs" />
     <Compile Include="AniModels\Rig\DonkeyRig.cs" />
     <Compile Include="Armature\BoneJointConstraint.cs" />
+    <Compile Include="Constraint\LocalSpaceAxis.cs" />
     <Compile Include="Constraint\JointConstraint.cs" />
     <Compile Include="Constraint\SphericalConstraint.cs" />
     <Compile Include="IK\OneBoneLookAt.cs" />

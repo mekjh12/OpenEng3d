@@ -437,6 +437,48 @@ namespace ZetaExt
             return $"Angle: {RotationAngle} Axis:({x},{y},{z},{_CosAngle})";
         }
 
+        /// <summary>
+        /// 쿼터니언의 역(inverse)을 반환한다.
+        /// <br/>
+        /// 회전을 반대로 되돌리는 쿼터니언
+        /// <br/>
+        /// 정규화된 쿼터니언의 경우 역은 켤레(conjugate)와 같다.
+        /// </summary>
+        public Quaternion Inversed()
+        {
+            // 정규화된 쿼터니언의 경우: q^-1 = q* / |q|^2
+            // 정규화되어 있으면 |q|^2 = 1 이므로 q^-1 = q*
 
+            double magnitudeSquared = _Vector.x * _Vector.x +
+                                      _Vector.y * _Vector.y +
+                                      _Vector.z * _Vector.z +
+                                      _CosAngle * _CosAngle;
+
+            if (magnitudeSquared < 1.4012984643248171E-45)
+            {
+                // 크기가 0에 가까우면 항등 쿼터니언 반환
+                return Identity;
+            }
+
+            // 켤레를 크기의 제곱으로 나눔
+            double invMagnitudeSquared = 1.0 / magnitudeSquared;
+
+            return new Quaternion(
+                -_Vector.x * invMagnitudeSquared,
+                -_Vector.y * invMagnitudeSquared,
+                -_Vector.z * invMagnitudeSquared,
+                _CosAngle * invMagnitudeSquared
+            );
+        }
+
+        /// <summary>
+        /// 쿼터니언을 정규화된 상태로 만들고 역을 반환한다 (최적화 버전)
+        /// 쿼터니언이 이미 정규화되어 있다고 가정하면 Conjugated와 동일
+        /// </summary>
+        public Quaternion InversedNormalized()
+        {
+            // 정규화된 쿼터니언의 역은 켤레와 같음
+            return Conjugated;
+        }
     }
 }

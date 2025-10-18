@@ -204,6 +204,7 @@ namespace Animate
             {
                 _currentMotion = motion;
                 _animationState = AnimationState.Normal;
+                _motionTime = _currentMotion.PeriodTime;
             }
             // 아니면 블렌딩 모션을 설정한다.
             else
@@ -213,6 +214,7 @@ namespace Animate
                 {
                     _currentMotion = motion;
                     _animationState = AnimationState.Normal;
+                    _motionTime = _currentMotion.PeriodTime;
                 }
                 // 블렌딩 시간이 있으면 (블렌딩이 일어나는 경우...)
                 else

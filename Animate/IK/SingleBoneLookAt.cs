@@ -7,19 +7,18 @@ namespace Animate
 {
     public class SingleBoneLookAt
     {
-        public enum ForwardAxis { X, Y, Z }         // 본의 로컬 전방 벡터 옵션
-
         // -----------------------------------------------------------------------
         // 멤버 변수
         // -----------------------------------------------------------------------
 
-        private readonly Bone _bone;                // 제어할 본
-        private readonly ForwardAxis _localForward; // 본의 로컬 전방 벡터 (바라보는 방향)
+        private readonly Bone _bone;                    // 제어할 본
+        private readonly LocalSpaceAxis _localForward;  // 본의 로컬 전방 벡터 (바라보는 방향)
+        private readonly LocalSpaceAxis _localUp;       // 본의 로컬 업 벡터
 
         // 멤버 변수 추가
-        private float _smoothSpeed = 5.0f;           // 전환 속도 (값이 클수록 빠름)
-        private Quaternion _currentRotation;         // 현재 회전 (내부 상태)
-        private bool _isInitialized = false;         // 초기화 여부
+        private float _smoothSpeed = 5.0f;              // 전환 속도 (값이 클수록 빠름)
+        private Quaternion _currentRotation;            // 현재 회전 (내부 상태)
+        private bool _isInitialized = false;            // 초기화 여부
 
         // 계산용 임시 변수
         Matrix4x4f _parentWorldTransform;
@@ -45,7 +44,7 @@ namespace Animate
         // 속성
         // -----------------------------------------------------------------------
 
-        public ForwardAxis LocalForward => _localForward;
+        public LocalSpaceAxis LocalForward => _localForward;
         public float SmoothSpeed { get => _smoothSpeed; set => _smoothSpeed = Math.Max(0.1f, value); }
         public Bone Bone => _bone;
 
@@ -53,12 +52,15 @@ namespace Animate
         // 생성자
         // -----------------------------------------------------------------------
 
-        public SingleBoneLookAt(Bone bone, ForwardAxis localForward = ForwardAxis.Y)
+        public SingleBoneLookAt(Bone bone, 
+            LocalSpaceAxis localForward = LocalSpaceAxis.Y,
+            LocalSpaceAxis localUp = LocalSpaceAxis.Z)
         {
             _bone = bone ?? throw new ArgumentNullException(nameof(bone));
 
             // 로컬 전방 벡터 설정
             _localForward = localForward;
+            _localUp = localUp;
         }
 
         // -----------------------------------------------------------------------
@@ -83,11 +85,11 @@ namespace Animate
             Vertex3NoGC.Normalize(ref _targetLocal);
 
             // 현재 포즈에서 본의 로컬 전방 벡터 계산
-            if (_localForward == ForwardAxis.X) 
+            if (_localForward == LocalSpaceAxis.X) 
                 Matrix4x4NoGC.NormalizeColumn0(_bone.BoneMatrixSet.LocalTransform, ref _forwardLocal);
-            if (_localForward == ForwardAxis.Y) 
+            if (_localForward == LocalSpaceAxis.Y) 
                 Matrix4x4NoGC.NormalizeColumn1(_bone.BoneMatrixSet.LocalTransform, ref _forwardLocal);
-            if (_localForward == ForwardAxis.Z) 
+            if (_localForward == LocalSpaceAxis.Z) 
                 Matrix4x4NoGC.NormalizeColumn2(_bone.BoneMatrixSet.LocalTransform, ref _forwardLocal);
 
             // 회전축 계산 (외적)

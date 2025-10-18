@@ -1,5 +1,6 @@
 ﻿using OpenGL;
 using System;
+using System.Security.Policy;
 
 namespace ZetaExt
 {
@@ -43,5 +44,6 @@ namespace ZetaExt
             result.z = mat[2, 2];
             Vertex3NoGC.Normalize(ref result);
         }
+
     }
 }

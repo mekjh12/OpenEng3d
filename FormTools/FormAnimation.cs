@@ -38,7 +38,10 @@ namespace FormTools
         bool _isLeftTwoBoneIK = true;
 
         Bitmap _itemBitmap = null;
-        
+        string testBone = MIXAMORIG_BONENAME.mixamorig_LeftFoot;
+        LocalSpaceAxis testForward = LocalSpaceAxis.Y;
+        LocalSpaceAxis testUp = LocalSpaceAxis.Z;
+
         public FormAnimation()
         {
             InitializeComponent();
@@ -264,9 +267,7 @@ namespace FormTools
                 _aniActors[0].AniRig.Armature["mixamorig_LeftForeArm"]);
              */
 
-            _singleLookAt = new SingleBoneLookAt(
-                _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftArm], 
-                SingleBoneLookAt.ForwardAxis.Y);
+            _singleLookAt = new SingleBoneLookAt(_aniActors[0].AniRig.Armature[testBone], testForward, testUp);
 
             _glControl3.CameraStepLength = 0.01f;
 
@@ -375,9 +376,14 @@ namespace FormTools
             {
                 if (aniActor is Human)
                 {
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftShoulder], axisLength: 30f);
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_Spine2], axisLength: 10f);
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftArm], axisLength: 1000f);
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
+                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightToeBase], axisLength: 30f);
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
+                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftShoulder], axisLength: 30f);
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
+                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_Spine2], axisLength: 10f);
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
+                        _aniActors[0].AniRig.Armature[testBone], axisLength: 1000f);
 
                     //Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.UpperBone, axisLength: 20f);
                     //Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.LowerBone, axisLength: 15f);

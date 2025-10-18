@@ -102,9 +102,18 @@ namespace Animate
 
         public Human(string name, AnimRig aniRig) : base(name, aniRig, HUMAN_ACTION.A_T_POSE)
         {
-            Bone leftShoulder = aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftArm];
-            SphericalConstraint sphericalConstraint = new SphericalConstraint(leftShoulder, 130, 80, LocalSpaceAxis.Y, LocalSpaceAxis.Z );
-            leftShoulder.SetJointConstraint(sphericalConstraint);
+            AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_LeftArm, 130, 80, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
+            AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_RightArm, 130, 80, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
+            AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_Head, 50, 80, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
+            AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_Neck, 50, 80, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
+            AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_LeftFoot, 30, 20, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
+        }
+
+        private void AddJointSphericalConstraint(string boneName, float coneAngle, float twistAngle, LocalSpaceAxis forward, LocalSpaceAxis up)
+        {
+            Bone bone = _aniRig.Armature[boneName];
+            SphericalConstraint constraint = new SphericalConstraint(bone, coneAngle, twistAngle, forward, up);
+            bone.SetJointConstraint(constraint);
         }
 
         public override HUMAN_ACTION RandomAction => (HUMAN_ACTION)Rand.NextInt(0, (int)(HUMAN_ACTION.RANDOM - 1));

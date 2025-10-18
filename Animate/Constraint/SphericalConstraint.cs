@@ -60,8 +60,8 @@ namespace Animate
 
             // 바인딩 포즈에서 기준 방향 추출
             Matrix4x4f localBindTransform = bone.BoneMatrixSet.LocalBindTransform;
-            _referenceFowardDirection = GetAxisVector(_forwardAxis, ref localBindTransform);
-            _referenceUpDirection = GetAxisVector(_upAxis, ref localBindTransform);
+            LocalSpaceAxisHelper.GetAxisVector(_forwardAxis, localBindTransform, ref _referenceFowardDirection);
+            LocalSpaceAxisHelper.GetAxisVector(_upAxis, localBindTransform, ref _referenceUpDirection);
         }
 
         // -----------------------------------------------------------------------
@@ -72,69 +72,188 @@ namespace Animate
         /// </summary>
         /// <param name="currentTransform">현재 로컬 변환 행렬</param>
         /// <returns>제한이 적용된 변환 행렬</returns>
+        /// <summary>
+        /// 현재 변환에 구면 제한을 적용한다 (개선된 알고리즘)
+        /// </summary>
         public override Matrix4x4f ApplyConstraint(Matrix4x4f currentTransform)
         {
             if (!_enabled) return currentTransform;
 
-            // 원본 위치와 스케일은 미리 추출 (재사용)
+            // 조기 반환 최적화
+            if (_maxConeAngle >= 180f && _maxTwistAngle >= 180f)
+                return currentTransform;
+
+            // 원본 데이터 추출
             Vertex3f originalPosition = currentTransform.Position;
             float scaleX = currentTransform.Column0.xyz().Length();
             float scaleY = currentTransform.Column1.xyz().Length();
             float scaleZ = currentTransform.Column2.xyz().Length();
 
-            // 속성을 지역 변수로 받아서 ref 전달
-            Matrix4x4f boneLocalTransform = _bone.BoneMatrixSet.LocalTransform;
+            // 현재 회전을 쿼터니언으로 변환
+            Quaternion currentRotation = currentTransform.ToQuaternion();
+            Quaternion bindRotation = _bone.BoneMatrixSet.LocalBindTransform.ToQuaternion();
 
-            // 방향 벡터 추출 (한 번만)
-            Vertex3f targetForwardDir = GetAxisVector(_forwardAxis, ref currentTransform);
-            Vertex3f poseForwardAxis = GetAxisVector(_forwardAxis, ref boneLocalTransform);
-            Vertex3f poseUpAxis = GetAxisVector(_upAxis, ref boneLocalTransform);
+            // 바인드 포즈 대비 상대 회전
+            Quaternion relativeRotation = bindRotation.Inversed() * currentRotation;
 
-            // 각도 계산
-            float coneAngle = GetConeAngleFast(ref _referenceFowardDirection, ref targetForwardDir);
+            // Swing-Twist 분해
+            Quaternion swing, twist;
+            DecomposeSwingTwist(relativeRotation, _referenceFowardDirection, out swing, out twist);
 
-            // 콘 각도 체크 - 제약이 필요 없으면 조기 반환
-            bool needsConeConstraint = coneAngle > _maxConeAngle;
+            // Swing 제약 (Cone 각도)
+            Quaternion constrainedSwing = ConstrainSwing(swing, _maxConeAngle);
 
-            // 콘 제약 적용
-            Vertex3f constrainedForwardDir;
-            if (needsConeConstraint)
+            // Twist 제약 (비틀림 각도)
+            Quaternion constrainedTwist = ConstrainTwist(twist, _maxTwistAngle);
+
+            // 제약된 회전 재구성
+            Quaternion constrainedRelative = constrainedSwing * constrainedTwist;
+            Quaternion constrainedRotation = bindRotation * constrainedRelative;
+
+            // 행렬로 변환
+            Matrix4x4f result = (Matrix4x4f)constrainedRotation;
+
+            // 스케일 복원
+            Vertex3f col0 = result.Column0.xyz().Normalized * scaleX;
+            Vertex3f col1 = result.Column1.xyz().Normalized * scaleY;
+            Vertex3f col2 = result.Column2.xyz().Normalized * scaleZ;
+
+            return new Matrix4x4f(
+                col0.x, col0.y, col0.z, 0,
+                col1.x, col1.y, col1.z, 0,
+                col2.x, col2.y, col2.z, 0,
+                originalPosition.x, originalPosition.y, originalPosition.z, 1
+            );
+        }
+
+        /// <summary>
+        /// 쿼터니언을 Swing과 Twist로 분해한다
+        /// </summary>
+        private void DecomposeSwingTwist(Quaternion rotation, Vertex3f direction,
+            out Quaternion swing, out Quaternion twist)
+        {
+            // Twist 축을 정규화
+            Vertex3f twistAxis = direction.Normalized;
+
+            // 쿼터니언의 벡터 부분을 Twist 축에 투영
+            Vertex3f rotationAxis = new Vertex3f(rotation.X, rotation.Y, rotation.Z);
+            float dot = rotationAxis.Dot(twistAxis);
+            Vertex3f projection = twistAxis * dot;
+
+            // Twist 쿼터니언 생성
+            twist = new Quaternion(projection.x, projection.y, projection.z, rotation.W);
+
+            // Twist가 거의 0이면 항등 쿼터니언
+            float twistLength = (float)Math.Sqrt(
+                twist.X * twist.X +
+                twist.Y * twist.Y +
+                twist.Z * twist.Z +
+                twist.W * twist.W);
+
+            if (twistLength < EPSILON_SMALL)
             {
-                constrainedForwardDir = ApplyConeConstraint(
-                    ref _referenceFowardDirection,
-                    ref targetForwardDir,
-                    _maxConeAngle);
+                twist = Quaternion.Identity;
             }
             else
             {
-                constrainedForwardDir = targetForwardDir;
+                // 정규화
+                float invLength = 1f / twistLength;
+                twist = new Quaternion(
+                    twist.X * invLength,
+                    twist.Y * invLength,
+                    twist.Z * invLength,
+                    twist.W * invLength);
             }
 
-            // 트위스트 각도 계산 및 제약
-            Quaternion poseToTarget = QuaternionExtensions.FromToRotation(poseForwardAxis, targetForwardDir);
-            Quaternion bindToTarget = QuaternionExtensions.FromToRotation(_referenceFowardDirection, targetForwardDir);
+            // Swing = Rotation * Twist^(-1)
+            swing = rotation * twist.Inversed();
+        }
 
-            Vertex3f targetUpFromPose = (poseToTarget * poseUpAxis);
-            Vertex3f targetUpFromBind = (bindToTarget * _referenceUpDirection);
+        /// <summary>
+        /// Swing 회전을 제약한다 (Cone 각도)
+        /// </summary>
+        private Quaternion ConstrainSwing(Quaternion swing, float maxAngle)
+        {
+            // Swing 각도 계산
+            float angle = 2f * (float)Math.Acos(Math.Max(-1f, Math.Min(1f, swing.W))) * RAD_TO_DEG;
 
-            float twistAngle = GetConeAngleFast(ref targetUpFromBind, ref targetUpFromPose);
-            float constrainedTwistAngle = twistAngle.Clamp(-_maxTwistAngle, _maxTwistAngle);
+            // 제약 필요 없으면 그대로 반환
+            if (angle <= maxAngle)
+                return swing;
 
-            // 제약된 변환 재구성 (in-place 계산으로 할당 최소화)
-            Quaternion constrainedBindToTarget = QuaternionExtensions.FromToRotation(
-                _referenceFowardDirection,
-                constrainedForwardDir);
+            // 회전축 추출
+            Vertex3f axis = new Vertex3f(swing.X, swing.Y, swing.Z);
+            float axisLength = axis.Length();
 
-            Vertex3f constrainedUpBase = (constrainedBindToTarget * _referenceUpDirection).Normalized;
-            Quaternion twistCorrection = new Quaternion(constrainedForwardDir, constrainedTwistAngle);
-            Vertex3f constrainedUp = (twistCorrection * constrainedUpBase).Normalized;
+            if (axisLength < EPSILON_SMALL)
+                return Quaternion.Identity;
 
-            // Look Rotation 행렬 생성 (직접 계산으로 메서드 호출 오버헤드 제거)
-            return CreateLookRotationOptimized(
-                ref constrainedForwardDir,
-                ref constrainedUp,
-                ref originalPosition,
-                scaleX, scaleY, scaleZ);
+            // 정규화
+            axis = axis * (1f / axisLength);
+
+            // 제한된 각도로 새 쿼터니언 생성
+            float halfAngle = maxAngle * 0.5f * (float)Math.PI / 180f;
+            float sinHalf = (float)Math.Sin(halfAngle);
+            float cosHalf = (float)Math.Cos(halfAngle);
+
+            return new Quaternion(
+                axis.x * sinHalf,
+                axis.y * sinHalf,
+                axis.z * sinHalf,
+                cosHalf
+            );
+        }
+
+        /// <summary>
+        /// Twist 회전을 제약한다 (비틀림 각도)
+        /// </summary>
+        private Quaternion ConstrainTwist(Quaternion twist, float maxAngle)
+        {
+            // Twist 각도 계산
+            float angle = 2f * (float)Math.Acos(Math.Max(-1f, Math.Min(1f, twist.W))) * RAD_TO_DEG;
+
+            // 각도 부호 결정
+            Vertex3f twistAxis = new Vertex3f(twist.X, twist.Y, twist.Z);
+            if (twistAxis.Dot(_referenceFowardDirection) < 0)
+                angle = -angle;
+
+            // 제약 적용
+            float constrainedAngle = angle.Clamp(-maxAngle, maxAngle);
+
+            // 제약이 필요 없으면 그대로 반환
+            if (Math.Abs(angle - constrainedAngle) < 0.1f)
+                return twist;
+
+            // 제한된 각도로 새 쿼터니언 생성
+            float halfAngle = constrainedAngle * 0.5f * (float)Math.PI / 180f;
+            float sinHalf = (float)Math.Sin(halfAngle);
+            float cosHalf = (float)Math.Cos(halfAngle);
+
+            Vertex3f normalizedAxis = _referenceFowardDirection.Normalized;
+
+            return new Quaternion(
+                normalizedAxis.x * sinHalf,
+                normalizedAxis.y * sinHalf,
+                normalizedAxis.z * sinHalf,
+                cosHalf
+            );
+        }
+
+        /// <summary>
+        /// 두 쿼터니언이 같은 방향으로 회전하도록 보정한다
+        /// </summary>
+        private Quaternion EnsureShortestPath(Quaternion from, Quaternion to)
+        {
+            // 내적이 음수면 반대 방향으로 회전하는 것
+            float dot = from.X * to.X + from.Y * to.Y + from.Z * to.Z + from.W * to.W;
+
+            if (dot < 0f)
+            {
+                // 반대 부호로 변경 (같은 회전을 나타내지만 최단 경로)
+                return new Quaternion(-to.X, -to.Y, -to.Z, -to.W);
+            }
+
+            return to;
         }
 
         /// <summary>
@@ -241,7 +360,8 @@ namespace Animate
             if (!_enabled)
                 return true;
 
-            Vertex3f currentFowardDirection = GetAxisVector(_forwardAxis, ref transform);
+            Vertex3f currentFowardDirection = Vertex3f.Zero;
+            LocalSpaceAxisHelper.GetAxisVector(_forwardAxis,  transform, ref currentFowardDirection);
             float currentConeAngle = GetConeAngleFast(ref _referenceFowardDirection, ref currentFowardDirection);
             return currentConeAngle <= _maxConeAngle;
         }
@@ -264,7 +384,7 @@ namespace Animate
         // -----------------------------------------------------------------------
         // 내부 메서드
         // -----------------------------------------------------------------------
-        
+
         /// <summary>
         /// 축 벡터 추출 (ref로 전달하여 복사 최소화)
         /// </summary>
@@ -301,13 +421,4 @@ namespace Animate
         }
     }
 
-    /// <summary>
-    /// 본의 로컬 축을 나타내는 열거형
-    /// </summary>
-    public enum LocalSpaceAxis
-    {
-        X = 0,
-        Y = 1,
-        Z = 2
-    }
 }
