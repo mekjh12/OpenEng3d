@@ -102,6 +102,9 @@ namespace Animate
 
         public Human(string name, AnimRig aniRig) : base(name, aniRig, HUMAN_ACTION.A_T_POSE)
         {
+            Bone leftShoulder = aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftArm];
+            SphericalConstraint sphericalConstraint = new SphericalConstraint(leftShoulder, 130, 80, LocalSpaceAxis.Y, LocalSpaceAxis.Z );
+            leftShoulder.SetJointConstraint(sphericalConstraint);
         }
 
         public override HUMAN_ACTION RandomAction => (HUMAN_ACTION)Rand.NextInt(0, (int)(HUMAN_ACTION.RANDOM - 1));
@@ -144,6 +147,8 @@ namespace Animate
             {
                 _dicTextNamePlates[boneName] = textNamePlate;
             }
+
+            _aniRig.Armature[boneName].TextNamePlate = textNamePlate;
         }
 
         public override void Render(Camera camera, Matrix4x4f vp, AnimateShader ashader, StaticShader sshader,
@@ -182,11 +187,19 @@ namespace Animate
                 Bone bone = _aniRig.Armature[boneName];
                 textNamePlate.WorldPosition = (ModelMatrix * _animator.RootTransforms[bone.Index]).Position;
 
+                if (bone.JointConstraint != null)
+                {
+                    textNamePlate.CharacterName = (bone.JointConstraint as SphericalConstraint).ReferenceFowardDirection.ToString();
+                }
+
+                // 처음 시작시 화면 갱신하기
                 if (!_isInit)
                 {
                     textNamePlate.Refresh();
                     _isInit = false;
                 }
+
+                // 업데이트하기
                 textNamePlate.Update(deltaTime);
             }
         }

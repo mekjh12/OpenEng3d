@@ -267,8 +267,6 @@ namespace FormTools
             _singleLookAt = new SingleBoneLookAt(
                 _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftArm], 
                 SingleBoneLookAt.ForwardAxis.Y);
-            _singleLookAt.SetAngleLimits(0, 40, 0);
-
 
             _glControl3.CameraStepLength = 0.01f;
 
@@ -304,12 +302,10 @@ namespace FormTools
             }
 
 
-            Vertex3f target = camera.PivotPosition;
-            _singleLookAt.Solve(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
-
-
             if (_isLeftTwoBoneIK)
             {
+                Vertex3f target = camera.PivotPosition;
+                _singleLookAt.Solve(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
             }
             else
             {
@@ -379,9 +375,9 @@ namespace FormTools
             {
                 if (aniActor is Human)
                 {
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftArm], axisLength: 3000f);
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftShoulder], axisLength: 10f);
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightArm], axisLength: 10f);
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftShoulder], axisLength: 30f);
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_Spine2], axisLength: 10f);
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftArm], axisLength: 1000f);
 
                     //Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.UpperBone, axisLength: 20f);
                     //Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.LowerBone, axisLength: 15f);
@@ -486,7 +482,7 @@ namespace FormTools
                     }
                     if (_aniActors[i] is Human)
                     {
-                        (_aniActors[i] as Human).SetMotion(HUMAN_ACTION.A_T_POSE);
+                        (_aniActors[i] as Human).SetMotion(HUMAN_ACTION.BREATHING_IDLE);
                     }
                 }
             }
@@ -512,16 +508,9 @@ namespace FormTools
                     }
                 }
             }
-            else if (e.KeyCode == Keys.L)
-            {
-                _isLeftTwoBoneIK = !_isLeftTwoBoneIK;
-            }
             else if (e.KeyCode == Keys.R)
             {
-                if (_aniActors[0].Animator.IsPlaying)
-                    _aniActors[0].Animator.Stop();
-                else
-                    _aniActors[0].Animator.Play();
+                _isLeftTwoBoneIK = !_isLeftTwoBoneIK;
             }
             else if (e.KeyCode == Keys.D0)
             {

@@ -1,8 +1,7 @@
-﻿using Assimp;
-using OpenGL;
+﻿using OpenGL;
 using System;
 using System.Collections.Generic;
-using ZetaExt;
+using Ui3d;
 
 namespace Animate
 {
@@ -10,7 +9,7 @@ namespace Animate
     /// 3D 애니메이션 시스템의 뼈대(Bone) 클래스
     /// 캐릭터의 골격을 구성하는 기본 요소로, 계층 구조를 형성하여 애니메이션을 구현한다.
     /// </summary>
-    public class Bone
+    public partial class Bone
     {
         // 기본 정보
         private int _index;                     // 뼈대의 고유 인덱스
@@ -41,6 +40,8 @@ namespace Animate
         public bool IsLeaf => _children.Count == 0;
         public bool IsRoot => _parent == null;
         public float Length { get => _length; set => _length = value; }
+
+        public TextNamePlate TextNamePlate { get; set; } = null;
 
         /// <summary>
         /// 새로운 뼈대를 생성한다

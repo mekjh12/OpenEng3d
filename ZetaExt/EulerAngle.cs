@@ -83,10 +83,10 @@ namespace ZetaExt
         /// <summary>
         /// 오일러 각도를 문자열로 변환한다
         /// </summary>
-        /// <returns>각도 정보 문자열 (소수점 3자리)</returns>
+        /// <returns>각도 정보 문자열 (소수점 0자리)</returns>
         public override string ToString()
         {
-            return $"Pitch(X)={_pitch:F3}°, Roll(Y)={_roll:F3}°, Yaw(Z)={_yaw:F3}°";
+            return $"Pitch(X){_pitch:F0}, Roll(Y){_roll:F0}, Yaw(Z){_yaw:F0}";
         }
 
         /// <summary>

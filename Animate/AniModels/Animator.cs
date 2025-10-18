@@ -323,7 +323,6 @@ namespace Animate
         /// 애니메이션 변환 행렬을 업데이트한다.
         /// </summary>
         /// <param name="motionTime">모션 시간</param>
-        /// <param name="rootBone">루트 본</param>
         /// <summary>
         /// 매 프레임마다 실행 - 순회 순서에 따라 빠르게 처리
         /// </summary>
@@ -334,12 +333,12 @@ namespace Animate
             {
                 return; // 실패시 처리
             }
-            
+
             // _currentPose로부터 현재 포즈를 가져온다.
             for (int i = 0; i < _boneTraversalOrder.Length; i++)
             {
                 Bone bone = _boneTraversalOrder[i];
-                int boneIndex = bone.Index;                
+                int boneIndex = bone.Index;
                 if (boneIndex < 0) continue;
 
                 // 부모본을 가져온다.
@@ -355,9 +354,12 @@ namespace Animate
                     _rootTransforms[pBone.Index]; // 부모 본의 변환
 
                 // 현재 포즈로부터 본의 로컬 변환을 가져온다.
-                bone.BoneMatrixSet.LocalTransform =
+                Matrix4x4f localTransform =
                     (_currentPose != null && _currentPose.TryGetValue(bone.Name, out Matrix4x4f poseTransform)) ?
                     poseTransform : bone.BoneMatrixSet.LocalBindTransform;
+
+                // 제약이 적용된 로컬 변환 설정
+                bone.BoneMatrixSet.LocalTransform = localTransform;
 
                 // 캐릭터 공간에서의 본의 변환 행렬 계산
                 _rootTransforms[boneIndex] = parentTransform * bone.BoneMatrixSet.LocalTransform;

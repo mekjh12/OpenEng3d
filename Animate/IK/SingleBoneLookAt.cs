@@ -16,14 +16,6 @@ namespace Animate
         private readonly Bone _bone;                // 제어할 본
         private readonly ForwardAxis _localForward; // 본의 로컬 전방 벡터 (바라보는 방향)
 
-        // 각도 제한 설정
-        private bool _useAngleLimits;               // 각도 제한 사용 여부
-        private float _maxYawAngle;                 // 최대 좌우 회전 각도 (도)
-        private float _maxPitchAngle;               // 최대 상하 회전 각도 (도)
-        private float _maxRollAngle;                // 최대 롤 각도 (도)
-        private EulerOrder _eulerOrder
-            = EulerOrder.ZXY;                       // 오일러 각 순서 (ZXY가 일반적)
-
         // 멤버 변수 추가
         private float _smoothSpeed = 5.0f;           // 전환 속도 (값이 클수록 빠름)
         private Quaternion _currentRotation;         // 현재 회전 (내부 상태)
@@ -54,11 +46,9 @@ namespace Animate
         // -----------------------------------------------------------------------
 
         public ForwardAxis LocalForward => _localForward;
-        public bool UseAngleLimits => _useAngleLimits;
-        public float MaxYawAngle => _maxYawAngle;
-        public float MaxPitchAngle => _maxPitchAngle;
         public float SmoothSpeed { get => _smoothSpeed; set => _smoothSpeed = Math.Max(0.1f, value); }
-    
+        public Bone Bone => _bone;
+
         // -----------------------------------------------------------------------
         // 생성자
         // -----------------------------------------------------------------------
@@ -69,39 +59,11 @@ namespace Animate
 
             // 로컬 전방 벡터 설정
             _localForward = localForward;
-
-            // 각도 제한 기본값 (제한 없음)
-            _useAngleLimits = false;
-            _maxYawAngle = 180f;
-            _maxPitchAngle = 180f;
         }
 
         // -----------------------------------------------------------------------
         // 공개 메서드
         // -----------------------------------------------------------------------
-
-        /// <summary>
-        /// 각도 제한을 설정한다
-        /// </summary>
-        /// <param name="maxPitchAngle">최대 상하 회전 각도 (도, 0~180) X</param>
-        /// <param name="maxYawAngle">최대 좌우 회전 각도 (도, 0~180) Y</param>
-        /// <param name="maxRollAngle">최대 롤 회전 각도 (도, 0~90) Z</param>
-        public void SetAngleLimits(float maxPitchAngle, float maxYawAngle, float maxRollAngle, EulerOrder eulerOrder = EulerOrder.ZXY)
-        {
-            _useAngleLimits = true;
-            _eulerOrder = eulerOrder;
-            _maxYawAngle = Math.Max(0f, Math.Min(180f, maxYawAngle));
-            _maxPitchAngle = Math.Max(0f, Math.Min(180f, maxPitchAngle));
-            _maxRollAngle = Math.Max(0f, Math.Min(90f, maxRollAngle));
-        }
-
-        /// <summary>
-        /// 각도 제한을 해제한다
-        /// </summary>
-        public void DisableAngleLimits()
-        {
-            _useAngleLimits = false;
-        }
 
         public void Solve(Vertex3f worldTargetPosition, Matrix4x4f modelMatrix, Animator animator)
         {
@@ -149,109 +111,15 @@ namespace Animate
             finalLocalTransform[3, 1] = _originalPositionLocal.y;
             finalLocalTransform[3, 2] = _originalPositionLocal.z;
 
-            // 본에 적용된 오일러각을 계산한다.
-            if (_useAngleLimits)
+            // ★ 제약 적용 ★
+            if (_bone.HasConstraint && _bone.JointConstraint.Enabled)
             {
-                // 1. 현재 LocalTransform을 오일러 각도로 분해
-                _currentAngles = EulerConverter.MatrixToEuler(finalLocalTransform, _eulerOrder);
-
-                // 2. 각도 제한 적용
-                float clampedPitch = _currentAngles.Pitch.Clamp(-_maxPitchAngle, _maxPitchAngle);
-                float clampedRoll = _currentAngles.Roll.Clamp(-_maxRollAngle, _maxRollAngle);
-                float clampedYaw = _currentAngles.Yaw.Clamp(-_maxYawAngle, _maxYawAngle);
-
-                _clampedAngles = new EulerAngle(clampedPitch, clampedRoll, clampedYaw);
-
-                // 3. 각도가 실제로 변경되었는지 확인
-                const float epsilon = 0.01f;
-                bool anglesChanged =
-                    Math.Abs(_currentAngles.Pitch - _clampedAngles.Pitch) > epsilon ||
-                    Math.Abs(_currentAngles.Roll - _clampedAngles.Roll) > epsilon ||
-                    Math.Abs(_currentAngles.Yaw - _clampedAngles.Yaw) > epsilon;
-
-                Console.WriteLine("currentAngles" + _currentAngles);
-                Console.WriteLine("|-----clampedAngles" + _clampedAngles);
-
-                if (anglesChanged)
-                {
-                    // 4. 스케일 추출 (원본에서)
-                    _scaleX = finalLocalTransform.Column0.xyz().Length();
-                    _scaleY = finalLocalTransform.Column1.xyz().Length();
-                    _scaleZ = finalLocalTransform.Column2.xyz().Length();
-
-                    // 5. 제한된 각도로 회전 행렬 생성
-                    _constrainedRotation = EulerConverter.EulerToMatrix(_clampedAngles, _eulerOrder);
-
-                    // 6. 스케일 재적용
-                    _constrainedRotation = _constrainedRotation * Matrix4x4f.Scaled(_scaleX, _scaleY, _scaleZ);
-
-                    // 7. 위치 복원
-                    _constrainedRotation[3, 0] = _originalPositionLocal.x;
-                    _constrainedRotation[3, 1] = _originalPositionLocal.y;
-                    _constrainedRotation[3, 2] = _originalPositionLocal.z;
-
-                    // 8. 제한된 변환 적용
-                    finalLocalTransform = _constrainedRotation;
-                    //_bone.BoneMatrixSet.LocalTransform = finalLocalTransform;
-                }
+                finalLocalTransform = _bone.JointConstraint.ApplyConstraint(finalLocalTransform);
             }
 
             // 본에 적용
             _bone.BoneMatrixSet.LocalTransform = finalLocalTransform;
             _bone.UpdateAnimatorTransforms(animator, isSelfIncluded: true);
         }
-
-
-        // -----------------------------------------------------------------------
-        // 내부 메서드
-        // -----------------------------------------------------------------------
-
-        /// <summary>
-        /// 각도 제한을 적용하여 변환 행렬을 조정한다
-        /// </summary>
-        private Matrix4x4f ApplyAngleLimits(Matrix4x4f targetTransform, Vertex3f targetDirection)
-        {
-            /*
-            // 목표 변환에서의 Forward 방향
-            Vertex3f targetForward = Vertex3f.UnitX;
-            if (_localForward == ForwardAxis.X) targetForward = _bone.BoneMatrixSet.LocalTransform.Column0.xyz().Normalized;
-            if (_localForward == ForwardAxis.Y) targetForward = _bone.BoneMatrixSet.LocalTransform.Column1.xyz().Normalized;
-            if (_localForward == ForwardAxis.Z) targetForward = _bone.BoneMatrixSet.LocalTransform.Column2.xyz().Normalized;
-
-            // 원래 방향과 목표 방향 사이의 각도 계산
-            var angleBetween = Math.Acos(Math.Max(-1f, Math.Min(1f, _localForward.Dot(targetForward)))) * 180f / Math.PI;
-
-            // 각도가 제한을 초과하지 않으면 그대로 반환
-            if (angleBetween <= _maxYawAngle && angleBetween <= _maxPitchAngle)
-            {
-                return targetTransform;
-            }
-
-            // 제한된 각도로 조정
-            var limitedAngle = Math.Min(_maxYawAngle, _maxPitchAngle);// * Math.PI / 180f;
-
-            // 회전축 계산 (원래 방향과 목표 방향의 외적)
-            var rotationAxis = _localForward.Cross(targetForward).Normalized;
-
-            // 축이 0벡터에 가까우면 회전이 필요 없음
-            if (rotationAxis.Length() < 0.001f)
-            {
-                return _bone.BoneMatrixSet.LocalBindTransform;
-            }
-
-            // 제한된 각도로 회전 쿼터니언 생성
-            var limitedRotation = new Quaternion(rotationAxis, (float)limitedAngle);
-            var limitedMatrix = (Matrix4x4f)limitedRotation;
-
-            // 로컬바인딩행렬과의 곱으로 목표 변환 행렬의 위치는 모든 성분이 0이 되어야 함
-            limitedMatrix[3, 0] = 0;
-            limitedMatrix[3, 1] = 0;
-            limitedMatrix[3, 2] = 0;
-
-            return _bone.BoneMatrixSet.LocalBindTransform * limitedMatrix; // 순서 중요
-            */
-            return Matrix4x4f.Identity;
-        }
-
     }
 }
