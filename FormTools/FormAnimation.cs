@@ -33,12 +33,14 @@ namespace FormTools
         private int _lastGen0Count = 0;
         private int _tick = 0;
 
-        SingleBoneLookAt _singleLookAt;
+        Bitmap _itemBitmap = null;
 
         bool _isLeftTwoBoneIK = true;
+        SingleBoneLookAt _singleLookAt;
+        SingleBoneLookAt _singleLookAt2;
 
-        Bitmap _itemBitmap = null;
-        string testBone = MIXAMORIG_BONENAME.mixamorig_LeftFoot;
+        string testBone = MIXAMORIG_BONENAME.mixamorig_Head;
+        string testBone2 = MIXAMORIG_BONENAME.mixamorig_LeftArm;
         LocalSpaceAxis testForward = LocalSpaceAxis.Y;
         LocalSpaceAxis testUp = LocalSpaceAxis.Z;
 
@@ -268,6 +270,7 @@ namespace FormTools
              */
 
             _singleLookAt = new SingleBoneLookAt(_aniActors[0].AniRig.Armature[testBone], testForward, testUp);
+            _singleLookAt2 = new SingleBoneLookAt(_aniActors[0].AniRig.Armature[testBone2], testForward, testUp);
 
             _glControl3.CameraStepLength = 0.01f;
 
@@ -310,8 +313,8 @@ namespace FormTools
             }
             else
             {
-                //_vertices = _twoBoneIK2.Solve(camera.PivotPosition, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
-                //Console.WriteLine(_twoBoneIK1.UpperBone.JointAngle);
+                Vertex3f target = camera.PivotPosition;
+                _singleLookAt2.Solve(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
             }
 
             // 머리가 카메라를 바라보도록 설정
