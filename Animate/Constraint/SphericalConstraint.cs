@@ -12,6 +12,7 @@ namespace Animate
     /// <br/>
     /// 본의 방향벡터가 기준 방향을 중심으로 한 원뿔 범위 내에서만 움직이도록 제한한다.
     /// </summary>
+    [Obsolete("이 클래스는 더 이상 사용되지 않습니다. SwingTwistConstraint 클래스를 사용하십시오.")]
     public class SphericalConstraint : JointConstraint
     {
         private const float RAD_TO_DEG = 57.295779513f; // 180 / Math.PI

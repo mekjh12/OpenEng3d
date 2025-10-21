@@ -112,7 +112,7 @@ namespace Animate
             AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_Neck, 50, 80, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
             AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_LeftFoot, 30, 20, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
             */
-            AddSwingTwistConstraint(MIXAMORIG_BONENAME.mixamorig_LeftForeArm, 170, 80, LocalSpaceAxis.Y);
+            AddSwingTwistConstraint(MIXAMORIG_BONENAME.mixamorig_Head, 50, 30, LocalSpaceAxis.Z);
         }
 
         public void AddSwingTwistConstraint(string boneName, float swingAngle, float twistAngle, LocalSpaceAxis forward)

@@ -39,10 +39,10 @@ namespace FormTools
         SingleBoneLookAt _singleLookAt;
         SingleBoneLookAt _singleLookAt2;
 
-        string testBone = MIXAMORIG_BONENAME.mixamorig_LeftForeArm;
+        string testBone = MIXAMORIG_BONENAME.mixamorig_Head;
         string testBone2 = MIXAMORIG_BONENAME.mixamorig_LeftArm;
-        LocalSpaceAxis testForward = LocalSpaceAxis.Y;
-        LocalSpaceAxis testUp = LocalSpaceAxis.Z;
+        LocalSpaceAxis testForward = LocalSpaceAxis.Z;
+        LocalSpaceAxis testUp = LocalSpaceAxis.Y;
 
         public FormAnimation()
         {
@@ -152,6 +152,8 @@ namespace FormTools
                 human.AddBoneTagNamePlate(_glControl3.Camera, "상완", MIXAMORIG_BONENAME.mixamorig_LeftArm);
                 human.AddBoneTagNamePlate(_glControl3.Camera, "어깨", MIXAMORIG_BONENAME.mixamorig_LeftShoulder);
                 human.AddBoneTagNamePlate(_glControl3.Camera, "하완", MIXAMORIG_BONENAME.mixamorig_LeftForeArm);
+                human.AddBoneTagNamePlate(_glControl3.Camera, "머리", MIXAMORIG_BONENAME.mixamorig_Head);
+                human.AddBoneTagNamePlate(_glControl3.Camera, "목", MIXAMORIG_BONENAME.mixamorig_Neck);
             }
 
             _itemBitmap = Bitmap.FromFile(PROJECT_PATH + @"\Res\Items\Item_Ingot_Gold.png") as Bitmap;
