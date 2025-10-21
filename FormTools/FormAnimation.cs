@@ -39,7 +39,7 @@ namespace FormTools
         SingleBoneLookAt _singleLookAt;
         SingleBoneLookAt _singleLookAt2;
 
-        string testBone = MIXAMORIG_BONENAME.mixamorig_Head;
+        string testBone = MIXAMORIG_BONENAME.mixamorig_LeftForeArm;
         string testBone2 = MIXAMORIG_BONENAME.mixamorig_LeftArm;
         LocalSpaceAxis testForward = LocalSpaceAxis.Y;
         LocalSpaceAxis testUp = LocalSpaceAxis.Z;
@@ -151,6 +151,7 @@ namespace FormTools
                 Human human = _aniActors[0] as Human;
                 human.AddBoneTagNamePlate(_glControl3.Camera, "상완", MIXAMORIG_BONENAME.mixamorig_LeftArm);
                 human.AddBoneTagNamePlate(_glControl3.Camera, "어깨", MIXAMORIG_BONENAME.mixamorig_LeftShoulder);
+                human.AddBoneTagNamePlate(_glControl3.Camera, "하완", MIXAMORIG_BONENAME.mixamorig_LeftForeArm);
             }
 
             _itemBitmap = Bitmap.FromFile(PROJECT_PATH + @"\Res\Items\Item_Ingot_Gold.png") as Bitmap;
@@ -382,7 +383,7 @@ namespace FormTools
                     Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
                         _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightToeBase], axisLength: 30f);
                     Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
-                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftShoulder], axisLength: 30f);
+                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftArm], axisLength: 30f);
                     Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
                         _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_Spine2], axisLength: 10f);
                     Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,

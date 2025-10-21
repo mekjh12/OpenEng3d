@@ -102,17 +102,37 @@ namespace Animate
 
         public Human(string name, AnimRig aniRig) : base(name, aniRig, HUMAN_ACTION.A_T_POSE)
         {
+            /*
             AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_LeftArm, 130, 80, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
             AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_RightArm, 130, 80, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
+            AddJointHingeConstraint(MIXAMORIG_BONENAME.mixamorig_LeftForeArm, 0, 140, LocalSpaceAxis.Y);
+            AddJointHingeConstraint(MIXAMORIG_BONENAME.mixamorig_RightForeArm, 0, 140, LocalSpaceAxis.Y);
+
             AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_Head, 50, 80, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
             AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_Neck, 50, 80, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
             AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_LeftFoot, 30, 20, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
+            */
+            AddSwingTwistConstraint(MIXAMORIG_BONENAME.mixamorig_LeftForeArm, 170, 80, LocalSpaceAxis.Y);
+        }
+
+        public void AddSwingTwistConstraint(string boneName, float swingAngle, float twistAngle, LocalSpaceAxis forward)
+        {
+            Bone bone = _aniRig.Armature[boneName];
+            SwingTwistConstraint constraint = new SwingTwistConstraint(bone, swingAngle, -twistAngle, twistAngle, forward);
+            bone.SetJointConstraint(constraint);
         }
 
         private void AddJointSphericalConstraint(string boneName, float coneAngle, float twistAngle, LocalSpaceAxis forward, LocalSpaceAxis up)
         {
             Bone bone = _aniRig.Armature[boneName];
             SphericalConstraint constraint = new SphericalConstraint(bone, coneAngle, twistAngle, forward, up);
+            bone.SetJointConstraint(constraint);
+        }
+
+        private void AddJointHingeConstraint(string boneName, float minAngle, float maxAngle, LocalSpaceAxis axis)
+        {
+            Bone bone = _aniRig.Armature[boneName];
+            HingeConstraint constraint = new HingeConstraint(bone, minAngle, maxAngle, axis);
             bone.SetJointConstraint(constraint);
         }
 
@@ -198,7 +218,7 @@ namespace Animate
 
                 if (bone.JointConstraint != null)
                 {
-                    textNamePlate.CharacterName = (bone.JointConstraint as SphericalConstraint).ReferenceFowardDirection.ToString();
+                    //textNamePlate.CharacterName = (bone.JointConstraint as SwingTwistConstraint).ReferenceFowardDirection.ToString();
                 }
 
                 // 처음 시작시 화면 갱신하기
