@@ -11,6 +11,8 @@ namespace Animate
     /// 어깨, 고관절 등의 3DOF 관절에 사용하는 원뿔 형태 제한을 구현한다.
     /// <br/>
     /// 본의 방향벡터가 기준 방향을 중심으로 한 원뿔 범위 내에서만 움직이도록 제한한다.
+    /// <br/>
+    /// 스윙-트위스트 분해: q = q_twist * q_swing (오른쪽부터 적용)
     /// </summary>
     [Obsolete("이 클래스는 더 이상 사용되지 않습니다. SwingTwistConstraint 클래스를 사용하십시오.")]
     public class SphericalConstraint : JointConstraint
@@ -86,12 +88,12 @@ namespace Animate
             if (_maxConeAngle >= 180f && _maxTwistAngle >= 180f)
                 return currentTransform;
 
-            // 위치 추출 (Position 프로퍼티는 새 구조체 생성)
+            // 위치 추출
             float posX = currentTransform[3, 0];
             float posY = currentTransform[3, 1];
             float posZ = currentTransform[3, 2];
 
-            // 스케일 계산 (Length() 대신 직접 계산)
+            // 스케일 계산
             float c0x = currentTransform[0, 0], c0y = currentTransform[0, 1], c0z = currentTransform[0, 2];
             float c1x = currentTransform[1, 0], c1y = currentTransform[1, 1], c1z = currentTransform[1, 2];
             float c2x = currentTransform[2, 0], c2y = currentTransform[2, 1], c2z = currentTransform[2, 2];
@@ -100,25 +102,28 @@ namespace Animate
             float scaleY = (float)Math.Sqrt(c1x * c1x + c1y * c1y + c1z * c1z);
             float scaleZ = (float)Math.Sqrt(c2x * c2x + c2y * c2y + c2z * c2z);
 
-            // 쿼터니언 변환 (여기는 어쩔 수 없음)
+            // 쿼터니언 변환
             Quaternion currentRotation = currentTransform.ToQuaternion();
             Quaternion bindRotation = _bone.BoneMatrixSet.LocalBindTransform.ToQuaternion();
 
+            // 상대 회전: q = q_bind^-1 * q_current
             Quaternion relativeRotation = bindRotation.Inversed() * currentRotation;
 
-            // 재사용 변수 사용
+            // 스윙-트위스트 분해: q = q_twist * q_swing
             DecomposeSwingTwist(relativeRotation, ref _referenceFowardDirection,
                                ref _tempSwing, ref _tempTwist);
 
+            // 제한 적용
             _tempSwing = ConstrainSwing(_tempSwing, _maxConeAngle);
             _tempTwist = ConstrainTwist(_tempTwist, _maxTwistAngle);
 
-            Quaternion constrainedRelative = _tempSwing * _tempTwist;
+            // 재합성: q = q_twist * q_swing
+            Quaternion constrainedRelative = _tempTwist * _tempSwing;
             Quaternion constrainedRotation = bindRotation * constrainedRelative;
 
             Matrix4x4f result = (Matrix4x4f)constrainedRotation;
 
-            // 스케일 복원 (Normalized 대신 직접 계산)
+            // 스케일 복원
             float r0x = result[0, 0], r0y = result[0, 1], r0z = result[0, 2];
             float r1x = result[1, 0], r1y = result[1, 1], r1z = result[1, 2];
             float r2x = result[2, 0], r2y = result[2, 1], r2z = result[2, 2];
@@ -140,31 +145,41 @@ namespace Animate
         }
 
         /// <summary>
-        /// 쿼터니언을 Swing과 Twist로 분해한다
+        /// 쿼터니언을 Swing과 Twist로 분해한다.
+        /// <br/>
+        /// 각속도 벡터 ω = ω_t + ω_s로 분해:
+        /// <br/>
+        /// - ω_t = (ω·d)d : 트위스트 축 방향 평행 성분
+        /// <br/>
+        /// - ω_s = ω - ω_t : 트위스트 축 방향 수직 성분 (스윙 최소화)
+        /// <br/>
+        /// 재합성: q = q_twist * q_swing
         /// </summary>
         private void DecomposeSwingTwist(Quaternion rotation, ref Vertex3f direction,
             ref Quaternion swing, ref Quaternion twist)
         {
+            // 쿼터니언 벡터 부분 추출
             _tempRotationAxis.x = rotation.X;
             _tempRotationAxis.y = rotation.Y;
             _tempRotationAxis.z = rotation.Z;
 
+            // direction 방향으로 사영: ω_t = (ω·d)d
             float dot = _tempRotationAxis.x * direction.x +
                         _tempRotationAxis.y * direction.y +
                         _tempRotationAxis.z * direction.z;
 
-            // projection 계산 (새 구조체 생성 없이)
+            // 평행 성분 계산 (트위스트)
             float projX = direction.x * dot;
             float projY = direction.y * dot;
             float projZ = direction.z * dot;
 
-            // Twist 쿼터니언 생성
+            // Twist 쿼터니언 생성: q_twist = (v_parallel, w)
             twist.X = projX;
             twist.Y = projY;
             twist.Z = projZ;
             twist.W = rotation.W;
 
-            // Twist가 거의 0이면 항등 쿼터니언
+            // Twist 정규화
             float twistLength = (float)Math.Sqrt(
                 twist.X * twist.X +
                 twist.Y * twist.Y +
@@ -180,7 +195,6 @@ namespace Animate
             }
             else
             {
-                // 정규화
                 float invLength = 1f / twistLength;
                 twist.X *= invLength;
                 twist.Y *= invLength;
@@ -188,8 +202,9 @@ namespace Animate
                 twist.W *= invLength;
             }
 
-            // Swing = Rotation * Twist^(-1)
-            swing = rotation * twist.Inversed();
+            // Swing 계산: q_swing = q_twist^-1 * q
+            // (q = q_twist * q_swing이므로 q_swing = q_twist^-1 * q)
+            swing = twist.Inversed() * rotation;
         }
 
         /// <summary>
@@ -202,13 +217,13 @@ namespace Animate
             if (angle <= maxAngle)
                 return swing;
 
-            // 축 길이 계산 (Vertex3f 생성 없이)
+            // 축 길이 계산
             float axisLengthSq = swing.X * swing.X + swing.Y * swing.Y + swing.Z * swing.Z;
 
             if (axisLengthSq < EPSILON_SMALL * EPSILON_SMALL)
                 return Quaternion.Identity;
 
-            // 정규화 (직접 계산)
+            // 정규화
             float invLength = 1f / (float)Math.Sqrt(axisLengthSq);
             float axisX = swing.X * invLength;
             float axisY = swing.Y * invLength;
@@ -233,7 +248,7 @@ namespace Animate
         {
             float angle = 2f * (float)Math.Acos(Math.Max(-1f, Math.Min(1f, twist.W))) * RAD_TO_DEG;
 
-            // 각도 부호 결정 (Vertex3f 생성 없이)
+            // 각도 부호 결정
             float dot = twist.X * _referenceFowardDirection.x +
                         twist.Y * _referenceFowardDirection.y +
                         twist.Z * _referenceFowardDirection.z;
@@ -311,5 +326,4 @@ namespace Animate
             return $"원뿔제한 (Cone: {_maxConeAngle:F1}°, Twist: {_maxTwistAngle:F1}°, Enabled: {_enabled})";
         }
     }
-
 }

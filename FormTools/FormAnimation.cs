@@ -39,10 +39,10 @@ namespace FormTools
         SingleBoneLookAt _singleLookAt;
         SingleBoneLookAt _singleLookAt2;
 
-        string testBone = MIXAMORIG_BONENAME.mixamorig_Head;
-        string testBone2 = MIXAMORIG_BONENAME.mixamorig_LeftArm;
-        LocalSpaceAxis testForward = LocalSpaceAxis.Z;
-        LocalSpaceAxis testUp = LocalSpaceAxis.Y;
+        string testBone = MIXAMORIG_BONENAME.mixamorig_LeftArm;
+        string testBone2 = MIXAMORIG_BONENAME.mixamorig_LeftForeArm;
+        LocalSpaceAxis testForward = LocalSpaceAxis.Y;
+        LocalSpaceAxis testUp = LocalSpaceAxis.Z;
 
         public FormAnimation()
         {
@@ -389,7 +389,7 @@ namespace FormTools
                     Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
                         _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_Spine2], axisLength: 10f);
                     Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
-                        _aniActors[0].AniRig.Armature[testBone], axisLength: 1000f);
+                        _aniActors[0].AniRig.Armature[testBone2], axisLength: 1000f);
 
                     //Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.UpperBone, axisLength: 20f);
                     //Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.LowerBone, axisLength: 15f);

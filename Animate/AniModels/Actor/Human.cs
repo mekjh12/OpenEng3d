@@ -112,7 +112,17 @@ namespace Animate
             AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_Neck, 50, 80, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
             AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_LeftFoot, 30, 20, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
             */
-            AddSwingTwistConstraint(MIXAMORIG_BONENAME.mixamorig_Head, 50, 30, LocalSpaceAxis.Z);
+            //AddSwingTwistConstraint(MIXAMORIG_BONENAME.mixamorig_Head, 50, 30, LocalSpaceAxis.Z);
+            //AddHingeConstraint(MIXAMORIG_BONENAME.mixamorig_LeftForeArm, -10, 140, -90, 90, LocalSpaceAxis.X);
+            AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_LeftArm, 10, 30, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
+            AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_LeftForeArm, 90, 90, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
+        }
+
+        public void AddHingeConstraint(string boneName, float minBendAngle, float maxBendAngle, float minTwistAngle, float maxTwistAngle, LocalSpaceAxis axis)
+        {
+            Bone bone = _aniRig.Armature[boneName];
+            HingeConstraint constraint = new HingeConstraint(bone, minBendAngle, maxBendAngle, minTwistAngle, maxTwistAngle, axis);
+            bone.SetJointConstraint(constraint);
         }
 
         public void AddSwingTwistConstraint(string boneName, float swingAngle, float twistAngle, LocalSpaceAxis forward)
@@ -126,13 +136,6 @@ namespace Animate
         {
             Bone bone = _aniRig.Armature[boneName];
             SphericalConstraint constraint = new SphericalConstraint(bone, coneAngle, twistAngle, forward, up);
-            bone.SetJointConstraint(constraint);
-        }
-
-        private void AddJointHingeConstraint(string boneName, float minAngle, float maxAngle, LocalSpaceAxis axis)
-        {
-            Bone bone = _aniRig.Armature[boneName];
-            HingeConstraint constraint = new HingeConstraint(bone, minAngle, maxAngle, axis);
             bone.SetJointConstraint(constraint);
         }
 

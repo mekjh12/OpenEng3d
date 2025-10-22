@@ -11,7 +11,7 @@
 //    ../Res/Action/Horse/*.dae → HORSE_ACTION enum
 //    ../Res/Action/Human/*.dae → HUMAN_ACTION enum
 // ===================================
-// 자동생성 by GenerateMultiActionEnums.ps1: 2025-10-18 20:27:05
+// 자동생성 by GenerateMultiActionEnums.ps1: 2025-10-22 23:29:31
 
 using System;
 using System.Linq;
