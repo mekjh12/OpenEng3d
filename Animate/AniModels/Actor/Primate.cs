@@ -63,7 +63,7 @@ namespace Animate
                     }
 
                     // 손의 모든 자식본을 업데이트한다.
-                    hand.UpdateAnimatorTransforms(_animator, isSelfIncluded: false);
+                    //hand.UpdateAnimatorTransforms(_animator, isSelfIncluded: false);
                 };
 
                 if (isLeft) _actions["fold" + handName] = action;

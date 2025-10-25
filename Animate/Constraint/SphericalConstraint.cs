@@ -106,8 +106,8 @@ namespace Animate
             Quaternion currentRotation = currentTransform.ToQuaternion();
             Quaternion bindRotation = _bone.BoneMatrixSet.LocalBindTransform.ToQuaternion();
 
-            // 상대 회전: q = q_bind^-1 * q_current
-            Quaternion relativeRotation = bindRotation.Inversed() * currentRotation;
+            // 상대 회전: q = q_current * q_bind^-1
+            Quaternion relativeRotation = currentRotation * bindRotation.Inversed();
 
             // 스윙-트위스트 분해: q = q_twist * q_swing
             DecomposeSwingTwist(relativeRotation, ref _referenceFowardDirection,
@@ -119,7 +119,7 @@ namespace Animate
 
             // 재합성: q = q_twist * q_swing
             Quaternion constrainedRelative = _tempTwist * _tempSwing;
-            Quaternion constrainedRotation = bindRotation * constrainedRelative;
+            Quaternion constrainedRotation =  constrainedRelative * bindRotation;
 
             Matrix4x4f result = (Matrix4x4f)constrainedRotation;
 
@@ -173,34 +173,14 @@ namespace Animate
             float projY = direction.y * dot;
             float projZ = direction.z * dot;
 
-            // Twist 쿼터니언 생성: q_twist = (v_parallel, w)
-            twist.X = projX;
-            twist.Y = projY;
-            twist.Z = projZ;
-            twist.W = rotation.W;
+            // 트위스트 쿼터니언 계산
+            float parallelLength = (float)Math.Sqrt(projX * projX + projY * projY + projZ * projZ);
+            float twistHalfAngle = (float)Math.Atan2(parallelLength, rotation.W);
 
-            // Twist 정규화
-            float twistLength = (float)Math.Sqrt(
-                twist.X * twist.X +
-                twist.Y * twist.Y +
-                twist.Z * twist.Z +
-                twist.W * twist.W);
-
-            if (twistLength < EPSILON_SMALL)
-            {
-                twist.X = 0f;
-                twist.Y = 0f;
-                twist.Z = 0f;
-                twist.W = 1f;
-            }
-            else
-            {
-                float invLength = 1f / twistLength;
-                twist.X *= invLength;
-                twist.Y *= invLength;
-                twist.Z *= invLength;
-                twist.W *= invLength;
-            }
+            twist.X = direction.x * (float)Math.Sin(twistHalfAngle);
+            twist.Y = direction.y * (float)Math.Sin(twistHalfAngle);
+            twist.Z = direction.z * (float)Math.Sin(twistHalfAngle);
+            twist.W = (float)Math.Cos(twistHalfAngle);
 
             // Swing 계산: q_swing = q_twist^-1 * q
             // (q = q_twist * q_swing이므로 q_swing = q_twist^-1 * q)

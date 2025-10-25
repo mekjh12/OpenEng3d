@@ -36,13 +36,8 @@ namespace FormTools
         Bitmap _itemBitmap = null;
 
         bool _isLeftTwoBoneIK = true;
-        SingleBoneLookAt _singleLookAt;
-        SingleBoneLookAt _singleLookAt2;
-
-        string testBone = MIXAMORIG_BONENAME.mixamorig_LeftArm;
-        string testBone2 = MIXAMORIG_BONENAME.mixamorig_LeftForeArm;
-        LocalSpaceAxis testForward = LocalSpaceAxis.Y;
-        LocalSpaceAxis testUp = LocalSpaceAxis.Z;
+        TwoBoneIK _twoBoneIK;
+        TwoBoneIK _twoBoneIK1;
 
         public FormAnimation()
         {
@@ -154,6 +149,9 @@ namespace FormTools
                 human.AddBoneTagNamePlate(_glControl3.Camera, "하완", MIXAMORIG_BONENAME.mixamorig_LeftForeArm);
                 human.AddBoneTagNamePlate(_glControl3.Camera, "머리", MIXAMORIG_BONENAME.mixamorig_Head);
                 human.AddBoneTagNamePlate(_glControl3.Camera, "목", MIXAMORIG_BONENAME.mixamorig_Neck);
+                human.AddBoneTagNamePlate(_glControl3.Camera, "허벅지", MIXAMORIG_BONENAME.mixamorig_LeftUpLeg);
+                human.AddBoneTagNamePlate(_glControl3.Camera, "종아리", MIXAMORIG_BONENAME.mixamorig_LeftLeg);
+                human.Transform.Roll(30);
             }
 
             _itemBitmap = Bitmap.FromFile(PROJECT_PATH + @"\Res\Items\Item_Ingot_Gold.png") as Bitmap;
@@ -272,8 +270,15 @@ namespace FormTools
                 _aniActors[0].AniRig.Armature["mixamorig_LeftForeArm"]);
              */
 
-            _singleLookAt = new SingleBoneLookAt(_aniActors[0].AniRig.Armature[testBone], testForward, testUp);
-            _singleLookAt2 = new SingleBoneLookAt(_aniActors[0].AniRig.Armature[testBone2], testForward, testUp);
+            _twoBoneIK = new TwoBoneIK(
+                _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightUpLeg],
+                _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightLeg],
+                _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightFoot]);
+
+            _twoBoneIK1 = new TwoBoneIK(
+                _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftUpLeg],
+                _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftLeg],
+                _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftFoot]);
 
             _glControl3.CameraStepLength = 0.01f;
 
@@ -308,16 +313,18 @@ namespace FormTools
                 aniActor.Update(deltaTime);
             }
 
+            // 두 본 IK 솔버 적용
+            Vertex3f target = camera.PivotPosition;
 
+            Human human = _aniActors[0] as Human;
+            
             if (_isLeftTwoBoneIK)
             {
-                Vertex3f target = camera.PivotPosition;
-                _singleLookAt.Solve(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+                _vertices = _twoBoneIK.Solve2(target, human.Transform.Forward, human.ModelMatrix, human.Animator);
             }
             else
             {
-                Vertex3f target = camera.PivotPosition;
-                _singleLookAt2.Solve(target, _aniActors[0].ModelMatrix, _aniActors[0].Animator);
+                _vertices = _twoBoneIK1?.Solve2(target, human.Transform.Forward, human.ModelMatrix, human.Animator);
             }
 
             // 머리가 카메라를 바라보도록 설정
@@ -389,7 +396,7 @@ namespace FormTools
                     Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
                         _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_Spine2], axisLength: 10f);
                     Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
-                        _aniActors[0].AniRig.Armature[testBone2], axisLength: 1000f);
+                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftForeArm], axisLength: 1000f);
 
                     //Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.UpperBone, axisLength: 20f);
                     //Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.LowerBone, axisLength: 15f);
@@ -403,27 +410,20 @@ namespace FormTools
             if (_vertices != null)
             {
                 if (_vertices.Length > 0)
-                    Renderer3d.RenderPoint(_colorShader, _vertices[0], camera, new Vertex4f(0, 1, 0, 1), 0.05f);
+                    Renderer3d.RenderPoint(_colorShader, _vertices[0], camera, new Vertex4f(0, 1, 0, 1), 0.02f);
                 if (_vertices.Length > 1)
-                    Renderer3d.RenderPoint(_colorShader, _vertices[1], camera, new Vertex4f(0, 1, 0, 1), 0.05f);
+                    Renderer3d.RenderPoint(_colorShader, _vertices[1], camera, new Vertex4f(0, 1, 0, 1), 0.02f);
                 if (_vertices.Length > 2)
-                    Renderer3d.RenderPoint(_colorShader, _vertices[2], camera, new Vertex4f(0, 1, 0, 1), 0.05f);
+                    Renderer3d.RenderPoint(_colorShader, _vertices[2], camera, new Vertex4f(0, 1, 0, 1), 0.02f);
+                if (_vertices.Length > 3)
+                    Renderer3d.RenderPoint(_colorShader, _vertices[3], camera, new Vertex4f(0, 1, 1, 1), 0.02f);
+                if (_vertices.Length > 4)
+                    Renderer3d.RenderPoint(_colorShader, _vertices[4], camera, new Vertex4f(0, 1, 1, 1), 0.02f);
 
-                // 현재 동작 뼈대
-                if (_vertices.Length > 1)
-                    Renderer.Renderer3d.RenderLine(_colorShader, camera, _vertices[0], _vertices[1], new Vertex4f(0, 1, 0, 1), 1f);
-                if (_vertices.Length > 2)
-                    Renderer.Renderer3d.RenderLine(_colorShader, camera, _vertices[1], _vertices[2], new Vertex4f(0, 1, 0, 1), 1f);
 
                 // 폴벡터
-                if (_vertices.Length > 3)
-                    Renderer.Renderer3d.RenderLine(_colorShader, camera, _vertices[0], _vertices[3], new Vertex4f(0, 1, 1, 1), 1f);
-
-                if (_vertices.Length > 4)
-                    Renderer.Renderer3d.RenderLine(_colorShader, camera, _vertices[0], _vertices[4], new Vertex4f(0, 1, 1, 1), 1f);
-
-                if (_vertices.Length > 0)
-                    Renderer.Renderer3d.RenderLine(_colorShader, camera, _vertices[0], camera.PivotPosition, new Vertex4f(1, 1, 0, 1), 5f);
+                if (_vertices.Length >=6)
+                    Renderer3d.RenderPoint(_colorShader, _vertices[5], camera, new Vertex4f(1, 1, 0, 1), 0.02f);
 
             }
 

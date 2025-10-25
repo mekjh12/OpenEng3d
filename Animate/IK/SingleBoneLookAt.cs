@@ -67,7 +67,7 @@ namespace Animate
         // 공개 메서드
         // -----------------------------------------------------------------------
 
-        public void Solve(Vertex3f worldTargetPosition, Matrix4x4f modelMatrix, Animator animator)
+        public void Solve(Vertex3f worldTargetPosition, Matrix4x4f modelMatrix, Animator animator, bool isSelfIncluded = true)
         {
             // 부모 본에 대한 로컬 공간으로의 변환 행렬
             _bone.WorldToParentLocal(modelMatrix, animator, ref _worldToParentLocal);
@@ -113,15 +113,8 @@ namespace Animate
             finalLocalTransform[3, 1] = _originalPositionLocal.y;
             finalLocalTransform[3, 2] = _originalPositionLocal.z;
 
-            // ★ 제약 적용 ★
-            if (_bone.HasConstraint && _bone.JointConstraint.Enabled)
-            {
-                finalLocalTransform = _bone.JointConstraint.ApplyConstraint(finalLocalTransform);
-            }
-
-            // 본에 적용
-            _bone.BoneMatrixSet.LocalTransform = finalLocalTransform;
-            _bone.UpdateAnimatorTransforms(animator, isSelfIncluded: true);
+            // 뼈대에 최종 로컬 변환 적용
+            _bone.UpdateBone(ref finalLocalTransform, animator, isSelfIncluded);
         }
     }
 }

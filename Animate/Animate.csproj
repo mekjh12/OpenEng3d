@@ -85,16 +85,8 @@
     <Compile Include="Constraint\JointConstraint.cs" />
     <Compile Include="Constraint\SphericalConstraint.cs" />
     <Compile Include="Constraint\SwingTwistConstraint.cs" />
-    <Compile Include="IK\OneBoneLookAt.cs" />
     <Compile Include="IK\SingleBoneLookAt.cs" />
-    <Compile Include="IK\SingleBoneRotationIK.cs" />
-    <Compile Include="IK\ThreeBoneIKFactory.cs" />
-    <Compile Include="IK\ThreeBoneLookAt.cs" />
-    <Compile Include="IK\ThreeBoneIK.cs" />
     <Compile Include="IK\TwoBoneIK.cs" />
-    <Compile Include="IK\TwoBoneIKFactory.cs" />
-    <Compile Include="IK\TwoBoneLookAt.cs" />
-    <Compile Include="IK\TwoBoneRotationIK.cs" />
     <Compile Include="Loader\AniRigLoader.cs" />
     <Compile Include="AniModels\Rig\ATTACHMENT_SLOT .cs" />
     <Compile Include="AniModels\Rig\HorseRig.cs" />

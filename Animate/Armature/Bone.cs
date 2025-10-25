@@ -109,11 +109,24 @@ namespace Animate
             return false;
         }
 
+        public void UpdateBone(ref Matrix4x4f finalLocalTransform, Animator animator, bool isSelfIncluded = false)
+        {
+            // ★ 제약 적용 ★
+            if (HasConstraint && JointConstraint.Enabled)
+            {
+                finalLocalTransform = JointConstraint.ApplyConstraint(finalLocalTransform);
+            }
+
+            // 본에 적용
+            _boneMatrixSet.LocalTransform = finalLocalTransform;
+            UpdateAnimatorTransforms(animator, isSelfIncluded);
+        }
+
         /// <summary>
         /// 로컬 변환 행렬로부터 캐릭터 공간의 애니메이션 변환 행렬을 계산하고 자식 뼈대들에게 전파한다.
         /// </summary>
         /// <param name="isSelfIncluded">현재 뼈대부터 업데이트할지 여부 (true: 자신 포함, false: 자식들만)</param>
-        public void UpdateAnimatorTransforms(Animator animator, bool isSelfIncluded = false)
+        private void UpdateAnimatorTransforms(Animator animator, bool isSelfIncluded = false)
         {
             foreach (Bone bone in this.ToBFSList(isSelfIncluded ? null: this))
             {
