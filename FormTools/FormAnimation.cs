@@ -34,10 +34,14 @@ namespace FormTools
         private int _tick = 0;
 
         Bitmap _itemBitmap = null;
+        Vertex3f _leftFootToePos;
+        Vertex3f _rightFootToePos;
+        Vertex4f _pointColor = new Vertex4f(1, 1, 0, 1);
+        bool _isLeft = true;
 
-        bool _isLeftTwoBoneIK = true;
-        TwoBoneIK _twoBoneIK;
-        TwoBoneIK _twoBoneIK1;
+        Entity _entity;
+        Texture _texture;
+        TexturedModel _texturedModel;
 
         public FormAnimation()
         {
@@ -82,11 +86,16 @@ namespace FormTools
             // 랜덤변수 생성
             Rand.InitSeed(500);
 
-            // 셰이더 초기화
-            if (_staticShader == null) _staticShader = new StaticShader(PROJECT_PATH);
-            if (_animateShader == null) _animateShader = new AnimateShader(PROJECT_PATH);
-            if (_axisShader == null) _axisShader = new AxisShader(PROJECT_PATH);
-            if (_colorShader == null) _colorShader = new ColorShader(PROJECT_PATH);
+            // 쉐이더 초기화 및 셰이더 매니저에 추가
+            ShaderManager.Instance.AddShader(new ColorShader(PROJECT_PATH));
+            ShaderManager.Instance.AddShader(new StaticShader(PROJECT_PATH));
+            ShaderManager.Instance.AddShader(new AnimateShader(PROJECT_PATH));
+            ShaderManager.Instance.AddShader(new AxisShader(PROJECT_PATH));
+
+            _axisShader = ShaderManager.Instance.GetShader<AxisShader>();
+            _colorShader = ShaderManager.Instance.GetShader<ColorShader>();
+            _staticShader = ShaderManager.Instance.GetShader<StaticShader>();
+            _animateShader = ShaderManager.Instance.GetShader<AnimateShader>();
 
             // ✅ 앱 시작 시 한 번만 초기화
             Ui3d.BillboardShader.Initialize();
@@ -139,23 +148,26 @@ namespace FormTools
                 }
             }
 
-            _aniActors.Add(new Human("abe1abe1아베abe1abe1아베abe1abe1아베abe1abe1아베abe1abe1아베abe1abe1아베", aniRig));
-            _aniActors[0].Transform.IncreasePosition(1, 1, 0);
+            _aniActors.Add(new Human("abe", aniRig));
             if (_aniActors[0] is Human)
             {
                 Human human = _aniActors[0] as Human;
-                human.AddBoneTagNamePlate(_glControl3.Camera, "상완", MIXAMORIG_BONENAME.mixamorig_LeftArm);
-                human.AddBoneTagNamePlate(_glControl3.Camera, "어깨", MIXAMORIG_BONENAME.mixamorig_LeftShoulder);
-                human.AddBoneTagNamePlate(_glControl3.Camera, "하완", MIXAMORIG_BONENAME.mixamorig_LeftForeArm);
-                human.AddBoneTagNamePlate(_glControl3.Camera, "머리", MIXAMORIG_BONENAME.mixamorig_Head);
-                human.AddBoneTagNamePlate(_glControl3.Camera, "목", MIXAMORIG_BONENAME.mixamorig_Neck);
-                human.AddBoneTagNamePlate(_glControl3.Camera, "허벅지", MIXAMORIG_BONENAME.mixamorig_LeftUpLeg);
-                human.AddBoneTagNamePlate(_glControl3.Camera, "종아리", MIXAMORIG_BONENAME.mixamorig_LeftLeg);
-                human.Transform.Roll(30);
+                human.Transform.IncreasePosition(2, 2, 0);
             }
 
+            // 주어진 네 꼭짓점으로 평면 생성
+            Vertex3f p0 = new Vertex3f(0, 0, 1);
+            Vertex3f p1 = new Vertex3f(4, 0, 1);
+            Vertex3f p2 = new Vertex3f(4, 2, 0);
+            Vertex3f p3 = new Vertex3f(0, 2, 0);
+
+            RawModel3d plane = LoadQuadPlane(p0, p1, p2, p3);
+            _texture = new Texture(PROJECT_PATH + @"\Res\Tex_Yeongmojeon_01_AlbedoTransparency.png");
+            _texturedModel = new TexturedModel(plane, _texture);
+            _entity = new Entity("groundPlane", "", _texturedModel);
             _itemBitmap = Bitmap.FromFile(PROJECT_PATH + @"\Res\Items\Item_Ingot_Gold.png") as Bitmap;
 
+            
             //_aniActors.Add(new Human($"Guybrush", aniRig2));
             //_aniActors[1].Transform.IncreasePosition(4, 0.0f, 0);
 
@@ -225,7 +237,7 @@ namespace FormTools
             {
                 if (aniActor is Human)
                 {
-                    (aniActor as Human).SetMotion(HUMAN_ACTION.A_T_POSE);
+                    (aniActor as Human).SetMotion(HUMAN_ACTION.SLOW_RUN);
                 }
                 else if (aniActor is Donkey)
                 {
@@ -270,15 +282,7 @@ namespace FormTools
                 _aniActors[0].AniRig.Armature["mixamorig_LeftForeArm"]);
              */
 
-            _twoBoneIK = new TwoBoneIK(
-                _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightUpLeg],
-                _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightLeg],
-                _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightFoot]);
-
-            _twoBoneIK1 = new TwoBoneIK(
-                _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftUpLeg],
-                _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftLeg],
-                _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftFoot]);
+            
 
             _glControl3.CameraStepLength = 0.01f;
 
@@ -286,8 +290,10 @@ namespace FormTools
             FileHashManager.SaveHashes();
         }
 
-        Vertex3f[] _vertices;
-        Matrix4x4f _temp;
+        private Vertex3f GetGroundVertex3f(Vertex3f position)
+        {
+            return new Vertex3f(position.x, position.y, 1.0f - 0.5f*position.y);
+        }
 
         /// <summary>
         /// 프레임 업데이트를 처리합니다.
@@ -311,20 +317,36 @@ namespace FormTools
             foreach (IAnimActor aniActor in _aniActors)
             {
                 aniActor.Update(deltaTime);
-            }
 
-            // 두 본 IK 솔버 적용
-            Vertex3f target = camera.PivotPosition;
+                if (aniActor is Human human)
+                {
+                    // 발끝 위치 가져오기
+                    _leftFootToePos = human.GetLeftFootToePosition();
+                    _rightFootToePos = human.GetRightFootToePosition();
 
-            Human human = _aniActors[0] as Human;
-            
-            if (_isLeftTwoBoneIK)
-            {
-                _vertices = _twoBoneIK.Solve2(target, human.Transform.Forward, human.ModelMatrix, human.Animator);
-            }
-            else
-            {
-                _vertices = _twoBoneIK1?.Solve2(target, human.Transform.Forward, human.ModelMatrix, human.Animator);
+                    // 지면 높이 계산
+                    Vertex3f leftGroundPoint = GetGroundVertex3f(_leftFootToePos);
+                    Vertex3f rightGroundPoint = GetGroundVertex3f(_rightFootToePos);
+
+                    // 왼쪽 발이 지면에 묻혔으면 조정
+                    if (human.IsFootPenetrating(true, leftGroundPoint.z))
+                    {
+                        human.AdjustFootToGround(true, leftGroundPoint, Vertex3f.UnitZ);
+                    }
+
+                    // 오른쪽 발이 지면에 묻혔으면 조정
+                    if (human.IsFootPenetrating(false, rightGroundPoint.z))
+                    {
+                        human.AdjustFootToGround(false, rightGroundPoint, Vertex3f.UnitZ);
+                    }
+
+                    // 머리 방향 설정
+                    human.LookAt(camera.PivotPosition);
+
+                    // 팔 IK 적용(머리 방향이 미리 바뀌어야 정확하게 목표점을 타켓할 수 있음)
+                    human.SetArmTarget(_isLeft, camera.PivotPosition, human.HipWorldPosition);
+                    human.ApplyArmIK();
+                } 
             }
 
             // 머리가 카메라를 바라보도록 설정
@@ -382,7 +404,7 @@ namespace FormTools
 
             foreach (IAnimActor aniActor in _aniActors)
             {
-                aniActor.Render(camera, vp, _animateShader, _staticShader, isBoneVisible: true);
+                aniActor.Render(camera, vp, _animateShader);
             }
 
             foreach (IAnimActor aniActor in _aniActors)
@@ -390,42 +412,24 @@ namespace FormTools
                 if (aniActor is Human)
                 {
                     Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
-                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightToeBase], axisLength: 30f);
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
-                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftArm], axisLength: 30f);
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
-                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_Spine2], axisLength: 10f);
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
-                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftForeArm], axisLength: 1000f);
+                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftHand], axisLength: 1000f);
 
-                    //Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.UpperBone, axisLength: 20f);
+                    Human human = aniActor as Human;
+                    Renderer3d.RenderPoint(_colorShader, human.LeftFootToeWorldPosition, camera, _pointColor, 0.02f);
+                    Renderer3d.RenderPoint(_colorShader, human.RightFootToeWorldPosition, camera, _pointColor, 0.02f);
+                    Renderer3d.RenderPoint(_colorShader, human.HipWorldPosition, camera, _pointColor, 0.02f);
+
+                    Renderer3d.RenderPoint(_colorShader, human.TestPoint, camera, new Vertex4f(0,1,1,1), 0.05f);
                     //Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.LowerBone, axisLength: 15f);
                     //Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.EndBone, axisLength: 10f);
                 }
-                break;
             }
 
             Renderer3d.RenderPoint(_colorShader, camera.PivotPosition, camera, new Vertex4f(1, 0, 0, 1), 0.025f);
 
-            if (_vertices != null)
-            {
-                if (_vertices.Length > 0)
-                    Renderer3d.RenderPoint(_colorShader, _vertices[0], camera, new Vertex4f(0, 1, 0, 1), 0.02f);
-                if (_vertices.Length > 1)
-                    Renderer3d.RenderPoint(_colorShader, _vertices[1], camera, new Vertex4f(0, 1, 0, 1), 0.02f);
-                if (_vertices.Length > 2)
-                    Renderer3d.RenderPoint(_colorShader, _vertices[2], camera, new Vertex4f(0, 1, 0, 1), 0.02f);
-                if (_vertices.Length > 3)
-                    Renderer3d.RenderPoint(_colorShader, _vertices[3], camera, new Vertex4f(0, 1, 1, 1), 0.02f);
-                if (_vertices.Length > 4)
-                    Renderer3d.RenderPoint(_colorShader, _vertices[4], camera, new Vertex4f(0, 1, 1, 1), 0.02f);
-
-
-                // 폴벡터
-                if (_vertices.Length >=6)
-                    Renderer3d.RenderPoint(_colorShader, _vertices[5], camera, new Vertex4f(1, 1, 0, 1), 0.02f);
-
-            }
+            Renderer3d.RenderPoint(_colorShader, _rightFootToePos, camera, new Vertex4f(1, 0, 0, 1), 0.025f);
+            Renderer.Renderer3d.Render(_staticShader, _colorShader, _entity, camera, Vertex3f.One, Vertex4f.One, 1.0f);
+            
 
             // 폴리곤 모드 설정
             Gl.PolygonMode(MaterialFace.FrontAndBack, _glControl3.PolygonMode);
@@ -454,6 +458,26 @@ namespace FormTools
                 foreach (IAnimActor aniActor in _aniActors)
                 {
                     aniActor.PolygonMode = aniActor.PolygonMode == PolygonMode.Fill ? PolygonMode.Line : PolygonMode.Fill;
+                }
+            }
+            else if (e.KeyCode == Keys.T)
+            {
+                _isLeft = !_isLeft;
+            }
+            else if (e.KeyCode == Keys.R)
+            {
+                Human human = _aniActors[0] as Human;
+                if (human.Animator.PlaySpeed == 1.0f)
+                {
+                    human.Animator.PlaySpeed = 3.0f;
+                }
+                else if (human.Animator.PlaySpeed > 2.0f)
+                {
+                    human.Animator.PlaySpeed = 0.1f;
+                }
+                else
+                {
+                    human.Animator.PlaySpeed = 1.0f;
                 }
             }
             else if (e.KeyCode == Keys.D1)
@@ -486,7 +510,7 @@ namespace FormTools
             }
             else if (e.KeyCode == Keys.D3)
             {
-                for(int i = 0; i < _aniActors.Count; i++)
+                for (int i = 0; i < _aniActors.Count; i++)
                 {
                     if (_aniActors[i] is Donkey)
                     {
@@ -519,10 +543,6 @@ namespace FormTools
                         //human.TextNamePlate.Refresh();
                     }
                 }
-            }
-            else if (e.KeyCode == Keys.R)
-            {
-                _isLeftTwoBoneIK = !_isLeftTwoBoneIK;
             }
             else if (e.KeyCode == Keys.D0)
             {
@@ -562,5 +582,108 @@ namespace FormTools
 
             return texturedModels.ToArray();
         }
+
+        /// <summary>
+        /// 네 개의 꼭짓점으로 평면을 만든다. (반시계 방향)
+        /// </summary>
+        /// <param name="p0">첫 번째 꼭짓점</param>
+        /// <param name="p1">두 번째 꼭짓점</param>
+        /// <param name="p2">세 번째 꼭짓점</param>
+        /// <param name="p3">네 번째 꼭짓점</param>
+        /// <returns></returns>
+        public static RawModel3d LoadQuadPlane(Vertex3f p0, Vertex3f p1, Vertex3f p2, Vertex3f p3)
+        {
+            // 법선 벡터 계산 (반시계 방향 기준)
+            Vertex3f edge1 = p1 - p0;
+            Vertex3f edge2 = p2 - p0;
+            Vertex3f normal = edge1.Cross(edge2).Normalized;
+
+            // 위 방향(+Z)을 향하도록 법선 확인
+            if (normal.z < 0)
+            {
+                normal = -normal;
+            }
+
+            // 두 개의 삼각형으로 평면 구성
+            float[] positions =
+            {
+        p0.x, p0.y, p0.z,
+        p1.x, p1.y, p1.z,
+        p2.x, p2.y, p2.z,
+        p2.x, p2.y, p2.z,
+        p3.x, p3.y, p3.z,
+        p0.x, p0.y, p0.z
+    };
+
+            float[] normals =
+            {
+        normal.x, normal.y, normal.z,
+        normal.x, normal.y, normal.z,
+        normal.x, normal.y, normal.z,
+        normal.x, normal.y, normal.z,
+        normal.x, normal.y, normal.z,
+        normal.x, normal.y, normal.z
+    };
+
+            float[] textures =
+            {
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+        1.0f, 1.0f,
+        1.0f, 1.0f,
+        0.0f, 1.0f,
+        0.0f, 0.0f
+    };
+
+            TangentSpace.CalculateTangents(positions, textures, normals, out float[] tangents, out float[] bitangents);
+
+            uint vao = Gl.GenVertexArray();
+            Gl.BindVertexArray(vao);
+            uint vbo;
+            vbo = StoreDataInAttributeList(0, 3, positions);
+            GPUBuffer.Add(vao, vbo);
+            vbo = StoreDataInAttributeList(1, 2, textures);
+            GPUBuffer.Add(vao, vbo);
+            vbo = StoreDataInAttributeList(2, 3, normals);
+            GPUBuffer.Add(vao, vbo);
+            vbo = StoreDataInAttributeList(3, 4, tangents);
+            GPUBuffer.Add(vao, vbo);
+            vbo = StoreDataInAttributeList(4, 4, bitangents);
+            GPUBuffer.Add(vao, vbo);
+
+            Gl.BindVertexArray(0);
+
+            RawModel3d rawModel = new RawModel3d(vao, positions);
+            return rawModel;
+        }
+
+        /// <summary>
+        /// * data를 gpu에 올리고 vbo를 반환한다.<br/>
+        /// * vao는 함수 호출 전에 바인딩하여야 한다.<br/>
+        /// </summary>
+        /// <param name="attributeNumber">attributeNumber 슬롯 번호</param>
+        /// <param name="coordinateSize">자료의 벡터 성분의 개수 (예) vertex3f는 3이다.</param>
+        /// <param name="data"></param>
+        /// <param name="usage"></param>
+        /// <returns>vbo를 반환</returns>
+        public static unsafe uint StoreDataInAttributeList(uint attributeNumber, int coordinateSize, float[] data, BufferUsage usage = BufferUsage.StaticDraw)
+        {
+            // VBO 생성
+            uint vboID = Gl.GenBuffer();
+
+            // VBO의 데이터를 CPU로부터 GPU에 복사할 때 사용하는 BindBuffer를 다음과 같이 사용
+            Gl.BindBuffer(BufferTarget.ArrayBuffer, vboID);
+            Gl.BufferData(BufferTarget.ArrayBuffer, (uint)(data.Length * sizeof(float)), data, usage);
+
+            // 이전에 BindVertexArray한 VAO에 현재 Bind된 VBO를 attributeNumber 슬롯에 설정
+            Gl.VertexAttribPointer(attributeNumber, coordinateSize, VertexAttribType.Float, false, 0, IntPtr.Zero);
+            //Gl.VertexArrayVertexBuffer(glVertexArrayVertexBuffer, vboID, )
+
+            // GPU 메모리 조작이 필요 없다면 다음과 같이 바인딩 해제
+            Gl.BindBuffer(BufferTarget.ArrayBuffer, 0);
+
+            return vboID;
+        }
+
     }
 }

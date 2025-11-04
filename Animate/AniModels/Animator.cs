@@ -29,6 +29,7 @@ namespace Animate
 
         private float _motionTime = 0.0f;               // 현재 모션 시간
         private bool _isPlaying = true;                 // 재생 상태
+        private float _playSpeed = 1.0f;                // 재생 속도 
 
         // 모션 관련 변수
         private AnimationState _animationState = AnimationState.Normal; // 현재 애니메이션 상태
@@ -106,6 +107,7 @@ namespace Animate
             get => _motionTime;
             set => _motionTime = value;
         }
+        public float PlaySpeed { get => _playSpeed; set => _playSpeed = value.Clamp(0.0001f, 10.0f); }
 
         /// <summary>
         /// 생성자//
@@ -283,7 +285,7 @@ namespace Animate
             if (_isPlaying)
             {
                 // 모션 시간을 업데이트한다.
-                _motionTime += deltaTime;
+                _motionTime += _playSpeed * deltaTime;
 
                 // 모션의 재생이 역인 경우에 마이너스 시간을 조정한다.
                 if (_motionTime < 0)

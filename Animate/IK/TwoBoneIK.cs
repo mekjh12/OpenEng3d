@@ -1,8 +1,6 @@
-﻿using Assimp;
-using OpenGL;
+﻿using OpenGL;
 using System;
 using ZetaExt;
-using Quaternion = ZetaExt.Quaternion;
 
 namespace Animate
 {
@@ -18,12 +16,12 @@ namespace Animate
     /// armIK.Solve(targetPosition, modelMatrix, animator);
     /// </code>
     /// </summary>
-    public class TwoBoneIK
+    public abstract class TwoBoneIK
     {
         // -----------------------------------------------------------------------
         // 멤버 변수
         // -----------------------------------------------------------------------
-        private const float EPSILON = 0.0001f;  // 부동소수점 비교용 작은 값
+        protected const float EPSILON = 0.0001f;  // 부동소수점 비교용 작은 값
         private readonly Bone _upperBone;       // 상완 본 (어깨/엉덩이)
         private readonly Bone _lowerBone;       // 하완 본 (팔목/발)
         private readonly Bone _endBone;         // 끝 본 (손/발)
@@ -31,20 +29,27 @@ namespace Animate
         private readonly SingleBoneLookAt _upperBoneLookAt; // 상완 본 LookAt 컨트롤러
         private readonly SingleBoneLookAt _lowerBoneLookAt; // 하완 본 LookAt 컨트롤러
 
-        private float _upperLength;     // 상단 본 길이
-        private float _lowerLength;     // 하단 본 길이
-        private float _maxReach;        // 최대 도달 거리
-        private float _minReach;        // 최소 도달 거리
+        protected float _upperLength;     // 상단 본 길이
+        protected float _lowerLength;     // 하단 본 길이
+        protected float _maxReach;        // 최대 도달 거리
+        protected float _minReach;        // 최소 도달 거리
 
         private bool _isLengthLoaded = false;
 
         // 계산용 임시 변수
-        private Vertex3f _rootWorld;
-        private Vertex3f _midWorld;
-        private Vertex3f _endWorld;
-        private Matrix4x4f _rootTransformWorld;
+        protected Vertex3f _rootWorld;
+        protected Vertex3f _midWorld;
+        protected Vertex3f _endWorld;
+        protected Matrix4x4f _rootTransformWorld;
+        protected Vertex3f _prevTargetWorld;
+        protected Vertex3f _targetDir;
+        protected Vertex3f _targetWorld;
+        protected Vertex3f _newMidWorld;
+        protected Vertex3f _newEndWorld;
+        protected Vertex3f _poleVector;
 
-
+        protected float _shoulderAngle;
+        protected float _elbowAngle;
 
         // -----------------------------------------------------------------------
         // 속성
@@ -84,177 +89,99 @@ namespace Animate
         // 공개 메서드
         // -----------------------------------------------------------------------
 
-        public Vertex3f[] Solve2(Vertex3f targetPositionWorld, Vertex3f poleVector, Matrix4x4f modelMatrix, Animator animator)
+        public void Solve(Vertex3f targetPositionWorld, Vertex3f poleVector, Matrix4x4f modelMatrix, Animator animator)
         {
-            CalculateJointWorldPosition(animator, modelMatrix, ref _rootTransformWorld);
+            PrepareSolve(targetPositionWorld, modelMatrix, animator);
 
-            CalculateBoneLength(_rootWorld, _midWorld, _endWorld);
+            // 자식 클래스가 구현할 중간 로직
+            _poleVector = SolveInternal(targetPositionWorld, poleVector, modelMatrix, animator);
 
-            // 최대/최소 도달 거리 계산
-            _maxReach = _upperLength + _lowerLength;
-            _minReach = Math.Abs(_upperLength - _lowerLength);
+            // 폴벡터와 d벡터로 직교 성분 계산
+            float dot = _poleVector.Dot(_targetDir);
+            _poleVector = _poleVector - _targetDir * dot;
+            float poleProjLength = _poleVector.Length();
+            _poleVector /= poleProjLength;
 
-            // 3단계: 타겟 방향 및 거리(d) 계산
-            Vertex3f targetWorld = targetPositionWorld; // IK 타겟 위치
-            Vertex3f toTarget = targetWorld - _rootWorld;
-            float distance = toTarget.Length();
+            FinishedSolve(_poleVector, modelMatrix, animator);
 
-            // 타겟 방향 정규화(d)
-            Vertex3f targetDir = toTarget / distance;
-
-            // 4단계: 도달 가능 범위 제한
-            float clampedDistance = distance.Clamp(_minReach, _maxReach);
-
-            // 타겟 방향 성분 제거 (사영)
-            float dot = poleVector.Dot(targetDir);
-            Vertex3f poleProj = poleVector - targetDir * dot;
-            float poleProjLength = poleProj.Length();
-
-            if (poleProjLength < EPSILON)
-            {
-                // 특이 케이스: 팔꿈치가 어깨-타겟 직선 상에 있음
-                // 대체 벡터 사용
-                Vertex3f fallback = Math.Abs(targetDir.Dot(Vertex3f.UnitY)) < 0.99f
-                    ? Vertex3f.UnitY
-                    : Vertex3f.UnitZ;
-
-                float fallbackDot = fallback.Dot(targetDir);
-                poleProj = fallback - targetDir * fallbackDot;
-                poleProjLength = poleProj.Length();
-
-                poleVector = poleProj / poleProjLength;
-                Console.WriteLine("특이케이스" + DateTime.Now);
-            }
-            else
-            {
-                poleVector = poleProj / poleProjLength;
-            }
-
-            // 6단계: 팔꿈치 각도 계산 (코사인 법칙)
-            float upperSq = _upperLength * _upperLength;
-            float lowerSq = _lowerLength * _lowerLength;
-            float distSq = clampedDistance * clampedDistance;
-
-            float cosElbow = (upperSq + lowerSq - distSq) / (2f * _upperLength * _lowerLength);
-            cosElbow = cosElbow.Clamp(-1f, 1f);
-            float elbowAngle = (float)Math.Acos(cosElbow);
-
-            // 7단계: 어깨 각도 계산
-            float cosShoulder = (upperSq + distSq - lowerSq) / (2f * _upperLength * clampedDistance);
-            cosShoulder = cosShoulder.Clamp(-1f, 1f);
-            float shoulderAngle = (float)Math.Acos(cosShoulder);
-            //shoulderAngle = forward.Dot(poleVector) > 0 ? shoulderAngle : -shoulderAngle;
-
-            // 8단계: 팔꿈치 위치 계산
-            float cosAlpha = (float)Math.Cos(shoulderAngle);
-            float sinAlpha = (float)Math.Sin(shoulderAngle);
-            Vertex3f newMidWorld = _rootWorld + (targetDir * cosAlpha + poleVector * sinAlpha) * _upperLength;
-
-            // 9단계: 손목 위치 (검증용)
-            Vertex3f midToTarget = targetWorld - newMidWorld;
-            float midToTargetLength = midToTarget.Length();
-            Vertex3f lowerDir = midToTargetLength > EPSILON ? midToTarget / midToTargetLength : targetDir;
-            Vertex3f newEndWorld = newMidWorld + lowerDir * _lowerLength;
-
-            _upperBoneLookAt.Solve(newMidWorld, modelMatrix, animator);
-            _lowerBoneLookAt.Solve(targetWorld, modelMatrix, animator);
-
-            return new Vertex3f[] { _rootWorld, _midWorld, _endWorld, newMidWorld, newEndWorld, poleVector };
+            //return new Vertex3f[] { _rootWorld, _midWorld, _endWorld, _newMidWorld, _newEndWorld, _poleVector };
         }
 
         /// <summary>
-        /// 2본 IK를 해결하여 끝점이 목표 위치에 도달하도록 한다
+        /// IK 해결을 위한 내부 로직을 구현합니다.
+        /// <code>
+        /// 구현 단계:
+        /// 1. 폴 벡터 방향 결정 (조건에 따라)
+        /// 2. 정규화된 폴 벡터 반환
+        /// </code>
         /// </summary>
-        /// <param name="targetPositionWorld">목표 월드 위치</param>
-        /// <param name="forward">목표 월드 위치</param>
+        /// <param name="targetPositionWorld">월드 공간의 목표 위치</param>
         /// <param name="modelMatrix">모델 변환 행렬</param>
-        /// <param name="animator">애니메이터</param>
-        /// <returns>계산된 관절 위치들 [Root, Mid, End, MidAfter]</returns>
-        public Vertex3f[] Solve(Vertex3f targetPositionWorld, Vertex3f forward, Matrix4x4f modelMatrix, Animator animator)
-        {
-            CalculateJointWorldPosition(animator, modelMatrix, ref _rootTransformWorld);
-
-            CalculateBoneLength(_rootWorld, _midWorld, _endWorld);
-
-            // 최대/최소 도달 거리 계산
-            _maxReach = _upperLength + _lowerLength;
-            _minReach = Math.Abs(_upperLength - _lowerLength);
-
-            // 3단계: 타겟 방향 및 거리(d) 계산
-            Vertex3f targetWorld = targetPositionWorld; // IK 타겟 위치
-            Vertex3f toTarget = targetWorld - _rootWorld;
-            float distance = toTarget.Length();
-
-            // 타겟 방향 정규화(d)
-            Vertex3f targetDir = toTarget / distance;
-
-            // 4단계: 도달 가능 범위 제한
-            float clampedDistance = distance.Clamp(_minReach, _maxReach);
-
-            // 5단계: 폴 벡터 계산 (애니메이션 기반)
-            Vertex3f animElbowDir = _midWorld - _rootWorld;
-
-            // 타겟 방향 성분 제거 (사영)
-            float dot = animElbowDir.Dot(targetDir);
-            Vertex3f poleProj = animElbowDir - targetDir * dot;
-            float poleProjLength = poleProj.Length();
-
-            Vertex3f poleVector;
-            if (poleProjLength < EPSILON)
-            {
-                // 특이 케이스: 팔꿈치가 어깨-타겟 직선 상에 있음
-                // 대체 벡터 사용
-                Vertex3f fallback = Math.Abs(targetDir.Dot(Vertex3f.UnitY)) < 0.99f
-                    ? Vertex3f.UnitY
-                    : Vertex3f.UnitZ;
-
-                float fallbackDot = fallback.Dot(targetDir);
-                poleProj = fallback - targetDir * fallbackDot;
-                poleProjLength = poleProj.Length();
-
-                poleVector = poleProj / poleProjLength;
-                Console.WriteLine("특이케이스" + DateTime.Now);
-            }
-            else
-            {
-                poleVector = poleProj / poleProjLength;
-            }
-
-            // 6단계: 팔꿈치 각도 계산 (코사인 법칙)
-            float upperSq = _upperLength * _upperLength;
-            float lowerSq = _lowerLength * _lowerLength;
-            float distSq = clampedDistance * clampedDistance;
-
-            float cosElbow = (upperSq + lowerSq - distSq) / (2f * _upperLength * _lowerLength);
-            cosElbow = cosElbow.Clamp(-1f, 1f);
-            float elbowAngle = (float)Math.Acos(cosElbow);
-
-            // 7단계: 어깨 각도 계산
-            float cosShoulder = (upperSq + distSq - lowerSq) / (2f * _upperLength * clampedDistance);
-            cosShoulder = cosShoulder.Clamp(-1f, 1f);
-            float shoulderAngle = (float)Math.Acos(cosShoulder);
-            shoulderAngle = forward.Dot(poleVector) > 0 ? shoulderAngle : -shoulderAngle;
-
-            // 8단계: 팔꿈치 위치 계산
-            float cosAlpha = (float)Math.Cos(shoulderAngle);
-            float sinAlpha = (float)Math.Sin(shoulderAngle);
-            Vertex3f newMidWorld = _rootWorld + (targetDir * cosAlpha + poleVector * sinAlpha) * _upperLength;
-
-            // 9단계: 손목 위치 (검증용)
-            Vertex3f midToTarget = targetWorld - newMidWorld;
-            float midToTargetLength = midToTarget.Length();
-            Vertex3f lowerDir = midToTargetLength > EPSILON ? midToTarget / midToTargetLength : targetDir;
-            Vertex3f newEndWorld = newMidWorld + lowerDir * _lowerLength;
-
-            _upperBoneLookAt.Solve(newMidWorld, modelMatrix, animator);
-            _lowerBoneLookAt.Solve(targetWorld, modelMatrix, animator);
-
-            return new Vertex3f[] { _rootWorld, _midWorld, _endWorld, newMidWorld, newEndWorld, poleVector };
-        }
+        /// <param name="animator">애니메이터 인스턴스</param>
+        /// <returns>계산된 폴 벡터 (정규화됨)</returns>
+        protected abstract Vertex3f SolveInternal(Vertex3f targetPositionWorld, Vertex3f poleVector, Matrix4x4f modelMatrix, Animator animator);
 
         // -----------------------------------------------------------------------
         // 내부 메서드
         // -----------------------------------------------------------------------
+
+        protected void PrepareSolve(Vertex3f targetPositionWorld, Matrix4x4f modelMatrix, Animator animator)
+        {
+            if (_targetWorld == targetPositionWorld) return;
+
+            // 관절의 월드 위치 계산
+            CalculateJointWorldPosition(animator, modelMatrix, ref _rootTransformWorld);
+
+            // 본 길이 계산
+            CalculateBoneLength(_rootWorld, _midWorld, _endWorld);
+
+            // 최대/최소 도달 거리 계산
+            _maxReach = _upperLength + _lowerLength;
+            _minReach = Math.Abs(_upperLength - _lowerLength);
+
+            // 타겟 방향 및 거리(d) 계산
+            _targetWorld = targetPositionWorld; // IK 타겟 위치
+            Vertex3f toTarget = _targetWorld - _rootWorld;
+            float distance = toTarget.Length();
+
+            // 타겟 방향 정규화(d)
+            _targetDir = toTarget / distance;
+
+            // 도달 가능 범위 제한
+            float clampedDistance = distance.Clamp(_minReach, _maxReach);
+
+            // 팔꿈치 각도 계산 (코사인 법칙)
+            float upperSq = _upperLength * _upperLength;
+            float lowerSq = _lowerLength * _lowerLength;
+            float distSq = clampedDistance * clampedDistance;
+
+            float cosElbow = (upperSq + lowerSq - distSq) / (2f * _upperLength * _lowerLength);
+            cosElbow = cosElbow.Clamp(-1f, 1f);
+            _elbowAngle = (float)Math.Acos(cosElbow);
+
+            // 어깨 각도 계산
+            float cosShoulder = (upperSq + distSq - lowerSq) / (2f * _upperLength * clampedDistance);
+            cosShoulder = cosShoulder.Clamp(-1f, 1f);
+            _shoulderAngle = (float)Math.Acos(cosShoulder);
+        }
+
+        protected void FinishedSolve(Vertex3f poleVector, Matrix4x4f modelMatrix, Animator animator)
+        {
+            // 팔꿈치 위치 계산
+            float cosAlpha = (float)Math.Cos(_shoulderAngle);
+            float sinAlpha = (float)Math.Sin(_shoulderAngle);
+            _newMidWorld = _rootWorld + (_targetDir * cosAlpha + poleVector * sinAlpha) * _upperLength;
+
+            // 손목 위치 (검증용)
+            Vertex3f midToTarget = _targetWorld - _newMidWorld;
+            float midToTargetLength = midToTarget.Length();
+            Vertex3f lowerDir = midToTargetLength > EPSILON ? midToTarget / midToTargetLength : _targetDir;
+            _newEndWorld = _newMidWorld + lowerDir * _lowerLength;
+
+            // 본 회전 적용
+            _upperBoneLookAt.Solve(_newMidWorld, modelMatrix, animator);
+            _lowerBoneLookAt.Solve(_targetWorld, modelMatrix, animator);
+        }
 
         private void CalculateJointWorldPosition(Animator animator, Matrix4x4f modelMatrix, ref Matrix4x4f rootTransformWorld)
         {
@@ -276,8 +203,5 @@ namespace Animate
                     throw new ArgumentException("본의 길이가 너무 짧다.");
             }
         }
-
-
-
     }
 }

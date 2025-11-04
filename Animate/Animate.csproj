@@ -68,7 +68,6 @@
     <Compile Include="AniModels\AniActor\ActionHandler.cs" />
     <Compile Include="AniModels\AniActor\AnimActor.Equip.cs" />
     <Compile Include="AniModels\AniActor\AnimalActor.cs" />
-    <Compile Include="AniModels\BlendingAnimator.cs" />
     <Compile Include="AniModels\Actor\Horse.cs" />
     <Compile Include="AniModels\AniActor\IAnimActor.cs" />
     <Compile Include="AniModels\Rig\AnimRig.cs" />
@@ -85,8 +84,17 @@
     <Compile Include="Constraint\JointConstraint.cs" />
     <Compile Include="Constraint\SphericalConstraint.cs" />
     <Compile Include="Constraint\SwingTwistConstraint.cs" />
+    <Compile Include="Core\OBBMat.cs" />
+    <Compile Include="Core\Render3d.cs" />
+    <Compile Include="IK\ArmTwoBoneIK.cs" />
+    <Compile Include="IK\FootTwoBoneIK.cs" />
     <Compile Include="IK\SingleBoneLookAt.cs" />
+    <Compile Include="IK\SingleBoneRoll.cs" />
+    <Compile Include="IK\ThreeBoneLookAtIK.cs" />
+    <Compile Include="IK\ThreeBoneRoll.cs" />
     <Compile Include="IK\TwoBoneIK.cs" />
+    <Compile Include="IK\TwoBoneLookAtIK.cs" />
+    <Compile Include="IK\TwoBoneRoll.cs" />
     <Compile Include="Loader\AniRigLoader.cs" />
     <Compile Include="AniModels\Rig\ATTACHMENT_SLOT .cs" />
     <Compile Include="AniModels\Rig\HorseRig.cs" />

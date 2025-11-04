@@ -30,7 +30,7 @@ namespace Ui3d
         private bool _centerAlign;
 
         /// <summary>표시할 캐릭터 이름</summary>
-        public string CharacterName
+        public string Text
         {
             get => _characterName;
             set

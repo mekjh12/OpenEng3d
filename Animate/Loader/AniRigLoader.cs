@@ -8,6 +8,37 @@ using ZetaExt;
 
 namespace Animate
 {
+    public class MeshData
+    {
+        List<ModelData> _meshData;
+        public MeshData()
+        {
+            _meshData = new List<ModelData>();
+        }
+        public void AddModelData(ModelData modelData) => _meshData.Add(modelData);
+        public ModelData GetModelData(int index) => _meshData[index];
+    }
+
+    public class ModelData
+    {
+        List<Vertex3f> _vertices = new List<Vertex3f>();
+        List<Vertex2f> _texcoords = new List<Vertex2f>();
+        List<Vertex3f> _normals = new List<Vertex3f>();
+        List<Vertex4i> _boneIndices = new List<Vertex4i>();
+        List<Vertex4f> _boneWeights = new List<Vertex4f>();
+
+        public void AddVertex(Vertex3f v) => _vertices.Add(v);
+        public void AddTexcoord(Vertex2f vt) => _texcoords.Add(vt);
+        public void AddNormal(Vertex3f vn) => _normals.Add(vn);
+        public void AddBoneIndex(Vertex4i bi) => _boneIndices.Add(bi);
+        public void AddBoneWeight(Vertex4f bw) => _boneWeights.Add(bw);
+        public Vertex3f[] GetVertices() => _vertices.ToArray();
+        public Vertex2f[] GetTexcoords() => _texcoords.ToArray();
+        public Vertex3f[] GetNormals() => _normals.ToArray();
+        public Vertex4i[] GetBoneIndices() => _boneIndices.ToArray();
+        public Vertex4f[] GetBoneWeights() => _boneWeights.ToArray();
+    }
+
     public class AniRigLoader
     {
         public static Motionable LoadBindPoseMotion(AnimRig animRig)
@@ -55,7 +86,14 @@ namespace Animate
             return bindPoseMotion;
         }
 
-        public static (Armature, MotionStorage, List<TexturedModel>, Matrix4x4f) LoadFile(string filename, string hipBoneName) 
+        public static void LoadFile(
+            string filename, 
+            string hipBoneName, 
+            out Armature armature , 
+            out MotionStorage motions,
+            out List<TexturedModel> texturedModels, 
+            out Matrix4x4f bindshapeMat, 
+            out MeshData meshData) 
         {
             // dae 파일을 읽어온다.
             XmlDocument xml = new XmlDocument();
@@ -66,8 +104,8 @@ namespace Animate
             Dictionary<string, string> materialToEffect = AniColladaLoader.LoadMaterials(xml);
             Dictionary<string, string> effectToImage = AniColladaLoader.LoadEffect(xml);
 
-            Armature armature = new Armature(hipBoneName);
-            MotionStorage motions = new MotionStorage();
+            armature = new Armature(hipBoneName);
+            motions = new MotionStorage();
 
             // 지오메트리 정보를 읽어온다. position, normal, texcoord, color, MeshTriangles 정보가 포함되어 있다.
             List<MeshTriangles> meshes = AniColladaLoader.LibraryGeometris(xml,
@@ -81,6 +119,8 @@ namespace Animate
                 out Dictionary<string, Matrix4x4f> invBindPoses,
                 out List<BoneWeightVector4> vertexBoneData,
                 out Matrix4x4f bindShapeMatrix);
+
+            bindshapeMat = bindShapeMatrix;
 
             // 정점과 정점 컨트롤 데이터의 갯수가 일치하는지 확인한다.
             if (lstPositions.Count != vertexBoneData.Count)
@@ -138,35 +178,32 @@ namespace Animate
 
             // lstPositions, lstTexCoord, lstNormals, lstBoneIndex, lstBoneWeight를 이용하여 RawModel3d를 생성한다.
             // 읽어온 정보의 MeshTriangles를 이용하여 GPU에 폴리곤 정보 데이터를 전송한다.
-            List<TexturedModel> texturedModels = new List<TexturedModel>();
+            texturedModels = new List<TexturedModel>();
+            meshData = new MeshData();
             foreach (MeshTriangles meshTriangles in meshes)
             {
                 // 로딩한 postions, boneIndices, boneWeights를 버텍스로
-                List<Vertex3f> _vertices = new List<Vertex3f>();
-                List<Vertex2f> _texcoords = new List<Vertex2f>();
-                List<Vertex3f> _normals = new List<Vertex3f>();
-                List<Vertex4i> _boneIndices = new List<Vertex4i>();
-                List<Vertex4f> _boneWeights = new List<Vertex4f>();
+                ModelData modelData = new ModelData();
 
                 for (int i = 0; i < meshTriangles.Vertices.Count; i++)
-                    _vertices.Add(lstPositions[(int)meshTriangles.Vertices[i]]);
+                    modelData.AddVertex(lstPositions[(int)meshTriangles.Vertices[i]]);
 
                 for (int i = 0; i < meshTriangles.Texcoords.Count; i++)
-                    _texcoords.Add(lstTexCoord[(int)meshTriangles.Texcoords[i]]);
+                    modelData.AddTexcoord(lstTexCoord[(int)meshTriangles.Texcoords[i]]);
 
                 for (int i = 0; i < meshTriangles.Normals.Count; i++)
-                    _normals.Add(lstNormals[(int)meshTriangles.Normals[i]]);
+                    modelData.AddNormal(lstNormals[(int)meshTriangles.Normals[i]]);
 
                 for (int i = 0; i < meshTriangles.Vertices.Count; i++)
-                    _boneIndices.Add(vertexBoneData[(int)meshTriangles.Vertices[i]].BoneIndices);
+                    modelData.AddBoneIndex(vertexBoneData[(int)meshTriangles.Vertices[i]].BoneIndices);
 
                 for (int i = 0; i < meshTriangles.Vertices.Count; i++)
-                    _boneWeights.Add(vertexBoneData[(int)meshTriangles.Vertices[i]].BoneWeights);
+                    modelData.AddBoneWeight(vertexBoneData[(int)meshTriangles.Vertices[i]].BoneWeights);
 
                 // GPU에 전송할 모델을 생성한다.
                 RawModel3d _rawModel = new RawModel3d();
-                _rawModel.Init(vertices: _vertices.ToArray(), texCoords: _texcoords.ToArray(), normals: _normals.ToArray(),
-                    boneIndex: _boneIndices.ToArray(), boneWeight: _boneWeights.ToArray());
+                _rawModel.Init(modelData.GetVertices(), modelData.GetTexcoords(), modelData.GetNormals(), null,
+                    modelData.GetBoneIndices(), modelData.GetBoneWeights());
                 _rawModel.GpuBind();
 
                 // 텍스쳐를 매핑한다.
@@ -180,9 +217,9 @@ namespace Animate
                     texturedModel.IsDrawElement = false;
                     texturedModels.Add(texturedModel);
                 }
-            }
 
-            return (armature, motions, texturedModels, bindShapeMatrix);
+                meshData.AddModelData(modelData);
+            }
         }
     }
 }

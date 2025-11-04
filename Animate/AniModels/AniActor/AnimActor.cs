@@ -113,6 +113,10 @@ namespace Animate
 
         /// <summary>
         /// 업데이트를 통하여 애니메이션 행렬을 업데이트한다.
+        /// <code>
+        /// * 업데이트 전에 updateBefore 콜백 함수를 호출한다.
+        /// * 업데이트 후에 updateAfter 콜백 함수를 호출한다.
+        /// </code>
         /// </summary>
         /// <param name="deltaTime">델타 시간</param>
         public virtual void Update(int deltaTime)
@@ -128,70 +132,38 @@ namespace Animate
 
             _animator.Update(duration);
 
-            if (_animator.CurrentMotion != null)
-            {
-                
-
-                // 현재 모션이 속도를 적용해야 하는 경우, 트랜스폼을 업데이트한다.
-                /*
-                if (_animator.CurrentMotion.MovementType != FootStepAnalyzer.MovementType.Stationary)
-                {
-                    // 모션의 속도를 적용하여 애니메이션을 업데이트한다.
-                    float deltaDistance = duration * _animator.CurrentMotion.Speed;
-
-                    FootStepAnalyzer.MovementType movementType = _animator.CurrentMotion.MovementType;
-                    if (movementType == FootStepAnalyzer.MovementType.Forward ||
-                        movementType == FootStepAnalyzer.MovementType.Backward)
-                    {
-                        _transform.GoFoward(deltaDistance);
-                    }
-                    else if (movementType == FootStepAnalyzer.MovementType.Left)
-                    {
-                        _transform.GoLeft(deltaDistance);
-                    }
-                    else if (movementType == FootStepAnalyzer.MovementType.Right)
-                    {
-                        _transform.GoRight(deltaDistance);
-                    }
-                }
-                */
-            }
-
             // 애니메이션 업데이트 후에 호출할 수 있는 콜백 함수
             if (_updateAfter != null)
             {
                 _updateAfter();
             }
+
         }
 
         /// <summary>
         /// 렌더링을 수행한다.
         /// </summary>
-        public virtual void Render(Camera camera, Matrix4x4f vp, AnimateShader ashader, StaticShader sshader,
-            bool isSkinVisible = true, bool isBoneVisible = false, bool isBoneParentCurrentVisible = false)
+        public virtual void Render(Camera camera, Matrix4x4f vp, AnimateShader ashader)
         {
-            if (isSkinVisible)
+            Gl.PolygonMode(MaterialFace.FrontAndBack, _polygonMode);
+            Gl.Disable(EnableCap.CullFace);
+
+            // 기본 모델 행렬
+            Matrix4x4f finalModelMatrix = ModelMatrix;
+
+            if (_renderingMode == RenderingMode.Animation)
             {
-                Gl.PolygonMode(MaterialFace.FrontAndBack, _polygonMode);
-                Gl.Disable(EnableCap.CullFace);
-
-                // 기본 모델 행렬
-                Matrix4x4f finalModelMatrix = ModelMatrix;
-
-                if (_renderingMode == RenderingMode.Animation)
-                {
-                    Renderer3d.RenderSkinning(ashader, finalModelMatrix, vp, _aniRig.TexturedModels, _animator.AnimatedTransforms);
-                    //Renderer3d.RenderRigidBody(ashader, ModelMatrix, vp, _items.Values.ToList(),  _animator.RootTransforms);
-                }
-                else if (_renderingMode == RenderingMode.BoneWeight)
-                {
-                    //Renderer.Render(boneWeightShader, _boneIndex, _transform.Matrix4x4f, entity, camera);
-                }
-                else if (_renderingMode == RenderingMode.Static)
-                {
-                }
-                Gl.Enable(EnableCap.CullFace);
+                Renderer3d.RenderSkinning(ashader, finalModelMatrix, vp, _aniRig.TexturedModels, _animator.AnimatedTransforms);
+                //Renderer3d.RenderRigidBody(ashader, ModelMatrix, vp, _items.Values.ToList(),  _animator.RootTransforms);
             }
+            else if (_renderingMode == RenderingMode.BoneWeight)
+            {
+                //Renderer.Render(boneWeightShader, _boneIndex, _transform.Matrix4x4f, entity, camera);
+            }
+            else if (_renderingMode == RenderingMode.Static)
+            {
+            }
+            Gl.Enable(EnableCap.CullFace);
         }
     }
 }

@@ -11,7 +11,7 @@
 //    ../Res/Action/Horse/*.dae → HORSE_ACTION enum
 //    ../Res/Action/Human/*.dae → HUMAN_ACTION enum
 // ===================================
-// 자동생성 by GenerateMultiActionEnums.ps1: 2025-10-22 23:29:31
+// 자동생성 by GenerateMultiActionEnums.ps1: 2025-10-30 21:15:13
 
 using System;
 using System.Linq;
@@ -179,14 +179,17 @@ namespace AutoGenEnums
             {HUMAN_ACTION.CROSS_JUMPS_ROTATION, "Cross Jumps Rotation"},
             {HUMAN_ACTION.GOALKEEPER_BODY_BLOCK, "Goalkeeper Body Block"},
             {HUMAN_ACTION.IDLE, "Idle"},
+            {HUMAN_ACTION.JUMP, "Jump"},
             {HUMAN_ACTION.JUMP_ATTACK, "Jump Attack"},
             {HUMAN_ACTION.JUMPING, "Jumping"},
             {HUMAN_ACTION.KIP_UP, "Kip Up"},
             {HUMAN_ACTION.SKINNING_TEST, "Skinning Test"},
+            {HUMAN_ACTION.SLOW_RUN, "Slow Run"},
+            {HUMAN_ACTION.STANDING_IDLE, "Standing Idle"},
         };
 
         public static string GetRandomAction() => ActionMap.Values.ElementAt(new Random().Next(ActionMap.Count));
-        public static int Count => 9;
+        public static int Count => 12;
         public static bool HasAction(HUMAN_ACTION action) => ActionMap.ContainsKey(action);
         public static string GetActionName(HUMAN_ACTION action) => ActionMap.TryGetValue(action, out string name) ? name : null;
     }
@@ -198,10 +201,13 @@ namespace AutoGenEnums
         CROSS_JUMPS_ROTATION = 2,
         GOALKEEPER_BODY_BLOCK = 3,
         IDLE = 4,
-        JUMP_ATTACK = 5,
-        JUMPING = 6,
-        KIP_UP = 7,
-        SKINNING_TEST = 8,
+        JUMP = 5,
+        JUMP_ATTACK = 6,
+        JUMPING = 7,
+        KIP_UP = 8,
+        SKINNING_TEST = 9,
+        SLOW_RUN = 10,
+        STANDING_IDLE = 11,
         // 추가된 액션들
         RANDOM,
         STOP,

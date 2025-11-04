@@ -24,6 +24,33 @@ namespace ZetaExt
             );
         }
 
+        public static Vertex3f GetForwardVector(this Matrix4x4f matrix)
+        {
+            Vertex3f forward = Vertex3f.Zero;
+            forward.x = -matrix[1, 0];
+            forward.y = -matrix[1, 1];
+            forward.z = -matrix[1, 2];
+            return forward;
+        }
+
+        public static Vertex3f GetRightVector(this Matrix4x4f matrix)
+        {
+            Vertex3f right = Vertex3f.Zero;
+            right.x = matrix[0, 0];
+            right.y = matrix[0, 1];
+            right.z = matrix[0, 2];
+            return right;
+        }
+
+        public static Vertex3f GetUpVector(this Matrix4x4f matrix)
+        {
+            Vertex3f up = Vertex3f.Zero;
+            up.x = matrix[2, 0];
+            up.y = matrix[2, 1];
+            up.z = matrix[2, 2];
+            return up;
+        }
+
         /// <summary>
         /// 점을 변환한다 (평행이동 포함)
         /// </summary>

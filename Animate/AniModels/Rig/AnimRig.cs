@@ -1,8 +1,10 @@
-﻿using Model3d;
+﻿using Assimp;
+using Model3d;
 using OpenGL;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 
 namespace Animate
 {
@@ -63,8 +65,12 @@ namespace Animate
             _armature = new Armature(hipBoneName);
 
             // 파일에서 데이터 로드
-            (Armature armature, MotionStorage motions, List<TexturedModel> models, Matrix4x4f bindShapeMatrix)
-                = AniRigLoader.LoadFile(filename, hipBoneName);
+            AniRigLoader.LoadFile(filename, hipBoneName, 
+                out Armature armature,
+                out MotionStorage motions,
+                out List<TexturedModel> models,
+                out Matrix4x4f bindShapeMatrix,
+                out MeshData meshData);
 
             // 가져온 골격에서 힙 높이를 설정한다.
             foreach (Bone bone in armature.DicBones.Values)

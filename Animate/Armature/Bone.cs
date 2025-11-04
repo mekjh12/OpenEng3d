@@ -28,6 +28,9 @@ namespace Animate
         Matrix4x4f _rootTransform;              // 캐릭터 공간의 본 변환 행렬
         Matrix4x4f _parentRootTransform;        // 부모 뼈대의 캐릭터 공간 본 변환 행렬(**자신의 본 변환 행렬 계산에 사용**)
 
+        // 캐시된 BFS 순회 리스트
+        private List<Bone> _cachedBFSList = null;
+
         // 속성
         public BoneMatrixSet BoneMatrixSet => _boneMatrixSet;
         public JointAngle JointAngle { get => _jointAngle; set => _jointAngle = value; }
@@ -40,7 +43,6 @@ namespace Animate
         public bool IsLeaf => _children.Count == 0;
         public bool IsRoot => _parent == null;
         public float Length { get => _length; set => _length = value; }
-
         public TextNamePlate TextNamePlate { get; set; } = null;
 
         /// <summary>
@@ -63,6 +65,19 @@ namespace Animate
             _index = index;
             _boneMatrixSet = new BoneMatrixSet();
             _jointAngle = null;
+        }
+
+        /// <summary>
+        /// BFS 리스트를 캐시하고 재사용한다
+        /// 계층 구조가 변경되면 InvalidateBFSCache()를 호출해야 한다
+        /// </summary>
+        public List<Bone> GetCachedBFSList(bool includeSelf = true)
+        {
+            if (_cachedBFSList == null)
+            {
+                _cachedBFSList = this.ToBFSList(includeSelf ? null : this);
+            }
+            return _cachedBFSList;
         }
 
         public void AttachJointAngle(JointAngle jointAngle)
@@ -119,6 +134,7 @@ namespace Animate
 
             // 본에 적용
             _boneMatrixSet.LocalTransform = finalLocalTransform;
+
             UpdateAnimatorTransforms(animator, isSelfIncluded);
         }
 
@@ -128,7 +144,7 @@ namespace Animate
         /// <param name="isSelfIncluded">현재 뼈대부터 업데이트할지 여부 (true: 자신 포함, false: 자식들만)</param>
         private void UpdateAnimatorTransforms(Animator animator, bool isSelfIncluded = false)
         {
-            foreach (Bone bone in this.ToBFSList(isSelfIncluded ? null: this))
+            foreach (Bone bone in GetCachedBFSList(isSelfIncluded))
             {
                 int index = bone.Index;
 

@@ -46,7 +46,6 @@ namespace Renderer
         public static RawModel3d QaudPatch = Loader3d.LoadQuadPatch();
 
         #endregion
-
         public static void Render(UnlitShader shader, List<Entity> entities, Camera camera, bool isCullface = true)
         {
             OrbitCamera orbitCamera = camera as OrbitCamera;
@@ -165,33 +164,6 @@ namespace Renderer
         }
 
         static EulerAngle _eulerEngle = new EulerAngle();
-
-        public static void RenderLine(ColorShader shader, Camera camera, Vertex3f start, Vertex3f end, Vertex4f color, float thick)
-        {            
-            shader.Bind();
-
-            shader.LoadUniform(ColorShader.UNIFORM_NAME.color, color);
-
-            Gl.BindVertexArray(Line.VAO);
-            Gl.EnableVertexAttribArray(0);
-            Gl.EnableVertexAttribArray(2);
-
-            Vertex3f forward = end - start;
-            Matrix4x4f scaled = Matrix4x4f.Scaled(forward.Length(), 1, 1);
-            Matrix4x4f rot = Matrix4x4f.LookAtDirection(start, forward, Vertex3f.UnitZ);
-            Matrix4x4f model = rot * scaled;
-
-            Gl.LineWidth(thick);
-            shader.LoadUniform(ColorShader.UNIFORM_NAME.mvp, camera.ProjectiveMatrix * camera.ViewMatrix * model);
-            Gl.DrawArrays(PrimitiveType.Lines, 0, Line.VertexCount);
-
-            Gl.DisableVertexAttribArray(2);
-            Gl.DisableVertexAttribArray(0);
-            Gl.BindVertexArray(0);
-
-            Gl.LineWidth(1.0f);
-            shader.Unbind();
-        }
 
         public static void RenderLocalAxis(ColorShader shader, List<Entity> entities, Camera camera, float thick = 3.0f)
         {

@@ -19,8 +19,7 @@ namespace Animate
 
         // 공통 기능들
         void Update(int deltaTime);
-        void Render(Camera camera, Matrix4x4f vp, AnimateShader ashader, StaticShader sshader,
-            bool isSkinVisible = true, bool isBoneVisible = false, bool isBoneParentCurrentVisible = false);
+        void Render(Camera camera, Matrix4x4f vp, AnimateShader ashader);
         void SetMotion(string motionName, float blendingInterval = 0.2f);
         void SetMotionOnce(string motionName);
         void SetBlendMotionFactor(string name, float blendFactor);

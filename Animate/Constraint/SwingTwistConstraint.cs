@@ -192,7 +192,7 @@ namespace Animate
             float twistAngleLimited = twistAngle.Clamp(_minTwistAngle, _maxTwistAngle);
 
             // 디버그
-            _bone.TextNamePlate.CharacterName = $"Swing{swingAngleLimited:F0}도Twist{twistAngleLimited:F0}도";
+            _bone.TextNamePlate.Text = $"Swing{swingAngleLimited:F0}도Twist{twistAngleLimited:F0}도";
 
             // 최종 회전 행렬 재구성 - 재사용 행렬 사용
             CreateRotationMatrixInPlace(ref _tempSwingAxis, swingAngleLimited * DEG_TO_RAD, ref _tempSwingRotation);

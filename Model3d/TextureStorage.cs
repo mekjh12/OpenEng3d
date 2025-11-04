@@ -8,7 +8,7 @@ namespace Model3d
     /// <summary>
     /// 
     /// </summary>
-    public class TextureStorage
+    public static class TextureStorage
     {
         public static Dictionary<string, Texture> _texturesLoaded = new Dictionary<string, Texture>();
         private static bool _isInit = false;

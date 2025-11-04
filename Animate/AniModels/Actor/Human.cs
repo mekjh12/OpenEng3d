@@ -1,14 +1,429 @@
-﻿using AutoGenEnums;
+﻿using Animates;
+using AutoGenEnums;
 using Common.Abstractions;
 using OpenGL;
 using Shader;
-using System.Collections.Generic;
-using System.Drawing;
-using Ui3d;
 using ZetaExt;
 
 namespace Animate
 {
+    public class Human : Primate<HUMAN_ACTION>
+    {
+        FootTwoBoneIK _leftFootTwoBoneIK;
+        FootTwoBoneIK _rightFootTwoBoneIK;
+
+        ArmTwoBoneIK _leftArmTwoBoneIK;
+        ArmTwoBoneIK _rightArmTwoBoneIK;
+        
+        ThreeBoneRoll _leftArmRollIK;
+        TwoBoneRoll _rightArmRollIK;
+
+
+
+        ThreeBoneLookAtIK _threeBoneLookAtIK;
+
+        Vertex3f _testPoint;
+
+
+        Bone _hip;
+
+        Bone _head;
+        Bone _neck;
+        Bone _spine2;
+
+        Bone _leftLeg;
+        Bone _leftFoot;
+        Bone _leftFootToe;
+        Bone _rightLeg;
+        Bone _rightFoot;
+        Bone _rightFootToe;
+
+        Bone _leftArm;
+        Bone _leftForeArm;
+        Bone _leftHand;
+        Bone _rightArm;
+        Bone _rightForeArm;
+        Bone _rightHand;
+
+        FootGroundInfo _leftFootGroundInfo;
+        FootGroundInfo _rightFootGroundInfo;
+        bool _isFootIKEnabled;
+
+        // 팔 IK 정보 추가
+        ArmTargetInfo _leftArmTargetInfo;
+        ArmTargetInfo _rightArmTargetInfo;
+        bool _isArmIKEnabled;
+
+        // 계산용 임시 변수
+        Vertex3f _leftFootToeWorldPosition;
+        Vertex3f _leftFootWorldPosition;
+        Vertex3f _leftKneeWorldPosition;
+        Vertex3f _rightFootToeWorldPosition;
+        Vertex3f _rightFootWorldPosition;
+        Vertex3f _rightKneeWorldPosition;
+        Vertex3f _footDirection;
+        Vertex3f _target;
+        
+        Vertex3f _leftHandWorldPosition;
+        Vertex3f _rightHandWorldPosition;
+
+        Vertex3f _hipWorldPosition;
+        Vertex3f _headWorldPosition;
+
+        // 디버깅용
+        Vertex3f[] _vertices;
+        ColorShader _colorShader;
+
+
+        public Human(string name, AnimRig aniRig) : base(name, aniRig, HUMAN_ACTION.A_T_POSE)
+        {
+            _colorShader = ShaderManager.Instance.GetShader<ColorShader>();
+
+            SetupFootIK();
+            SetupArmIK();
+            SetupHeadIK();
+
+            _hip = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_Hips];
+            _neck = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_Neck];
+            _spine2 = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_Spine2];
+        }
+
+        private void SetupHeadIK()
+        {
+            _head = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_Head];
+            _neck = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_Neck];
+            _spine2 = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_Spine2];
+
+            _threeBoneLookAtIK = new ThreeBoneLookAtIK(_head, _neck, _spine2);
+            _threeBoneLookAtIK.FirstLookAt.SetAngleLimits(90, 60);
+            _threeBoneLookAtIK.SecondLookAt.SetAngleLimits(90, 60);
+            _threeBoneLookAtIK.ThirdLookAt.SetAngleLimits(90, 60);
+        }
+
+        public void LookAt(Vertex3f targetPosition)
+        {
+            _threeBoneLookAtIK.LookAt(targetPosition, ModelMatrix, _animator);
+        }
+
+        private void SetupArmIK()
+        {
+            // 본 설정
+            _leftArm = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftArm];
+            _leftForeArm = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftForeArm];
+            _leftHand = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftHand];
+
+            _rightArm = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightArm];
+            _rightForeArm = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightForeArm];
+            _rightHand = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightHand];
+
+            // TwoBoneIK 생성
+            _leftArmTwoBoneIK = new ArmTwoBoneIK(_leftArm, _leftForeArm, _leftHand, true);
+            _rightArmTwoBoneIK = new ArmTwoBoneIK(_rightArm, _rightForeArm, _rightHand, false);
+
+            _leftArmRollIK = new ThreeBoneRoll(_leftArm, _leftForeArm, _leftHand, LocalSpaceAxis.Y);
+            _rightArmRollIK = new TwoBoneRoll(_rightForeArm, _rightHand, LocalSpaceAxis.Y);
+
+            // 관절 제약조건 설정
+            //AddSwingTwistConstraint(MIXAMORIG_BONENAME.mixamorig_LeftArm, 110, 30, LocalSpaceAxis.Y);
+            //AddSwingTwistConstraint(MIXAMORIG_BONENAME.mixamorig_LeftForeArm, 110, 30, LocalSpaceAxis.Y);
+            //AddSwingTwistConstraint(MIXAMORIG_BONENAME.mixamorig_RightArm, 110, 30, LocalSpaceAxis.Y);
+            //AddSwingTwistConstraint(MIXAMORIG_BONENAME.mixamorig_RightForeArm, 110, 30, LocalSpaceAxis.Y);
+        }
+
+        private void SetupFootIK()
+        {
+            _leftFootToe = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftToeBase];
+            _rightFootToe = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightToeBase];
+            _leftFoot = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftFoot];
+            _rightFoot = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightFoot];
+            _leftLeg = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftLeg];
+            _rightLeg = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightLeg];
+
+            _leftFootTwoBoneIK = new FootTwoBoneIK(
+                _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftUpLeg],
+                _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftLeg],
+                _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftFoot]);
+
+            _rightFootTwoBoneIK = new FootTwoBoneIK(
+                _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightUpLeg],
+                _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightLeg],
+                _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightFoot]);
+
+        }
+        // ====== 팔 IK 메서드 (신규) ======
+
+        /// <summary>
+        /// 팔 타겟 위치 설정
+        /// </summary>
+        public void SetArmTarget(bool isLeft, Vertex3f targetPosition, Vertex3f lookat)
+        {
+            if (isLeft)
+                _leftArmTargetInfo = new ArmTargetInfo
+                {
+                    HasTarget = true,
+                    TargetPosition = targetPosition,
+                    LookAt = lookat
+                };
+            else
+                _rightArmTargetInfo = new ArmTargetInfo
+                {
+                    HasTarget = true,
+                    TargetPosition = targetPosition,
+                    LookAt = lookat
+                };
+        }
+
+        /// <summary>
+        /// 팔 타겟 해제
+        /// </summary>
+        public void ClearArmTarget(bool isLeft)
+        {
+            if (isLeft)
+                _leftArmTargetInfo.HasTarget = false;
+            else
+                _rightArmTargetInfo.HasTarget = false;
+        }
+
+        /// <summary>
+        /// 팔 IK 적용
+        /// </summary>
+        public void ApplyArmIK()
+        {
+            if (_leftArmTargetInfo.HasTarget)
+            {
+                _leftArmTwoBoneIK.Solve(
+                    _leftArmTargetInfo.TargetPosition,
+                    _transform.Forward,
+                    ModelMatrix,
+                    _animator);
+
+                _leftArmRollIK.Solve(_hipWorldPosition, ModelMatrix, _animator);
+            }
+
+            if (_rightArmTargetInfo.HasTarget)
+            {
+                _rightArmTwoBoneIK.Solve(
+                    _rightArmTargetInfo.TargetPosition,
+                    _transform.Forward,
+                    ModelMatrix,
+                    _animator);
+
+                _rightArmRollIK.Solve(_hipWorldPosition, ModelMatrix, _animator, 0.6f, 1.0f);
+            }
+        }
+
+        /// <summary>
+        /// 손 월드 위치 가져오기
+        /// </summary>
+        public Vertex3f GetLeftHandPosition()
+        {
+            _leftHandWorldPosition = (ModelMatrix * _animator.RootTransforms[_leftHand.Index]).Position;
+            return _leftHandWorldPosition;
+        }
+
+        public Vertex3f GetRightHandPosition()
+        {
+            _rightHandWorldPosition = (ModelMatrix * _animator.RootTransforms[_rightHand.Index]).Position;
+            return _rightHandWorldPosition;
+        }
+
+        /// <summary>
+        /// 발이 지면에 묻혔는지 검사
+        /// </summary>
+        /// <param name="isLeft">true면 왼쪽 발, false면 오른쪽 발</param>
+        /// <param name="groundHeight">지면 높이 (z좌표)</param>
+        /// <returns>발끝이 지면 아래 있으면 true</returns>
+        public bool IsFootPenetrating(bool isLeft, float groundHeight)
+        {
+            if (isLeft)
+            {
+                return _leftFootToeWorldPosition.z < groundHeight;
+            }
+            else
+            {
+                return _rightFootToeWorldPosition.z < groundHeight;
+            }
+        }
+
+        /// <summary>
+        /// 발이 지면에 묻혔으니 발을 조정 (IK 적용)
+        /// </summary>
+        /// <param name="isLeft">true면 왼쪽 발, false면 오른쪽 발</param>
+        /// <param name="groundPoint">지면 접촉점</param>
+        /// <param name="groundNormal">지면 법선</param>
+        public void AdjustFootToGround(bool isLeft, Vertex3f groundPoint, Vertex3f groundNormal)
+        {
+            // 지면 정보 설정
+            if (isLeft)
+                _leftFootGroundInfo = new FootGroundInfo
+                {
+                    IsGrounded = true,
+                    GroundPoint = groundPoint,
+                    GroundNormal = groundNormal
+                };
+            else
+                _rightFootGroundInfo = new FootGroundInfo
+                {
+                    IsGrounded = true,
+                    GroundPoint = groundPoint,
+                    GroundNormal = groundNormal
+                };
+
+            // 해당 발의 IK 적용
+            if (isLeft && _leftFootGroundInfo.IsGrounded)
+            {
+                _footDirection = _leftFootToeWorldPosition - _leftFootWorldPosition;
+                _target = _leftFootGroundInfo.GroundPoint - _footDirection;
+                _leftFootTwoBoneIK.Solve(_target, _transform.Forward, ModelMatrix, _animator);
+            }
+            else if (!isLeft && _rightFootGroundInfo.IsGrounded)
+            {
+                _footDirection = _rightFootToeWorldPosition - _rightFootWorldPosition;
+                _target = _rightFootGroundInfo.GroundPoint - _footDirection;
+                _rightFootTwoBoneIK.Solve(_target, _transform.Forward, ModelMatrix, _animator);
+            }
+        }
+
+        public void EnableFootIK()
+        {
+            if (_isFootIKEnabled) return;
+            _isFootIKEnabled = true;
+        }
+
+        public void DisableFootIK()
+        {
+            if (!_isFootIKEnabled) return;
+            _isFootIKEnabled = false;
+        }
+
+        public Vertex3f GetLeftFootToePosition()
+        {
+            _leftFootToeWorldPosition = (ModelMatrix * _animator.RootTransforms[_leftFootToe.Index]).Position;
+            return _leftFootToeWorldPosition;
+        }
+
+        public Vertex3f GetRightFootToePosition()
+        {
+            _rightFootToeWorldPosition = (ModelMatrix * _animator.RootTransforms[_rightFootToe.Index]).Position;
+            return _rightFootToeWorldPosition;
+        }
+
+        protected void AddHingeConstraint(string boneName, float minBendAngle, float maxBendAngle, float minTwistAngle, float maxTwistAngle, LocalSpaceAxis axis)
+        {
+            Bone bone = _aniRig.Armature[boneName];
+            HingeConstraint constraint = new HingeConstraint(bone, minBendAngle, maxBendAngle, minTwistAngle, maxTwistAngle, axis);
+            bone.SetJointConstraint(constraint);
+        }
+
+        protected void AddSwingTwistConstraint(string boneName, float swingAngle, float twistAngle, LocalSpaceAxis forward)
+        {
+            Bone bone = _aniRig.Armature[boneName];
+            SwingTwistConstraint constraint = new SwingTwistConstraint(bone, swingAngle, -twistAngle, twistAngle, forward);
+            bone.SetJointConstraint(constraint);
+        }
+
+        private void AddJointSphericalConstraint(string boneName, float coneAngle, float twistAngle, LocalSpaceAxis forward, LocalSpaceAxis up)
+        {
+            Bone bone = _aniRig.Armature[boneName];
+            SphericalConstraint constraint = new SphericalConstraint(bone, coneAngle, twistAngle, forward, up);
+            bone.SetJointConstraint(constraint);
+        }
+
+        public override HUMAN_ACTION RandomAction => (HUMAN_ACTION)Rand.NextInt(0, (int)(HUMAN_ACTION.RANDOM - 1));
+
+        public Vertex3f HipWorldPosition { get => _hipWorldPosition; }
+        public Vertex3f LeftFootToeWorldPosition { get => _leftFootToeWorldPosition; }
+        public Vertex3f RightFootToeWorldPosition { get => _rightFootToeWorldPosition; }
+        public Vertex3f TestPoint { get => _testPoint; }
+
+        public override void SetMotionImmediately(HUMAN_ACTION action)
+        {
+            if (action == HUMAN_ACTION.RANDOM) action = RandomAction;
+            SetMotion(HumanActions.ActionMap[action], transitionDuration: 0.0f);
+        }
+
+        public override void SetMotion(HUMAN_ACTION action)
+        {
+            if (action == HUMAN_ACTION.RANDOM) action = RandomAction;
+            SetMotion(HumanActions.ActionMap[action]);
+        }
+
+        public override void SetMotionOnce(HUMAN_ACTION action)
+        {
+            if (action == HUMAN_ACTION.RANDOM) action = RandomAction;
+            SetMotionOnce(HumanActions.ActionMap[action]);
+        }
+
+        protected override string GetActionName(HUMAN_ACTION action)
+        {
+            return action.IsCommonAction() ? action.GetName() : HumanActions.GetActionName(action);
+        }
+
+        public override void Render(Camera camera, Matrix4x4f vp, AnimateShader ashader)
+        {
+            base.Render(camera, vp, ashader);
+
+            // 디버깅용 발끝 위치 렌더링
+            Renderer3d.RenderPoint(_colorShader, _leftKneeWorldPosition, camera, new Vertex4f(1, 1, 0, 1), 0.015f);
+            Renderer3d.RenderPoint(_colorShader, _leftFootWorldPosition, camera, new Vertex4f(1, 1, 0, 1), 0.015f);
+            Renderer3d.RenderPoint(_colorShader, _leftFootToeWorldPosition, camera, new Vertex4f(1, 1, 0, 1), 0.015f);
+            
+            // 디버깅용 손 위치 렌더링
+            if (_leftArmTargetInfo.HasTarget)
+            {
+                Renderer3d.RenderPoint(_colorShader, _leftHandWorldPosition, camera, new Vertex4f(0, 1, 0, 1), 0.02f);
+                Renderer3d.RenderPoint(_colorShader, _leftArmTargetInfo.TargetPosition, camera, new Vertex4f(1, 0, 0, 1), 0.025f);
+            }
+
+            if (_rightArmTargetInfo.HasTarget)
+            {
+                Renderer3d.RenderPoint(_colorShader, _rightHandWorldPosition, camera, new Vertex4f(0, 1, 0, 1), 0.02f);
+                Renderer3d.RenderPoint(_colorShader, _rightArmTargetInfo.TargetPosition, camera, new Vertex4f(1, 0, 0, 1), 0.025f);
+            }
+        }
+
+        public override void Update(int deltaTime)
+        {
+            // 기본 업데이트 수행(최종 애니메이션 행렬 갱신 등)
+            base.Update(deltaTime);
+
+            _hipWorldPosition = (ModelMatrix * _animator.RootTransforms[_hip.Index]).Position;
+            _headWorldPosition = (ModelMatrix * _animator.RootTransforms[_head.Index]).Position;
+
+            // 발끝의 월드좌표 계산
+            _leftFootToeWorldPosition = (ModelMatrix * _animator.RootTransforms[_leftFootToe.Index]).Position;
+            _rightFootToeWorldPosition = (ModelMatrix * _animator.RootTransforms[_rightFootToe.Index]).Position;
+            _leftFootWorldPosition = (ModelMatrix * _animator.RootTransforms[_leftFoot.Index]).Position;
+            _rightFootWorldPosition = (ModelMatrix * _animator.RootTransforms[_rightFoot.Index]).Position;
+            _leftKneeWorldPosition = (ModelMatrix * _animator.RootTransforms[_leftLeg.Index]).Position;
+            _rightKneeWorldPosition = (ModelMatrix * _animator.RootTransforms[_rightLeg.Index]).Position;
+
+            // 손의 월드좌표 계산
+            _leftHandWorldPosition = (ModelMatrix * _animator.RootTransforms[_leftHand.Index]).Position;
+            _rightHandWorldPosition = (ModelMatrix * _animator.RootTransforms[_rightHand.Index]).Position;
+        }
+    }
+
+    /// <summary>
+    /// 발 하나의 지면 정보
+    /// </summary>
+    public struct FootGroundInfo
+    {
+        public bool IsGrounded;      // 지면과 접촉 중인가
+        public Vertex3f GroundPoint;  // 지면 접촉점
+        public Vertex3f GroundNormal; // 지면 법선
+    }
+
+    /// <summary>
+    /// 팔 하나의 타겟 정보
+    /// </summary>
+    public struct ArmTargetInfo
+    {
+        public bool HasTarget;
+        public Vertex3f TargetPosition;
+        public Vertex3f LookAt;
+    }
+
     public static class MIXAMORIG_BONENAME
     {
         // Hips (Root)
@@ -95,150 +510,5 @@ namespace Animate
         public const string mixamorig_RightHandPinky4 = "mixamorig_RightHandPinky4";
     }
 
-    public class Human : Primate<HUMAN_ACTION>
-    {
-        Dictionary<string, TextNamePlate> _dicTextNamePlates = new Dictionary<string, TextNamePlate>();
-        bool _isInit = false;
 
-        public Human(string name, AnimRig aniRig) : base(name, aniRig, HUMAN_ACTION.A_T_POSE)
-        {
-            /*
-            AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_LeftArm, 130, 80, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
-            AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_RightArm, 130, 80, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
-            AddJointHingeConstraint(MIXAMORIG_BONENAME.mixamorig_LeftForeArm, 0, 140, LocalSpaceAxis.Y);
-            AddJointHingeConstraint(MIXAMORIG_BONENAME.mixamorig_RightForeArm, 0, 140, LocalSpaceAxis.Y);
-
-            AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_Head, 50, 80, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
-            AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_Neck, 50, 80, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
-            AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_LeftFoot, 30, 20, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
-            */
-            //AddSwingTwistConstraint(MIXAMORIG_BONENAME.mixamorig_Head, 50, 30, LocalSpaceAxis.Z);
-            //AddHingeConstraint(MIXAMORIG_BONENAME.mixamorig_LeftForeArm, -10, 140, -90, 90, LocalSpaceAxis.X);
-            //AddHingeConstraint(MIXAMORIG_BONENAME.mixamorig_LeftForeArm, minBendAngle: 0, maxBendAngle: 140, minTwistAngle: -90, maxTwistAngle: 90, axis: LocalSpaceAxis.X);
-
-            AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_LeftArm, 110, 30, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
-            AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_LeftForeArm, 110, 30, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
-
-            //AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_LeftUpLeg, 130, 30, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
-            //AddJointSphericalConstraint(MIXAMORIG_BONENAME.mixamorig_LeftLeg, 130, 30, LocalSpaceAxis.Y, LocalSpaceAxis.Z);
-        }
-
-        public void AddHingeConstraint(string boneName, float minBendAngle, float maxBendAngle, float minTwistAngle, float maxTwistAngle, LocalSpaceAxis axis)
-        {
-            Bone bone = _aniRig.Armature[boneName];
-            HingeConstraint constraint = new HingeConstraint(bone, minBendAngle, maxBendAngle, minTwistAngle, maxTwistAngle, axis);
-            bone.SetJointConstraint(constraint);
-        }
-
-        public void AddSwingTwistConstraint(string boneName, float swingAngle, float twistAngle, LocalSpaceAxis forward)
-        {
-            Bone bone = _aniRig.Armature[boneName];
-            SwingTwistConstraint constraint = new SwingTwistConstraint(bone, swingAngle, -twistAngle, twistAngle, forward);
-            bone.SetJointConstraint(constraint);
-        }
-
-        private void AddJointSphericalConstraint(string boneName, float coneAngle, float twistAngle, LocalSpaceAxis forward, LocalSpaceAxis up)
-        {
-            Bone bone = _aniRig.Armature[boneName];
-            SphericalConstraint constraint = new SphericalConstraint(bone, coneAngle, twistAngle, forward, up);
-            bone.SetJointConstraint(constraint);
-        }
-
-        public override HUMAN_ACTION RandomAction => (HUMAN_ACTION)Rand.NextInt(0, (int)(HUMAN_ACTION.RANDOM - 1));
-
-        public override void SetMotionImmediately(HUMAN_ACTION action)
-        {
-            if (action == HUMAN_ACTION.RANDOM) action = RandomAction;
-            SetMotion(HumanActions.ActionMap[action], transitionDuration: 0.0f);
-        }
-
-        public override void SetMotion(HUMAN_ACTION action)
-        {
-            if (action == HUMAN_ACTION.RANDOM) action = RandomAction;
-            SetMotion(HumanActions.ActionMap[action]);
-        }
-
-        public override void SetMotionOnce(HUMAN_ACTION action)
-        {
-            if (action == HUMAN_ACTION.RANDOM) action = RandomAction;
-            SetMotionOnce(HumanActions.ActionMap[action]);
-        }
-
-        protected override string GetActionName(HUMAN_ACTION action)
-        {
-            return action.IsCommonAction() ? action.GetName() : HumanActions.GetActionName(action);
-        }
-
-        public void AddBoneTagNamePlate(Camera camera, string text, string boneName)
-        {
-            TextNamePlate textNamePlate = new TextNamePlate(camera, text);
-            textNamePlate.Width *= 0.35f;
-            textNamePlate.Height *= 0.35f;
-            textNamePlate.Offset = Vertex3f.Zero;
-
-            if (!_dicTextNamePlates.ContainsKey(boneName))
-            {
-                _dicTextNamePlates.Add(boneName, textNamePlate);
-            }
-            else
-            {
-                _dicTextNamePlates[boneName] = textNamePlate;
-            }
-
-            _aniRig.Armature[boneName].TextNamePlate = textNamePlate;
-        }
-
-        public override void Render(Camera camera, Matrix4x4f vp, AnimateShader ashader, StaticShader sshader,
-                    bool isSkinVisible = true, bool isBoneVisible = false, bool isBoneParentCurrentVisible = false)
-        {
-            base.Render(camera, vp, ashader, sshader, isSkinVisible, isBoneVisible, isBoneParentCurrentVisible);
-
-            // OpenGL 상태 설정 (블렌딩 활성화, 깊이 테스트 비활성화)
-            Gl.Enable(EnableCap.Blend);
-            Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-            Gl.Disable(EnableCap.DepthTest);
-
-            // 이름표 렌더링
-            foreach (var textNamePlate in _dicTextNamePlates)
-            {
-                TextNamePlate characterName = textNamePlate.Value;
-                if (characterName.IsVisible)
-                {
-                    characterName.Render();
-                }
-            }
-
-            // OpenGL 상태 복원
-            Gl.Enable(EnableCap.DepthTest);
-            Gl.Disable(EnableCap.Blend);
-        }
-
-        public override void Update(int deltaTime)
-        {
-            base.Update(deltaTime);
-
-            foreach (var item in _dicTextNamePlates)
-            {
-                string boneName = item.Key;
-                TextNamePlate textNamePlate = item.Value;
-                Bone bone = _aniRig.Armature[boneName];
-                textNamePlate.WorldPosition = (ModelMatrix * _animator.RootTransforms[bone.Index]).Position;
-
-                if (bone.JointConstraint != null)
-                {
-                    //textNamePlate.CharacterName = (bone.JointConstraint as SwingTwistConstraint).ReferenceFowardDirection.ToString();
-                }
-
-                // 처음 시작시 화면 갱신하기
-                if (!_isInit)
-                {
-                    textNamePlate.Refresh();
-                    _isInit = false;
-                }
-
-                // 업데이트하기
-                textNamePlate.Update(deltaTime);
-            }
-        }
-    }
 }

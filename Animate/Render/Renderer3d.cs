@@ -34,6 +34,49 @@ namespace Animate
         public static RawModel3d Cylinder = Loader3d.LoadPrism(12, 1, 1, 1, Matrix4x4f.Identity);
         #endregion
 
+
+        private static uint _lineVAO = 0;
+        private static uint _lineVBO = 0;
+
+        public static void RenderLine(ColorShader shader, Camera camera, Vertex3f start, Vertex3f end,
+                                       Vertex4f color, float thick)
+        {
+            // 첫 실행 시 VAO 생성
+            if (_lineVAO == 0)
+            {
+                _lineVAO = Gl.GenVertexArray();
+                _lineVBO = Gl.GenBuffer();
+                Gl.BindVertexArray(_lineVAO);
+                Gl.BindBuffer(BufferTarget.ArrayBuffer, _lineVBO);
+                Gl.BufferData(BufferTarget.ArrayBuffer, (uint)(sizeof(float) * 6),
+                              null, BufferUsage.DynamicDraw);
+                Gl.EnableVertexAttribArray(0);
+                Gl.VertexAttribPointer(0, 3, VertexAttribType.Float, false, 0, IntPtr.Zero);
+                Gl.BindVertexArray(0);
+            }
+
+            shader.Bind();
+            shader.LoadUniform(ColorShader.UNIFORM_NAME.color, color);
+
+            // 버퍼 데이터 업데이트
+            float[] vertices = new float[] { start.x, start.y, start.z, end.x, end.y, end.z };
+
+            Gl.BindVertexArray(_lineVAO);
+            Gl.BindBuffer(BufferTarget.ArrayBuffer, _lineVBO);
+            Gl.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero,
+                             (uint)(sizeof(float) * vertices.Length), vertices);
+
+            Gl.LineWidth(thick);
+            shader.LoadUniform(ColorShader.UNIFORM_NAME.mvp,
+                              camera.ProjectiveMatrix * camera.ViewMatrix);
+
+            Gl.DrawArrays(PrimitiveType.Lines, 0, 2);
+
+            Gl.LineWidth(1.0f);
+            Gl.BindVertexArray(0);
+            shader.Unbind();
+        }
+
         public static void RenderBone(AxisShader shader, ColorShader cshader, Camera camera,  IAnimActor actor, Bone bone,
             float lineWidth = 2.0f, float axisLength = 30.0f)
         {

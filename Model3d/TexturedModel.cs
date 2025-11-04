@@ -35,7 +35,6 @@ namespace Model3d
 
         public TexturedModel(RawModel3d model, Texture texture): base(model.VAO, model.Vertices)
         {
-            // 생성자와 속성초기화에서 (1) 생성자 호출 (2) 속성초기화 순으로 진행된다.
             _texture = texture;
             _ibo = model.IBO;
             _indexCount = model.IndexCount;
@@ -46,5 +45,6 @@ namespace Model3d
             if (texture != null)
                 _textureType = texture.TextureType;
         }
+
     }
 }
