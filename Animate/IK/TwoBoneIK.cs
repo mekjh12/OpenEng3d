@@ -37,8 +37,17 @@ namespace Animate
         private bool _isLengthLoaded = false;
 
         // 계산용 임시 변수
+        /// <summary>
+        /// 현재 포즈에서의 1번 관절 조인트의 월드 위치
+        /// </summary>
         protected Vertex3f _rootWorld;
+        /// <summary>
+        /// 현재 포즈에서의 2번 관절 조인트의 월드 위치
+        /// </summary>
         protected Vertex3f _midWorld;
+        /// <summary>
+        /// 현재 포즈에서의 3번 관절 조인트의 월드 위치
+        /// </summary>
         protected Vertex3f _endWorld;
         protected Matrix4x4f _rootTransformWorld;
         protected Vertex3f _prevTargetWorld;
@@ -47,7 +56,7 @@ namespace Animate
         protected Vertex3f _newMidWorld;
         protected Vertex3f _newEndWorld;
         protected Vertex3f _poleVector;
-
+        protected float _changedBoundValue = 1.0f;
         protected float _shoulderAngle;
         protected float _elbowAngle;
 
@@ -168,8 +177,8 @@ namespace Animate
         protected void FinishedSolve(Vertex3f poleVector, Matrix4x4f modelMatrix, Animator animator)
         {
             // 팔꿈치 위치 계산
-            float cosAlpha = (float)Math.Cos(_shoulderAngle);
-            float sinAlpha = (float)Math.Sin(_shoulderAngle);
+            float cosAlpha = (float)Math.Cos(_changedBoundValue * _shoulderAngle);
+            float sinAlpha = (float)Math.Sin(_changedBoundValue * _shoulderAngle);
             _newMidWorld = _rootWorld + (_targetDir * cosAlpha + poleVector * sinAlpha) * _upperLength;
 
             // 손목 위치 (검증용)
