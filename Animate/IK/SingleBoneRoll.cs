@@ -8,14 +8,21 @@ namespace Animate
     {
         private readonly Bone _bone;
         private readonly LocalSpaceAxis _rollAxis;
+        private readonly LocalSpaceAxis _forward;
 
-        public SingleBoneRoll(Bone bone, LocalSpaceAxis rollAxis = LocalSpaceAxis.Y)
+        public SingleBoneRoll(Bone bone, LocalSpaceAxis rollAxis = LocalSpaceAxis.Y, LocalSpaceAxis forward = LocalSpaceAxis.Z)
         {
             _bone = bone;
             _rollAxis = rollAxis;
+            _forward = forward;
+
+            if (_rollAxis == _forward)
+            {
+                throw new ArgumentException("두 축은 동일할 수 없습니다.");
+            }
         }
 
-        public Matrix4x4f Solve(Vertex3f target, Matrix4x4f modelMatrix, Animator animator, float weight = 1.0f)
+        public Matrix4x4f Solve(Vertex3f target, Matrix4x4f modelMatrix, Animator animator, out float angle, float weight = 1.0f, bool isSelfIncluded = true)
         {
             // 월드 공간 변환 계산
             Matrix4x4f worldTransform = modelMatrix * animator.GetRootTransform(_bone);
@@ -28,17 +35,32 @@ namespace Animate
             Vertex2f projPoint = GetProjectedPoint(localTarget);
 
             // 회전 각도 계산 (-π ~ π)
-            float angle = (float)Math.Atan2(projPoint.y, projPoint.x);
+            angle = (float)Math.Atan2(projPoint.y, projPoint.x);
 
             // 가중치를 적용한 회전 행렬 생성
-            Matrix4x4f rotation = Matrix4x4f.RotatedY(angle.ToDegree()) * weight;
+            Matrix4x4f rotation = GetRotationMatrix(angle.ToDegree() * weight);
 
             // 최종 변환 행렬 계산 및 본 업데이트
             Matrix4x4f finalMatrix = _bone.BoneMatrixSet.LocalTransform * rotation;
-            _bone.UpdateBone(ref finalMatrix, animator, true);
+            _bone.UpdateBone(ref finalMatrix, animator, isSelfIncluded);
 
             return rotation;
         }
+
+        private Matrix4x4f GetRotationMatrix(float angleDegree)
+        {
+            if (_rollAxis == LocalSpaceAxis.Y)
+                return Matrix4x4f.RotatedY(angleDegree);
+
+            if (_rollAxis == LocalSpaceAxis.X)
+                return Matrix4x4f.RotatedX(angleDegree);
+
+            if (_rollAxis == LocalSpaceAxis.Z)
+                return Matrix4x4f.RotatedZ(angleDegree);
+
+            throw new ArgumentException($"지원하지 않는 Roll 축: {_rollAxis}");
+        }
+
 
         private Vertex2f GetProjectedPoint(Vertex3f localTarget)
         {

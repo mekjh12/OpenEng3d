@@ -3,6 +3,7 @@ using AutoGenEnums;
 using Common.Abstractions;
 using OpenGL;
 using Shader;
+using System;
 using ZetaExt;
 
 namespace Animate
@@ -16,9 +17,7 @@ namespace Animate
         ArmTwoBoneIK _rightArmTwoBoneIK;
         
         ThreeBoneRoll _leftArmRollIK;
-        TwoBoneRoll _rightArmRollIK;
-
-
+        ThreeBoneRoll _rightArmRollIK;
 
         ThreeBoneLookAtIK _threeBoneLookAtIK;
 
@@ -50,8 +49,12 @@ namespace Animate
         bool _isFootIKEnabled;
 
         // 팔 IK 정보 추가
-        ArmTargetInfo _leftArmTargetInfo;
-        ArmTargetInfo _rightArmTargetInfo;
+        bool _isWorldTarget = true;
+        ArmTargetInfo _leftArmWorldTargetInfo;
+        ArmTargetInfo _rightArmWorldTargetInfo;
+        ArmTargetInfo _leftArmCharacterTargetInfo;
+        ArmTargetInfo _rightArmCharacterTargetInfo;
+
         bool _isArmIKEnabled;
 
         // 계산용 임시 변수
@@ -121,7 +124,7 @@ namespace Animate
             _rightArmTwoBoneIK = new ArmTwoBoneIK(_rightArm, _rightForeArm, _rightHand, false);
 
             _leftArmRollIK = new ThreeBoneRoll(_leftArm, _leftForeArm, _leftHand, LocalSpaceAxis.Y);
-            _rightArmRollIK = new TwoBoneRoll(_rightForeArm, _rightHand, LocalSpaceAxis.Y);
+            _rightArmRollIK = new ThreeBoneRoll(_rightArm, _rightForeArm, _rightHand, LocalSpaceAxis.Y);
 
             // 관절 제약조건 설정
             //AddSwingTwistConstraint(MIXAMORIG_BONENAME.mixamorig_LeftArm, 110, 30, LocalSpaceAxis.Y);
@@ -155,17 +158,39 @@ namespace Animate
         /// <summary>
         /// 팔 타겟 위치 설정
         /// </summary>
-        public void SetArmTarget(bool isLeft, Vertex3f targetPosition, Vertex3f lookat)
+        public void SetArmWorldTarget(bool isLeft, Vertex3f targetPosition, Vertex3f lookat)
         {
+            _isWorldTarget = true;
+
             if (isLeft)
-                _leftArmTargetInfo = new ArmTargetInfo
+                _leftArmWorldTargetInfo = new ArmTargetInfo
                 {
                     HasTarget = true,
                     TargetPosition = targetPosition,
                     LookAt = lookat
                 };
             else
-                _rightArmTargetInfo = new ArmTargetInfo
+                _rightArmWorldTargetInfo = new ArmTargetInfo
+                {
+                    HasTarget = true,
+                    TargetPosition = targetPosition,
+                    LookAt = lookat
+                };
+        }
+
+        public void SetArmCharaterSpaceTarget(bool isLeft, Vertex3f targetPosition, Vertex3f lookat)
+        {
+            _isWorldTarget = false;
+
+            if (isLeft)
+                _leftArmCharacterTargetInfo = new ArmTargetInfo
+                {
+                    HasTarget = true,
+                    TargetPosition = targetPosition,
+                    LookAt = lookat
+                };
+            else
+                _rightArmCharacterTargetInfo = new ArmTargetInfo
                 {
                     HasTarget = true,
                     TargetPosition = targetPosition,
@@ -179,36 +204,64 @@ namespace Animate
         public void ClearArmTarget(bool isLeft)
         {
             if (isLeft)
-                _leftArmTargetInfo.HasTarget = false;
+                _leftArmWorldTargetInfo.HasTarget = false;
             else
-                _rightArmTargetInfo.HasTarget = false;
+                _rightArmWorldTargetInfo.HasTarget = false;
         }
 
         /// <summary>
         /// 팔 IK 적용
         /// </summary>
-        public void ApplyArmIK()
+        public Vertex3f ApplyArmIK()
         {
-            if (_leftArmTargetInfo.HasTarget)
+            if (_isWorldTarget)
             {
-                _leftArmTwoBoneIK.Solve(
-                    _leftArmTargetInfo.TargetPosition,
-                    _transform.Forward,
-                    ModelMatrix,
-                    _animator);
+                // 월드 좌표 타겟 IK 적용
+                if (_leftArmWorldTargetInfo.HasTarget)
+                {
+                    _leftArmTwoBoneIK.Solve(
+                        _leftArmWorldTargetInfo.TargetPosition,
+                        _transform.Forward,
+                        ModelMatrix,
+                        _animator);
 
-                _leftArmRollIK.Solve(_hipWorldPosition, ModelMatrix, _animator);
+                    _leftArmRollIK.Solve(_hipWorldPosition, ModelMatrix, _animator);
+                }
+
+                if (_rightArmWorldTargetInfo.HasTarget)
+                {
+                    _rightArmTwoBoneIK.Solve(
+                        _rightArmWorldTargetInfo.TargetPosition,
+                        _transform.Forward,
+                        ModelMatrix,
+                        _animator);
+
+                    _rightArmRollIK.Solve(_hipWorldPosition, ModelMatrix, _animator);
+                }
+
+                return Vertex3f.Zero;
             }
-
-            if (_rightArmTargetInfo.HasTarget)
+            else
             {
-                _rightArmTwoBoneIK.Solve(
-                    _rightArmTargetInfo.TargetPosition,
-                    _transform.Forward,
-                    ModelMatrix,
-                    _animator);
+                // 캐릭터 로컬 좌표 타겟 IK 적용
+                if (_leftArmCharacterTargetInfo.HasTarget)
+                {
+                    Matrix4x4f worldTransform = ModelMatrix * _animator.GetRootTransform(_leftHand);
+                    Vertex3f target = worldTransform.Rot3x3f() * _leftArmCharacterTargetInfo.TargetPosition
+                        + worldTransform.Position;
 
-                _rightArmRollIK.Solve(_hipWorldPosition, ModelMatrix, _animator, 0.6f, 1.0f);
+                    _leftArmTwoBoneIK.Solve(
+                        target,
+                        _transform.Forward,
+                        ModelMatrix,
+                        _animator);
+
+                    _leftArmRollIK.Solve(_hipWorldPosition, ModelMatrix, _animator);
+
+                    return target;
+                }
+
+                return Vertex3f.Zero;
             }
         }
 
@@ -359,6 +412,53 @@ namespace Animate
             return action.IsCommonAction() ? action.GetName() : HumanActions.GetActionName(action);
         }
 
+
+        /// <summary>
+        /// 손을 감싸쥔다.
+        /// </summary>
+        /// <param name="whereHand"></param>
+        public void FoldHand(bool isLeft, float intensity = 60.0f)
+        {
+            string handName = (isLeft ? "LeftHand" : "RightHand");
+
+            if (!_actions.ContainsKey("fold" + handName))
+            {
+                Action action = () =>
+                {
+                    // 손을 가져온다.
+                    Bone hand = AniRig.Armature["mixamorig_" + handName];
+
+                    foreach (Bone bone in hand.ToBFSList(exceptBone: hand))
+                    {
+                        // 엄지 손가락이 아닌 경우
+                        if (bone.Name.IndexOf("Thumb") < 0)
+                        {
+                            bone.BoneMatrixSet.LocalTransform = bone.BoneMatrixSet.LocalBindTransform * Matrix4x4f.RotatedX(40);
+                        }
+                    }
+
+                    // 손의 모든 자식본을 업데이트한다.
+                    //hand.UpdateAnimatorTransforms(_animator, isSelfIncluded: false);
+                };
+
+                if (isLeft) _actions["fold" + handName] = action;
+                if (!isLeft) _actions["fold" + handName] = action;
+
+                _updateAfter += action;
+            }
+        }
+
+        public void UnfoldHand(bool isLeft)
+        {
+            string keyName = "fold" + (isLeft ? "Left" : "Right") + "Hand";
+            if (_actions.ContainsKey(keyName))
+            {
+                Action action = _actions[keyName];
+                _updateAfter -= action;
+                _actions.Remove(keyName);
+            }
+        }
+
         public override void Render(Camera camera, Matrix4x4f vp, AnimateShader ashader)
         {
             base.Render(camera, vp, ashader);
@@ -369,16 +469,16 @@ namespace Animate
             Renderer3d.RenderPoint(_colorShader, _leftFootToeWorldPosition, camera, new Vertex4f(1, 1, 0, 1), 0.015f);
             
             // 디버깅용 손 위치 렌더링
-            if (_leftArmTargetInfo.HasTarget)
+            if (_leftArmWorldTargetInfo.HasTarget)
             {
                 Renderer3d.RenderPoint(_colorShader, _leftHandWorldPosition, camera, new Vertex4f(0, 1, 0, 1), 0.02f);
-                Renderer3d.RenderPoint(_colorShader, _leftArmTargetInfo.TargetPosition, camera, new Vertex4f(1, 0, 0, 1), 0.025f);
+                Renderer3d.RenderPoint(_colorShader, _leftArmWorldTargetInfo.TargetPosition, camera, new Vertex4f(1, 0, 0, 1), 0.025f);
             }
 
-            if (_rightArmTargetInfo.HasTarget)
+            if (_rightArmWorldTargetInfo.HasTarget)
             {
                 Renderer3d.RenderPoint(_colorShader, _rightHandWorldPosition, camera, new Vertex4f(0, 1, 0, 1), 0.02f);
-                Renderer3d.RenderPoint(_colorShader, _rightArmTargetInfo.TargetPosition, camera, new Vertex4f(1, 0, 0, 1), 0.025f);
+                Renderer3d.RenderPoint(_colorShader, _rightArmWorldTargetInfo.TargetPosition, camera, new Vertex4f(1, 0, 0, 1), 0.025f);
             }
         }
 

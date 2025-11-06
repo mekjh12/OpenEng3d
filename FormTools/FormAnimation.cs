@@ -344,7 +344,7 @@ namespace FormTools
                     human.LookAt(camera.PivotPosition);
 
                     // 팔 IK 적용(머리 방향이 미리 바뀌어야 정확하게 목표점을 타켓할 수 있음)
-                    human.SetArmTarget(_isLeft, camera.PivotPosition, human.HipWorldPosition);
+                    human.SetArmCharaterSpaceTarget(_isLeft, Vertex3f.UnitX*0.3f , human.HipWorldPosition);
                     human.ApplyArmIK();
                 } 
             }
@@ -412,7 +412,25 @@ namespace FormTools
                 if (aniActor is Human)
                 {
                     Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
-                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftHand], axisLength: 1000f);
+                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftUpLeg], axisLength: 20f);
+
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
+                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftFoot], axisLength: 30f);
+
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
+                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftLeg], axisLength: 20f);
+
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
+                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftToeBase], axisLength: 10f);
+
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
+                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightArm], axisLength: 10f);
+
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
+                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightForeArm], axisLength: 10f);
+
+                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
+                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightHand], axisLength: 10f);
 
                     Human human = aniActor as Human;
                     Renderer3d.RenderPoint(_colorShader, human.LeftFootToeWorldPosition, camera, _pointColor, 0.02f);
@@ -547,6 +565,17 @@ namespace FormTools
             else if (e.KeyCode == Keys.D0)
             {
                 _glControl3.Camera.PivotPosition = new Vertex3f(0, 0, 1.0f);
+            }
+            else if (e.KeyCode == Keys.H)
+            {
+                for (int i = 0; i < _aniActors.Count; i++)
+                {
+                    if (_aniActors[i] is Human)
+                    {
+                        Human human = _aniActors[i] as Human;
+                        human.FoldHand(true);
+                    }
+                }
             }
             else if (e.KeyCode == Keys.M)
             {

@@ -30,58 +30,11 @@ namespace Animate
     /// </summary>
     public abstract class Primate<TAction> : AnimActor<TAction> where TAction : struct, Enum
     {
-        Dictionary<string, Action> _actions;
+        protected Dictionary<string, Action> _actions;
 
         public Primate(string name, AnimRig aniRig, TAction defaultAction) : base(name, aniRig, defaultAction)
         {
             _actions = new Dictionary<string, Action>();
-
-        }
-
-        /// <summary>
-        /// 손을 감싸쥔다.
-        /// </summary>
-        /// <param name="whereHand"></param>
-        public void FoldHand(bool isLeft, float intensity = 60.0f)
-        {
-            string handName = (isLeft ? "LeftHand" : "RightHand");
-
-            if (!_actions.ContainsKey("fold"+ handName))
-            {
-                Action action = () =>
-                {
-                    // 손을 가져온다.
-                    Bone hand = AniRig.Armature["mixamorig_" + handName];
-
-                    foreach (Bone bone in hand.ToBFSList(exceptBone: hand))
-                    {
-                        // 엄지 손가락이 아닌 경우
-                        if (bone.Name.IndexOf("Thumb") < 0)
-                        {
-                            bone.BoneMatrixSet.LocalTransform = bone.BoneMatrixSet.LocalBindTransform * Matrix4x4f.RotatedX(40);
-                        }
-                    }
-
-                    // 손의 모든 자식본을 업데이트한다.
-                    //hand.UpdateAnimatorTransforms(_animator, isSelfIncluded: false);
-                };
-
-                if (isLeft) _actions["fold" + handName] = action;
-                if (!isLeft) _actions["fold" + handName] = action;
-
-                _updateAfter += action;
-            }
-        }
-
-        public void UnfoldHand(bool isLeft)
-        {
-            string keyName = "fold" + (isLeft ? "Left" : "Right") + "Hand";
-            if (_actions.ContainsKey(keyName))
-            {
-                Action action = _actions[keyName];
-                _updateAfter -= action;
-                _actions.Remove(keyName);
-            }
         }
 
 
