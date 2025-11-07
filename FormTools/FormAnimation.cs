@@ -411,6 +411,22 @@ namespace FormTools
             {
                 if (aniActor is Human)
                 {
+
+                    for (int i = 1; i < aniActor.AniRig.Armature.MaxBoneIndex; i++)
+                    {
+                        Bone bone = _aniActors[0].AniRig.Armature[i];
+
+                        // 모델 전체에 스케일 적용
+                        Matrix4x4f finalMatrix =
+                            aniActor.ModelMatrix *
+                            aniActor.Animator.GetRootTransform(bone) *
+                            bone.BoneMatrixSet.InverseBindPoseTransform *
+                            bone.OBB.ModelMatrix;
+
+                        Render3d.RenderOBB(_colorShader, finalMatrix, bone.OBB.Color, camera);
+                    }
+
+
                     Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
                         _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftUpLeg], axisLength: 20f);
 

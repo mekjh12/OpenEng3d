@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Animate
@@ -16,10 +17,12 @@ namespace Animate
         private Bone _rootBone;             // 루트 본
         private float _hipHeight = 1.0f;    // 엉덩이 높이 비율
         private string _hipBoneName = "";  // 루트 본 이름
+        private int _maxBoneIndex = 0;      // 
 
         // 본 관리 데이터
         private Dictionary<string, Bone> _dicBones;         // 본 이름 -> 본 객체 매핑
         private Dictionary<string, int> _dicBoneIndex;      // 본 이름 -> 인덱스 매핑
+        private Dictionary<int, string> _dicBoneNames;      // 본 인덱스 -> 본 이름 매핑
 
         /// <summary>
         /// 엉덩이 높이 비율을 가져오거나 설정한다.
@@ -35,6 +38,8 @@ namespace Animate
 
         public Dictionary<string, Bone> DicBones => _dicBones;
 
+        public int MaxBoneIndex { get => _maxBoneIndex; }
+
         /// <summary>
         /// Armature 생성자
         /// </summary>
@@ -42,6 +47,7 @@ namespace Animate
         {
             _dicBones = new Dictionary<string, Bone>();
             _dicBoneIndex = new Dictionary<string, int>();
+            _dicBoneNames = new Dictionary<int, string>();
             _hipBoneName = hipBoneName;
         }
 
@@ -59,6 +65,16 @@ namespace Animate
             }
         }
 
+        public Bone this[int boneIndex]
+        {
+            get
+            {
+                string boneName = _dicBoneNames.ContainsKey(boneIndex) ? _dicBoneNames[boneIndex] : null;
+                if (boneName == null) return null;
+                return _dicBones[boneName];
+            }
+        }
+
         /// <summary>
         /// 본 이름 배열을 설정하고 이름-인덱스 매핑을 생성한다.
         /// </summary>
@@ -67,12 +83,16 @@ namespace Animate
         {
             // 기존 인덱스 매핑 초기화
             _dicBoneIndex.Clear();
+            _dicBoneNames.Clear();
 
             // 본 이름과 인덱스 매핑 생성
             for (int i = 0; i < boneNames.Length; i++)
             {
                 _dicBoneIndex.Add(boneNames[i], i);
+                _dicBoneNames.Add(i, boneNames[i]);
             }
+
+            _maxBoneIndex = boneNames.Length;
         }
 
         /// <summary>

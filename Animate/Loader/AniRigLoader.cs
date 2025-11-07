@@ -11,10 +11,14 @@ namespace Animate
     public class MeshData
     {
         List<ModelData> _meshData;
+
         public MeshData()
         {
             _meshData = new List<ModelData>();
         }
+
+        public List<ModelData> Meshes { get => _meshData; }
+
         public void AddModelData(ModelData modelData) => _meshData.Add(modelData);
         public ModelData GetModelData(int index) => _meshData[index];
     }

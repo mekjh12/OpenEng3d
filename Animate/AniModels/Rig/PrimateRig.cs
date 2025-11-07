@@ -11,7 +11,8 @@ namespace Animate
         public int LeftFootIndex { get; private set; }
         public int RightFootIndex { get; private set; }        
 
-        public PrimateRig(string filename, string hipBoneName, bool isLoadAnimation = true) : base(filename, hipBoneName, isLoadAnimation)
+        public PrimateRig(string filename, string hipBoneName, bool isLoadAnimation = true) : 
+            base(filename, hipBoneName, isLoadAnimation)
         {
             // 애니메이션 리그 생성자
             HipIndex = Armature["mixamorig_Hips"].Index;

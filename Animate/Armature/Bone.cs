@@ -23,6 +23,7 @@ namespace Animate
         private bool _isHipBone = false;        // 힙본 여부 (캐릭터의 중심 뼈대인지 여부)
         private BoneMatrixSet _boneMatrixSet;   // 뼈대의 변환 정보 (애니메이션 및 바인딩 포즈 변환 행렬들)
         private JointAngle _jointAngle;         // 관절 각도 제한 (옵션)
+        private OBBMat _obb;                    // 본의 OBB      
 
         // 캐릭터 공간 변환 행렬(성능 최적화용)
         Matrix4x4f _rootTransform;              // 캐릭터 공간의 본 변환 행렬
@@ -44,6 +45,7 @@ namespace Animate
         public bool IsRoot => _parent == null;
         public float Length { get => _length; set => _length = value; }
         public TextNamePlate TextNamePlate { get; set; } = null;
+        public OBBMat OBB { get => _obb; set => _obb = value; }
 
         /// <summary>
         /// 새로운 뼈대를 생성한다

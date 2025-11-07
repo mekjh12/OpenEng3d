@@ -1,10 +1,9 @@
-﻿using Assimp;
+﻿using Geometry;
 using Model3d;
 using OpenGL;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 
 namespace Animate
 {
@@ -72,6 +71,9 @@ namespace Animate
                 out Matrix4x4f bindShapeMatrix,
                 out MeshData meshData);
 
+            // 메시 데이터로 본의 OBB를 로드한다.
+            LoadBoneOBB(meshData, armature);
+
             // 가져온 골격에서 힙 높이를 설정한다.
             foreach (Bone bone in armature.DicBones.Values)
             {
@@ -115,6 +117,63 @@ namespace Animate
                 }
                 return -1; // 해당 부위가 없을 경우 -1 반환
             }
+        }
+
+        private void LoadBoneOBB(MeshData meshData, Armature armature)
+        {
+            int maxBoneIndex = armature.MaxBoneIndex;
+
+            List<Vertex3f>[] boneVertList = new List<Vertex3f>[maxBoneIndex];
+            for (int i = 0; i < maxBoneIndex; i++)
+            {
+                boneVertList[i] = new List<Vertex3f>();
+            }
+
+            foreach (ModelData modelData in meshData.Meshes)
+            {
+                Vertex4i[] boneIndices = modelData.GetBoneIndices();
+                Vertex4f[] boneWeights = modelData.GetBoneWeights();
+                Vertex3f[] boneVertices = modelData.GetVertices();
+                for (int i = 0; i < boneIndices.Length; i++)
+                {
+                    Vertex4i indices = boneIndices[i];
+                    Vertex3f vertex = boneVertices[i];
+                    Vertex4f weights = boneWeights[i];
+
+                    if (indices.x > 0 && weights.x > 0.1f) boneVertList[indices.x].Add(vertex);
+                    if (indices.y > 0 && weights.y > 0.1f) boneVertList[indices.y].Add(vertex);
+                    if (indices.z > 0 && weights.z > 0.1f) boneVertList[indices.z].Add(vertex);
+                    if (indices.w > 0 && weights.w > 0.1f) boneVertList[indices.w].Add(vertex);
+                }
+            }
+
+            for (int i = 0; i < maxBoneIndex; i++)
+            {
+                List<Vertex3f> vertices = boneVertList[i];
+                if (vertices.Count < 4) continue;
+
+                OBBUtility.CalculateOBB(vertices.ToArray(),
+                    out Vertex3f center, out Vertex3f size, out Vertex3f[] axis);
+
+                // 각 축의 half-extent 벡터
+                Vertex3f halfA = axis[0].Normalized * size.x;
+                Vertex3f halfB = axis[1].Normalized * size.y;
+                Vertex3f halfC = axis[2].Normalized * size.z;
+
+                // OBBMat는 full-size 모서리 벡터를 요구
+                Vertex3f fullA = halfA * 2f;
+                Vertex3f fullB = halfB * 2f;
+                Vertex3f fullC = halfC * 2f;
+
+                // 시작 꼭짓점 = 중심 - 모든 축의 half-extent
+                Vertex3f cornerPos = center - halfA - halfB - halfC;
+
+                OBBMat obbMat = new OBBMat(fullA, fullB, fullC, cornerPos);
+
+                Bone bone = armature[i];
+                bone.OBB = obbMat;
+            }
+
         }
 
         /// <summary>

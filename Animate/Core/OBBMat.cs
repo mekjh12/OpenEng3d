@@ -38,7 +38,7 @@ namespace Animate
         {
             _obb = Matrix4x4f.Identity;
             _model = Matrix4x4f.Identity;
-            _color = new Vertex4f(1f, 1f, 1f, 1f);
+            _color = new Vertex4f(1f, 1f, 1f, 0.3f);
             _color.x = Rand.NextFloat;
             _color.y = Rand.NextFloat;
             _color.z = Rand.NextFloat;
@@ -66,7 +66,7 @@ namespace Animate
             _obb[3, 2] = pos.z;
             _obb[3, 3] = 1f;
 
-            _color = new Vertex4f(1f, 1f, 1f, 1f);
+            _color = new Vertex4f(1f, 1f, 1f, 0.3f);
             _color.x = Rand.NextFloat;
             _color.y = Rand.NextFloat;
             _color.z = Rand.NextFloat;

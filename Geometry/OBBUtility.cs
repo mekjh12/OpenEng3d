@@ -1,24 +1,19 @@
 ﻿using OpenGL;
 using System;
 using ZetaExt;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Geometry
 {
     public class OBBUtility
     {
-
         /// <summary>
-        /// 입력된 버텍스에서 중심과 oriented aligned axis 3축, 축에 대한 크기를 반환한다.
+        /// 입력된 버텍스들로부터 최소 부피의 OBB(Oriented Bounding Box)를 계산합니다.
         /// </summary>
-        /// <param name="vertices"></param>
-        /// <param name="center"></param>
-        /// <param name="size"></param>
-        /// <param name="axis"></param>
-        /// <returns></returns>
+        /// <param name="vertices">OBB를 계산할 정점 배열</param>
+        /// <param name="center">OBB의 중심점</param>
+        /// <param name="size">OBB의 half-extent (중심에서 각 축 방향의 면까지의 거리). 전체 크기는 size * 2</param>
+        /// <param name="axis">OBB의 로컬 좌표축 3개 (정규화된 벡터). axis[0]=X축, axis[1]=Y축, axis[2]=Z축</param>
+        /// <returns>계산된 OBB가 모든 정점을 포함하면 true, 그렇지 않으면 false</returns>
         public static bool CalculateOBB(Vertex3f[] vertices, out Vertex3f center, out Vertex3f size, out Vertex3f[] axis)
         {
             center = Vertex3f.Zero;
