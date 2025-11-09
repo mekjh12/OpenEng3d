@@ -163,6 +163,7 @@ namespace Animate
 
         public Matrix4x4f GetRootTransform(Bone bone)
         {
+            if (bone.Index < 0) return Matrix4x4f.Identity;
             return _rootTransforms[bone.Index];
         }
 
@@ -174,6 +175,7 @@ namespace Animate
         /// <returns></returns>
         public Matrix4x4f GetAnimatedWorldTransform(Bone bone, Matrix4x4f model)
         {
+            if (bone.Index < 0) return Matrix4x4f.Identity;
             return model * _rootTransforms[bone.Index];
         }
 

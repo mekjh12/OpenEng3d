@@ -69,6 +69,10 @@ namespace Model3d
                     // 모든 모델의 AABB와 OBB를 합쳐 BoundBoxComponent 생성
                     _boundingBox = new BoundBoxComponent(this, unionAABB, unionOBB);
                 }
+                else
+                {
+                    _boundingBox = new BoundBoxComponent(this, unionAABB, unionOBB);
+                }
             }
             else
             {
@@ -237,6 +241,11 @@ namespace Model3d
         /// <remarks>이전 프레임에서 엔터티가 이동한 경우에만 수행됩니다.</remarks>
         public void UpdateBoundingBox()
         {
+            if (_boundingBox == null)
+            {
+
+            }
+
             // 초기 AABB가 없는 경우 모델의 AABB를 복제하여 생성
             if (_boundingBox.AABB == null)
                 _boundingBox.AABB = (AABB)_boundingBox.ModelAABB.Clone();

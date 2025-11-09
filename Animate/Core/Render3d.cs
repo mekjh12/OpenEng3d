@@ -21,6 +21,18 @@ namespace Animate
             shader.Unbind();
         }
 
+        public static void RenderBoneOBB(ColorShader shader, Bone bone, Matrix4x4f model, Animator animator, Camera camera)
+        {
+            // 모델 전체에 스케일 적용
+            Matrix4x4f finalMatrix =
+                model *
+                animator.GetRootTransform(bone) *
+                bone.BoneMatrixSet.InverseBindPoseTransform *
+                bone.OBB.ModelMatrix;
+
+            Render3d.RenderOBB(shader, finalMatrix, bone.OBB.Color, camera);
+        }
+
         public static void RenderOBB(ColorShader shader, Matrix4x4f obb, Vertex4f color, Camera camera)
         {
             if (obb == null) return;

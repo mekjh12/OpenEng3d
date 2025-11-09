@@ -14,24 +14,24 @@ namespace FormTools
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             //Application.Run(new FormTest());
-            Application.Run(new FormAnimation());
-            //Application.Run(new FormCloud());
+            //Application.Run(new FormAnimation());                 // 작동됨
+            //Application.Run(new FormCloud());                     // 작동됨
+            //Application.Run(new FormPhysics());                   // 작동됨
+            Application.Run(new FormTerrain());
             //Application.Run(new FormHzm());
+            //Application.Run(new FormOcclusionQuery());
             //Application.Run(new FormTexture3d());
             //Application.Run(new FormAsyncTest());
             //Application.Run(new FormColor3Channel());
             //Application.Run(new FormTerrainImposter());
             //Application.Run(new FormImpostor());
             //Application.Run(new FormTileBaker());
-            //Application.Run(new FormTerrain());
             //Application.Run(new FormEntityTest());
-            //Application.Run(new FormPhysics());
             //Application.Run(new FormAtmosphereScattering());
             //Application.Run(new FormRealTimeCloudRendering());
             //Application.Run(new FormFrameBuffer());
-            //Application.Run(new FormOcclusionQuery());
-            //Application.Run(new FormNoise3d());
             //Application.Run(new FormTest());
+            //Application.Run(new FormNoise3d());
         }
     }
 }

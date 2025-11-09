@@ -77,6 +77,12 @@ namespace Animate
         Vertex3f[] _vertices;
         ColorShader _colorShader;
 
+        public Vertex3f HipWorldPosition { get => _hipWorldPosition; }
+        public Vertex3f LeftFootToeWorldPosition { get => _leftFootToeWorldPosition; }
+        public Vertex3f RightFootToeWorldPosition { get => _rightFootToeWorldPosition; }
+        public Vertex3f TestPoint { get => _testPoint; }
+        public Bone RightFootToe { get => _rightFootToe; set => _rightFootToe = value; }
+        public Bone LeftFootToe { get => _leftFootToe; set => _leftFootToe = value; }
 
         public Human(string name, AnimRig aniRig) : base(name, aniRig, HUMAN_ACTION.A_T_POSE)
         {
@@ -383,11 +389,6 @@ namespace Animate
         }
 
         public override HUMAN_ACTION RandomAction => (HUMAN_ACTION)Rand.NextInt(0, (int)(HUMAN_ACTION.RANDOM - 1));
-
-        public Vertex3f HipWorldPosition { get => _hipWorldPosition; }
-        public Vertex3f LeftFootToeWorldPosition { get => _leftFootToeWorldPosition; }
-        public Vertex3f RightFootToeWorldPosition { get => _rightFootToeWorldPosition; }
-        public Vertex3f TestPoint { get => _testPoint; }
 
         public override void SetMotionImmediately(HUMAN_ACTION action)
         {

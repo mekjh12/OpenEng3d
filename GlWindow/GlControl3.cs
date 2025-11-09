@@ -20,6 +20,7 @@ namespace GlWindow
     /// </summary>
     public class GlControl3 : GlControl
     {
+        private const string SHADER_UI2D_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\UIDesign2d\Shader\";
         private string _name = "glcontrol";
 
         private uint _tick = 0;
@@ -346,7 +347,7 @@ namespace GlWindow
                     }
                 }
 
-                string shaderPath = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\UIDesign2d\Shader\";
+                string shaderPath = SHADER_UI2D_PATH;
                 InitGlControl(shaderPath);
                 if (_init2d != null) _init2d(Width, Height);
             }
@@ -801,8 +802,7 @@ namespace GlWindow
                 // InitGlControl 끝부분에 추가
                 var centerTestLabel = new Ui2d.Label("centerFps", FontFamilySet.연성체)
                 {
-                    Align = Ui2d.Control.CONTROL_ALIGN.NONE,
-                    Position = new Vertex2f(0.4f, 0.15f), // 화면 중앙 근처
+                    Align = Ui2d.Control.CONTROL_ALIGN.HALF_VERTICAL_CENTER,
                     FontSize = 1.0f, // 매우 크게
                     Alpha = 0.0f,
                     ForeColor = new Vertex3f(1, 0, 0), // 빨간색

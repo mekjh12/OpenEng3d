@@ -14,6 +14,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using Terrain;
+using Ui3d;
 using ZetaExt;
 
 
@@ -26,24 +27,19 @@ namespace FormTools
 
         private GlControl3 _glControl3;
 
-        ImpostorLODSystem _impostorLODSystem;  // LOD 기반 임포스터 시스템
-
-        
+        ImpostorLODSystem _impostorLODSystem;   // LOD 기반 임포스터 시스템        
         RegionManager _regionManager;           // 리전관리자
-        //Atmosphere _atmosphere;
-
         HierarchicalZBuffer _hzbuffer;          // 계층깊이버퍼        
-        ColorShader _colorShader;               // 단순색상 쉐이더
-        SimpleDepthShader _simpleDepthShader;   // 단순깊이 쉐이더
-        UnlitShader _unlitShader;               // 비발광 객체 렌더링용 쉐이더
-        ImpostorShader _impostorShader;         // 임포스터 렌더링용 쉐이더
+
+        ColorShader _colorShader;                               // 단순색상 쉐이더
+        SimpleDepthShader _simpleDepthShader;                   // 단순깊이 쉐이더
+        UnlitShader _unlitShader;                               // 비발광 객체 렌더링용 쉐이더
+        ImpostorShader _impostorShader;                         // 임포스터 렌더링용 쉐이더
         VegetationBillboardShader _vegetationBillboardShader;   // 식생빌보드렌더링
-        SimpleTerrainShader _simpleTerrainShader;
+        SimpleTerrainShader _simpleTerrainShader;               // 
+        HzmDepthShader _hzmDepthShader;                         // 디버깅 쉐이더
 
-        HzmDepthShader _hzmDepthShader;         // 디버깅 쉐이더
-        Model3dManager _model3DManager;         // 
-
-        //StaticShader _staticShader;
+        Model3dManager _model3DManager;
         
         bool _isVisibleDepth = false;
         bool _visibleImposter = true;
@@ -81,7 +77,15 @@ namespace FormTools
             _glControl3.SetVisibleMouse(true);
             Controls.Add(_glControl3);
 
+            // 파일 해시 초기화
+            FileHashManager.ROOT_FILE_PATH = PROJECT_PATH;
+
             LogProfile.Create(EXE_PATH + "\\log.txt");
+        }
+
+        private void FormTerrain_Load(object sender, EventArgs e)
+        {
+            MemoryProfiler.StartFrameMonitoring();
         }
 
         public void Init(int width, int height)
@@ -89,17 +93,27 @@ namespace FormTools
             // 랜덤변수 생성
             Rand.InitSeed(500);
 
-            // 쉐이더 초기화
-            if (_hzmDepthShader == null) _hzmDepthShader = new HzmDepthShader(PROJECT_PATH);
-            if (_colorShader == null) _colorShader = new ColorShader(PROJECT_PATH);
-            if (_simpleDepthShader == null) _simpleDepthShader = new SimpleDepthShader(PROJECT_PATH);
-            if (_unlitShader == null) _unlitShader = new UnlitShader(PROJECT_PATH);
-            if (_impostorShader == null) _impostorShader = new ImpostorShader(PROJECT_PATH);
-            if (_simpleTerrainShader == null) _simpleTerrainShader = new SimpleTerrainShader(PROJECT_PATH);
-            if (_vegetationBillboardShader == null) _vegetationBillboardShader = new VegetationBillboardShader(PROJECT_PATH);
+            // 쉐이더 초기화 및 셰이더 매니저에 추가
+            ShaderManager.Instance.AddShader(new HzmDepthShader(PROJECT_PATH));
+            ShaderManager.Instance.AddShader(new ColorShader(PROJECT_PATH));
+            ShaderManager.Instance.AddShader(new SimpleDepthShader(PROJECT_PATH));
+            ShaderManager.Instance.AddShader(new UnlitShader(PROJECT_PATH));
+            ShaderManager.Instance.AddShader(new ImpostorShader(PROJECT_PATH));
+            ShaderManager.Instance.AddShader(new SimpleTerrainShader(PROJECT_PATH));
+            ShaderManager.Instance.AddShader(new VegetationBillboardShader(PROJECT_PATH));
 
+            _hzmDepthShader = ShaderManager.Instance.GetShader<HzmDepthShader>();
+            _colorShader = ShaderManager.Instance.GetShader<ColorShader>();
+            _simpleDepthShader = ShaderManager.Instance.GetShader<SimpleDepthShader>();
+            _unlitShader = ShaderManager.Instance.GetShader<UnlitShader>();
+            _impostorShader = ShaderManager.Instance.GetShader<ImpostorShader>();
+            _simpleTerrainShader = ShaderManager.Instance.GetShader<SimpleTerrainShader>();
+            _vegetationBillboardShader = ShaderManager.Instance.GetShader<VegetationBillboardShader>();
+
+            // 
             _hzbuffer = new HierarchicalZBuffer(width >> 3, height >> 3, PROJECT_PATH);
 
+            // ✅ 세이더를 위한 UBO 설정
             GlobalUniformBuffers.Initialize();
 
             GlobalUniformBuffers.UpdateHalfPlaneFogData(
@@ -109,6 +123,9 @@ namespace FormTools
                 isFogEnabled: true);
 
             GlobalUniformBuffers.BindUBOsToShader(_simpleTerrainShader.ProgramID);
+
+            // ✅ 앱 시작 시 한 번만 초기화
+            Ui3d.BillboardShader.Initialize();
         }
 
         private void Init2d(int w, int h)
@@ -131,7 +148,7 @@ namespace FormTools
 
             // in my house with GPU.
             Debug.PrintLine($"{Screen.PrimaryScreen.DeviceName} {w}x{h}");
-            if (Screen.PrimaryScreen.DeviceName.IndexOf("DISPLAY") > 0) _glControl3.FullScreen(true);
+            //if (Screen.PrimaryScreen.DeviceName.IndexOf("DISPLAY") > 0) _glControl3.FullScreen(true);
         }
 
         private void Init3d(int w, int h)
@@ -141,6 +158,10 @@ namespace FormTools
 
             // _atmosphere init
             //_atmosphere = new Atmosphere(PROJECT_PATH);
+
+            // 아틀라스 초기화
+            CharacterTextureAtlas.Initialize();
+            TextBillboardShader.Initialize();
 
             // terrain init
             string heightMap = PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\";
@@ -171,6 +192,8 @@ namespace FormTools
                 _model3DManager.GetModels("tree1"));
             */
 
+            // 셰이더 해시정보는 파일로 저장
+            FileHashManager.SaveHashes();
         }
 
         /// <summary>
@@ -346,10 +369,6 @@ namespace FormTools
             }
         }
 
-        private void FormTerrain_Load(object sender, EventArgs e)
-        {
-            Console.WriteLine("FormLoad!");
-        }
 
         public void KeyUpEvent(object sender, KeyEventArgs e)
         {

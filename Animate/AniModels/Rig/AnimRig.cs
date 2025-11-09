@@ -129,6 +129,7 @@ namespace Animate
                 boneVertList[i] = new List<Vertex3f>();
             }
 
+            const float weightThreshold = 0.05f;
             foreach (ModelData modelData in meshData.Meshes)
             {
                 Vertex4i[] boneIndices = modelData.GetBoneIndices();
@@ -140,10 +141,10 @@ namespace Animate
                     Vertex3f vertex = boneVertices[i];
                     Vertex4f weights = boneWeights[i];
 
-                    if (indices.x > 0 && weights.x > 0.1f) boneVertList[indices.x].Add(vertex);
-                    if (indices.y > 0 && weights.y > 0.1f) boneVertList[indices.y].Add(vertex);
-                    if (indices.z > 0 && weights.z > 0.1f) boneVertList[indices.z].Add(vertex);
-                    if (indices.w > 0 && weights.w > 0.1f) boneVertList[indices.w].Add(vertex);
+                    if (indices.x > 0 && weights.x > weightThreshold) boneVertList[indices.x].Add(vertex);
+                    if (indices.y > 0 && weights.y > weightThreshold) boneVertList[indices.y].Add(vertex);
+                    if (indices.z > 0 && weights.z > weightThreshold) boneVertList[indices.z].Add(vertex);
+                    if (indices.w > 0 && weights.w > weightThreshold) boneVertList[indices.w].Add(vertex);
                 }
             }
 

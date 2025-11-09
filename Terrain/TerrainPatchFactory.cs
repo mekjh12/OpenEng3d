@@ -130,7 +130,7 @@ namespace Terrain
             // 엔티티 생성 및 초기화
             Entity terrainEntity = new Entity($"terrainNxN", "terrain", texturedPlaneModel);
             terrainEntity.Position = new Vertex3f(regionCoordX * regionSize, regionCoordY * regionSize, 0);
-            //terrainEntity.UpdateBoundingBox();
+            terrainEntity.UpdateBoundingBox();
 
             return terrainEntity;
         }

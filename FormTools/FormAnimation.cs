@@ -43,6 +43,9 @@ namespace FormTools
         Texture _texture;
         TexturedModel _texturedModel;
 
+        TextNamePlate _textNamePlate;
+        Vertex3f _biasFps = Vertex3f.UnitX;
+
         public FormAnimation()
         {
             InitializeComponent();
@@ -104,6 +107,7 @@ namespace FormTools
         private void Init2d(int w, int h)
         {
             // 화면 구성요소 초기화
+            _glControl3.Ctrl("centerFps").IsVisible = false;
             _glControl3.AddLabel("cam", "camera position, yaw, pitch", align: Ui2d.Control.CONTROL_ALIGN.ROOT_BL, foreColor: new Vertex3f(1, 1, 0));
             _glControl3.AddLabel("ocs", "ocs", align: Ui2d.Control.CONTROL_ALIGN.ADJOINT_TOP, foreColor: new Vertex3f(1, 1, 0));
             _glControl3.AddLabel("resolution", $"resolution={w >> 2}x{h >> 2}", align: Ui2d.Control.CONTROL_ALIGN.ADJOINT_TOP, foreColor: new Vertex3f(1, 0, 0));
@@ -115,6 +119,10 @@ namespace FormTools
         {
             // 그리드셰이더 초기화
             _glControl3.InitGridShader(PROJECT_PATH);
+
+            _textNamePlate = new TextNamePlate(_glControl3.Camera, "FTP");
+            _textNamePlate.Height = 0.6f;
+            _textNamePlate.Width = 0.6f;
 
             // 1. 아틀라스 초기화
             CharacterTextureAtlas.Initialize();
@@ -128,8 +136,8 @@ namespace FormTools
             // [캐릭터] =========================================
             const string HUMAN_HIP_BONENAME = "mixamorig_Hips";
             PrimateRig aniRig = new PrimateRig(PROJECT_PATH + @"\Res\Actor\abe\abe.dae", HUMAN_HIP_BONENAME, isLoadAnimation: false);
-            //PrimateRig aniRig1 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Hero\aa_heroNasty.dae", HUMAN_HIP_BONENAME, isLoadAnimation: false);
-            //PrimateRig aniRig2 = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Guybrush\Guybrush.dae", HUMAN_HIP_BONENAME, isLoadAnimation: false);
+            //PrimateRig aniRig = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Hero\aa_heroNasty.dae", HUMAN_HIP_BONENAME, isLoadAnimation: false);
+            //PrimateRig aniRig = new PrimateRig(PROJECT_PATH + @"\Res\Actor\Guybrush\Guybrush.dae", HUMAN_HIP_BONENAME, isLoadAnimation: false);
 
             int px = -30;
             int py = -30;
@@ -314,6 +322,11 @@ namespace FormTools
             // 시간 간격을 초 단위로 변환
             float duration = deltaTime * 0.001f;
 
+            // FPS 업데이트
+            _textNamePlate.Text = FramePerSecond.FPS.ToString() + "FPS";
+            _textNamePlate.WorldPosition = camera.PivotPosition + camera.Forward - camera.Right;
+            _textNamePlate.Update(deltaTime);
+
             foreach (IAnimActor aniActor in _aniActors)
             {
                 aniActor.Update(deltaTime);
@@ -400,6 +413,9 @@ namespace FormTools
             // 카메라 중심점 렌더링
             Gl.Enable(EnableCap.DepthTest);
 
+            // FPS 렌더링
+            _textNamePlate.Render();
+
             Matrix4x4f vp = camera.VPMatrix;
 
             foreach (IAnimActor aniActor in _aniActors)
@@ -411,49 +427,12 @@ namespace FormTools
             {
                 if (aniActor is Human)
                 {
-
-                    for (int i = 1; i < aniActor.AniRig.Armature.MaxBoneIndex; i++)
-                    {
-                        Bone bone = _aniActors[0].AniRig.Armature[i];
-
-                        // 모델 전체에 스케일 적용
-                        Matrix4x4f finalMatrix =
-                            aniActor.ModelMatrix *
-                            aniActor.Animator.GetRootTransform(bone) *
-                            bone.BoneMatrixSet.InverseBindPoseTransform *
-                            bone.OBB.ModelMatrix;
-
-                        Render3d.RenderOBB(_colorShader, finalMatrix, bone.OBB.Color, camera);
-                    }
-
-
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
-                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftUpLeg], axisLength: 20f);
-
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
-                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftFoot], axisLength: 30f);
-
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
-                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftLeg], axisLength: 20f);
-
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
-                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftToeBase], axisLength: 10f);
-
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
-                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightArm], axisLength: 10f);
-
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
-                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightForeArm], axisLength: 10f);
-
-                    Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor,
-                        _aniActors[0].AniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightHand], axisLength: 10f);
-
                     Human human = aniActor as Human;
-                    Renderer3d.RenderPoint(_colorShader, human.LeftFootToeWorldPosition, camera, _pointColor, 0.02f);
-                    Renderer3d.RenderPoint(_colorShader, human.RightFootToeWorldPosition, camera, _pointColor, 0.02f);
-                    Renderer3d.RenderPoint(_colorShader, human.HipWorldPosition, camera, _pointColor, 0.02f);
 
-                    Renderer3d.RenderPoint(_colorShader, human.TestPoint, camera, new Vertex4f(0,1,1,1), 0.05f);
+                    Render3d.RenderBoneOBB(_colorShader, human.LeftFootToe, human.ModelMatrix, human.Animator, camera);
+                    Render3d.RenderBoneOBB(_colorShader, human.RightFootToe, human.ModelMatrix, human.Animator, camera);
+                                        
+                    //Renderer3d.RenderPoint(_colorShader, human.TestPoint, camera, new Vertex4f(0,1,1,1), 0.05f);
                     //Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.LowerBone, axisLength: 15f);
                     //Renderer3d.RenderBone(_axisShader, _colorShader, camera, aniActor, _twoBoneIK1.EndBone, axisLength: 10f);
                 }
