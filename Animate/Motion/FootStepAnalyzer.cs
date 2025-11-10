@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using FastMath;
+using OpenGL;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -68,7 +69,7 @@ namespace Animate
             float leftDistance = CalculateFootDistance(leftFootPositions);
             float rightDistance = CalculateFootDistance(rightFootPositions);
 
-            result.FootStepDistance = Math.Max(leftDistance, rightDistance);
+            result.FootStepDistance = MathFast.Max(leftDistance, rightDistance);
 
             // 모션 이름 기반 방향성 판단
             result.Type = DetermineMovementType(motion.Name);

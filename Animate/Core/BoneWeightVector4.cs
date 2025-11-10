@@ -1,4 +1,5 @@
 ﻿using System;
+using FastMath;
 using OpenGL;
 
 namespace Animate
@@ -43,7 +44,7 @@ namespace Animate
             get
             {
                 float sum = BoneWeights.x + BoneWeights.y + BoneWeights.z + BoneWeights.w;
-                return Math.Abs(sum - 1.0f) < 1e-6f;
+                return MathFast.Abs(sum - 1.0f) < 1e-6f;
             }
         }
 

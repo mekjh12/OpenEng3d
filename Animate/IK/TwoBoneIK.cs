@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using FastMath;
+using OpenGL;
 using System;
 using ZetaExt;
 
@@ -146,7 +147,7 @@ namespace Animate
 
             // 최대/최소 도달 거리 계산
             _maxReach = _upperLength + _lowerLength;
-            _minReach = Math.Abs(_upperLength - _lowerLength);
+            _minReach = MathFast.Abs(_upperLength - _lowerLength);
 
             // 타겟 방향 및 거리(d) 계산
             _targetWorld = targetPositionWorld; // IK 타겟 위치
@@ -166,19 +167,19 @@ namespace Animate
 
             float cosElbow = (upperSq + lowerSq - distSq) / (2f * _upperLength * _lowerLength);
             cosElbow = cosElbow.Clamp(-1f, 1f);
-            _elbowAngle = (float)Math.Acos(cosElbow);
+            _elbowAngle = (float)MathFast.Acos(cosElbow);
 
             // 어깨 각도 계산
             float cosShoulder = (upperSq + distSq - lowerSq) / (2f * _upperLength * clampedDistance);
             cosShoulder = cosShoulder.Clamp(-1f, 1f);
-            _shoulderAngle = (float)Math.Acos(cosShoulder);
+            _shoulderAngle = (float)MathFast.Acos(cosShoulder);
         }
 
         protected void FinishedSolve(Vertex3f poleVector, Matrix4x4f modelMatrix, Animator animator)
         {
             // 팔꿈치 위치 계산
-            float cosAlpha = (float)Math.Cos(_changedBoundValue * _shoulderAngle);
-            float sinAlpha = (float)Math.Sin(_changedBoundValue * _shoulderAngle);
+            float cosAlpha = (float)MathFast.Cos(_changedBoundValue * _shoulderAngle);
+            float sinAlpha = (float)MathFast.Sin(_changedBoundValue * _shoulderAngle);
             _newMidWorld = _rootWorld + (_targetDir * cosAlpha + poleVector * sinAlpha) * _upperLength;
 
             // 손목 위치 (검증용)

@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using FastMath;
+using OpenGL;
 using System;
 using ZetaExt;
 
@@ -35,7 +36,7 @@ namespace Animate
             Vertex2f projPoint = GetProjectedPoint(localTarget);
 
             // 회전 각도 계산 (-π ~ π)
-            angle = (float)Math.Atan2(projPoint.y, projPoint.x);
+            angle = (float)MathFast.Atan2(projPoint.y, projPoint.x);
 
             // 가중치를 적용한 회전 행렬 생성
             Matrix4x4f rotation = GetRotationMatrix(angle.ToDegree() * weight);

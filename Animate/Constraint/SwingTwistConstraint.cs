@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using FastMath;
+using OpenGL;
 using System;
 using ZetaExt;
 
@@ -181,7 +182,7 @@ namespace Animate
             // 스윙 계산 및 제한
             float swingAngle;
             ComputeSwing(ref twistBind, ref twistTarget, ref _tempSwingAxis, out swingAngle);
-            float swingAngleLimited = Math.Min(swingAngle, _maxSwingAngle);
+            float swingAngleLimited = MathFast.Min(swingAngle, _maxSwingAngle);
 
             // 중간 프레임 계산 (스윙만 적용) - 재사용 행렬 사용
             CreateRotationMatrixInPlace(ref _tempSwingAxis, swingAngleLimited * DEG_TO_RAD, ref _tempSwingRotation);
@@ -245,7 +246,7 @@ namespace Animate
             ref Vertex3f swingAxis, out float swingAngle)
         {
             float dotProduct = DotProduct(ref yBind, ref yTarget).Clamp(-1f, 1f);
-            swingAngle = (float)Math.Acos(dotProduct) * RAD_TO_DEG;
+            swingAngle = (float)MathFast.Acos(dotProduct) * RAD_TO_DEG;
 
             // 특수 케이스: 이미 정렬됨
             if (swingAngle < EPSILON)
@@ -287,7 +288,7 @@ namespace Animate
             float crossDotY = DotProduct(ref _tempCross, ref yTarget);
             float xDot = DotProduct(ref xSwing, ref xTarget);
 
-            return (float)Math.Atan2(crossDotY, xDot) * RAD_TO_DEG;
+            return (float)MathFast.Atan2(crossDotY, xDot) * RAD_TO_DEG;
         }
 
         // -----------------------------------------------------------------------
@@ -307,9 +308,9 @@ namespace Animate
             float c1x = matrix[1, 0], c1y = matrix[1, 1], c1z = matrix[1, 2];
             float c2x = matrix[2, 0], c2y = matrix[2, 1], c2z = matrix[2, 2];
 
-            scaleX = (float)Math.Sqrt(c0x * c0x + c0y * c0y + c0z * c0z);
-            scaleY = (float)Math.Sqrt(c1x * c1x + c1y * c1y + c1z * c1z);
-            scaleZ = (float)Math.Sqrt(c2x * c2x + c2y * c2y + c2z * c2z);
+            scaleX = (float)MathFast.Sqrt(c0x * c0x + c0y * c0y + c0z * c0z);
+            scaleY = (float)MathFast.Sqrt(c1x * c1x + c1y * c1y + c1z * c1z);
+            scaleZ = (float)MathFast.Sqrt(c2x * c2x + c2y * c2y + c2z * c2z);
         }
 
         /// <summary>
@@ -321,7 +322,7 @@ namespace Animate
             float lengthSq = v.x * v.x + v.y * v.y + v.z * v.z;
             if (lengthSq > EPSILON_SMALL * EPSILON_SMALL)
             {
-                float invLength = 1f / (float)Math.Sqrt(lengthSq);
+                float invLength = 1f / (float)MathFast.Sqrt(lengthSq);
                 v.x *= invLength;
                 v.y *= invLength;
                 v.z *= invLength;
@@ -361,15 +362,15 @@ namespace Animate
         /// <param name="result">출력: 회전 행렬 (ref)</param>
         private void CreateRotationMatrixInPlace(ref Vertex3f axis, float angleRad, ref Matrix4x4f result)
         {
-            if (Math.Abs(angleRad) < EPSILON_SMALL)
+            if (MathFast.Abs(angleRad) < EPSILON_SMALL)
             {
                 result = Matrix4x4f.Identity;
                 return;
             }
 
             float halfAngle = angleRad * 0.5f;
-            float sinHalf = (float)Math.Sin(halfAngle);
-            float cosHalf = (float)Math.Cos(halfAngle);
+            float sinHalf = (float)MathFast.Sin(halfAngle);
+            float cosHalf = (float)MathFast.Cos(halfAngle);
 
             // 쿼터니언 생성 (임시 할당 불가피)
             ZetaExt.Quaternion q = new ZetaExt.Quaternion(
@@ -463,7 +464,7 @@ namespace Animate
             ExtractOrthonormalBasis(transform, ref _tempXTarget, ref _tempYTarget, ref _tempZTarget);
 
             float dotProduct = DotProduct(ref _yBind, ref _tempYTarget).Clamp(-1f, 1f);
-            float currentSwingAngle = (float)Math.Acos(dotProduct) * RAD_TO_DEG;
+            float currentSwingAngle = (float)MathFast.Acos(dotProduct) * RAD_TO_DEG;
 
             return currentSwingAngle <= _maxSwingAngle;
         }

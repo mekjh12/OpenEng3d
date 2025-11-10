@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using FastMath;
+using OpenGL;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -116,7 +117,7 @@ namespace Animate
                             for (int i = 0; i < value.Length; i++)
                             {
                                 items[i] = float.Parse(value[i].Trim());
-                                maxTimeLength = Math.Max(items[i], maxTimeLength);
+                                maxTimeLength = MathFast.Max(items[i], maxTimeLength);
                             }
                             sourceInput.AddRange(items);
                         }

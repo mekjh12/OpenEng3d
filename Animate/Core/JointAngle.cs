@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using FastMath;
+using OpenGL;
 using System;
 using ZetaExt;
 
@@ -198,9 +199,9 @@ namespace Animate
         /// </summary>
         private bool IsApproximatelyEqual(EulerAngle a, EulerAngle b, float epsilon = 0.01f)
         {
-            return Math.Abs(a.Pitch - b.Pitch) < epsilon &&
-                   Math.Abs(a.Roll - b.Roll) < epsilon &&
-                   Math.Abs(a.Yaw - b.Yaw) < epsilon;
+            return MathFast.Abs(a.Pitch - b.Pitch) < epsilon &&
+                   MathFast.Abs(a.Roll - b.Roll) < epsilon &&
+                   MathFast.Abs(a.Yaw - b.Yaw) < epsilon;
         }
 
         // -----------------------------------------------------------------------

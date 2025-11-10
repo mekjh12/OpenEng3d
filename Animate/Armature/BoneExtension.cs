@@ -1,7 +1,5 @@
-﻿using Assimp;
+﻿using FastMath;
 using OpenGL;
-using System;
-using System.Collections.Generic;
 using ZetaExt;
 
 namespace Animate
@@ -43,7 +41,7 @@ namespace Animate
             }
             return $"[{bone.Index},{bone.Name}] Parent={bone.Parent?.Name}, BindMatrix {txt} InvBindMatrix {invBind}";
 
-            float Cut(float a) => ((float)Math.Abs(a) < 0.000001f) ? 0.0f : a;
+            float Cut(float a) => ((float)MathFast.Abs(a) < 0.000001f) ? 0.0f : a;
         }
 
 
@@ -166,13 +164,13 @@ namespace Animate
             // 제한된 각도를 벗어나면 제한된 각도로 회귀한다.
             if (isRestrictAngle)
             {
-                Vertex3f angleVector = Kinetics.EulerAngleFromRotationMatrixZYX(bone.BoneMatrixSet.LocalBindTransform.Rot3x3f())[0]; // 오일러 각을 가져온다.
+                //Vertex3f angleVector = Kinetics.EulerAngleFromRotationMatrixZYX(bone.BoneMatrixSet.LocalBindTransform.Rot3x3f())[0]; // 오일러 각을 가져온다.
                 //angleVector.x = angleVector.x.Clamp(bone.BoneKinematics.RestrictAngle.ConstraintAngle.x, bone.BoneKinematics.RestrictAngle.ConstraintAngle.y);
                 //angleVector.y = angleVector.y.Clamp(bone.BoneKinematics.RestrictAngle.TwistAngle.x, bone.BoneKinematics.RestrictAngle.TwistAngle.y);
                 //angleVector.z = angleVector.z.Clamp(bone.BoneKinematics.RestrictAngle.ConstraintAngle.z, bone.BoneKinematics.RestrictAngle.ConstraintAngle.w);
-                Matrix4x4f RotX = Matrix4x4f.RotatedX(angleVector.x);
-                Matrix4x4f RotY = Matrix4x4f.RotatedY(angleVector.y);
-                Matrix4x4f RotZ = Matrix4x4f.RotatedZ(angleVector.z); // 회전을 계산한다.
+                //Matrix4x4f RotX = Matrix4x4f.RotatedX(angleVector.x);
+                //Matrix4x4f RotY = Matrix4x4f.RotatedY(angleVector.y);
+                //Matrix4x4f RotZ = Matrix4x4f.RotatedZ(angleVector.z); // 회전을 계산한다.
                 //pos = bone.BoneTransforms.LocalTransform.Position;
                 //Matrix4x4f Rot = Matrix4x4f.Translated(pos.x, pos.y, pos.z) * RotZ * RotY * RotX; // 회전과 이동을 계산한다.
                 float sx = bone.BoneMatrixSet.LocalTransform.Column0.Vertex3f().Length();

@@ -115,7 +115,6 @@
     <Compile Include="Armature\Bone.cs" />
     <Compile Include="Core\JointAngle.cs" />
     <Compile Include="Core\BoneTransform.cs" />
-    <Compile Include="Kinematic\Clothes.cs" />
     <Compile Include="Core\ColorPoint.cs" />
     <Compile Include="AniModels\Actor\Human.cs" />
     <Compile Include="Loader\MotionLoader.cs" />
@@ -125,7 +124,6 @@
     <Compile Include="Motion\Motion.Utils.cs" />
     <Compile Include="Motion\Motionable.cs" />
     <Compile Include="Motion\KeyFrame.cs" />
-    <Compile Include="Kinematic\Kinetics.cs" />
     <Compile Include="AniModels\Actor\Primate.cs" />
     <Compile Include="Core\MeshTriangles.cs" />
     <Compile Include="Motion\MixamoRotMotionStorage.cs" />
@@ -159,6 +157,10 @@
       <Project>{3f08288e-2eba-4e72-843d-7bf773d8f6cb}</Project>
       <Name>Geometry</Name>
     </ProjectReference>
+    <ProjectReference Include="..\MathFast\FastMath.csproj">
+      <Project>{f0dab839-81b8-46fd-bfdd-529a17dde3db}</Project>
+      <Name>FastMath</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Model3d\Model3d.csproj">
       <Project>{7a699d36-8869-4b18-a70f-2231a948d828}</Project>
       <Name>Model3d</Name>
@@ -188,6 +190,9 @@
     <Compile Include="AniModels\AniActor\AnimActor.Debug.cs" />
     <None Include="packages.config" />
     <None Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Kinematic\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\AssimpNet.4.1.0\build\AssimpNet.targets" Condition="Exists('..\packages\AssimpNet.4.1.0\build\AssimpNet.targets')" />

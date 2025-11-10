@@ -1,6 +1,7 @@
 ﻿using Animate;
 using AutoGenEnums;
 using Common.Abstractions;
+using FastMath;
 using GlWindow;
 using Model3d;
 using OpenGL;
@@ -88,6 +89,7 @@ namespace FormTools
         {
             // 랜덤변수 생성
             Rand.InitSeed(500);
+            MathFast.Initialize();
 
             // 쉐이더 초기화 및 셰이더 매니저에 추가
             ShaderManager.Instance.AddShader(new ColorShader(PROJECT_PATH));

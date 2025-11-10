@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using FastMath;
+using OpenGL;
 using System;
 using ZetaExt;
 
@@ -70,7 +71,7 @@ namespace Animate
             get
             {
                 Vertex3f goForward = Forward;
-                goForward.z = Math.Max(0.1f, goForward.z); // 최소 기울기 보장
+                goForward.z = MathFast.Max(0.1f, goForward.z); // 최소 기울기 보장
                 goForward.Normalize();
                 return goForward;
             }

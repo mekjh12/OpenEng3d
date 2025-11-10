@@ -1,4 +1,5 @@
 ﻿using Animate;
+using FastMath;
 using OpenGL;
 using System;
 using ZetaExt;
@@ -53,10 +54,10 @@ namespace Animates
 
             // 각도 불연속 보정: -π와 π 사이의 경계를 넘을 때 발생하는 점프 방지
             float angleDiff = angle3 - _previousAngle;
-            if (angleDiff > Math.PI)
-                _accumulatedAngle -= 2 * (float)Math.PI;  // 180도 → -180도 점프 시 보정
-            else if (angleDiff < -Math.PI)
-                _accumulatedAngle += 2 * (float)Math.PI;  // -180도 → 180도 점프 시 보정
+            if (angleDiff > MathFast.PI)
+                _accumulatedAngle -= 2 * (float)MathFast.PI;  // 180도 → -180도 점프 시 보정
+            else if (angleDiff < -MathFast.PI)
+                _accumulatedAngle += 2 * (float)MathFast.PI;  // -180도 → 180도 점프 시 보정
 
             _accumulatedAngle += angleDiff;
             _previousAngle = angle3;

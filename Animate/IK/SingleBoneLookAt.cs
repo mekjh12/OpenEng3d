@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using FastMath;
+using OpenGL;
 using System;
 using ZetaExt;
 using Quaternion = ZetaExt.Quaternion;
@@ -44,7 +45,7 @@ namespace Animate
         // -----------------------------------------------------------------------
 
         public LocalSpaceAxis LocalForward => _localForward;
-        public float SmoothSpeed { get => _smoothSpeed; set => _smoothSpeed = Math.Max(0.1f, value); }
+        public float SmoothSpeed { get => _smoothSpeed; set => _smoothSpeed = MathFast.Max(0.1f, value); }
         public Bone Bone => _bone;
         public Quaternion Rotation { get => _rotation; }
 
@@ -83,8 +84,8 @@ namespace Animate
         public void SetAngleLimits(float maxYawAngle, float maxPitchAngle)
         {
             _useAngleLimits = true;
-            _maxYawAngle = Math.Max(0f, Math.Min(180f, maxYawAngle));
-            _maxPitchAngle = Math.Max(0f, Math.Min(180f, maxPitchAngle));
+            _maxYawAngle = MathFast.Max(0f, MathFast.Min(180f, maxYawAngle));
+            _maxPitchAngle = MathFast.Max(0f, MathFast.Min(180f, maxPitchAngle));
         }
 
         /// <summary>
@@ -186,10 +187,10 @@ namespace Animate
         private float ApplyAngleLimits(float angle)
         {
             // 최대 각도 중 작은 값 사용
-            float maxAngle = Math.Min(_maxYawAngle, _maxPitchAngle);
+            float maxAngle = MathFast.Min(_maxYawAngle, _maxPitchAngle);
 
             // 각도를 제한 범위 내로 클램프
-            return Math.Min(angle, maxAngle);
+            return MathFast.Min(angle, maxAngle);
         }
     }
 }

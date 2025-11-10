@@ -249,6 +249,10 @@
       <Project>{99eae591-f4e4-436b-98e1-81800d38a3e2}</Project>
       <Name>Lights</Name>
     </ProjectReference>
+    <ProjectReference Include="..\MathFast\FastMath.csproj">
+      <Project>{f0dab839-81b8-46fd-bfdd-529a17dde3db}</Project>
+      <Name>FastMath</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Model3d\Model3d.csproj">
       <Project>{7a699d36-8869-4b18-a70f-2231a948d828}</Project>
       <Name>Model3d</Name>

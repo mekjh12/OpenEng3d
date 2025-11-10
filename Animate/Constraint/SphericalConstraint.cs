@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using FastMath;
+using OpenGL;
 using System;
 using ZetaExt;
 using Quaternion = ZetaExt.Quaternion;
@@ -98,9 +99,9 @@ namespace Animate
             float c1x = currentTransform[1, 0], c1y = currentTransform[1, 1], c1z = currentTransform[1, 2];
             float c2x = currentTransform[2, 0], c2y = currentTransform[2, 1], c2z = currentTransform[2, 2];
 
-            float scaleX = (float)Math.Sqrt(c0x * c0x + c0y * c0y + c0z * c0z);
-            float scaleY = (float)Math.Sqrt(c1x * c1x + c1y * c1y + c1z * c1z);
-            float scaleZ = (float)Math.Sqrt(c2x * c2x + c2y * c2y + c2z * c2z);
+            float scaleX = (float)MathFast.Sqrt(c0x * c0x + c0y * c0y + c0z * c0z);
+            float scaleY = (float)MathFast.Sqrt(c1x * c1x + c1y * c1y + c1z * c1z);
+            float scaleZ = (float)MathFast.Sqrt(c2x * c2x + c2y * c2y + c2z * c2z);
 
             // 쿼터니언 변환
             Quaternion currentRotation = currentTransform.ToQuaternion();
@@ -128,9 +129,9 @@ namespace Animate
             float r1x = result[1, 0], r1y = result[1, 1], r1z = result[1, 2];
             float r2x = result[2, 0], r2y = result[2, 1], r2z = result[2, 2];
 
-            float len0 = (float)Math.Sqrt(r0x * r0x + r0y * r0y + r0z * r0z);
-            float len1 = (float)Math.Sqrt(r1x * r1x + r1y * r1y + r1z * r1z);
-            float len2 = (float)Math.Sqrt(r2x * r2x + r2y * r2y + r2z * r2z);
+            float len0 = (float)MathFast.Sqrt(r0x * r0x + r0y * r0y + r0z * r0z);
+            float len1 = (float)MathFast.Sqrt(r1x * r1x + r1y * r1y + r1z * r1z);
+            float len2 = (float)MathFast.Sqrt(r2x * r2x + r2y * r2y + r2z * r2z);
 
             float invLen0 = len0 > EPSILON_SMALL ? scaleX / len0 : scaleX;
             float invLen1 = len1 > EPSILON_SMALL ? scaleY / len1 : scaleY;
@@ -174,13 +175,13 @@ namespace Animate
             float projZ = direction.z * dot;
 
             // 트위스트 쿼터니언 계산
-            float parallelLength = (float)Math.Sqrt(projX * projX + projY * projY + projZ * projZ);
-            float twistHalfAngle = (float)Math.Atan2(parallelLength, rotation.W);
+            float parallelLength = (float)MathFast.Sqrt(projX * projX + projY * projY + projZ * projZ);
+            float twistHalfAngle = (float)MathFast.Atan2(parallelLength, rotation.W);
 
-            twist.X = direction.x * (float)Math.Sin(twistHalfAngle);
-            twist.Y = direction.y * (float)Math.Sin(twistHalfAngle);
-            twist.Z = direction.z * (float)Math.Sin(twistHalfAngle);
-            twist.W = (float)Math.Cos(twistHalfAngle);
+            twist.X = direction.x * (float)MathFast.Sin(twistHalfAngle);
+            twist.Y = direction.y * (float)MathFast.Sin(twistHalfAngle);
+            twist.Z = direction.z * (float)MathFast.Sin(twistHalfAngle);
+            twist.W = (float)MathFast.Cos(twistHalfAngle);
 
             // Swing 계산: q_swing = q_twist^-1 * q
             // (q = q_twist * q_swing이므로 q_swing = q_twist^-1 * q)
@@ -192,7 +193,7 @@ namespace Animate
         /// </summary>
         private Quaternion ConstrainSwing(Quaternion swing, float maxAngle)
         {
-            float angle = 2f * (float)Math.Acos(Math.Max(-1f, Math.Min(1f, swing.W))) * RAD_TO_DEG;
+            float angle = 2f * (float)MathFast.Acos(MathFast.Max(-1f, MathFast.Min(1f, swing.W))) * RAD_TO_DEG;
 
             if (angle <= maxAngle)
                 return swing;
@@ -204,14 +205,14 @@ namespace Animate
                 return Quaternion.Identity;
 
             // 정규화
-            float invLength = 1f / (float)Math.Sqrt(axisLengthSq);
+            float invLength = 1f / (float)MathFast.Sqrt(axisLengthSq);
             float axisX = swing.X * invLength;
             float axisY = swing.Y * invLength;
             float axisZ = swing.Z * invLength;
 
-            float halfAngle = maxAngle * 0.5f * (float)Math.PI / 180f;
-            float sinHalf = (float)Math.Sin(halfAngle);
-            float cosHalf = (float)Math.Cos(halfAngle);
+            float halfAngle = maxAngle * 0.5f * (float)MathFast.PI / 180f;
+            float sinHalf = (float)MathFast.Sin(halfAngle);
+            float cosHalf = (float)MathFast.Cos(halfAngle);
 
             return new Quaternion(
                 axisX * sinHalf,
@@ -226,7 +227,7 @@ namespace Animate
         /// </summary>
         private Quaternion ConstrainTwist(Quaternion twist, float maxAngle)
         {
-            float angle = 2f * (float)Math.Acos(Math.Max(-1f, Math.Min(1f, twist.W))) * RAD_TO_DEG;
+            float angle = 2f * (float)MathFast.Acos(MathFast.Max(-1f, MathFast.Min(1f, twist.W))) * RAD_TO_DEG;
 
             // 각도 부호 결정
             float dot = twist.X * _referenceFowardDirection.x +
@@ -237,7 +238,7 @@ namespace Animate
 
             float constrainedAngle = angle.Clamp(-maxAngle, maxAngle);
 
-            if (Math.Abs(angle - constrainedAngle) < 0.1f)
+            if (MathFast.Abs(angle - constrainedAngle) < 0.1f)
                 return twist;
 
             // 정규화된 축 직접 사용
@@ -245,9 +246,9 @@ namespace Animate
             float axisY = _referenceFowardDirection.y;
             float axisZ = _referenceFowardDirection.z;
 
-            float halfAngle = constrainedAngle * 0.5f * (float)Math.PI / 180f;
-            float sinHalf = (float)Math.Sin(halfAngle);
-            float cosHalf = (float)Math.Cos(halfAngle);
+            float halfAngle = constrainedAngle * 0.5f * (float)MathFast.PI / 180f;
+            float sinHalf = (float)MathFast.Sin(halfAngle);
+            float cosHalf = (float)MathFast.Cos(halfAngle);
 
             return new Quaternion(
                 axisX * sinHalf,
@@ -263,8 +264,8 @@ namespace Animate
         private float GetConeAngleFast(ref Vertex3f v1, ref Vertex3f v2)
         {
             float dotProduct = v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
-            dotProduct = Math.Max(-1f, Math.Min(1f, dotProduct));
-            return (float)(Math.Acos(dotProduct) * RAD_TO_DEG);
+            dotProduct = MathFast.Max(-1f, MathFast.Min(1f, dotProduct));
+            return (float)(MathFast.Acos(dotProduct) * RAD_TO_DEG);
         }
 
         /// <summary>

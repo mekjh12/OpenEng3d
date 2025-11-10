@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using FastMath;
+using OpenGL;
 using System;
 
 namespace Animate
@@ -89,7 +90,7 @@ namespace Animate
             {
                 return _pos.Equals(other._pos) &&
                        _color.Equals(other._color) &&
-                       Math.Abs(_size - other._size) < 0.0001f;
+                       MathFast.Abs(_size - other._size) < 0.0001f;
             }
             return false;
         }

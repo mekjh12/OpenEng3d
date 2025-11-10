@@ -1,4 +1,28 @@
-﻿using Common.Abstractions;
+﻿//------------------------------------------------------------------------------
+//
+// 설명:
+//    Bounding Volume Hierarchy (BVH) 동적 트리 구조를 구현합니다.
+//    이 구현의 주요 아이디어(Branch and Bound 기반 삽입/최적화)는
+//    Box2D 물리 엔진의 개발자인 에린 카토(Erin Catto)의 연구를 기반으로 합니다.
+//    주로 오클루전 컬링 및 공간 질의(Spatial Query)에 사용됩니다.
+//
+//------------------------------------------------------------------------------
+//
+// == 주요 참고 자료 (Primary Reference) ==
+//
+//    저자:    Erin Catto (에린 카토)
+//    제목:    "Dynamic Bounding Volume Hierarchies" (동적 경계 볼륨 계층 구조)
+//    발표:    Game Developers Conference (GDC) 2019
+//    영상/자료: https://www.gdcvault.com/play/1026481/Dynamic-Bounding-Volume-Hierarchies
+//
+// == 코드 구현 참고 (C++ 원본) ==
+//
+//    프로젝트: Box2D (b2_dynamic_tree.cpp 파일 참고)
+//    URL:     https://github.com/erincatto/box2d
+//
+//------------------------------------------------------------------------------
+
+using Common.Abstractions;
 using Geometry;
 using Model3d;
 using OpenGL;

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FastMath;
+using System;
 
 namespace Animate
 {
@@ -41,7 +42,7 @@ namespace Animate
         /// <param name="sortedTimes">정렬된 시간 배열</param>
         public void SetTimes(float[] sortedTimes)
         {
-            _count = Math.Min(sortedTimes.Length, _times.Length);
+            _count = MathFast.Min(sortedTimes.Length, _times.Length);
             Array.Copy(sortedTimes, _times, _count);
         }
 
@@ -86,8 +87,8 @@ namespace Animate
             if (right < 0) return 0;
             if (left >= _count) return _count - 1;
 
-            float leftDiff = Math.Abs(targetTime - _times[right]);
-            float rightDiff = Math.Abs(targetTime - _times[left]);
+            float leftDiff = MathFast.Abs(targetTime - _times[right]);
+            float rightDiff = MathFast.Abs(targetTime - _times[left]);
 
             return leftDiff <= rightDiff ? right : left;
         }
