@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using FastMath;
+using OpenGL;
 using ZetaExt;
 
 namespace Physics
@@ -26,7 +27,7 @@ namespace Physics
             // 힘의 크기 계산
             Vertex3f force = particle.Position - _anchor;
             float magitude = force.Magnitude();
-            magitude = MathF.Abs(magitude - _restLength);
+            magitude = MathFast.Abs(magitude - _restLength);
             magitude *= _springConstant;
 
             // 최종 힘을 계산하여 입자에 적용

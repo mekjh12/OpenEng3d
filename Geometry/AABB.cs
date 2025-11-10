@@ -1,4 +1,5 @@
 ﻿using Common.Abstractions;
+using FastMath;
 using OpenGL;
 using System;
 using ZetaExt;
@@ -137,9 +138,9 @@ namespace Geometry
             get
             {
                 Vertex3f delta = _upper - _lower;
-                float x = Math.Abs(delta.x);
-                float y = Math.Abs(delta.y);
-                float z = Math.Abs(delta.z);
+                float x = MathFast.Abs(delta.x);
+                float y = MathFast.Abs(delta.y);
+                float z = MathFast.Abs(delta.z);
                 return 2.0f * (x * y + y * z + z * x);
             }
         }
@@ -291,9 +292,9 @@ namespace Geometry
             Vertex3f size = Size * 0.5f;
             Vertex3f[] axis = { Vertex3f.UnitX * size.x, Vertex3f.UnitY * size.y, Vertex3f.UnitZ * size.z };
 
-            return Math.Abs(normal.Dot(axis[0] )) +
-                     Math.Abs(normal.Dot(axis[1] )) +
-                      Math.Abs(normal.Dot(axis[2] ));
+            return MathFast.Abs(normal.Dot(axis[0] )) +
+                     MathFast.Abs(normal.Dot(axis[1] )) +
+                      MathFast.Abs(normal.Dot(axis[2] ));
         }
 
         /// <summary>
@@ -356,15 +357,15 @@ namespace Geometry
         public void Expand(Vertex3f point)
         {
             _lower = new Vertex3f(
-                Math.Min(_lower.x, point.x),
-                Math.Min(_lower.y, point.y),
-                Math.Min(_lower.z, point.z)
+                MathFast.Min(_lower.x, point.x),
+                MathFast.Min(_lower.y, point.y),
+                MathFast.Min(_lower.z, point.z)
             );
 
             _upper = new Vertex3f(
-                Math.Max(_upper.x, point.x),
-                Math.Max(_upper.y, point.y),
-                Math.Max(_upper.z, point.z)
+                MathFast.Max(_upper.x, point.x),
+                MathFast.Max(_upper.y, point.y),
+                MathFast.Max(_upper.z, point.z)
             );
         }
 
@@ -374,8 +375,8 @@ namespace Geometry
             AABB b = boundVolume as AABB;
             return new AABB(min(a.LowerBound, b.LowerBound), max(a.UpperBound, b.UpperBound));
             // 함수의 내부함수 부분이다.
-            Vertex3f min(Vertex3f v1, Vertex3f v2) => new Vertex3f(Math.Min(v1.x, v2.x), Math.Min(v1.y, v2.y), Math.Min(v1.z, v2.z));
-            Vertex3f max(Vertex3f v1, Vertex3f v2) => new Vertex3f(Math.Max(v1.x, v2.x), Math.Max(v1.y, v2.y), Math.Max(v1.z, v2.z));
+            Vertex3f min(Vertex3f v1, Vertex3f v2) => new Vertex3f(MathFast.Min(v1.x, v2.x), MathFast.Min(v1.y, v2.y), MathFast.Min(v1.z, v2.z));
+            Vertex3f max(Vertex3f v1, Vertex3f v2) => new Vertex3f(MathFast.Max(v1.x, v2.x), MathFast.Max(v1.y, v2.y), MathFast.Max(v1.z, v2.z));
         }
 
         public override BoundVolume Intersect(BoundVolume boundVoulume)

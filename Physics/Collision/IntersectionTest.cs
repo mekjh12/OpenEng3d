@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using FastMath;
+using OpenGL;
 using System;
 using ZetaExt;
 
@@ -177,9 +178,9 @@ namespace Physics.Collision
         /// <returns></returns>
         private static float TransformToAxis(CollisionBox box, Vertex3f axis)
         {
-            return box.HalfSize.x * Math.Abs(axis * box.AxisX) +
-                box.HalfSize.y * Math.Abs(axis * box.AxisY) +
-                box.HalfSize.z * Math.Abs(axis * box.AxisZ);
+            return box.HalfSize.x * MathFast.Abs(axis * box.AxisX) +
+                box.HalfSize.y * MathFast.Abs(axis * box.AxisY) +
+                box.HalfSize.z * MathFast.Abs(axis * box.AxisZ);
         }
 
         /// <summary>

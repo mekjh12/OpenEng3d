@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using FastMath;
+using OpenGL;
 using System;
 using System.Collections.Generic;
 using ZetaExt;
@@ -484,8 +485,8 @@ namespace Geometry
                 vertexLocation[a] = d;
 
                 byte code = (byte)(Convert.ToInt16(d > -kPolygonEpsilon) + 2 * Convert.ToInt16(d > kPolygonEpsilon));
-                minCode = Math.Min(minCode, code);
-                maxCode = Math.Max(maxCode, code);
+                minCode = MathFast.Min(minCode, code);
+                maxCode = MathFast.Max(maxCode, code);
                 vertexCode[a] = code;
             }
 
@@ -695,7 +696,7 @@ namespace Geometry
                     }
 
                     if ((newEdge != null) &&
-                        (Math.Max(newEdge.GetVertexIndex(0), newEdge.GetVertexIndex(1)) == 0xFF))
+                        (MathFast.Max(newEdge.GetVertexIndex(0), newEdge.GetVertexIndex(1)) == 0xFF))
                     {
                         // The input polyhedron was invalid.
                         result = polyhedron;
@@ -894,9 +895,9 @@ namespace Geometry
                 {
                     float theta = j * thetaUnit;
                     float phi = (i + 1) * phiUnit;
-                    float px = radius * (float)Math.Sin(phi) * (float)Math.Cos(theta);
-                    float py = radius * (float)Math.Cos(phi);
-                    float pz = radius * (float)Math.Sin(phi) * (float)Math.Sin(theta);
+                    float px = radius * (float)MathFast.Sin(phi) * (float)MathFast.Cos(theta);
+                    float py = radius * (float)MathFast.Cos(phi);
+                    float pz = radius * (float)MathFast.Sin(phi) * (float)MathFast.Sin(theta);
 
                     vertices[n * i + j] = new Vertex3f(px, py, pz);
 
@@ -941,10 +942,10 @@ namespace Geometry
             for (uint i = 0; i < n; i++)
             {
                 float rad = i * unitRad;
-                float px1 = lowerRadius * (float)Math.Cos(rad);
-                float pz1 = lowerRadius * (float)Math.Sin(rad);
-                float px2 = upperRadius * (float)Math.Cos(rad);
-                float pz2 = upperRadius * (float)Math.Sin(rad);
+                float px1 = lowerRadius * (float)MathFast.Cos(rad);
+                float pz1 = lowerRadius * (float)MathFast.Sin(rad);
+                float px2 = upperRadius * (float)MathFast.Cos(rad);
+                float pz2 = upperRadius * (float)MathFast.Sin(rad);
                 vertices[i] = new Vertex3f(px1, 0, pz1);
                 vertices[n + i] = new Vertex3f(px2, height, pz2);
                 uint a = (i + 0) % n;
@@ -979,8 +980,8 @@ namespace Geometry
             for (int i = 0; i < n; i++)
             {
                 float rad = i * unitRad;
-                float px = radius * (float)Math.Cos(rad);
-                float pz = radius * (float)Math.Sin(rad);
+                float px = radius * (float)MathFast.Cos(rad);
+                float pz = radius * (float)MathFast.Sin(rad);
                 vertices[i] = new Vertex3f(px, 0, pz);
                 triangles[i] = new Triangle(n, (i + 0) % n, (i + 1) % n);
             }

@@ -1,4 +1,5 @@
 ﻿using Common.Abstractions;
+using FastMath;
 using OpenGL;
 using System;
 using System.Collections.Generic;
@@ -88,13 +89,13 @@ namespace Geometry
             // 모든 꼭지점을 순회하면서 최소/최대 좌표 갱신
             for (int i = 1; i < vertices.Length; i++)
             {
-                min.x = Math.Min(min.x, vertices[i].x);
-                min.y = Math.Min(min.y, vertices[i].y);
-                min.z = Math.Min(min.z, vertices[i].z);
+                min.x = MathFast.Min(min.x, vertices[i].x);
+                min.y = MathFast.Min(min.y, vertices[i].y);
+                min.z = MathFast.Min(min.z, vertices[i].z);
 
-                max.x = Math.Max(max.x, vertices[i].x);
-                max.y = Math.Max(max.y, vertices[i].y);
-                max.z = Math.Max(max.z, vertices[i].z);
+                max.x = MathFast.Max(max.x, vertices[i].x);
+                max.y = MathFast.Max(max.y, vertices[i].y);
+                max.z = MathFast.Max(max.z, vertices[i].z);
             }
 
             // AABB의 중심점과 크기 계산
@@ -124,7 +125,7 @@ namespace Geometry
         }
 
         public float Radius =>
-            (float)Math.Sqrt(_size.x * _size.x + _size.y * _size.y + _size.z * _size.z) * 0.5f;
+            (float)MathFast.Sqrt(_size.x * _size.x + _size.y * _size.y + _size.z * _size.z) * 0.5f;
 
         public override float Area =>
             2.0f * (_size.x * _size.y + _size.y * _size.z + _size.z * _size.x);

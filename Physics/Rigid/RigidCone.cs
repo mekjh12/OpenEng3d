@@ -1,4 +1,5 @@
-﻿using Geometry;
+﻿using FastMath;
+using Geometry;
 using OpenGL;
 using System;
 using ZetaExt;
@@ -20,7 +21,7 @@ namespace Physics
             _height = height;
 
             // 부피를 계산한다.
-            _volume = (float)(0.33333f * Math.PI * _radius * _radius * _height);
+            _volume = (float)(0.33333f * MathFast.PI * _radius * _radius * _height);
 
             // 로컬공간 관성텐서를 지정한다.
             InitInertiaTensor();

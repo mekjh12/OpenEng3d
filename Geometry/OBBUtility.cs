@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using FastMath;
+using OpenGL;
 using System;
 using ZetaExt;
 
@@ -47,12 +48,12 @@ namespace Geometry
                         float ds = s.Dot(vertices[i]);
                         float dt = t.Dot(vertices[i]);
                         float du = u.Dot(vertices[i]);
-                        smin = Math.Min(smin, ds);
-                        tmin = Math.Min(tmin, dt);
-                        umin = Math.Min(umin, du);
-                        smax = Math.Max(smax, ds);
-                        tmax = Math.Max(tmax, dt);
-                        umax = Math.Max(umax, du);
+                        smin = MathFast.Min(smin, ds);
+                        tmin = MathFast.Min(tmin, dt);
+                        umin = MathFast.Min(umin, du);
+                        smax = MathFast.Max(smax, ds);
+                        tmax = MathFast.Max(tmax, dt);
+                        umax = MathFast.Max(umax, du);
                     }
 
                     float hx = (smax - smin) * 0.5f;
@@ -219,10 +220,10 @@ namespace Geometry
 
             Vertex3f MakePerpendicularVector(Vertex3f v)
             {
-                float px = Math.Abs(v.x);
-                float py = Math.Abs(v.y);
-                float pz = Math.Abs(v.z);
-                if (pz < Math.Min(px, py)) return new Vertex3f(v.y, -v.x, 0.0f);
+                float px = MathFast.Abs(v.x);
+                float py = MathFast.Abs(v.y);
+                float pz = MathFast.Abs(v.z);
+                if (pz < MathFast.Min(px, py)) return new Vertex3f(v.y, -v.x, 0.0f);
                 if (py < px) return new Vertex3f(-v.z, 0, v.x);
                 return new Vertex3f(0, v.z, -v.y);
             }

@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using FastMath;
+using OpenGL;
 using System;
 using ZetaExt;
 
@@ -84,7 +85,7 @@ namespace Geometry
         /// <returns></returns>
         public static Matrix4x4f MakeFrustumProjection(float fovy, float s, float n, float f)
         {
-            float g = 1.0f / (float)Math.Tan(fovy.ToRadian() * 0.5f);
+            float g = 1.0f / (float)MathFast.Tan(fovy.ToRadian() * 0.5f);
             float k = f / (f - n);
             //column 0, column 1, column 2, column 3
             return new Matrix4x4f(g / s, 0.0f, 0.0f, 0.0f,
@@ -95,7 +96,7 @@ namespace Geometry
 
         public static Matrix4x4f MakeFrustumProjectionInverse(float fovy, float s, float n, float f)
         {
-            float g = 1.0f / (float)Math.Tan(fovy.ToRadian() * 0.5f);
+            float g = 1.0f / (float)MathFast.Tan(fovy.ToRadian() * 0.5f);
             float k = f / (f - n);
             //column 0, column 1, column 2, column 3
             return new Matrix4x4f(s / g, 0.0f, 0.0f, 0.0f,
@@ -106,7 +107,7 @@ namespace Geometry
 
         public static Matrix4x4f MakeInfiniteProjection(float fovy, float s, float n, float e = 0.000001f)
         {
-            float g = 1.0f / (float)Math.Tan(fovy.ToRadian() * 0.5f);
+            float g = 1.0f / (float)MathFast.Tan(fovy.ToRadian() * 0.5f);
             e = 1.0f - e;
             //column 0, column 1, column 2, column 3
             return new Matrix4x4f(g / s, 0.0f, 0.0f, 0.0f,
@@ -125,7 +126,7 @@ namespace Geometry
         /// <returns></returns>
         public static Matrix4x4f MakeRevFrustumProjection(float fovy, float s, float n, float f)
         {
-            float g = 1.0f / (float)Math.Tan(fovy.ToRadian() * 0.5f);
+            float g = 1.0f / (float)MathFast.Tan(fovy.ToRadian() * 0.5f);
             float k = n / (n - f);
             //column 0, column 1, column 2, column 3
             return new Matrix4x4f(g / s, 0.0f, 0.0f, 0.0f,

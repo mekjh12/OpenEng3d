@@ -1,4 +1,5 @@
-﻿using Geometry;
+﻿using FastMath;
+using Geometry;
 using OpenGL;
 using Physics.Collision;
 using System;
@@ -17,7 +18,7 @@ namespace Physics
             _radius = radius;
 
             // 부피를 계산한다.
-            _volume = (float)(1.3333333f * Math.PI * _radius * _radius * _radius);
+            _volume = (float)(1.3333333f * MathFast.PI * _radius * _radius * _radius);
             CalculateMass();
 
             // 로컬공간 관성텐서를 지정한다.

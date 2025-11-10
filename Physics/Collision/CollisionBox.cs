@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using FastMath;
+using OpenGL;
 using System;
 using ZetaExt;
 
@@ -67,9 +68,9 @@ namespace Physics.Collision
         public float TransformToAxis(Vertex3f axis)
         {
             Vertex3f unitAxis = axis.Normalized;
-            return _halfSize.x * Math.Abs(unitAxis * AxisX) +
-                   _halfSize.y * Math.Abs(unitAxis * AxisY) +
-                   _halfSize.z * Math.Abs(unitAxis * AxisZ);
+            return _halfSize.x * MathFast.Abs(unitAxis * AxisX) +
+                   _halfSize.y * MathFast.Abs(unitAxis * AxisY) +
+                   _halfSize.z * MathFast.Abs(unitAxis * AxisZ);
         }
 
         /// <summary>
@@ -80,9 +81,9 @@ namespace Physics.Collision
         public float BoxRadius(Vertex3f axis)
         {
             Vertex3f unitAxis = axis.Normalized;
-            return _halfSize.x * Math.Abs(unitAxis * AxisX) +
-                   _halfSize.y * Math.Abs(unitAxis * AxisY) +
-                   _halfSize.z * Math.Abs(unitAxis * AxisZ);
+            return _halfSize.x * MathFast.Abs(unitAxis * AxisX) +
+                   _halfSize.y * MathFast.Abs(unitAxis * AxisY) +
+                   _halfSize.z * MathFast.Abs(unitAxis * AxisZ);
         }
 
     }

@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using FastMath;
+using OpenGL;
 using Renderer;
 using Shader;
 using System;
@@ -314,7 +315,7 @@ namespace Physics.Collision
             {
                 ContactNormal = (closestPtWorld - center).Normalized,
                 ContactPoint = closestPtWorld,
-                Penetration = sphere.Radius - (float)Math.Sqrt(dist),
+                Penetration = sphere.Radius - (float)MathFast.Sqrt(dist),
             };
 
             // 접촉점과 구의 중심이 일치하는 경우, 흔한 경우가 아니므로 충돌로 간주하지 않는다.
@@ -441,7 +442,7 @@ namespace Physics.Collision
             float ballDistance = plane.Normal.Dot(position) - sphere.Radius - plane.Distance;
 
             // 접촉이 발생하지 않으면 반환한다.
-            if (Math.Abs(plane.Normal.Dot(position) - plane.Distance) >= sphere.Radius) return 0;
+            if (MathFast.Abs(plane.Normal.Dot(position) - plane.Distance) >= sphere.Radius) return 0;
 
             //접촉데이터를 추가한다. 평면 방향으로의 법선을 가진다.
             Contact contact = new Contact()

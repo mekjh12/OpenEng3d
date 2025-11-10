@@ -1,7 +1,5 @@
-﻿#define DEV
-
-using Common;
-using Common.Abstractions;
+﻿using Common.Abstractions;
+using FastMath;
 using Geometry;
 using GlWindow;
 using Model3d;
@@ -9,7 +7,6 @@ using Occlusion;
 using OpenGL;
 using Renderer;
 using Shader;
-using Sky;
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
@@ -92,6 +89,7 @@ namespace FormTools
         {
             // 랜덤변수 생성
             Rand.InitSeed(500);
+            MathFast.Initialize();
 
             // 쉐이더 초기화 및 셰이더 매니저에 추가
             ShaderManager.Instance.AddShader(new HzmDepthShader(PROJECT_PATH));
