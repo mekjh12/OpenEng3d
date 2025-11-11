@@ -115,6 +115,7 @@ namespace Terrain
         /// </summary>
         public Entity CreateUnifiedTerrainEntity(int n, int chunkSize, Texture heightMapTexture, int regionCoordX, int regionCoordY)
         {
+            // 영역 크기 계산
             int regionSize = 2 * n * chunkSize;
 
             // 기본 평면 메시 생성

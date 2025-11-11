@@ -1,4 +1,5 @@
 ﻿using Common.Abstractions;
+using FastMath;
 using GlWindow;
 using Model3d;
 using Occlusion;
@@ -9,43 +10,46 @@ using Sky;
 using System;
 using System.Windows.Forms;
 using Terrain;
+using Ui3d;
 using ZetaExt;
 
 namespace FormTools
 {
     public partial class FormHzm : Form
     {
-        private string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
-        private string EXE_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\FormTools\bin\Debug\";
+        private readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
+        private readonly string EXE_PATH = @"";
 
-        private GlControl3 _glControl3;
-        HierarchicalZBuffer _hzbuffer;          // 계층깊이버퍼
+        private GlControl3 _glControl3;     // OpenGL 컨트롤
+        HierarchicalZBuffer _hzbuffer;      // 계층깊이버퍼
 
-        ShaderManager _shaderManager = new ShaderManager();
+        float _currentTime = 0.0f;              // 현재 시간
+        bool _isDepthZBuffer = true;            // 깊이 Z-버퍼 표시 여부
+        bool _isFogEnable = true;               // 안개 활성화 여부
 
-        //SkyRenderer _skyRenderer;
-        SkyDomeTexture2dShader _skyDomeTexture2DShader;
-        SkyRenderer _skyRenderer;
+        Texture[] _levelTextureMap = null;      // 지형 레벨 텍스쳐
+        Texture _detailTextureMap = null;       // 지형 디테일 텍스쳐
 
         TerrainRegion _terrainRegion;
-        bool _isDepthZBuffer = true;
-        bool _isFogEnable = true;
+        SkyDomeTexture2dShader _skyDomeTexture2DShader;
+        SkyRenderer _skyRenderer;
         SimpleSunPositionCalculator _simpleSunPositionCalculator;
 
-        Texture[] _levelTextureMap = null;
-        Texture _detailTextureMap = null;
-        float _currentTime = 0.0f;
+        TextNamePlate _textNamePlate;
 
         // 쿼리 오브젝트를 위한 필드 선언
-        private uint _atmospherePixelQuery;
-        private bool _queryActive = false;
-        private uint _lastPixelCount = 0;
-
-        SamplesPassedPixelQuery _samplesPassedPixelQuery;
+        //SamplesPassedPixelQuery _samplesPassedPixelQuery;
+        //private uint _atmospherePixelQuery;
+        //private bool _queryActive = false;
+        //private uint _lastPixelCount = 0;
+        //SkyRenderer _skyRenderer;
 
         public FormHzm()
         {
             InitializeComponent();
+
+            // 프로젝트 경로 및 실행 파일 경로 설정
+            EXE_PATH = Application.StartupPath;
 
             // GL 생성
             _glControl3 = new GlControl3("hzb", Application.StartupPath, @"\fonts\fontList.txt", @"\Res\")
@@ -67,23 +71,30 @@ namespace FormTools
             _glControl3.MouseUp += (s, e) => MouseUpEvent(s, e);
             _glControl3.KeyDown += (s, e) => KeyDownEvent(s, e);
             _glControl3.KeyUp += (s, e) => KeyUpEvent(s, e);
+
+
             _glControl3.Start();
             _glControl3.SetVisibleMouse(true);
             Controls.Add(_glControl3);
 
-            // 파일 해시 초기화
+            // 파일 해시 매니저 초기화
             FileHashManager.ROOT_FILE_PATH = PROJECT_PATH;
+
+            // 로그 프로파일 초기화
+            LogProfile.Create(EXE_PATH + "\\log.txt");
         }
 
         private void FormHzm_Load(object sender, EventArgs e)
         {
-            
+            // 메모리 프로파일러 시작
+            MemoryProfiler.StartFrameMonitoring();
         }
 
         public void Init(int width, int height)
         {
-            // 랜덤변수 생성
+            // 난수 초기화 및 수학 라이브러리 초기화
             Rand.InitSeed(500);
+            MathFast.Initialize();
 
             // 쉐이더 초기화 및 셰이더 매니저에 추가
             ShaderManager.Instance.AddShader(new TerrainTessellationShader(PROJECT_PATH));
@@ -91,6 +102,9 @@ namespace FormTools
             ShaderManager.Instance.AddShader(new AtmosphericLUTComputeShader(PROJECT_PATH));
             ShaderManager.Instance.AddShader(new AtmosphericRenderShader(PROJECT_PATH));
             ShaderManager.Instance.AddShader(new HzmDepthShader(PROJECT_PATH));
+
+            // ✅ 앱 시작 시 한 번만 초기화
+            Ui3d.BillboardShader.Initialize();
 
             // 스카이 렌더러 초기화
             if (_skyDomeTexture2DShader == null) _skyDomeTexture2DShader = new SkyDomeTexture2dShader(PROJECT_PATH, 1024);
@@ -111,12 +125,12 @@ namespace FormTools
             _glControl3.AddLabel("resolution", $"resolution={w >> 2}x{h >> 2}", align: Ui2d.Control.CONTROL_ALIGN.ADJOINT_BOTTOM, foreColor: new Vertex3f(1, 0, 0));
             _glControl3.AddLabel("perf", $"pref", align: Ui2d.Control.CONTROL_ALIGN.ADJOINT_BOTTOM, foreColor: new Vertex3f(1, 0, 0));
             _glControl3.AddLabel("samplePassed", $"대기픽셀통과수=", align: Ui2d.Control.CONTROL_ALIGN.ADJOINT_BOTTOM, foreColor: new Vertex3f(1, 1, 0));
-
             _glControl3.AddLabel("cam", "camera position, yaw, pitch", align: Ui2d.Control.CONTROL_ALIGN.ROOT_BL, foreColor: new Vertex3f(1, 1, 0));
             _glControl3.AddLabel("ocs", "ocs", align: Ui2d.Control.CONTROL_ALIGN.ADJOINT_TOP, foreColor: new Vertex3f(1, 1, 0));
             _glControl3.IsVisibleDebug = bool.Parse(IniFile.GetPrivateProfileString("sysInfo", "visibleDebugWindow", "False"));
             _glControl3.IsVisibleGrid = bool.Parse(IniFile.GetPrivateProfileString("sysInfo", "visibleGrid", "False"));
 
+            // 전체화면 모드 설정
             //if (Screen.PrimaryScreen.DeviceName.IndexOf("DISPLAY") > 0) _glControl3.FullScreen(true);
         }
 
@@ -125,11 +139,17 @@ namespace FormTools
             // 그리드셰이더 초기화
             _glControl3.InitGridShader(PROJECT_PATH);
 
+            // UI 3D 텍스트 네임플레이트 초기화
+            _textNamePlate = new TextNamePlate(_glControl3.Camera, "FTP");
+            _textNamePlate.Height = 0.6f;
+            _textNamePlate.Width = 0.6f;
+            CharacterTextureAtlas.Initialize();
+            TextBillboardShader.Initialize();
+
             // 지형 초기화
-            _terrainRegion = new TerrainRegion(new RegionCoord(0, 0), 100, 10, null);
+            _terrainRegion = new TerrainRegion(new RegionCoord(0, 0), chunkSize: 100, n : 10, null);
             _terrainRegion.LoadTerrainLowResMap(
-                new RegionCoord(0, 0),
-                Application.StartupPath + "\\Res\\Terrain\\low\\region0x0.png");
+                new RegionCoord(0, 0), EXE_PATH + "\\Res\\Terrain\\low\\region0x0.png");
 
             // UBO 초기화 및 로딩
             GlobalUniformBuffers.Initialize();
@@ -165,7 +185,7 @@ namespace FormTools
                 _levelTextureMap[i] = new Texture(levelTextureMap[i]);
             }
                         
-            _samplesPassedPixelQuery = new SamplesPassedPixelQuery();           
+            //_samplesPassedPixelQuery = new SamplesPassedPixelQuery();           
 
             // 셰리더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
@@ -180,9 +200,14 @@ namespace FormTools
         /// <param name="camera">카메라</param>
         private void UpdateFrame(int deltaTime, int w, int h, Camera camera)
         {
+            // --------------------------------------------------------------
+            // 프레임 업데이트 영역 설정
+            // --------------------------------------------------------------
+
             // 시간 간격을 초 단위로 변환
             float duration = deltaTime * 0.001f;
             _currentTime += duration;
+
             if (_currentTime > 1.1f)
             {                
                 _currentTime = 0.0f;
@@ -190,6 +215,11 @@ namespace FormTools
                 _skyDomeTexture2DShader.GenerateSkyTextureWithSunPosition(new Vertex3f(1,0,0).Normalized, camera.Position);
                 //_skyDomeTexture2DShader.SaveTextureToBitmap(@"C:\Users\mekjh\OneDrive\바탕 화면\sky.png");
             }
+
+            // FPS 업데이트
+            _textNamePlate.Text = FramePerSecond.FPS.ToString() + "FPS";
+            _textNamePlate.WorldPosition = camera.PivotPosition + (camera.Forward - camera.Right) * 0.5f;
+            _textNamePlate.Update(deltaTime);
 
             // 계층적 Z-버퍼 업데이트
             _hzbuffer.FrameBind();
@@ -206,15 +236,17 @@ namespace FormTools
             }
 
             // 계층적 Z-버퍼의 밉맵 생성
-            _hzbuffer.GenerateZBuffer();                      
+            //_hzbuffer.GenerateZBuffer();
+            _hzbuffer.GenerateMipmapsUsingCompute();
 
             // UI 정보 업데이트
+            /*
             _glControl3.CLabel("cam").Text =
                 $"CamPos={camera.Position}, " +
                 $"CameraPitch={camera.CameraPitch}, " +
                 $"CameraYaw={camera.CameraYaw}, " +
                 $"Dist={camera.Distance}";
-
+            */
         }
 
         /// <summary>
@@ -238,6 +270,9 @@ namespace FormTools
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
             Gl.Viewport(0, 0, w, h);
             Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
+
+            // FPS 렌더링
+            _textNamePlate.Render();
 
             if (_isDepthZBuffer)
             {

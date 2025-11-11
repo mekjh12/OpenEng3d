@@ -17,6 +17,10 @@ namespace Occlusion
     /// </summary>
     public class HierarchicalZBuffer
     {
+        const int POSITION_ATTRIB = 0;
+        const int TEXCOORD_ATTRIB = 1;
+        const int PATCH_VERTICES = 4;
+
         readonly uint _fbo;                         // FBO
         readonly uint[] _hzbTextures;               // 계층별 텍스처
         readonly uint _depthTexture;                // 깊이 텍스처
@@ -27,31 +31,12 @@ namespace Occlusion
         HzmMipmapShader _mipmapShader;              // 밉맵쉐이더
         List<float[]> _zbuffer;
         TerrainDepthShader _terrainDepthShader;     // 간단지형 쉐이더
-        HzbComputeShader _computeShader;  // 컴퓨트 셰이더
+        HzbComputeShader _computeShader;            // 컴퓨트 셰이더
 
-        /// <summary>
-        /// 현재 HierarchicalZBuffer의 FBO(Frame Buffer Object) ID를 가져옵니다.
-        /// </summary>
         public uint Framebuffer => _fbo;
-
-        /// <summary>
-        /// 기본 깊이 텍스처의 ID를 가져옵니다.
-        /// </summary>
         public uint DepthTexture => _depthTexture;
-
-        /// <summary>
-        /// 계층적 깊이 맵의 총 레벨 수를 가져옵니다.
-        /// </summary>
         public int Levels => _levels;
-
-        /// <summary>
-        /// Z-버퍼의 초기 너비를 가져옵니다.
-        /// </summary>
         public int Width => _width;
-
-        /// <summary>
-        /// Z-버퍼의 초기 높이를 가져옵니다.
-        /// </summary>
         public int Height => _height;
 
         /// <summary>
@@ -400,14 +385,15 @@ namespace Occlusion
 
         /// <summary>
         /// 지형을 간단하게 그려 지평선 깊이맵을 생성합니다.
-        /// 
+        /// <code>
         /// 주의: 지형 렌더링시 오클루더로 나무와 같은 작은 오브젝트 사용은 권장하지 않습니다.
         /// 깜빡임 현상이 발생할 수 있습니다.
+        /// </code>
         /// </summary>
-        /// <param name="terrianPatch">지형 패치</param> 
+        /// <param name="terrianPatchEntity">지형 패치</param> 
         /// <param name="proj">투영 행렬</param>
         /// <param name="view">뷰 행렬</param>
-        /// <exception cref="ArgumentNullException">terrianPatch가 null인 경우</exception>
+        /// <param name="heightScale"></param>
         public void RenderSimpleTerrain(Entity terrianPatchEntity, Matrix4x4f proj, Matrix4x4f view, float heightScale)
         {
             // 유효성 검사
@@ -416,10 +402,6 @@ namespace Occlusion
             // 유효성 검사
             if (terrianPatchEntity?.Model == null || terrianPatchEntity.Model.Length == 0)
                 throw new ArgumentNullException(nameof(terrianPatchEntity));
-
-            const int POSITION_ATTRIB = 0;
-            const int TEXCOORD_ATTRIB = 1;
-            const int PATCH_VERTICES = 4;
 
             TerrainDepthShader shader = _terrainDepthShader;
             Entity terrainEntity = terrianPatchEntity;

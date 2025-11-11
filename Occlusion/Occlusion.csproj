@@ -52,10 +52,12 @@
     <Compile Include="BoundingVolume.cs" />
     <Compile Include="BoxOccluder.cs" />
     <Compile Include="BSH.cs" />
+    <Compile Include="BVH3f.cs" />
     <Compile Include="BVH.cs" />
     <Compile Include="FogOcclusion.cs" />
     <Compile Include="HierarchicalZBuffer.cs" />
     <Compile Include="IOcclusionable.cs" />
+    <Compile Include="Node3f.cs" />
     <Compile Include="Node.cs" />
     <Compile Include="Occluder.cs" />
     <Compile Include="OccluderEntity.cs" />

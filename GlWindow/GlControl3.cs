@@ -324,6 +324,7 @@ namespace GlWindow
         private void GlControl3_Render(object sender, GlControlEventArgs e)
         {
             if (!_isRunning) return;
+
             if (!_isInitiazed)
             {
                 // GPU 정보 표기

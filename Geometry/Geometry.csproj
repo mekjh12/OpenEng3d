@@ -50,11 +50,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AABB.cs" />
+    <Compile Include="AABB3f.cs" />
+    <Compile Include="AABB3fHelper.cs" />
     <Compile Include="BoundBoxComponent.cs" />
     <Compile Include="Edge.cs" />
     <Compile Include="Face.cs" />
     <Compile Include="IBoundBoxable.cs" />
     <Compile Include="OBB.cs" />
+    <Compile Include="OBB3f.cs" />
+    <Compile Include="OBB3fHelper.cs" />
     <Compile Include="OBBUtility.cs" />
     <Compile Include="Plane.cs" />
     <Compile Include="Polygon.cs" />

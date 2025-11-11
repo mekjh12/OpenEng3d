@@ -186,7 +186,7 @@ namespace Terrain
 
             for (int i = 0; i < 8; i++)
             {
-                RegionCoord value = RegionCoord.ADJACENT_REGION_COORDS_EXCEPT_CENTER[i];
+                RegionCoord value = RegionCoord.Adjacent[i];
                 RegionCoord target = coord + value;
                 if (_regions.ContainsKey(target))
                 {
@@ -305,7 +305,7 @@ namespace Terrain
         private void ProcessOuterSimpleRegion(RegionCoord currentRegion, Polyhedron viewFrustum)
         {
             // 주변 16개의 감지
-            List<RegionCoord> outerRegions = RegionCoord.OUTER_REGION_COORDS
+            List<RegionCoord> outerRegions = RegionCoord.Outer
                 .Select(coord => _currentRegion + coord)
                 .ToList();
 
@@ -442,7 +442,7 @@ namespace Terrain
         /// <param name="camera">카메라 객체</param>
         private void LoadRequiredRegions(RegionCoord center, Camera camera)
         {
-            List<RegionCoord> requiredRegions = RegionCoord.ADJACENT_REGION_COORDS
+            List<RegionCoord> requiredRegions = RegionCoord.AdjacentWithCenter
                 .Select(coord => center + coord)
                 .ToList();
             

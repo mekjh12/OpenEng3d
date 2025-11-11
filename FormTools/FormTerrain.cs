@@ -38,7 +38,7 @@ namespace FormTools
 
         Model3dManager _model3DManager;
         
-        bool _isVisibleDepth = false;
+        bool _isVisibleDepth = true;
         bool _visibleImposter = true;
         bool _visibleRawModel = true;
 
@@ -51,7 +51,7 @@ namespace FormTools
             InitializeComponent();
 
             // GL 생성
-            _glControl3 = new GlControl3("hzb occlusion", Application.StartupPath, @"\fonts\fontList.txt", @"\Res\")
+            _glControl3 = new GlControl3("terrainOpenWorld", Application.StartupPath, @"\fonts\fontList.txt", @"\Res\")
             {
                 Location = new System.Drawing.Point(0, 0),
                 Dock = DockStyle.Fill,
@@ -74,9 +74,10 @@ namespace FormTools
             _glControl3.SetVisibleMouse(true);
             Controls.Add(_glControl3);
 
-            // 파일 해시 초기화
+            // 파일 해시 매니저 초기화
             FileHashManager.ROOT_FILE_PATH = PROJECT_PATH;
 
+            // 로그 프로파일 초기화
             LogProfile.Create(EXE_PATH + "\\log.txt");
         }
 
@@ -87,7 +88,7 @@ namespace FormTools
 
         public void Init(int width, int height)
         {
-            // 랜덤변수 생성
+            // 난수 초기화 및 수학 라이브러리 초기화
             Rand.InitSeed(500);
             MathFast.Initialize();
 
@@ -100,6 +101,7 @@ namespace FormTools
             ShaderManager.Instance.AddShader(new SimpleTerrainShader(PROJECT_PATH));
             ShaderManager.Instance.AddShader(new VegetationBillboardShader(PROJECT_PATH));
 
+            // 셰이더 참조 가져오기
             _hzmDepthShader = ShaderManager.Instance.GetShader<HzmDepthShader>();
             _colorShader = ShaderManager.Instance.GetShader<ColorShader>();
             _simpleDepthShader = ShaderManager.Instance.GetShader<SimpleDepthShader>();
@@ -107,6 +109,7 @@ namespace FormTools
             _impostorShader = ShaderManager.Instance.GetShader<ImpostorShader>();
             _simpleTerrainShader = ShaderManager.Instance.GetShader<SimpleTerrainShader>();
             _vegetationBillboardShader = ShaderManager.Instance.GetShader<VegetationBillboardShader>();
+
 
             // 
             _hzbuffer = new HierarchicalZBuffer(width >> 3, height >> 3, PROJECT_PATH);
