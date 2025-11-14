@@ -145,7 +145,7 @@ namespace Common
             base.LoadMatrix(loc, value);
         }
 
-        protected override void LoadMatrix(int location, Matrix4x4f matrix)
+        protected override void LoadMatrix(int location, in Matrix4x4f matrix)
         {
             _matrixBuffer[0] = matrix[0, 0];
             _matrixBuffer[1] = matrix[0, 1];

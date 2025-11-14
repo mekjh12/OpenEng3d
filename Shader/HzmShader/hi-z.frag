@@ -2,46 +2,42 @@
 
 uniform sampler2D DepthBuffer;
 uniform ivec2 LastMipSize;
-
 in vec2 TexCoord;
 out float depth;
 
 void main(void)
 {
-	vec4 texels;
-	texels.x = texture( DepthBuffer, TexCoord ).x;
-	texels.y = textureOffset( DepthBuffer, TexCoord, ivec2(-1, 0) ).x;
-	texels.z = textureOffset( DepthBuffer, TexCoord, ivec2(-1,-1) ).x;
-	texels.w = textureOffset( DepthBuffer, TexCoord, ivec2( 0,-1) ).x;
+	// TexCoord (0~1)를 픽셀 좌표로 변환
+	vec2 pixelCoord = TexCoord * vec2(LastMipSize);
 	
-	float maxZ = max( max( texels.x, texels.y ), max( texels.z, texels.w ) );
-
-	// gl_FragCoord.xy는 윈도우 공간 좌표로 제공됩니다.
-	// 좌표는 현재 렌더링 중인 뷰포트(Viewport)의 왼쪽 아래를 (0, 0)으로 하는 좌표 체계
-	vec3 extra;
-	// if we are reducing an odd-width texture then the edge fragments have to fetch additional texels
-	if ( ( (LastMipSize.x & 1) != 0 ) && ( int(gl_FragCoord.x) == LastMipSize.x-3 ) ) 
-	{
-		// if both edges are odd, fetch the top-left corner texel
-		if (((LastMipSize.y & 1) != 0 ) && ( int(gl_FragCoord.y) == LastMipSize.y-3)) 
-		{
-			extra.z = textureOffset( DepthBuffer, TexCoord, ivec2( 1, 1) ).x;
-			maxZ = max( maxZ, extra.z );
-		}
-		extra.x = textureOffset( DepthBuffer, TexCoord, ivec2( 1, 0) ).x;
-		extra.y = textureOffset( DepthBuffer, TexCoord, ivec2( 1,-1) ).x;
-		maxZ = max( maxZ, max( extra.x, extra.y ) );
-	} 
-	else
-	{
-		// if we are reducing an odd-height texture then the edge fragments have to fetch additional texels
-		if ( ( (LastMipSize.y & 1) != 0 ) && ( int(gl_FragCoord.y) == LastMipSize.y-3 ) ) 
-		{
-			extra.x = textureOffset( DepthBuffer, TexCoord, ivec2( 0, 1) ).x;
-			extra.y = textureOffset( DepthBuffer, TexCoord, ivec2(-1, 1) ).x;
-			maxZ = max( maxZ, max( extra.x, extra.y ) );
-		}	
+	// 2x2 영역의 시작점 계산
+	ivec2 baseCoord = ivec2(floor(pixelCoord * 0.5)) * 2;
+	
+	// 텍셀 크기 (정규화된 좌표)
+	vec2 texelSize = 1.0 / vec2(LastMipSize);
+	
+	// 2x2 영역의 깊이값 샘플링
+	vec4 texels;
+	texels.x = texture(DepthBuffer, (vec2(baseCoord.x + 0, baseCoord.y + 0) + vec2(0.5)) * texelSize).x;
+	texels.y = texture(DepthBuffer, (vec2(baseCoord.x + 1, baseCoord.y + 0) + vec2(0.5)) * texelSize).x;
+	texels.z = texture(DepthBuffer, (vec2(baseCoord.x + 1, baseCoord.y + 1) + vec2(0.5)) * texelSize).x;
+	texels.w = texture(DepthBuffer, (vec2(baseCoord.x + 0, baseCoord.y + 1) + vec2(0.5)) * texelSize).x;
+	
+	float maxZ = max(max(texels.x, texels.y), max(texels.z, texels.w));
+	
+	// 홀수 너비 처리 - 오른쪽 가장자리
+	if ((LastMipSize.x & 1) != 0 && baseCoord.x + 2 == LastMipSize.x - 1) {
+		float extra_x = texture(DepthBuffer, (vec2(baseCoord.x + 2, baseCoord.y + 0) + vec2(0.5)) * texelSize).x;
+		float extra_y = texture(DepthBuffer, (vec2(baseCoord.x + 2, baseCoord.y + 1) + vec2(0.5)) * texelSize).x;
+		maxZ = max(maxZ, max(extra_x, extra_y));
 	}
-
+	
+	// 홀수 높이 처리 - 아래쪽 가장자리
+	if ((LastMipSize.y & 1) != 0 && baseCoord.y + 2 == LastMipSize.y - 1) {
+		float extra_x = texture(DepthBuffer, (vec2(baseCoord.x + 0, baseCoord.y + 2) + vec2(0.5)) * texelSize).x;
+		float extra_y = texture(DepthBuffer, (vec2(baseCoord.x + 1, baseCoord.y + 2) + vec2(0.5)) * texelSize).x;
+		maxZ = max(maxZ, max(extra_x, extra_y));
+	}
+	
 	depth = maxZ;
 }

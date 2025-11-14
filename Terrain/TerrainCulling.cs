@@ -67,7 +67,7 @@ namespace Terrain
                 Node cnode = queue.Dequeue();
                 if (cnode == null) continue;
 
-                if (zbuffer.IsVisible(vp, view, cnode.AABB))
+                //if (zbuffer.TestVisibility(vp, view, cnode.AABB))
                 {
                     travCount++;
                     if (cnode.AABB.SphereRadius > 500.0f)
@@ -76,7 +76,7 @@ namespace Terrain
                         if (cnode.Right) queue.Enqueue(cnode.Child2);
                     }
                 }
-                else
+                //else
                 {
                     cnode.UnLinkBackCopy();
                 }
@@ -128,14 +128,14 @@ namespace Terrain
                 Node cnode = queue.Dequeue();
                 if (cnode == null) continue;
 
-                if (zbuffer.IsVisible(vp, view, cnode.AABB))
+                //if (zbuffer.TestVisibility(vp, view, cnode.AABB))
                 {
                     _travNodeCountHzm++;
 
                     if (cnode.Left) queue.Enqueue(cnode.Child1);
                     if (cnode.Right) queue.Enqueue(cnode.Child2);
                 }
-                else
+                //else
                 {
                     cnode.UnLinkBackCopy();
                 }

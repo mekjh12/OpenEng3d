@@ -100,7 +100,6 @@ namespace GlWindow
         private bool _isFullscreen = false;
 
         Ui2d.Control _lastControl;
-        Ui2d.Label _fpsCtrl;
 
         private Vertex2f _cameraPrevAngle = Vertex2f.Zero;
 
@@ -408,7 +407,7 @@ namespace GlWindow
             {
                 if (eventPair.Value == null)
                 {
-                    //throw new InvalidOperationException($"필수 이벤트가 설정되지 않았습니다. {eventPair.Key} 이벤트를 먼저 설정해주세요.");
+                    throw new InvalidOperationException($"필수 이벤트가 설정되지 않았습니다. {eventPair.Key} 이벤트를 먼저 설정해주세요.");
                 }
             }
 
@@ -568,22 +567,6 @@ namespace GlWindow
         {
             int glLeftMargin = Parent.Width - this.Width;
             int glTopMargin = Parent.Height - this.Height;
-
-            // FPS 텍스트 업데이트
-            if (_fpsCtrl == null)
-            {
-                _fpsCtrl = CLabel("centerFps");
-            }
-            else
-            {
-                //_fpsCtrl.Text = _fpsCache.GetFpsTextIfChanged(FramePerSecond.FPS);
-                _fps = _fpsCache.GetFpsTextIfChanged(FramePerSecond.FPS);
-                if (_fps != null)
-                {
-                    this.Parent.Text = _fps;
-                    //Console.WriteLine(_fps);
-                }
-            }
 
             // 디버깅 텍스트 업데이트
             if (_isVisibleDebug)
@@ -800,20 +783,6 @@ namespace GlWindow
 
             UIEngine.DesignInit += (w1, h1) =>
             {
-                // InitGlControl 끝부분에 추가
-                var centerTestLabel = new Ui2d.Label("centerFps", FontFamilySet.연성체)
-                {
-                    Align = Ui2d.Control.CONTROL_ALIGN.HALF_VERTICAL_CENTER,
-                    FontSize = 1.0f, // 매우 크게
-                    Alpha = 0.0f,
-                    ForeColor = new Vertex3f(1, 0, 0), // 빨간색
-                    Text = "FPS0",
-                    AutoSize = true,
-                    IsBorder = false,
-                    AlphaText = 1.0f,
-                };
-                UIEngine.AddControl("sysInfo", centerTestLabel);
-
                 /*
                 UIEngine.AddControl("sysInfo", new Ui2d.Label("debug", FontFamilySet.연성체)
                 {
@@ -835,8 +804,6 @@ namespace GlWindow
                     AutoSize = false,
                 });
                 */
-
-                _lastControl = Ctrl("centerFps");
             };
             UIEngine.InitFrame(Width, Height);
             UIEngine.StartFrame();

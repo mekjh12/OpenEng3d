@@ -51,21 +51,25 @@
   <ItemGroup>
     <Compile Include="BoundingVolume.cs" />
     <Compile Include="BoxOccluder.cs" />
-    <Compile Include="BSH.cs" />
-    <Compile Include="BVH3f.cs" />
-    <Compile Include="BVH.cs" />
+    <Compile Include="BVH\BSH.cs" />
+    <Compile Include="BVH\BVH3f.Core.cs" />
+    <Compile Include="BVH\BVH3f.cs" />
+    <Compile Include="BVH\BVH.cs" />
+    <Compile Include="HiZBuffer\DebugZBufferVisualizer.cs" />
     <Compile Include="FogOcclusion.cs" />
-    <Compile Include="HierarchicalZBuffer.cs" />
+    <Compile Include="HiZBuffer\HierarchicalAbstracZBuffer.cs" />
+    <Compile Include="HiZBuffer\HierarchicalGpuZBuffer.cs" />
+    <Compile Include="HiZBuffer\HierarchicalZBuffer.cs" />
     <Compile Include="IOcclusionable.cs" />
-    <Compile Include="Node3f.cs" />
-    <Compile Include="Node.cs" />
+    <Compile Include="BVH\Node3f.cs" />
+    <Compile Include="BVH\Node.cs" />
     <Compile Include="Occluder.cs" />
     <Compile Include="OccluderEntity.cs" />
     <Compile Include="OcclusionComponent.cs" />
     <Compile Include="OcclusionCullingSystem.cs" />
     <Compile Include="PhysicalRenderEntity.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Sphere.cs" />
+    <Compile Include="BVH\Sphere.cs" />
     <Compile Include="TerrainOccluder3.cs" />
     <Compile Include="TreeBalanceInfo.cs" />
     <Compile Include="ViewFrustum.cs" />
@@ -78,6 +82,10 @@
     <ProjectReference Include="..\Geometry\Geometry.csproj">
       <Project>{3f08288e-2eba-4e72-843d-7bf773d8f6cb}</Project>
       <Name>Geometry</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MathFast\FastMath.csproj">
+      <Project>{f0dab839-81b8-46fd-bfdd-529a17dde3db}</Project>
+      <Name>FastMath</Name>
     </ProjectReference>
     <ProjectReference Include="..\Model3d\Model3d.csproj">
       <Project>{7a699d36-8869-4b18-a70f-2231a948d828}</Project>

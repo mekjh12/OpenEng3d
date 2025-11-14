@@ -226,10 +226,10 @@ namespace FormTools
             _regionManager.PreUpdate(camera, viewFrustum);
 
             _glControl3.CLabel("regchunk").Text = $"외곽단순지형={_regionManager.SimpleTerrainRegionCache.Count}개," +
-                $"가시단순지형={_regionManager.OuterVisibleSimpleRegion.Count}";
+                $"가시단순지형={_regionManager.OuterVisibleSimpleRegion.Count} VisibleRegions={_regionManager.VisibleRegions.Count}";
 
             // 계층적 Z-버퍼 업데이트
-            _hzbuffer.FrameBind();
+            _hzbuffer.BindFramebuffer();
             _hzbuffer.PrepareRenderSurface();
 
             // 지형과 큰 오클루더들의 깊이맵 생성
@@ -244,8 +244,8 @@ namespace FormTools
             }
 
             // 계층적 Z-버퍼의 밉맵 생성
-            //_hzbuffer.GenerateZBuffer();
-            _hzbuffer.GenerateMipmapsUsingCompute();
+            _hzbuffer.GenerateZBuffer();
+            //_hzbuffer.GenerateMipmapsUsingCompute();
 
             // 지형 청크로부터 뷰프러스텀 컬링 업데이트
             RegionManager.DEBUG_STRING = "";
@@ -259,7 +259,7 @@ namespace FormTools
             List<Entity> renderEntities = _regionManager.GetVisibleEntities();
             foreach (Entity entity in renderEntities)
             {
-                if (_hzbuffer.IsVisible(vp, camera.ViewMatrix, entity.AABB))
+                //if (_hzbuffer.TestVisibility(vp, camera.ViewMatrix, entity.AABB))
                 {
                     if (entity is LodEntity)
                     {
@@ -327,7 +327,7 @@ namespace FormTools
             else
             {
                 // 깊이맵 디버그 표시 
-                _hzbuffer.DrawDepthBuffer(_hzmDepthShader, camera, level);
+                _hzbuffer.RenderDepthBuffer(_hzmDepthShader, camera, level);
             }
 
             // 객체 렌더링

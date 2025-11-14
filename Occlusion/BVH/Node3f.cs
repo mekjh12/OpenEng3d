@@ -10,9 +10,6 @@ namespace Occlusion
     /// </summary>
     public class Node3f
     {
-        public static int GUID = -1;
-        public static Stack<int> _guidStack = new Stack<int>(); // 제거한 노드의 guid를 재사용
-
         int _guid;
         Node3f _parent;
         Node3f _child1;
@@ -188,7 +185,7 @@ namespace Occlusion
         /// </summary>
         public Node3f()
         {
-            _guid = (_guidStack.Count > 0) ? _guidStack.Pop() : Node3f.GUID++;
+            _guid = NodeGuid.GetNewGuid();
             _depth = 0;
             _useEnhanceBox = false;
         }
@@ -198,7 +195,7 @@ namespace Occlusion
         /// </summary>
         public Node3f(in AABB3f aabb, bool useEnhanceBox = false)
         {
-            _guid = (_guidStack.Count > 0) ? _guidStack.Pop() : Node3f.GUID++;
+            _guid = NodeGuid.GetNewGuid();
             _depth = 0;
             _aabb = aabb;
             _useEnhanceBox = useEnhanceBox;
@@ -305,7 +302,7 @@ namespace Occlusion
         /// </summary>
         public void Refit(in AABB3f insertBox)
         {
-            _aabb = AABB3fHelper.Union(in _aabb, in insertBox);
+            _aabb = AABB3f.Union(in _aabb, in insertBox);
         }
 
         /// <summary>
@@ -317,7 +314,7 @@ namespace Occlusion
 
             if (HasChild1 && HasChild2)
             {
-                _aabb = AABB3fHelper.Union(in _child1._aabb, in _child2._aabb);
+                _aabb = AABB3f.Union(in _child1._aabb, in _child2._aabb);
             }
             else if (HasChild1)
             {
@@ -340,7 +337,7 @@ namespace Occlusion
         {
             if (!_useEnhanceBox) return;
 
-            _enhanceBox = AABB3fHelper.Expand(in _aabb, margin);
+            _enhanceBox = _aabb.Expand(margin);
         }
 
         /// <summary>
@@ -361,7 +358,6 @@ namespace Occlusion
 
         #endregion
 
-        #region 복사 및 유틸리티
 
         /// <summary>
         /// 노드 복사 (AABB와 EnhanceBox만 복사)
@@ -391,32 +387,13 @@ namespace Occlusion
             }
         }
 
-        #endregion
-
-        #region 충돌 및 쿼리 헬퍼
-
-        /// <summary>
-        /// 점이 노드의 AABB 내부에 있는지 검사
-        /// </summary>
-        public bool Contains(Vertex3f point)
-        {
-            return AABB3fHelper.Contains(in _aabb, point);
-        }
-
-        /// <summary>
-        /// 다른 AABB와 교차하는지 검사
-        /// </summary>
-        public bool Intersects(in AABB3f other)
-        {
-            return AABB3fHelper.Intersects(in _aabb, in other);
-        }
 
         /// <summary>
         /// 광선과 교차하는지 검사
         /// </summary>
         public bool IntersectsRay(Vertex3f rayOrigin, Vertex3f rayDirection, out float tMin, out float tMax)
         {
-            return AABB3fHelper.IntersectsRay(in _aabb, rayOrigin, rayDirection, out tMin, out tMax);
+            return _aabb.IntersectsRay(rayOrigin, rayDirection, out tMin, out tMax);
         }
 
         /// <summary>
@@ -424,7 +401,7 @@ namespace Occlusion
         /// </summary>
         public float GetSurfaceArea()
         {
-            return AABB3fHelper.GetSurfaceArea(in _aabb);
+            return _aabb.Area;
         }
 
         /// <summary>
@@ -432,9 +409,40 @@ namespace Occlusion
         /// </summary>
         public float GetVolume()
         {
-            return AABB3fHelper.GetVolume(in _aabb);
+            return _aabb.GetVolume();
         }
 
-        #endregion
+        
+    }
+
+    /// <summary>
+    /// 노드의 고유 식별자 관리
+    /// </summary>
+    public static class NodeGuid
+    {
+        static int GUID;
+        static Stack<int> _guidStack;
+
+        static NodeGuid()
+        {
+            GUID = 0;
+            _guidStack = new Stack<int>();
+        }
+
+        public static int GetNewGuid()
+        {
+            return ( _guidStack.Count > 0 ) ? _guidStack.Pop() : GUID++;
+        }
+
+        public static void ReleaseGuid(int guid)
+        {
+            _guidStack.Push(guid);
+        }
+
+        public static void Reset()
+        {
+            GUID = 0;
+            _guidStack.Clear();
+        }
     }
 }

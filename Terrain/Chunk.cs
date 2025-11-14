@@ -161,13 +161,12 @@ namespace Terrain
                 Node cnode = queue.Dequeue();
                 if (cnode == null) continue;
 
-                if (zbuffer.IsVisible(vp, view, cnode.AABB)
-                    || cnode.AABB.SphereRadius > 100.0f)
+                //if (zbuffer.TestVisibility(vp, view, cnode.AABB) || cnode.AABB.SphereRadius > 100.0f)
                 {
                     if (cnode.Left) queue.Enqueue(cnode.Child1);
                     if (cnode.Right) queue.Enqueue(cnode.Child2);
                 }
-                else
+                //else
                 {
                     cnode.UnLinkBackCopy();
                 }

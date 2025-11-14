@@ -6,7 +6,7 @@ using Common;
 namespace Shader
 {
     /// <summary>
-    /// 계층적깊이버퍼 화면렌더링 쉐이더
+    /// 계층적 Z버퍼를 화면 평면에 그려주는 세이더
     /// </summary>
     public class HzmDepthShader : ShaderProgram<HzmDepthShader.UNIFORM_NAME>
     {

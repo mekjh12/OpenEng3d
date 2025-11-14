@@ -8,24 +8,33 @@ using Renderer;
 using Shader;
 using System;
 using System.Windows.Forms;
+using Terrain;
 using Ui3d;
 using ZetaExt;
 
 namespace FormTools
 {
-    public partial class FormBVH : Form
+    public partial class FormHZBuffer : Form
     {
-        private readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
+        readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
+        readonly string EXE_PATH = Application.StartupPath;
 
-        private GlControl3 _glControl3;         // OpenGL 컨트롤
-        private ColorShader _colorShader;       // 컬러 셰이더
-        private AABBBoxShader _aabbBoxShader;   // AABB 박스 셰이더
-        private TextNamePlate _textNamePlate;   // 텍스트 네임플레이트
-        private BVH3f _bvh3f;                   // BVH 구조체
+        private GlControl3 _glControl3;                     // OpenGL 컨트롤
+        private ColorShader _colorShader;                   // 컬러 셰이더
+        private HzmDepthShader _hzmDepthShader;             // HZM 깊이 셰이더
+        private TextNamePlate _textNamePlate;               // 텍스트 네임플레이트
+        private Polyhedron _viewFrustum;                    // 뷰 프러스텀
 
-        private Polyhedron _viewFrustum;
+        HierarchicalZBuffer _hzbuffer;              // 계층적 Z 버퍼
+        HierarchicalGpuZBuffer _hzbuffer2;          // 계층적 GPU Z 버퍼
+        TerrainRegion _terrainRegion;               // 지형 영역
+        int _level = 0;                             // 현재 Z 버퍼 레벨
 
-        public FormBVH()
+        private BVH3f _bvh3f;                       // BVH 구조체
+        private AABBBoxShader _aabbBoxShader;       // AABB 박스 셰이더
+
+
+        public FormHZBuffer()
         {
             InitializeComponent();
 
@@ -62,16 +71,23 @@ namespace FormTools
             LogProfile.Create(PROJECT_PATH + "\\log.txt");
         }
 
+        private void FormHZBuffer_Load(object sender, EventArgs e)
+        {
+            MemoryProfiler.StartFrameMonitoring();
+        }
+
         public void Init(int width, int height)
-        { 
+        {
             // 난수 초기화 및 수학 라이브러리 초기화
             Rand.InitSeed(500);
             MathFast.Initialize();
 
             // 쉐이더 초기화 및 셰이더 매니저에 추가
             ShaderManager.Instance.AddShader(new ColorShader(PROJECT_PATH));
+            ShaderManager.Instance.AddShader(new HzmDepthShader(PROJECT_PATH));
             ShaderManager.Instance.AddShader(new AABBBoxShader(PROJECT_PATH));
             _colorShader = ShaderManager.Instance.GetShader<ColorShader>();
+            _hzmDepthShader = ShaderManager.Instance.GetShader<HzmDepthShader>();
             _aabbBoxShader = ShaderManager.Instance.GetShader<AABBBoxShader>();
 
             // 앱 시작 시 한 번만 초기화
@@ -84,11 +100,21 @@ namespace FormTools
             _glControl3.InitGridShader(PROJECT_PATH);
 
             // UI 3D 텍스트 네임플레이트 초기화
-            _textNamePlate = new TextNamePlate(_glControl3.Camera, "FTP");
-            _textNamePlate.Height = 0.6f;
-            _textNamePlate.Width = 0.6f;
+            _textNamePlate = new TextNamePlate(_glControl3.Camera, "FPS");
+            _textNamePlate.Height = 0.35f;
+            _textNamePlate.Width = 0.35f;
             CharacterTextureAtlas.Initialize();
             TextBillboardShader.Initialize();
+
+            // 계층적깊이버퍼 생성
+            const int downLevel = 0;
+            _hzbuffer = new HierarchicalZBuffer(width >> downLevel, height >> downLevel, PROJECT_PATH);
+            _hzbuffer2 = new HierarchicalGpuZBuffer(width >> downLevel, height >> downLevel, PROJECT_PATH);
+
+            // 지형 영역 초기화
+            _terrainRegion = new TerrainRegion(new RegionCoord(0, 0), chunkSize: 100, n: 10, null);
+            _terrainRegion.LoadTerrainLowResMap(
+                new RegionCoord(0, 0), EXE_PATH + "\\Res\\Terrain\\low\\region0x0.png");
 
             // BVH 구조체 초기화
             _bvh3f = new BVH3f(4000);
@@ -99,8 +125,8 @@ namespace FormTools
             {
                 for (int j = -30; j < 30; j++)
                 {
-                    Vertex3f center = new Vertex3f(i * 5f, j * 5f, Rand.NextFloat * 2f);
-                    Vertex3f halfSize = Rand.NextVector3f * 0.5f + Vertex3f.One * 1.0f;
+                    Vertex3f center = new Vertex3f(i * 25f, j * 25, Rand.NextFloat * 200f);
+                    Vertex3f halfSize = Rand.NextVector3f * 5f + Vertex3f.One * 10.0f;
                     _bvh3f.InsertLeaf(new AABB3f(center - halfSize, center + halfSize));
                 }
             }
@@ -125,13 +151,30 @@ namespace FormTools
             // 뷰 프러스텀 컬링 테스트
             _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
             _bvh3f.ClearBackTreeNodeLink();
-            _bvh3f.CullingTestByViewFrustum(_viewFrustum, true);
-            
+            _bvh3f.CullingTestByViewFrustum(_viewFrustum, canMineVisibleAABB: false);
+
             // FPS 업데이트
-            _textNamePlate.Text = FramePerSecond.FPS.ToString() +
-                $"FPS 가시노드={_bvh3f.LinkLeafCount}개";
-            _textNamePlate.WorldPosition = camera.PivotPosition + (camera.Forward - camera.Right) * 0.5f;
+            _textNamePlate.Text = $"{FramePerSecond.FPS}FPS " + $"해상도={_hzbuffer.Width}x{_hzbuffer.Height} " +
+                $"레벨{_level}/{_hzbuffer.Levels-1} 가시성통과{_bvh3f.LinkLeafCount}";
+            _textNamePlate.WorldPosition = camera.Position + camera.Forward * 1f - camera.Right * 0.2f;
             _textNamePlate.Update(deltaTime);
+
+            // 계층적 Z-버퍼 업데이트
+            _hzbuffer2.BindFramebuffer();
+            _hzbuffer2.PrepareRenderSurface();
+
+            // 지형 오클루더들의 깊이맵 생성
+            _hzbuffer2.RenderSimpleTerrain(
+                _terrainRegion.TerrainEntity,
+                camera.ProjectiveMatrix,
+                camera.ViewMatrix,
+                TerrainConstants.DEFAULT_VERTICAL_SCALE);
+
+            // 계층적 Z-버퍼의 밉맵 생성
+            //_hzbuffer.GenerateZBuffer();
+            _hzbuffer2.GenerateMipmapsUsingCompute();
+
+            //_bvh3f.CullingTestByHiZBuffer(camera.VPMatrix, camera.ViewMatrix, _hzbuffer, canMineVisibleAABB: true);
 
         }
 
@@ -140,21 +183,20 @@ namespace FormTools
             int w = _glControl3.Width;
             int h = _glControl3.Height;
 
-            // 백그라운드 컬러 설정
-            float r = _glControl3.BackClearColor.x;
-            float g = _glControl3.BackClearColor.y;
-            float b = _glControl3.BackClearColor.z;
-
             // 기본 프레임버퍼로 전환 및 초기화
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
             Gl.Viewport(0, 0, w, h);
             Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
 
-            // FPS 렌더링
-            _textNamePlate.Render();
+            // 계층적 Z-버퍼 렌더링
+            //_hzbuffer.RenderDepthBuffer(ShaderManager.Instance.GetShader<HzmDepthShader>(), camera, level: _level);
+            _hzbuffer2.RenderDepthBuffer(ShaderManager.Instance.GetShader<HzmDepthShader>(), camera, level: _level);
 
             // AABB 박스 렌더링
-            Renderer3d.RenderAABBGeometry(_aabbBoxShader, in _bvh3f.VisibleAABBs, _bvh3f.LinkLeafCount, camera);
+            //Renderer3d.RenderAABBGeometry(_aabbBoxShader, in _bvh3f.VisibleAABBs, _bvh3f.LinkLeafCount, camera);
+
+            // FPS 렌더링
+            _textNamePlate.Render();
 
             // 카메라 중심점 렌더링
             Renderer3d.RenderPoint(ShaderManager.Instance.GetShader<ColorShader>(), camera.PivotPosition, camera, new Vertex4f(1, 1, 0, 1), 0.02f);
@@ -183,11 +225,26 @@ namespace FormTools
 
         private void KeyUpEvent(object sender, KeyEventArgs e)
         {
+            if (e.KeyCode == Keys.D1)
+            {
+                _level = Math.Max(0, _level - 1);
+            }
+            else if (e.KeyCode == Keys.D2)
+            {
+                _level = Math.Min(_hzbuffer2.Levels - 1, _level + 1);
+            }
+            else if (e.KeyCode == Keys.D3)
+            {
+                DebugZBufferVisualizer.SaveAllLevelsAsImages(_hzbuffer2.Zbuffer, _hzbuffer2.Width, _hzbuffer2.Height,
+                    @"C:\Users\mekjh\OneDrive\바탕 화면\HiZ", true);
+            }
         }
 
-        private void FormBVH_Load(object sender, EventArgs e)
+        private void FormHZBuffer_Resize(object sender, EventArgs e)
         {
-            MemoryProfiler.StartFrameMonitoring();
+            int width = _glControl3.Width;
+            int height = _glControl3.Height;
+            _hzbuffer = new HierarchicalZBuffer(width >> 0, height >> 0, PROJECT_PATH);
         }
     }
 }

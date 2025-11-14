@@ -368,13 +368,13 @@ namespace Occlusion
 
                 travNodeCount++;
 
-                if (zbuffer.IsVisible(vp, view, cnode.AABB))
+                //if (zbuffer.TestVisibility(vp, view, cnode.AABB))
                 {
                     if (cnode.IsLeaf) visibleCount++;
                     if (cnode.Left) queue.Enqueue(cnode.Child1);
                     if (cnode.Right) queue.Enqueue(cnode.Child2);
                 }
-                else
+                //else
                 {
                     cnode.UnLinkBackCopy();
                 }

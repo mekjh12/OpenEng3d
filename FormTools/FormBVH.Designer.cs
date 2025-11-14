@@ -34,8 +34,10 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(788, 557);
+            this.ClientSize = new System.Drawing.Size(1130, 683);
+            this.Location = new System.Drawing.Point(100, 100);
             this.Name = "FormBVH";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "FormBVH";
             this.Load += new System.EventHandler(this.FormBVH_Load);
             this.ResumeLayout(false);

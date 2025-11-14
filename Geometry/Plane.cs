@@ -5,17 +5,19 @@ using ZetaExt;
 
 namespace Geometry
 {
-    /// <summary>
-    /// 평면을 나타내는 클래스이다.
-    /// </summary>
-    public class Plane: GeometricElement
-    {        
-        float w;
+    public struct Plane
+    {
+        public float X;
+        public float Y;
+        public float Z;
+        public float W;
 
-        public float W => w;
+        private Vertex3f _normal;
 
-
-        public Vertex4f Vertex4f => new Vertex4f(x, y, z, w);
+        public Vertex4f Vertex4f => new Vertex4f(X, Y, Z, W);
+        public Vertex4f ToVertex4f => new Vertex4f(X, Y, Z, W);
+        public Vertex3f Normal => _normal;
+        public Plane FlipPlane => new Plane(-X, -Y, -Z, -W);
 
         /// <summary>
         /// 생성자<br/>
@@ -27,12 +29,11 @@ namespace Geometry
         /// <param name="distance">원점으로부터 평면이 법선벡터 방향으로 떨어진 거리</param>
         public Plane(float nx, float ny, float nz, float distance)
         {
-            Vertex3f normal = new Vertex3f(nx, ny, nz);
-            normal = normal.Normalized;
-            x = normal.x;
-            y = normal.y;
-            z = normal.z;
-            w = distance;
+            _normal = new Vertex3f(nx, ny, nz).Normalized;
+            X = _normal.x;
+            Y = _normal.y;
+            Z = _normal.z;
+            W = distance;
         }
 
         /// <summary>
@@ -43,11 +44,11 @@ namespace Geometry
         /// <param name="distance">원점으로부터 평면이 법선벡터 방향으로 떨어진 거리</param>
         public Plane(Vertex3f normal, float distance)
         {
-            normal = normal.Normalized;
-            x = normal.x;
-            y = normal.y;
-            z = normal.z;
-            w = distance;
+            _normal = normal.Normalized;
+            X = _normal.x;
+            Y = _normal.y;
+            Z = _normal.z;
+            W = distance;
         }
 
         /// <summary>
@@ -57,11 +58,11 @@ namespace Geometry
         /// <param name="position"></param>
         public Plane(Vertex3f normal, Vertex3f position)
         {
-            normal = normal.Normalized;
-            x = normal.x;
-            y = normal.y;
-            z = normal.z;
-            w = -normal.Normalized.Dot(position);
+            _normal = normal.Normalized;
+            X = _normal.x;
+            Y = _normal.y;
+            Z = _normal.z;
+            W = -_normal.Dot(position);          
         }
 
         /// <summary>
@@ -72,54 +73,47 @@ namespace Geometry
         /// <param name="c"></param>
         public Plane(Vertex3f a, Vertex3f b, Vertex3f c)
         {
-            Vertex3f normal = (b - a).Cross(c - b).Normalized;
-            x = normal.x;
-            y = normal.y;
-            z = normal.z;
-            w = -normal.Normalized.Dot(a);
+            Vertex3f ab = b - a;
+            Vertex3f ac = c - a;
+            _normal = ab.Cross(ac).Normalized;
+            X = _normal.x;
+            Y = _normal.y;
+            Z = _normal.z;
+            W = -_normal.Dot(a);
         }
-
-        public Vertex4f ToVertex4f => new Vertex4f(x, y, z, w);
-
-        public Vertex3f Normal => new Vertex3f(x, y, z).Normalized;
 
         /// <summary>
         /// 평면의 앞뒤만 서로 바꾼다.
         /// </summary>
         public void Flip()
         {
-            x = -x;
-            y = -y;
-            z = -z;
-            w = -w;
+            X = -X;
+            Y = -Y;
+            Z = -Z;
+            W = -W;
+            _normal = new Vertex3f(X, Y, Z);
         }
-
-        /// <summary>
-        /// 평면의 앞뒤를 뒤집은 평면을 반환한다.
-        /// </summary>
-        public Plane FlipPlane => new Plane(-x, -y, -z, -w);
 
         /// <summary>
         /// 한 점이 평면의 앞쪽에 있는지 여부를 반환한다.
         /// </summary>
         /// <param name="point"></param>
         /// <returns></returns>
-        public bool IsFront(Vertex3f point) => ((this * point) > 0.0f);
+        public bool IsFront(Vertex3f point)
+        {
+            return ((this * point) > 0.0f);
+        }
 
-        public override string ToString() => $"plane n=({x},{y},{z}), w={w}";
+        public override string ToString() => $"plane n=({X},{Y},{Z}), w={W}";
 
-        /// <summary>
-        /// 평면의 
-        /// </summary>
-        /// <param name="a"></param>
         public static implicit operator float[](Plane a)
         {
-            return new float[4] { a.x, a.y, a.z, a.w };
+            return new float[4] { a.X, a.Y, a.Z, a.W };
         }
 
         public static implicit operator Vertex4f(Plane a)
         {
-            return new Vertex4f(a.x, a.y, a.z, a.w);
+            return new Vertex4f(a.X, a.Y, a.Z, a.W);
         }
 
         public static Plane operator *(Plane plane, Matrix4x4f mat)
@@ -133,19 +127,12 @@ namespace Geometry
 
         public static float operator *(Plane plane, Vertex4f point)
         {
-            return plane.x * point.x + plane.y * point.y + plane.z * point.z + plane.w * point.w;
+            return plane.X * point.x + plane.Y * point.y + plane.Z * point.z + plane.W * point.w;
         }
 
         public static float operator *(Plane plane, Vertex3f point)
         {
-            return plane.x * point.x + plane.y * point.y + plane.z * point.z + plane.w;
+            return plane.X * point.x + plane.Y * point.y + plane.Z * point.z + plane.W;
         }
-
-        [Obsolete("이 함수는 더 이상 사용하지 않습니다.")]
-        public float Dot(Vertex4f vertex)
-        {
-            return Normal.Dot(vertex.xyz()) + w * vertex.w;
-        }
-
     }
 }

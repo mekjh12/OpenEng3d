@@ -31,14 +31,14 @@ namespace Shader
 
         /// <summary>버텍스 셰이더 파일 경로</summary>
         const string VERTEX_FILE = @"\Shader\TerrainShader\terrain.vert";
-        /// <summary>프래그먼트 셰이더 파일 경로 (빈 셰이더)</summary>
-        const string FRAGMENT_FILE = @"\Shader\TerrainShader\null.frag";
         /// <summary>지오메트리 셰이더 파일 경로 (미사용)</summary>
         const string GEOMETRY_FILE = "";
         /// <summary>테셀레이션 컨트롤 셰이더 파일 경로</summary>
         const string TCS_FILE = @"\Shader\TerrainShader\terrain.tcs.glsl";
         /// <summary>테셀레이션 평가 셰이더 파일 경로</summary>
         const string TES_FILE = @"\Shader\TerrainShader\terrain.tes.glsl";
+        /// <summary>프래그먼트 셰이더 파일 경로 (빈 셰이더)</summary>
+        const string FRAGMENT_FILE = @"\Shader\TerrainShader\null.frag";
 
         /// <summary>
         /// 지형 깊이맵 셰이더를 초기화합니다.

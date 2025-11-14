@@ -81,7 +81,7 @@ namespace FormTools
             FileHashManager.ROOT_FILE_PATH = PROJECT_PATH;
 
             // 로그 프로파일 초기화
-            LogProfile.Create(EXE_PATH + "\\log.txt");
+            LogProfile.Create(PROJECT_PATH + "\\log.txt");
         }
 
         private void FormHzm_Load(object sender, EventArgs e)
@@ -99,9 +99,9 @@ namespace FormTools
             // 쉐이더 초기화 및 셰이더 매니저에 추가
             ShaderManager.Instance.AddShader(new TerrainTessellationShader(PROJECT_PATH));
             ShaderManager.Instance.AddShader(new ColorShader(PROJECT_PATH));
-            ShaderManager.Instance.AddShader(new AtmosphericLUTComputeShader(PROJECT_PATH));
-            ShaderManager.Instance.AddShader(new AtmosphericRenderShader(PROJECT_PATH));
             ShaderManager.Instance.AddShader(new HzmDepthShader(PROJECT_PATH));
+            //ShaderManager.Instance.AddShader(new AtmosphericLUTComputeShader(PROJECT_PATH));
+            //ShaderManager.Instance.AddShader(new AtmosphericRenderShader(PROJECT_PATH));
 
             // ✅ 앱 시작 시 한 번만 초기화
             Ui3d.BillboardShader.Initialize();
@@ -147,9 +147,9 @@ namespace FormTools
             TextBillboardShader.Initialize();
 
             // 지형 초기화
-            _terrainRegion = new TerrainRegion(new RegionCoord(0, 0), chunkSize: 100, n : 10, null);
-            _terrainRegion.LoadTerrainLowResMap(
-                new RegionCoord(0, 0), EXE_PATH + "\\Res\\Terrain\\low\\region0x0.png");
+            RegionCoord regionCoord = new RegionCoord(0, 0);
+            _terrainRegion = new TerrainRegion(regionCoord, chunkSize: 100, n : 10, null);
+            _terrainRegion.LoadTerrainLowResMap(regionCoord, EXE_PATH + "\\Res\\Terrain\\low\\region0x0.png");
 
             // UBO 초기화 및 로딩
             GlobalUniformBuffers.Initialize();
@@ -222,7 +222,7 @@ namespace FormTools
             _textNamePlate.Update(deltaTime);
 
             // 계층적 Z-버퍼 업데이트
-            _hzbuffer.FrameBind();
+            _hzbuffer.BindFramebuffer();
             _hzbuffer.PrepareRenderSurface();
 
             // 지형 오클루더들의 깊이맵 생성
@@ -236,8 +236,8 @@ namespace FormTools
             }
 
             // 계층적 Z-버퍼의 밉맵 생성
-            //_hzbuffer.GenerateZBuffer();
-            _hzbuffer.GenerateMipmapsUsingCompute();
+            _hzbuffer.GenerateZBuffer();
+            //_hzbuffer.GenerateMipmapsUsingCompute();
 
             // UI 정보 업데이트
             /*
@@ -277,7 +277,7 @@ namespace FormTools
             if (_isDepthZBuffer)
             {
                 // 깊이맵 디버그 표시 
-                _hzbuffer.DrawDepthBuffer(ShaderManager.Instance.GetShader<HzmDepthShader>(), camera, level);
+                _hzbuffer.RenderDepthBuffer(ShaderManager.Instance.GetShader<HzmDepthShader>(), camera, level);
             }
             else
             {

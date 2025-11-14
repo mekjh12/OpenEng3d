@@ -136,7 +136,7 @@ namespace Occlusion
                 return new Plane(normal, -normal.Dot(cameraPosition) - r);
             }
 
-            return null;
+            return new Plane(normal, 0);
         }
 
         /// <summary>

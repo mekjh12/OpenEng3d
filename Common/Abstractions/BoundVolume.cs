@@ -12,9 +12,9 @@ namespace Common.Abstractions
     {
         protected bool _useEnhanceBox;
         protected Vertex3f _color;
-        protected BaseEntity _baseEntity;
         bool _isVisible;
         string _name;
+        protected BaseEntity _baseEntity;
 
         /// <summary>
         /// 느슨한 바운딩 박스의 사용 유무

@@ -28,7 +28,6 @@ using Model3d;
 using OpenGL;
 using System;
 using System.Collections.Generic;
-using ZetaExt;
 
 namespace Occlusion
 {
@@ -36,8 +35,15 @@ namespace Occlusion
     /// Bounding Volume Hierarchy 트리 구조 (AABB3f 구조체 사용)
     /// Node3f를 이용하여 메모리 효율과 성능 최적화
     /// </summary>
-    public class BVH3f
+    public partial class BVH3f
     {
+        Node3f _root;                       // 루트 노드
+        Node3f _recentNode;                 // 최근에 삽입된 노드
+        uint _countLeafByBB;                // Branch and Bound 기반 삽입된 잎노드의 개수(검사용으로만 사용)
+
+        int _linkLeafCount;                 // 링크된 잎 노드 카운터
+        int _recentTravNodeCount;           // 최근 트래버스된 노드 카운터
+
         public enum INSERT_ALGORITHM_METHOD
         {
             GLOBAL_SEARCH,
@@ -46,256 +52,38 @@ namespace Occlusion
 
         private const string STRING_NODE_ISNOT_LEAF = "현재 선택한 노드 ({0})는 leaf가 아닙니다.";
 
-        Node3f _root;
-        uint _countLeaf;
-        Node3f _recentNode;
-        int _leafCount;
+        // -----------------------------------------------------------
+        // 속성
+        // -----------------------------------------------------------
 
-        #region 속성
-
-        public int LeafCount => _leafCount;
-
+        public int LinkLeafCount => _linkLeafCount;
         public Node3f RecentNode => _recentNode;
-
-        public uint CountLeaf => (_countLeaf + 1);
-
-        public uint CountTotalNode => 2 * CountLeaf - 1;
-
-        public Node3f Root
-        {
-            get => _root;
-            set => _root = value;
-        }
-
+        public Node3f Root { get => _root; set => _root = value; }
         public bool IsEmpty => (_root == null);
-
-        /// <summary>
-        /// 노드의 전체 개수를 반환한다.
-        /// N이 leaf의 개수이면, 노드의 전체 수는 2N-1이다.
-        /// </summary>
-        public uint NodeCount
-        {
-            get
-            {
-                if (IsEmpty) return 0;
-                uint num = 0;
-                Queue<Node3f> queue = new Queue<Node3f>();
-                queue.Enqueue(_root);
-                while (queue.Count > 0)
-                {
-                    Node3f tourNode = queue.Dequeue();
-                    num++;
-                    if (tourNode.Child1 != null) queue.Enqueue(tourNode.Child1);
-                    if (tourNode.Child2 != null) queue.Enqueue(tourNode.Child2);
-                }
-                return num;
-            }
-        }
-
-        /// <summary>
-        /// 트리의 최대 깊이를 반환한다.
-        /// </summary>
-        public int MaxDepth
-        {
-            get
-            {
-                if (IsEmpty) return 0;
-                Queue<Node3f> queue = new Queue<Node3f>();
-                queue.Enqueue(_root);
-                int depth = 0;
-                while (queue.Count > 0)
-                {
-                    Node3f tourNode = queue.Dequeue();
-                    tourNode.Depth = (tourNode.IsRoot) ? 0 : tourNode.Parent.Depth + 1;
-                    depth = (int)Math.Max(depth, tourNode.Depth);
-                    if (tourNode.Child1 != null) queue.Enqueue(tourNode.Child1);
-                    if (tourNode.Child2 != null) queue.Enqueue(tourNode.Child2);
-                }
-                return depth;
-            }
-        }
-
-        #endregion
-
-        #region 생성자
-
-        /// <summary>
-        /// 생성자
-        /// </summary>
-        public BVH3f()
-        {
-        }
-
-        #endregion
-
-        #region 추출 메서드
-
-        /// <summary>
-        /// 오클루더를 추출하여 리스트로 가져온다.
-        /// </summary>
-        /// <param name="cameraPos">카메라의 위치</param>
-        /// <param name="OCCLUDER_MINIMAL_AREA">거리에 따라 오클루더의 넓이를 고려하여 임계치를 설정</param>
-        /// <returns></returns>
-        public List<OccluderEntity> ExtractOccluder(Vertex3f cameraPos, float OCCLUDER_MINIMAL_AREA = 0.1f)
-        {
-            List<OccluderEntity> occluders = new List<OccluderEntity>();
-            Queue<Node3f> queue = new Queue<Node3f>();
-            queue.Enqueue(_root);
-
-            while (queue.Count > 0)
-            {
-                Node3f currentNode = queue.Dequeue();
-                if (currentNode == null) break;
-
-                if (currentNode.IsLeaf)
-                {
-                    // BaseEntity 연결 필요 (Node3f에 추가해야 함)
-                    // OccluderEntity occlusionEntity = currentNode.BaseEntity as OccluderEntity;
-                    // if (occlusionEntity != null && occlusionEntity.IsOccluder)
-                    // {
-                    //     float distance = (cameraPos - occlusionEntity.Position).Length();
-                    //     float perspectiveArea = occlusionEntity.OBB.Area / distance;
-                    //     if (perspectiveArea > OCCLUDER_MINIMAL_AREA)
-                    //     {
-                    //         occluders.Add(occlusionEntity);
-                    //     }
-                    // }
-                }
-                else
-                {
-                    if (currentNode.Left) queue.Enqueue(currentNode.Child1);
-                    if (currentNode.Right) queue.Enqueue(currentNode.Child2);
-                }
-            }
-
-            return occluders;
-        }
-
-        /// <summary>
-        /// 모든 AABB3f를 추출하여 리스트로 반환
-        /// </summary>
-        public List<AABB3f> ExtractAABB()
-        {
-            if (_root == null) return null;
-
-            int travNodeCount = 0;
-            _leafCount = 0;
-
-            List<AABB3f> list = new List<AABB3f>();
-            Queue<Node3f> queue = new Queue<Node3f>();
-            queue.Enqueue(_root);
-
-            while (queue.Count > 0)
-            {
-                Node3f currentNode = queue.Dequeue();
-                if (currentNode == null) continue;
-                travNodeCount++;
-
-                if (currentNode.IsLeaf)
-                {
-                    _leafCount++;
-                    list.Add(currentNode.AABB);
-                }
-                else
-                {
-                    if (currentNode.Left) queue.Enqueue(currentNode.Child1);
-                    if (currentNode.Right) queue.Enqueue(currentNode.Child2);
-                }
-            }
-
-            return list;
-        }
-
-        /// <summary>
-        /// 트리에서 연결된 노드만 추출하여 리스트로 가져온다.
-        /// </summary>
-        public List<Entity> ExtractEntity()
-        {
-            int travNodeCount = 0;
-            _leafCount = 0;
-
-            List<Entity> list = new List<Entity>();
-            Queue<Node3f> queue = new Queue<Node3f>();
-            queue.Enqueue(_root);
-
-            while (queue.Count > 0)
-            {
-                Node3f currentNode = queue.Dequeue();
-                if (currentNode == null) continue;
-                travNodeCount++;
-
-                if (currentNode.IsLeaf)
-                {
-                    _leafCount++;
-                    // BaseEntity 연결 필요
-                    // if (currentNode.BaseEntity != null)
-                    // {
-                    //     list.Add(currentNode.BaseEntity as Entity);
-                    // }
-                }
-                else
-                {
-                    if (currentNode.Left) queue.Enqueue(currentNode.Child1);
-                    if (currentNode.Right) queue.Enqueue(currentNode.Child2);
-                }
-            }
-
-            return list;
-        }
-
-        #endregion
-
-        #region 유틸리티
-
-        /// <summary>
-        /// 원본을 손상하지 않기 위해서 복사본의 모든 노드를 true로 연결한다.
-        /// </summary>
-        public void ClearBackCopy(bool visible = true)
-        {
-            if (_root == null) return;
-
-            Queue<Node3f> queue = new Queue<Node3f>();
-            queue.Enqueue(_root);
-            int travNodeCount = 0;
-
-            while (queue.Count > 0)
-            {
-                Node3f cnode = queue.Dequeue();
-                if (cnode == null) break;
-
-                cnode.Left = visible;
-                cnode.Right = visible;
-                travNodeCount++;
-
-                if (cnode.Child1 != null) queue.Enqueue(cnode.Child1);
-                if (cnode.Child2 != null) queue.Enqueue(cnode.Child2);
-            }
-        }
-
-        #endregion
 
         #region 비용 계산
 
         /// <summary>
         /// 삽입할 자리에 드는 전체 비용을 반환한다.
+        /// <code>
         /// 비용 = sum{부모의 변화량} + cost(T ∪ L)
         /// L = 삽입하는 노드
         /// T = 삽입할 자리의 노드
+        /// </code>
         /// </summary>
         private float Cost(Node3f targetNode, in AABB3f insertBox)
         {
             // targetNode의 AABB와 insertBox의 합집합 면적
-            AABB3f unionBox = AABB3fHelper.Union(in targetNode.AABB, in insertBox);
-            float cost = AABB3fHelper.GetSurfaceArea(in unionBox);
+            AABB3f unionBox = AABB3f.Union(in targetNode.AABB, in insertBox);
+            float cost = unionBox.Area;
 
             if (targetNode.Parent != null)
             {
                 Node3f tourNode = targetNode.Parent;
                 while (tourNode != null)
                 {
-                    AABB3f parentUnion = AABB3fHelper.Union(in tourNode.AABB, in insertBox);
-                    float deltaSA = AABB3fHelper.GetSurfaceArea(in parentUnion) -
-                                   AABB3fHelper.GetSurfaceArea(in tourNode.AABB);
+                    AABB3f parentUnion = AABB3f.Union(in tourNode.AABB, in insertBox);
+                    float deltaSA = parentUnion.Area - tourNode.AABB.Area;
                     cost += deltaSA;
                     tourNode = tourNode.Parent;
                 }
@@ -309,8 +97,8 @@ namespace Occlusion
         /// </summary>
         private static float UnionArea(Node3f A, Node3f B)
         {
-            AABB3f unionBox = AABB3fHelper.Union(in A.AABB, in B.AABB);
-            return AABB3fHelper.GetSurfaceArea(in unionBox);
+            AABB3f unionBox = AABB3f.Union(in A.AABB, in B.AABB);
+            return unionBox.Area;
         }
 
         #endregion
@@ -356,8 +144,8 @@ namespace Occlusion
 
             // Branch And Bound를 위한 초기화
             Node3f bestSibling = _root;
-            AABB3f rootUnion = AABB3fHelper.Union(in bestSibling.AABB, in insertBox);
-            float bestCost = AABB3fHelper.GetSurfaceArea(in rootUnion) + 1.0f;
+            AABB3f rootUnion = AABB3f.Union(in bestSibling.AABB, in insertBox);
+            float bestCost = rootUnion.Area + 1.0f;
             queue.Enqueue(_root);
 
             // C_low < C_best 인 경우에 하위 트리를 탐색
@@ -365,10 +153,10 @@ namespace Occlusion
             {
                 Node3f currentNode = queue.Dequeue();
 
-                AABB3f currentUnion = AABB3fHelper.Union(in currentNode.AABB, in insertBox);
-                float directedCost = AABB3fHelper.GetSurfaceArea(in currentUnion);
+                AABB3f currentUnion = AABB3f.Union(in currentNode.AABB, in insertBox);
+                float directedCost = currentUnion.Area;
                 float prevInheritedCost = (currentNode.Parent == null) ? 0.0f : currentNode.Parent.InheritedCost;
-                float currentDeltaSA = directedCost - AABB3fHelper.GetSurfaceArea(in currentNode.AABB);
+                float currentDeltaSA = directedCost - currentNode.AABB.Area;
                 currentNode.InheritedCost = prevInheritedCost + currentDeltaSA;
                 float costLow = directedCost + prevInheritedCost;
 
@@ -394,7 +182,7 @@ namespace Occlusion
         /// </summary>
         private static Node3f Union(Node3f A, Node3f B)
         {
-            AABB3f unionBox = AABB3fHelper.Union(in A.AABB, in B.AABB);
+            AABB3f unionBox = AABB3f.Union(in A.AABB, in B.AABB);
             Node3f C = new Node3f(in unionBox);
             C.Child1 = A;
             C.Child2 = B;
@@ -438,7 +226,7 @@ namespace Occlusion
                 Node3f uncle = parent.Brother;
 
                 float candidateCost = BVH3f.UnionArea(anotherChild, uncle);
-                float nodeArea = AABB3fHelper.GetSurfaceArea(in node.AABB);
+                float nodeArea = node.AABB.Area;
 
                 if (candidateCost < nodeArea) // 회전이 필요
                 {
@@ -484,7 +272,7 @@ namespace Occlusion
             if (IsEmpty)
             {
                 _root = insertNode;
-                _countLeaf++;
+                _countLeafByBB++;
                 _recentNode = insertNode;
                 return insertNode;
             }
@@ -524,7 +312,7 @@ namespace Occlusion
             }
 
             // 정상적으로 삽입하면 leaf의 개수를 증가
-            _countLeaf++;
+            _countLeafByBB++;
             _recentNode = insertNode;
 
             return insertNode;
@@ -553,7 +341,7 @@ namespace Occlusion
                 }
                 else
                 {
-                    Node3f._guidStack.Push(_root.Guid);
+                    NodeGuid.ReleaseGuid(_root.Guid);
                     _root = null;
                 }
             }
@@ -562,8 +350,8 @@ namespace Occlusion
                 Node3f parent = node.Parent;
                 Node3f restNode = (parent.Child1 == node) ? parent.Child2 : parent.Child1;
 
-                Node3f._guidStack.Push(parent.Guid);
-                Node3f._guidStack.Push(node.Guid);
+                NodeGuid.ReleaseGuid(parent.Guid);
+                NodeGuid.ReleaseGuid(node.Guid);
 
                 if (parent.IsRoot)
                 {
@@ -586,7 +374,7 @@ namespace Occlusion
                 }
             }
 
-            _countLeaf = Math.Max(_countLeaf - 1, 0);
+            _countLeafByBB = Math.Max(_countLeafByBB - 1, 0);
             return true;
         }
 
@@ -664,9 +452,8 @@ namespace Occlusion
             }
 
             _root = null;
-            _countLeaf = 0;
-            Node3f.GUID = -1;
-            Node3f._guidStack.Clear();
+            _countLeafByBB = 0;
+            NodeGuid.Reset();
         }
 
         /// <summary>

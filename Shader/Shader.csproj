@@ -77,6 +77,7 @@
     <Compile Include="AtmosphericScatteringLUT\AtmosphericLUTComputeShader.cs" />
     <Compile Include="AtmosphericScatteringLUT\AtmosphericRenderShader.cs" />
     <Compile Include="AxisShader\AxisShader.cs" />
+    <Compile Include="AABBShader\AABBBoxShader .cs" />
     <Compile Include="GlobalUniformBuffers.cs" />
     <Compile Include="ShaderManager.cs" />
     <Compile Include="SkyDomeShader\CloudShader.cs" />
@@ -114,6 +115,7 @@
     <Compile Include="VolumeRenderShader\VolumeRenderShader.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="AABBShader\aabb.gem.glsl" />
     <None Include="AnimateShader\ani.frag" />
     <None Include="AnimateShader\ani.vert" />
     <None Include="AtmosphericScatteringLUT\scattering.comp" />
@@ -128,6 +130,8 @@
     <None Include="AtmosphericScatteringLUT\atmosphere.vert" />
     <None Include="AxisShader\axis.frag" />
     <None Include="AxisShader\axis.vert" />
+    <None Include="AABBShader\aabb.frag" />
+    <None Include="AABBShader\aabb.vert" />
     <None Include="includes\lib_terrain_normal.glsl" />
     <None Include="includes\lib_terrain_height_sampling.glsl" />
     <None Include="includes\lib_vegetation.glsl" />

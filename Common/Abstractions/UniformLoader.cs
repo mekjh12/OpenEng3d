@@ -91,7 +91,7 @@ namespace Common
             Gl.Uniform1f(location, 1, toLoad);
         }
 
-        protected virtual void LoadMatrix(int location, Matrix4x4f matrix)
+        protected virtual void LoadMatrix(int location, in Matrix4x4f matrix)
         {
             Gl.UniformMatrix4(location, false, ((float[])matrix));
         }

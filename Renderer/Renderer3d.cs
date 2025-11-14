@@ -8,6 +8,8 @@ using OpenGL;
 using Shader;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
 using ZetaExt;
 using static OpenGL.Gl;
 
@@ -46,6 +48,89 @@ namespace Renderer
         public static RawModel3d QaudPatch = Loader3d.LoadQuadPatch();
 
         #endregion
+
+        // AABB 중심점 VBO (단일 점)
+        private static uint _aabbCenterVAO = 0;
+        private static uint _aabbCenterVBO = 0;
+        private static bool _isAABBBoxSetup = false;
+
+        private static Vertex3f[] _aabbCenters = new Vertex3f[10000];
+        private static Vertex3f[] _aabbHalfSizes = new Vertex3f[10000];
+        private static Vertex4f[] _aabbColors = new Vertex4f[10000];
+
+        /// <summary>
+        /// 지오메트리 셰이더를 사용한 AABB 렌더링
+        /// </summary>
+        public static void RenderAABBGeometry(AABBBoxShader shader, in AABB3f[] aabbs, int count, Camera camera)
+        {
+            if (count <= 0) return;
+
+            // VAO 초기화 (최초 1회)
+            if (_aabbCenterVAO == 0)
+            {
+                _aabbCenterVAO = Gl.GenVertexArray();
+                _aabbCenterVBO = Gl.GenBuffer();
+
+                Gl.BindVertexArray(_aabbCenterVAO);
+                Gl.BindBuffer(BufferTarget.ArrayBuffer, _aabbCenterVBO);
+
+                // 단일 점 (0,0,0) 생성
+                float[] point = new float[] { 0.0f, 0.0f, 0.0f };
+                unsafe
+                {
+                    fixed (float* ptr = point)
+                    {
+                        Gl.BufferData(BufferTarget.ArrayBuffer,
+                            (uint)(3 * sizeof(float)),
+                            new IntPtr(ptr),
+                            BufferUsage.StaticDraw);
+                    }
+                }
+
+                Gl.VertexAttribPointer(0, 3, VertexAttribType.Float, false, 0, IntPtr.Zero);
+                Gl.EnableVertexAttribArray(0);
+
+                Gl.BindVertexArray(0);
+                Gl.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            }
+
+            // 인스턴스 속성 설정 (최초 1회)
+            if (!_isAABBBoxSetup)
+            {
+                shader.SetupInstancedAttributes(_aabbCenterVAO);
+                _isAABBBoxSetup = true;
+            }
+
+            // 인스턴스 데이터 준비
+            for (int i = 0; i < count; i++)
+            {
+                ref readonly AABB3f aabb = ref aabbs[i];
+                _aabbCenters[i] = aabb.Center;
+                _aabbHalfSizes[i] = aabb.Size * 0.5f;
+                _aabbColors[i] = aabb.Color;
+            }
+
+            // GPU에 데이터 업로드
+            shader.UploadInstanceData(_aabbCenters, _aabbHalfSizes, _aabbColors, count);
+
+            // 렌더링
+            Gl.Enable(EnableCap.Blend);
+            Gl.BlendEquation(BlendEquationMode.FuncAdd);
+            Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
+            shader.Bind();
+            shader.LoadUniform(AABBBoxShader.UNIFORM_NAME.vp, camera.VPMatrix);
+
+            Gl.BindVertexArray(_aabbCenterVAO);
+
+            // ⭐ 인스턴싱 드로우콜 - 점 1개를 count번 그림
+            Gl.DrawArraysInstanced(PrimitiveType.Points, 0, 1, count);
+
+            Gl.BindVertexArray(0);
+            shader.Unbind();
+            Gl.Disable(EnableCap.Blend);
+        }
+
         public static void Render(UnlitShader shader, List<Entity> entities, Camera camera, bool isCullface = true)
         {
             OrbitCamera orbitCamera = camera as OrbitCamera;
@@ -300,6 +385,36 @@ namespace Renderer
             Gl.Disable(EnableCap.Blend);
         }
 
+
+        public static void RenderAABB(ColorShader shader, in AABB3f[] aabbs, int count, Camera camera)
+        {
+            // ✅ 한 번만 설정
+            Gl.Enable(EnableCap.Blend);
+            Gl.BlendEquation(BlendEquationMode.FuncAdd);
+            Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            shader.Bind();
+            Gl.BindVertexArray(Cube.VAO);
+            Gl.EnableVertexAttribArray(0);
+
+            Matrix4x4f vp = camera.VPMatrix;
+
+            // ✅ 루프에서는 데이터만 변경
+            for (int i = 0; i < count; i++)
+            {
+                ref readonly AABB3f aabb = ref aabbs[i];
+                Matrix4x4f mvp = vp * aabb.ModelMatrix;
+
+                shader.LoadUniform(ColorShader.UNIFORM_NAME.color, aabb.Color);
+                shader.LoadUniform(ColorShader.UNIFORM_NAME.mvp, mvp);
+                Gl.DrawArrays(PrimitiveType.Triangles, 0, Cube.VertexCount);
+            }
+
+            // ✅ 한 번만 정리
+            Gl.DisableVertexAttribArray(0);
+            Gl.BindVertexArray(0);
+            shader.Unbind();
+            Gl.Disable(EnableCap.Blend);
+        }
 
         public static void Render(ColorShader shader, Camera camera, WorldCoordinate worldCoordinate)
         {

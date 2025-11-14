@@ -80,6 +80,7 @@ namespace Terrain
         public TerrainRegion()
         {
             _terrainData = new TerrainData();
+            _terrainPatchFactory = new TerrainPatchFactory(_terrainData);
         }
 
         /// <summary>
@@ -123,9 +124,9 @@ namespace Terrain
             _terrainData.IsHighResLoaded = true;
 
             // 큐가 비어 완료되면 완료 함수를 콜백
-            //completed?.Invoke();
-            // 모든 고해상도 타일 로딩이 완료되면 블렌딩 시작
+            completed?.Invoke();
 
+            // 모든 고해상도 타일 로딩이 완료되면 블렌딩 시작
             StartHighResTextureBlending();
         }
 

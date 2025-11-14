@@ -10,7 +10,7 @@ namespace Shader
         public enum UNIFORM_NAME
         {
             inputSize,   // 입력 이미지 크기
-            mipLevel,    // 현재 생성 중인 밉 레벨
+            outputDepth,    // 현재 생성 중인 밉 레벨
             Count
         }
 

@@ -5,7 +5,7 @@ namespace Ui3d
 {
     public static class FontManager
     {
-        public static readonly string DefaultFontFamily = "조선100년체";//
+        public static readonly string DefaultFontFamily = "돋움체";//
         public static readonly float DefaultFontSize = 23.0f;
         public static readonly FontStyle DefaultFontStyle = FontStyle.Bold;
         public static Font DefaultFont = new Font(DefaultFontFamily, DefaultFontSize, DefaultFontStyle);

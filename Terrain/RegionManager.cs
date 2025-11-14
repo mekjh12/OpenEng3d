@@ -69,7 +69,7 @@ namespace Terrain
 
         // 렌더링 관련
         private readonly Model3dManager _model3dManager;                            // 3D 모델 관리자
-        private List<TerrainRegion> _visibleRegionsCache;                           // 보이는 리전 캐시
+        private List<TerrainRegion> _visibleRegionsCache;                           // 주변에서 보이는 리전 캐시( 최소1개, 최대 9개)
         private List<Entity> _visibleEntities;                                      // 보이는 엔티티 목록
         private SunLight _sunLight;                                                 // 태양광 설정
         private readonly TerrainChunkShader _terrainChunkShader;                    // 지형 청크 쉐이더

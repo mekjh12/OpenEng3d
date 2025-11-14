@@ -13,12 +13,13 @@ namespace FormTools
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new FormBVH());
-            //Application.Run(new FormHzm());
-            //Application.Run(new FormTerrain());
+            Application.Run(new FormHZBuffer());
+            //Application.Run(new FormBVH());                       // 작동됨
             //Application.Run(new FormCloud());                     // 작동됨
             //Application.Run(new FormPhysics());                   // 작동됨
             //Application.Run(new FormAnimation());                 // 작동됨
+            //Application.Run(new FormHzm());                       // 작동됨
+            //Application.Run(new FormTerrain());
             //Application.Run(new FormOcclusionQuery());
             //Application.Run(new FormTexture3d());
             //Application.Run(new FormAsyncTest());
