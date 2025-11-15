@@ -1,7 +1,6 @@
 ﻿using OpenGL;
 using System;
 using System.Collections.Generic;
-using static Khronos.Platform;
 
 namespace Common
 {
@@ -38,7 +37,6 @@ namespace Common
         public void LoadUniform(TEnum uniform, Vertex2i vec) => LoadVector(_location[uniform.ToString()], vec);
         public void LoadUniform(TEnum uniform, Matrix4x4f mat) => LoadMatrix(_location[uniform.ToString()], mat);
         public void LoadUniform(TEnum uniform, Matrix3x3f mat) => LoadMatrix(_location[uniform.ToString()], mat);
-
 
         public void LoadUniform(string uniform, Matrix4x4f mat) => LoadMatrix(_location[uniform.ToString()], mat);
         public void LoadUniform(string uniform, bool value) => LoadBoolean(_location[uniform.ToString()], value);

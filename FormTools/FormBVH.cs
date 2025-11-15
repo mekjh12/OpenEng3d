@@ -140,11 +140,6 @@ namespace FormTools
             int w = _glControl3.Width;
             int h = _glControl3.Height;
 
-            // 백그라운드 컬러 설정
-            float r = _glControl3.BackClearColor.x;
-            float g = _glControl3.BackClearColor.y;
-            float b = _glControl3.BackClearColor.z;
-
             // 기본 프레임버퍼로 전환 및 초기화
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
             Gl.Viewport(0, 0, w, h);

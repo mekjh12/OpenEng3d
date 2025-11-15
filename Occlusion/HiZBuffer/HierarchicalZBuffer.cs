@@ -127,6 +127,7 @@ namespace Occlusion
         /// - 멀티스레딩 CPU 활용: 병렬 처리로 효율적인 밉맵 생성
         /// - 오버헤드 감소: 컴퓨트 셰이더 디스패치와 메모리 배리어 없음
         /// </remarks>
+        [Obsolete("이 메서드는 향후 제거될 예정입니다. HierarchicalGpuZBuffer 클래스를 사용하십시오.")]
         public void GenerateZBuffer()
         {
             GenerateHierachyZBufferOnGPU(maxDepth: 0);

@@ -7,6 +7,7 @@ using OpenGL;
 using Renderer;
 using Shader;
 using System;
+using System.IO;
 using System.Windows.Forms;
 using Terrain;
 using Ui3d;
@@ -25,10 +26,10 @@ namespace FormTools
         private TextNamePlate _textNamePlate;               // 텍스트 네임플레이트
         private Polyhedron _viewFrustum;                    // 뷰 프러스텀
 
-        HierarchicalZBuffer _hzbuffer;              // 계층적 Z 버퍼
-        HierarchicalGpuZBuffer _hzbuffer2;          // 계층적 GPU Z 버퍼
+        HierarchicalGpuZBuffer _hzbuffer;           // 계층적 GPU Z 버퍼
         TerrainRegion _terrainRegion;               // 지형 영역
         int _level = 0;                             // 현재 Z 버퍼 레벨
+        const int DOWN_LEVEL = 0;                   // 다운샘플링 레벨
 
         private BVH3f _bvh3f;                       // BVH 구조체
         private AABBBoxShader _aabbBoxShader;       // AABB 박스 셰이더
@@ -106,16 +107,6 @@ namespace FormTools
             CharacterTextureAtlas.Initialize();
             TextBillboardShader.Initialize();
 
-            // 계층적깊이버퍼 생성
-            const int downLevel = 0;
-            _hzbuffer = new HierarchicalZBuffer(width >> downLevel, height >> downLevel, PROJECT_PATH);
-            _hzbuffer2 = new HierarchicalGpuZBuffer(width >> downLevel, height >> downLevel, PROJECT_PATH);
-
-            // 지형 영역 초기화
-            _terrainRegion = new TerrainRegion(new RegionCoord(0, 0), chunkSize: 100, n: 10, null);
-            _terrainRegion.LoadTerrainLowResMap(
-                new RegionCoord(0, 0), EXE_PATH + "\\Res\\Terrain\\low\\region0x0.png");
-
             // BVH 구조체 초기화
             _bvh3f = new BVH3f(4000);
             _bvh3f.Clear();
@@ -131,6 +122,13 @@ namespace FormTools
                 }
             }
 
+            // 계층적깊이버퍼 생성
+            _hzbuffer = new HierarchicalGpuZBuffer(width >> DOWN_LEVEL, height >> DOWN_LEVEL, PROJECT_PATH);
+
+            // 지형 영역 초기화
+            _terrainRegion = new TerrainRegion(new RegionCoord(0, 0), chunkSize: 100, n: 10, null);
+            _terrainRegion.LoadTerrainLowResMap(new RegionCoord(0, 0), EXE_PATH + "\\Res\\Terrain\\low\\region0x0.png");
+
             // 셰리더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
         }
@@ -145,34 +143,31 @@ namespace FormTools
 
         public void UpdateFrame(int deltaTime, int width, int height, Camera camera)
         {
-            // 시간 간격을 초 단위로 변환
             float duration = deltaTime * 0.001f;
 
-            // 뷰 프러스텀 컬링 테스트
             _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
             _bvh3f.ClearBackTreeNodeLink();
-            _bvh3f.CullingTestByViewFrustum(_viewFrustum, canMineVisibleAABB: false);
+            _bvh3f.CullingTestByViewFrustum(_viewFrustum, canMineVisibleAABB: true);
 
-            // FPS 업데이트
-            _textNamePlate.Text = $"{FramePerSecond.FPS}FPS " + $"해상도={_hzbuffer.Width}x{_hzbuffer.Height} " +
-                $"레벨{_level}/{_hzbuffer.Levels-1} 가시성통과{_bvh3f.LinkLeafCount}";
+            _textNamePlate.Text = $"{FramePerSecond.FPS}FPS " +
+                $"해상도={_hzbuffer.Width}x{_hzbuffer.Height} " +
+                $"레벨{_level}/{_hzbuffer.Levels - 1} " +
+                $"가시성통과{_bvh3f.LinkLeafCount}";
             _textNamePlate.WorldPosition = camera.Position + camera.Forward * 1f - camera.Right * 0.2f;
             _textNamePlate.Update(deltaTime);
 
-            // 계층적 Z-버퍼 업데이트
-            _hzbuffer2.BindFramebuffer();
-            _hzbuffer2.PrepareRenderSurface();
-
-            // 지형 오클루더들의 깊이맵 생성
-            _hzbuffer2.RenderSimpleTerrain(
+            // ✅ HZB 업데이트
+            _hzbuffer.BindFramebuffer();
+            _hzbuffer.PrepareRenderSurface();
+            _hzbuffer.RenderSimpleTerrain(
                 _terrainRegion.TerrainEntity,
                 camera.ProjectiveMatrix,
                 camera.ViewMatrix,
                 TerrainConstants.DEFAULT_VERTICAL_SCALE);
+            _hzbuffer.UnbindFramebuffer();
 
-            // 계층적 Z-버퍼의 밉맵 생성
-            //_hzbuffer.GenerateZBuffer();
-            _hzbuffer2.GenerateMipmapsUsingCompute();
+            // ✅ 밉맵 생성 (디버깅 코드 제거)
+            _hzbuffer.GenerateMipmapsUsingCompute();
 
             //_bvh3f.CullingTestByHiZBuffer(camera.VPMatrix, camera.ViewMatrix, _hzbuffer, canMineVisibleAABB: true);
 
@@ -188,18 +183,17 @@ namespace FormTools
             Gl.Viewport(0, 0, w, h);
             Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
 
+            // FPS 렌더링
+            _textNamePlate.Render();
+
             // 계층적 Z-버퍼 렌더링
-            //_hzbuffer.RenderDepthBuffer(ShaderManager.Instance.GetShader<HzmDepthShader>(), camera, level: _level);
-            _hzbuffer2.RenderDepthBuffer(ShaderManager.Instance.GetShader<HzmDepthShader>(), camera, level: _level);
+            _hzbuffer.RenderDepthBuffer(_hzmDepthShader, camera, level: _level);
 
             // AABB 박스 렌더링
             //Renderer3d.RenderAABBGeometry(_aabbBoxShader, in _bvh3f.VisibleAABBs, _bvh3f.LinkLeafCount, camera);
 
-            // FPS 렌더링
-            _textNamePlate.Render();
-
             // 카메라 중심점 렌더링
-            Renderer3d.RenderPoint(ShaderManager.Instance.GetShader<ColorShader>(), camera.PivotPosition, camera, new Vertex4f(1, 1, 0, 1), 0.02f);
+            Renderer3d.RenderPoint(_colorShader, camera.PivotPosition, camera, new Vertex4f(1, 1, 0, 1), 0.02f);
             Gl.Enable(EnableCap.DepthTest);
         }
 
@@ -225,18 +219,27 @@ namespace FormTools
 
         private void KeyUpEvent(object sender, KeyEventArgs e)
         {
+            string dirPath = @"C:\Users\mekjh\OneDrive\바탕 화면\HiZ";
             if (e.KeyCode == Keys.D1)
             {
                 _level = Math.Max(0, _level - 1);
             }
             else if (e.KeyCode == Keys.D2)
             {
-                _level = Math.Min(_hzbuffer2.Levels - 1, _level + 1);
+                _level = Math.Min(_hzbuffer.Levels - 1, _level + 1);
             }
             else if (e.KeyCode == Keys.D3)
             {
-                DebugZBufferVisualizer.SaveAllLevelsAsImages(_hzbuffer2.Zbuffer, _hzbuffer2.Width, _hzbuffer2.Height,
-                    @"C:\Users\mekjh\OneDrive\바탕 화면\HiZ", true);
+                if (Directory.Exists(dirPath)) Directory.Delete(dirPath, true);
+                DebugZBufferVisualizer.SaveAllLevelsAsImages(_hzbuffer.Zbuffer, _hzbuffer.Width, _hzbuffer.Height, dirPath, true);
+            }
+            else if (e.KeyData == Keys.D4)
+            {
+                if (Directory.Exists(dirPath)) Directory.Delete(dirPath, true);
+                for (int i = 0; i < 5; i++)
+                {
+                    _hzbuffer.SaveTextureToImageWithColorMap(i, dirPath + $"\\hzb_level{i}.png");
+                }
             }
         }
 
@@ -244,7 +247,7 @@ namespace FormTools
         {
             int width = _glControl3.Width;
             int height = _glControl3.Height;
-            _hzbuffer = new HierarchicalZBuffer(width >> 0, height >> 0, PROJECT_PATH);
+            //_hzbuffer = new HierarchicalGpuZBuffer(width >> DOWN_LEVEL, height >> DOWN_LEVEL, PROJECT_PATH);
         }
     }
 }

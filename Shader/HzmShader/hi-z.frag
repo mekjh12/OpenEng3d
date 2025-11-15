@@ -2,6 +2,7 @@
 
 uniform sampler2D DepthBuffer;
 uniform ivec2 LastMipSize;
+
 in vec2 TexCoord;
 out float depth;
 

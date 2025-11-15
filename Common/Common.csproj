@@ -73,6 +73,7 @@
     <Compile Include="Abstractions\ICameraLifecycle.cs" />
     <Compile Include="Abstractions\IPhysicsComponent.cs" />
     <Compile Include="Abstractions\IShaderProgram.cs" />
+    <Compile Include="Abstractions\ShaderProgramBase.cs" />
     <Compile Include="Abstractions\Texture.cs" />
     <Compile Include="Abstractions\Transformable\IMatrixTransformable.cs" />
     <Compile Include="Abstractions\Transformable\IMovable.cs" />

@@ -1,16 +1,16 @@
 ﻿#version 430
 
 layout (local_size_x = 16, local_size_y = 16) in;
+
 layout (binding = 0, r32f) readonly uniform image2D inputDepth;
 layout (binding = 1, r32f) writeonly uniform image2D outputDepth;
 
 uniform ivec2 inputSize;
-uniform int mipLevel;
+uniform ivec2 outputSize;
 
 void main()
 {
     ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
-    ivec2 outputSize = imageSize(outputDepth);
     
     // ✅ 범위 체크
     if (pixelCoord.x >= outputSize.x || pixelCoord.y >= outputSize.y) {
@@ -21,48 +21,18 @@ void main()
     ivec2 inputCoord = pixelCoord * 2;
     float maxDepth = 0.0;
     
-    // ✅ 2x2 기본 영역
-    if (inputCoord.x < inputSize.x && inputCoord.y < inputSize.y) {
-        maxDepth = imageLoad(inputDepth, inputCoord).r;
-    }
-    if (inputCoord.x + 1 < inputSize.x && inputCoord.y < inputSize.y) {
-        maxDepth = max(maxDepth, imageLoad(inputDepth, ivec2(inputCoord.x + 1, inputCoord.y)).r);
-    }
-    if (inputCoord.x < inputSize.x && inputCoord.y + 1 < inputSize.y) {
-        maxDepth = max(maxDepth, imageLoad(inputDepth, ivec2(inputCoord.x, inputCoord.y + 1)).r);
-    }
-    if (inputCoord.x + 1 < inputSize.x && inputCoord.y + 1 < inputSize.y) {
-        maxDepth = max(maxDepth, imageLoad(inputDepth, ivec2(inputCoord.x + 1, inputCoord.y + 1)).r);
-    }
-    
-    // ✅ 수정: 홀수 너비 처리 (버그 수정)
-    // 원본이 홀수 너비이고, 현재 출력 픽셀이 마지막 열이면
-    if ((inputSize.x & 1) == 1 && pixelCoord.x == outputSize.x - 1) {
-        // 입력의 마지막 열(inputSize.x - 1)도 샘플
-        int extraX = inputCoord.x + 2;  // = pixelCoord.x * 2 + 2
-        if (extraX < inputSize.x) {
-            if (inputCoord.y < inputSize.y) {
-                maxDepth = max(maxDepth, imageLoad(inputDepth, ivec2(extraX, inputCoord.y)).r);
-            }
-            if (inputCoord.y + 1 < inputSize.y) {
-                maxDepth = max(maxDepth, imageLoad(inputDepth, ivec2(extraX, inputCoord.y + 1)).r);
+    // ✅ 2x2 블록 샘플링 (경계 체크 자동 처리)
+    for (int dy = 0; dy < 2; dy++) {
+        for (int dx = 0; dx < 2; dx++) {
+            ivec2 sampleCoord = inputCoord + ivec2(dx, dy);
+            
+            if (sampleCoord.x < inputSize.x && sampleCoord.y < inputSize.y) {
+                float depth = imageLoad(inputDepth, sampleCoord).r;
+                maxDepth = max(maxDepth, depth);
             }
         }
     }
     
-    // ✅ 수정: 홀수 높이 처리 (버그 수정)
-    if ((inputSize.y & 1) == 1 && pixelCoord.y == outputSize.y - 1) {
-        // 입력의 마지막 행(inputSize.y - 1)도 샘플
-        int extraY = inputCoord.y + 2;  // = pixelCoord.y * 2 + 2
-        if (extraY < inputSize.y) {
-            if (inputCoord.x < inputSize.x) {
-                maxDepth = max(maxDepth, imageLoad(inputDepth, ivec2(inputCoord.x, extraY)).r);
-            }
-            if (inputCoord.x + 1 < inputSize.x) {
-                maxDepth = max(maxDepth, imageLoad(inputDepth, ivec2(inputCoord.x + 1, extraY)).r);
-            }
-        }
-    }
-    
+    // ✅ 출력 저장
     imageStore(outputDepth, pixelCoord, vec4(maxDepth, 0.0, 0.0, 0.0));
 }

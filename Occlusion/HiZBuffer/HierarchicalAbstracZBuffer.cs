@@ -5,6 +5,7 @@ using OpenGL;
 using Shader;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using ZetaExt;
 
 namespace Occlusion
@@ -42,9 +43,8 @@ namespace Occlusion
         protected List<float[]> _zbuffer;           // CPU 측 Z-버퍼 배열
 
         // 셰이더
-        protected HzmMipmapShader _mipmapShader;              // 밉맵쉐이더
         protected TerrainDepthShader _terrainDepthShader;     // 간단지형 쉐이더
-
+        protected HzmMipmapShader _mipmapShader;            // 밉맵쉐이더
 
         // ===================================================================
         // 속성
@@ -84,22 +84,26 @@ namespace Occlusion
             CreateFramebufferAndTextures();
 
             // 셰이더 초기화
-            if (_mipmapShader == null) _mipmapShader = new HzmMipmapShader(projectPath);
             if (_terrainDepthShader == null) _terrainDepthShader = new TerrainDepthShader(projectPath);
+            if (_mipmapShader == null) _mipmapShader = new HzmMipmapShader(projectPath);
         }
 
         /// <summary>
         /// 프레임버퍼와 관련 텍스처를 생성합니다.
         /// </summary>
-        protected void CreateFramebufferAndTextures()
+        private void CreateFramebufferAndTextures()
         {
             // 프레임버퍼 생성
             _fbo = Gl.GenFramebuffer();
 
-            // 컬러 텍스처 초기화 (R16F 포맷)
+            // 컬러 텍스처 초기화
             _colorTexture = Gl.GenTexture();
             Gl.BindTexture(TextureTarget.Texture2d, _colorTexture);
-            Gl.TexImage2D(TextureTarget.Texture2d, 0, InternalFormat.R16f, _width, _height, 0, PixelFormat.Red, PixelType.UnsignedByte, IntPtr.Zero);
+            Gl.TexImage2D(TextureTarget.Texture2d, 0,
+                InternalFormat.R32f,  // ✅ (InternalFormat)0x822E → InternalFormat.R32f
+                _width, _height, 0,
+                PixelFormat.Red, PixelType.Float,  // ✅ UnsignedByte → Float
+                IntPtr.Zero);
             Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.CLAMP_TO_EDGE);
             Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.CLAMP_TO_EDGE);
             Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, Gl.NEAREST);
@@ -109,7 +113,8 @@ namespace Occlusion
             // 깊이 텍스처 초기화 (32비트 부동소수점 포맷)
             _depthTexture = Gl.GenTexture();
             Gl.BindTexture(TextureTarget.Texture2d, _depthTexture);
-            Gl.TexImage2D(TextureTarget.Texture2d, 0, InternalFormat.DepthComponent32f, _width, _height, 0, PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
+            Gl.TexImage2D(TextureTarget.Texture2d, 0, InternalFormat.DepthComponent32f, 
+                _width, _height, 0, PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
             Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.CLAMP_TO_EDGE);
             Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.CLAMP_TO_EDGE);
             float[] borderColor = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -123,9 +128,22 @@ namespace Occlusion
             {
                 _hzbTextures[i] = Gl.GenTexture();
                 Gl.BindTexture(TextureTarget.Texture2d, _hzbTextures[i]);
-                Gl.TexImage2D(TextureTarget.Texture2d, 0, InternalFormat.R32f, _width >> i, _height >> i, 0, PixelFormat.Red, PixelType.Float, IntPtr.Zero);
+
+                Gl.TexImage2D(TextureTarget.Texture2d, 0,
+                    InternalFormat.R32f,
+                    _width >> i, _height >> i, 0,
+                    PixelFormat.Red, PixelType.Float, IntPtr.Zero);
                 Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, Gl.NEAREST);
                 Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, Gl.NEAREST);
+
+                // ✅ 생성 직후 검증
+                int actualFormat = 0;
+                int width = 0;
+                int height = 0;
+                Gl.GetTexLevelParameter(TextureTarget.Texture2d, 0, GetTextureParameter.TextureInternalFormat, out actualFormat);
+                Gl.GetTexLevelParameter(TextureTarget.Texture2d, 0, GetTextureParameter.TextureWidth, out width);
+                Gl.GetTexLevelParameter(TextureTarget.Texture2d, 0, GetTextureParameter.TextureHeight, out height);
+                Console.WriteLine($"HZB Texture {i}: Format = 0x{actualFormat:X} (예상: 0x{(int)InternalFormat.R32f:X}) wxh={width}x{height}, ");
             }
             Gl.BindTexture(TextureTarget.Texture2d, 0);
 
@@ -177,8 +195,8 @@ namespace Occlusion
             {
                 Gl.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2d, _hzbTextures[i], 0);
                 Gl.Viewport(0, 0, _width >> i, _height >> i);
-                _mipmapShader.LoadTexture(HzmMipmapShader.UNIFORM_NAME.DepthBuffer, TextureUnit.Texture0, i == 0 ? _depthTexture : _hzbTextures[i - 1]);
-                _mipmapShader.LoadUniform(HzmMipmapShader.UNIFORM_NAME.LastMipSize, new Vertex2i(_width >> i, _height >> i));
+                _mipmapShader.LoadDepthBuffer(TextureUnit.Texture0, i == 0 ? _depthTexture : _hzbTextures[i - 1]);
+                _mipmapShader.LoadLastMipSize(new Vertex2i(_width >> i, _height >> i));
                 Gl.Disable(EnableCap.DepthTest);
                 Gl.DrawArrays(PrimitiveType.Points, 0, 1);
                 Gl.Enable(EnableCap.DepthTest);
@@ -186,10 +204,7 @@ namespace Occlusion
             _mipmapShader.Unbind();
 
             // 프레임버퍼 상태 복원
-            Gl.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2d, _colorTexture, 0);
-
-            // 프레임버퍼 상태 복원
-            Gl.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0,
+            Gl.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, 
                 TextureTarget.Texture2d, _colorTexture, 0);
         }
 
@@ -210,11 +225,13 @@ namespace Occlusion
                 // 현재 프레임 버퍼에서 깊이 데이터 읽기
                 int w = _width >> i;
                 int h = _height >> i;
-                float[] depthValues = _zbuffer[i];
 
                 // 텍스처에서 직접 읽기
-                Gl.GetTextureImage(_hzbTextures[i], 0, PixelFormat.Red, PixelType.Float, depthValues.Length * sizeof(float), depthValues);
+                Gl.GetTextureImage(_hzbTextures[i], 0, PixelFormat.Red, PixelType.Float,
+                    _zbuffer[i].Length * sizeof(float), _zbuffer[i]);
             }
+
+            Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
         }
 
         // ===================================================================
@@ -385,9 +402,7 @@ namespace Occlusion
         /// <param name="heightScale">높이 스케일</param>
         public void RenderSimpleTerrain(Entity terrianPatchEntity, Matrix4x4f proj, Matrix4x4f view, float heightScale)
         {
-            // 유효성 검사
             if (terrianPatchEntity == null) return;
-
             if (terrianPatchEntity?.Model == null || terrianPatchEntity.Model.Length == 0)
                 throw new ArgumentNullException(nameof(terrianPatchEntity));
 
@@ -395,12 +410,11 @@ namespace Occlusion
             TexturedModel terrainModel = terrianPatchEntity.Model[0] as TexturedModel;
 
             shader.Bind();
-            shader.LoadUniform(TerrainDepthShader.UNIFORM_NAME.proj, proj);
-            shader.LoadUniform(TerrainDepthShader.UNIFORM_NAME.view, view);
-            shader.LoadUniform(TerrainDepthShader.UNIFORM_NAME.model, terrianPatchEntity.ModelMatrix);
-            shader.LoadUniform(TerrainDepthShader.UNIFORM_NAME.heightScale, heightScale);
-            shader.LoadTexture(TerrainDepthShader.UNIFORM_NAME.gHeightMap, TextureUnit.Texture0,
-                terrainModel.Texture == null ? 0 : terrainModel.Texture.TextureID);
+            shader.LoadProjectionMatrix(proj);
+            shader.LoadViewMatrix(view);
+            shader.LoadModelMatrix(terrianPatchEntity.ModelMatrix);
+            shader.LoadHeightScale(heightScale);
+            shader.LoadHeightMap(TextureUnit.Texture0, terrainModel.Texture == null ? 0 : terrainModel.Texture.TextureID);
 
             try
             {
@@ -420,6 +434,74 @@ namespace Occlusion
             }
         }
 
+        public void SaveTextureToImageWithColorMap(int level, string filepath)
+        {
+            if (!Directory.Exists(filepath)) 
+                Directory.CreateDirectory(Path.GetDirectoryName(filepath));
+
+            int levelWidth = _width >> level;
+            int levelHeight = _height >> level;
+            float[] data = new float[levelWidth * levelHeight];
+
+            // GPU에서 데이터 읽기
+            Gl.BindTexture(TextureTarget.Texture2d, _hzbTextures[level]);
+            Gl.GetTexImage(TextureTarget.Texture2d, 0, PixelFormat.Red, PixelType.Float, data);
+            Gl.BindTexture(TextureTarget.Texture2d, 0);
+
+            // 최대값 찾기
+            float maxVal = 0;
+            for (int i = 0; i < data.Length; i++)
+            {
+                maxVal = Math.Max(maxVal, data[i]);
+            }
+
+            Console.WriteLine($"Level {level} 최대값: {maxVal}");
+
+            using (var bitmap = new System.Drawing.Bitmap(levelWidth, levelHeight,
+                   System.Drawing.Imaging.PixelFormat.Format24bppRgb))
+            {
+                for (int y = 0; y < levelHeight; y++)
+                {
+                    for (int x = 0; x < levelWidth; x++)
+                    {
+                        // ✅ Y축 반전: OpenGL은 아래에서 위로, Bitmap은 위에서 아래로
+                        int flippedY = levelHeight - 1 - y;
+                        float value = data[flippedY * levelWidth + x];
+                        float normalized = maxVal > 0 ? value / maxVal : 0;
+
+                        // Jet 컬러맵 (파랑 → 초록 → 빨강)
+                        System.Drawing.Color color;
+                        if (normalized < 0.25f)
+                        {
+                            float t = normalized * 4;
+                            color = System.Drawing.Color.FromArgb(0, (int)(t * 255), 255);
+                        }
+                        else if (normalized < 0.5f)
+                        {
+                            float t = (normalized - 0.25f) * 4;
+                            color = System.Drawing.Color.FromArgb(0, 255, (int)((1 - t) * 255));
+                        }
+                        else if (normalized < 0.75f)
+                        {
+                            float t = (normalized - 0.5f) * 4;
+                            color = System.Drawing.Color.FromArgb((int)(t * 255), 255, 0);
+                        }
+                        else
+                        {
+                            float t = (normalized - 0.75f) * 4;
+                            color = System.Drawing.Color.FromArgb(255, (int)((1 - t) * 255), 0);
+                        }
+
+                        bitmap.SetPixel(x, y, color);
+                    }
+                }
+
+                bitmap.Save(filepath, System.Drawing.Imaging.ImageFormat.Png);
+            }
+
+            Console.WriteLine($"컬러맵 이미지 저장됨: {filepath}");
+        }
+
         /// <summary>
         /// 깊이 버퍼를 화면에 렌더링합니다 (디버깅용).
         /// </summary>
@@ -428,15 +510,26 @@ namespace Occlusion
         /// <param name="level">표시할 밉맵 레벨</param>
         public void RenderDepthBuffer(HzmDepthShader shader, Camera camera, int level)
         {
+            // ✅ 바인딩 전 상태 초기화
+            Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+
             shader.Bind();
-            shader.LoadUniform(HzmDepthShader.UNIFORM_NAME.IsPerspective, false);
-            shader.LoadUniform(HzmDepthShader.UNIFORM_NAME.LOD, level);
-            shader.LoadUniform(HzmDepthShader.UNIFORM_NAME.CameraNear, camera.NEAR);
-            shader.LoadUniform(HzmDepthShader.UNIFORM_NAME.CameraFar, camera.FAR);
-            shader.LoadTexture(HzmDepthShader.UNIFORM_NAME.DepthTexture, TextureUnit.Texture0, _hzbTextures[level]);
+            shader.LoadCameraFar(camera.FAR);
+            shader.LoadCameraNear(camera.NEAR);
+            shader.LoadIsPerspective(false);
+            shader.LoadLOD(level);
+
+            // ✅ 텍스처 바인딩 전 활성화
+            Gl.ActiveTexture(TextureUnit.Texture0);
+            Gl.BindTexture(TextureTarget.Texture2d, _hzbTextures[level]);
+            shader.LoadDepthTexture(TextureUnit.Texture0, _hzbTextures[level]);
+
             Gl.Disable(EnableCap.DepthTest);
             Gl.DrawArrays(PrimitiveType.Points, 0, 1);
             Gl.Enable(EnableCap.DepthTest);
+
+            // ✅ 언바인딩
+            Gl.BindTexture(TextureTarget.Texture2d, 0);
             shader.Unbind();
         }
 
