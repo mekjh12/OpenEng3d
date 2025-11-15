@@ -167,7 +167,8 @@ namespace FormTools
             _hzbuffer.UnbindFramebuffer();
 
             // ✅ 밉맵 생성 (디버깅 코드 제거)
-            _hzbuffer.GenerateMipmapsUsingCompute();
+            _hzbuffer.GenerateMipmapsUsingFragment();
+            //_hzbuffer.ValidateHZBLevels();
 
             //_bvh3f.CullingTestByHiZBuffer(camera.VPMatrix, camera.ViewMatrix, _hzbuffer, canMineVisibleAABB: true);
 

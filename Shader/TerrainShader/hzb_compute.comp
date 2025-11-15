@@ -2,6 +2,7 @@
 
 layout (local_size_x = 16, local_size_y = 16) in;
 
+// ✅ 명시적 이미지 포맷 지정 (AMD 필수)
 layout (binding = 0, r32f) readonly uniform image2D inputDepth;
 layout (binding = 1, r32f) writeonly uniform image2D outputDepth;
 
@@ -12,27 +13,35 @@ void main()
 {
     ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
     
-    // ✅ 범위 체크
+    // 출력 범위 체크
     if (pixelCoord.x >= outputSize.x || pixelCoord.y >= outputSize.y) {
         return;
     }
     
-    // ✅ 입력 좌표 (2x2 블록의 좌상단)
+    // 입력 좌표 계산 (2x2 블록의 좌상단)
     ivec2 inputCoord = pixelCoord * 2;
+    
+    // ✅ AMD GPU: 안전한 초기값 설정
     float maxDepth = 0.0;
     
-    // ✅ 2x2 블록 샘플링 (경계 체크 자동 처리)
+    // 2x2 블록 샘플링
     for (int dy = 0; dy < 2; dy++) {
         for (int dx = 0; dx < 2; dx++) {
             ivec2 sampleCoord = inputCoord + ivec2(dx, dy);
             
+            // ✅ 경계 검사 (중요!)
             if (sampleCoord.x < inputSize.x && sampleCoord.y < inputSize.y) {
+                // ✅ AMD GPU: imageLoad 전 좌표 유효성 재확인
                 float depth = imageLoad(inputDepth, sampleCoord).r;
-                maxDepth = max(maxDepth, depth);
+                
+                // ✅ 유효한 깊이값만 처리 (0.0 ~ 1.0 범위)
+                if (depth >= 0.0 && depth <= 1.0) {
+                    maxDepth = max(maxDepth, depth);
+                }
             }
         }
     }
     
-    // ✅ 출력 저장
+    // ✅ 출력 저장 (r32f 포맷이므로 .r 채널만 사용)
     imageStore(outputDepth, pixelCoord, vec4(maxDepth, 0.0, 0.0, 0.0));
 }
