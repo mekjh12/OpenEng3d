@@ -400,9 +400,10 @@ namespace Terrain
         /// </summary>
         /// <param name="positionInRegionSpace">리전좌표공간의 위치</param>
         /// <returns>해당 위치의 보간된 지형 높이를 포함한 3D 좌표</returns>
-        public Vertex3f GetTerrainHeightVertex3f(Vertex3f positionInRegionSpace)
+        public Vertex3f GetTerrainHeightVertex3f(ref Vertex3f positionInRegionSpace)
         {
-            return _terrainData.GetTerrainHeightVertex3f(positionInRegionSpace);
+            _terrainData.GetTerrainHeightVertex3f(ref positionInRegionSpace);
+            return positionInRegionSpace;
         }
 
         /// <summary>

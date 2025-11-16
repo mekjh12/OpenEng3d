@@ -248,39 +248,44 @@ namespace Geometry
             return true;
         }
 
-
         /// <summary>
         /// AABB3f를 뷰 공간으로 변환합니다.
         /// </summary>
         /// <param name="ViewProjMatrix">뷰-투영 행렬</param>
         /// <param name="view">뷰 행렬</param>
-        /// <returns>뷰 공간의 AABB</returns>
-        public void TransformViewSpace(Matrix4x4f ViewProjMatrix, Matrix4x4f view, ref AABB3f viewAABB)
+        /// <param name="viewAABB"></param>
+        /// <param name="cornersViewSpace">cns 배열의 크기는 8이어야 합니다.</param>
+        public void TransformViewSpace(Matrix4x4f ViewProjMatrix, Matrix4x4f view, ref AABB3f viewAABB, ref Vertex3f[] cornersViewSpace)
         {
-            // AABB의 8개 꼭지점 가져오기
-            Vertex3f[] vertices = Vertices;
+            Vertex3f corner;
+            Vertex4f viewCorner;
+            Vertex4f point;
 
             // 각 꼭지점을 뷰 공간으로 변환
-            Vertex3f[] cns = new Vertex3f[8];
             for (int i = 0; i < 8; i++)
             {
                 // 꼭지점을 4차원 좌표로 변환
-                Vertex4f corner = vertices[i].Vertex4f();
+                corner.x = _vertices[i].x;
+                corner.y = _vertices[i].y;
+                corner.z = _vertices[i].z;
 
                 // 뷰-투영 변환 수행 및 원근 나눗셈
-                Vertex4f viewCorner = ViewProjMatrix * corner;
-                cns[i] = viewCorner.Vertex3fDivideW();
+                viewCorner = ViewProjMatrix * corner;
+
+                cornersViewSpace[i].x = viewCorner.x / viewCorner.w;
+                cornersViewSpace[i].y = viewCorner.y / viewCorner.w;
+                cornersViewSpace[i].z = viewCorner.z / viewCorner.w;
 
                 // z값 보정 (깊이 값 스케일링) 0.001 중요
                 // (TerrainDepthShader에서 null.frag 에서 1000.0f)를 사용하므로 역변환
                 // 1000.0f 가 가장 적당함.
-                Vertex4f point = view * corner;
-                cns[i].z = point.z * 0.0001f;
+                point = view * corner;
+                cornersViewSpace[i].z = point.z * 0.0001f;
             }
 
             // 변환된 꼭지점들로 새로운 AABB 생성
-            viewAABB.Min = Vertex3f.Min(cns);
-            viewAABB.Max = Vertex3f.Max(cns);
+            viewAABB.Min = Vertex3f.Min(cornersViewSpace);
+            viewAABB.Max = Vertex3f.Max(cornersViewSpace);
         }
 
         /// <summary>

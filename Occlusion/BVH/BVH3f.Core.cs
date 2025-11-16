@@ -42,6 +42,7 @@ namespace Occlusion
         uint _countLeafByBB;                // Branch and Bound 기반 삽입된 잎노드의 개수(검사용으로만 사용)
 
         int _linkLeafCount;                 // 링크된 잎 노드 카운터
+        int _finalLeafCount;                // 최종 잎 노드 카운터  
         int _recentTravNodeCount;           // 최근 트래버스된 노드 카운터
 
         public enum INSERT_ALGORITHM_METHOD
@@ -57,6 +58,7 @@ namespace Occlusion
         // -----------------------------------------------------------
 
         public int LinkLeafCount => _linkLeafCount;
+        public int FinalLeafCount => _finalLeafCount;
         public Node3f RecentNode => _recentNode;
         public Node3f Root { get => _root; set => _root = value; }
         public bool IsEmpty => (_root == null);

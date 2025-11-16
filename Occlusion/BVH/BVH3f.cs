@@ -90,10 +90,11 @@ namespace Occlusion
             }
         }
 
-        public void CullingTestByHiZBuffer(Matrix4x4f vp, Matrix4x4f view, HierarchyZBuffer hiZbuffer, bool canMineVisibleAABB = false)
+        public void CullingTestByHiZBuffer(Matrix4x4f vp, Matrix4x4f view, HierarchyZBuffer hiZbuffer, bool isMineAABB = false)
         {
             _recentTravNodeCount = 0;
             _linkLeafCount = 0;
+            _finalLeafCount = 0;
 
             _queue.Clear();
             _queue.Enqueue(_root);
@@ -105,24 +106,32 @@ namespace Occlusion
 
                 _travAABB = _cnode.AABB;
 
-                if (hiZbuffer.TestVisibility(vp, view, _travAABB))
+                if (_cnode.Left && _cnode.Right)
                 {
-                    _recentTravNodeCount++;
-                    if (_cnode.IsLeaf)
+                    if (hiZbuffer.TestVisibility(vp, view, _travAABB))
                     {
-                        if (canMineVisibleAABB && _linkLeafCount < _visibleAABBs.Length)
+                        _recentTravNodeCount++;
+                        if (_cnode.IsLeaf)
                         {
-                            _visibleAABBs[_linkLeafCount] = _travAABB;
+                            if (isMineAABB && _linkLeafCount < _visibleAABBs.Length)
+                            {
+                                _visibleAABBs[_linkLeafCount] = _travAABB;
+                                _finalLeafCount++;
+                            }
+                            _linkLeafCount++;
                         }
-
-                        _linkLeafCount++;
+                        if (_cnode.Left) _queue.Enqueue(_cnode.Child1);
+                        if (_cnode.Right) _queue.Enqueue(_cnode.Child2);
                     }
-                    if (_cnode.Left) _queue.Enqueue(_cnode.Child1);
-                    if (_cnode.Right) _queue.Enqueue(_cnode.Child2);
+                    else
+                    {
+                        _cnode.UnLinkBackCopy();
+                    }
                 }
                 else
                 {
-                    _cnode.UnLinkBackCopy();
+                    if (_cnode.Left) _queue.Enqueue(_cnode.Child1);
+                    if (_cnode.Right) _queue.Enqueue(_cnode.Child2);
                 }
             }
         }
@@ -130,10 +139,11 @@ namespace Occlusion
         /// <summary>
         /// 시야절두체(View Frustum)를 사용하여 객체를 컬링합니다.
         /// </summary>
-        public void CullingTestByViewFrustum(Polyhedron viewPolyhedron, bool canMineVisibleAABB = false)
+        public void CullingTestByViewFrustum(Polyhedron viewPolyhedron, bool isMineAABB = false)
         {
             _recentTravNodeCount = 0;
             _linkLeafCount = 0;
+            _finalLeafCount = 0;
 
             _queue.Clear();
             _queue.Enqueue(_root);
@@ -148,9 +158,10 @@ namespace Occlusion
                     _recentTravNodeCount++;
                     if (_cnode.IsLeaf)
                     {
-                        if (canMineVisibleAABB && _linkLeafCount < _visibleAABBs.Length)
+                        if (isMineAABB && _linkLeafCount < _visibleAABBs.Length)
                         {
                             _visibleAABBs[_linkLeafCount] = _cnode.AABB;
+                            _finalLeafCount++;
                         }
 
                         _linkLeafCount++;

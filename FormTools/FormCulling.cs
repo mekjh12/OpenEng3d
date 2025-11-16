@@ -6,8 +6,8 @@ using Occlusion;
 using OpenGL;
 using Renderer;
 using Shader;
+using Sky;
 using System;
-using System.IO;
 using System.Windows.Forms;
 using Terrain;
 using Ui3d;
@@ -15,31 +15,37 @@ using ZetaExt;
 
 namespace FormTools
 {
-    public partial class FormHZBuffer : Form
+    public partial class FormCulling : Form
     {
         readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
         readonly string EXE_PATH = Application.StartupPath;
 
         private GlControl3 _glControl3;                     // OpenGL 컨트롤
+
         private ColorShader _colorShader;                   // 컬러 셰이더
         private HzmDepthShader _hzmDepthShader;             // HZM 깊이 셰이더
+        private TerrainTessellationShader _terrainShader;   // 지형 테셀레이션 셰이더
+
         private TextNamePlate _textNamePlate;               // 텍스트 네임플레이트
         private Polyhedron _viewFrustum;                    // 뷰 프러스텀
 
         HierarchyZBuffer _hzbuffer;                 // 계층적 GPU Z 버퍼
         TerrainRegion _terrainRegion;               // 지형 영역
+        Texture[] _levelTextureMap = null;          // 지형 레벨 텍스쳐
+        Texture _detailTextureMap = null;           // 지형 디테일 텍스쳐
+
         int _level = 0;                             // 현재 Z 버퍼 레벨
         const int DOWN_LEVEL = 3;                   // 다운샘플링 레벨
         bool _isCullingByHZB = true;                // HZB에 의한 컬링 여부
+        bool _isDepthZBuffer = false;               // 깊이 Z-버퍼 표시 여부
 
         private BVH3f _bvh3f;                       // BVH 구조체
         private AABBBoxShader _aabbBoxShader;       // AABB 박스 셰이더
 
-
         /// <summary>
         /// Hierarchy Z-Buffer 테스트 폼
         /// </summary>
-        public FormHZBuffer()
+        public FormCulling()
         {
             InitializeComponent();
 
@@ -76,7 +82,7 @@ namespace FormTools
             LogProfile.Create(PROJECT_PATH + "\\log.txt");
         }
 
-        private void FormHZBuffer_Load(object sender, EventArgs e)
+        private void FormCulling_Load(object sender, EventArgs e)
         {
             MemoryProfiler.StartFrameMonitoring();
         }
@@ -91,9 +97,11 @@ namespace FormTools
             ShaderManager.Instance.AddShader(new ColorShader(PROJECT_PATH));
             ShaderManager.Instance.AddShader(new HzmDepthShader(PROJECT_PATH));
             ShaderManager.Instance.AddShader(new AABBBoxShader(PROJECT_PATH));
+            ShaderManager.Instance.AddShader(new TerrainTessellationShader(PROJECT_PATH));
             _colorShader = ShaderManager.Instance.GetShader<ColorShader>();
             _hzmDepthShader = ShaderManager.Instance.GetShader<HzmDepthShader>();
             _aabbBoxShader = ShaderManager.Instance.GetShader<AABBBoxShader>();
+            _terrainShader = ShaderManager.Instance.GetShader<TerrainTessellationShader>();
 
             // 앱 시작 시 한 번만 초기화
             Ui3d.BillboardShader.Initialize();
@@ -121,21 +129,35 @@ namespace FormTools
             _terrainRegion.LoadTerrainLowResMap(regionCoord, EXE_PATH + "\\Res\\Terrain\\low\\region0x0.png",
                 completed: () =>
                 {
-                    _terrainRegion.LoadTerrainHighResMap(regionCoord, EXE_PATH + "\\Res\\Terrain\\region_0x0_tiles", null);
-                    
                     // 랜덤 AABB 20개 삽입
                     for (int i = -30; i < 30; i++)
                     {
                         for (int j = -30; j < 30; j++)
                         {
-                            Vertex3f center = new Vertex3f(i * 30, j * 30, Rand.NextFloat * 200f);
+                            Vertex3f center = new Vertex3f(i * 30, j * 30, 0);
                             _terrainRegion.TerrainData.GetTerrainHeightVertex3f(ref center);
                             Vertex3f halfSize = Rand.NextVector3f * 5f + Vertex3f.One * 10.0f;
                             _bvh3f.InsertLeaf(new AABB3f(center - halfSize, center + halfSize));
                         }
                     }
-
                 });
+
+
+            // 지형 레벨 텍스쳐 로딩
+            string heightMap = PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\";
+            string[] levelTextureMap = new string[5];
+            levelTextureMap[0] = EXE_PATH + @"\Res\Terrain\blend\water1.png";
+            levelTextureMap[1] = EXE_PATH + @"\Res\Terrain\blend\grass_1.png";
+            levelTextureMap[2] = EXE_PATH + @"\Res\Terrain\blend\lowestTile.png";
+            levelTextureMap[3] = EXE_PATH + @"\Res\Terrain\blend\HighTile.png";
+            levelTextureMap[4] = EXE_PATH + @"\Res\Terrain\blend\highestTile.png";
+            string detailMap = EXE_PATH + @"\Res\Terrain\blend\detailMap.png";
+            _levelTextureMap = new Texture[levelTextureMap.Length];
+            _detailTextureMap = new Texture(detailMap);
+            for (int i = 0; i < _levelTextureMap.Length; i++)
+            {
+                _levelTextureMap[i] = new Texture(levelTextureMap[i]);
+            }
 
             // 계층적깊이버퍼 생성
             _hzbuffer = new HierarchyZBuffer(width >> DOWN_LEVEL, height >> DOWN_LEVEL, PROJECT_PATH);
@@ -158,14 +180,7 @@ namespace FormTools
 
             _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
             _bvh3f.ClearBackTreeNodeLink();
-            _bvh3f.CullingTestByViewFrustum(_viewFrustum, !_isCullingByHZB);
-
-            _textNamePlate.Text = $"{FramePerSecond.FPS}FPS " +
-                $"해상도={_hzbuffer.Width}x{_hzbuffer.Height} " +
-                $"레벨{_level}/{_hzbuffer.Levels - 1} " +
-                $"가시성통과{_bvh3f.LinkLeafCount}";
-            _textNamePlate.WorldPosition = camera.Position + camera.Forward * 1f - camera.Right * 0.2f;
-            _textNamePlate.Update(deltaTime);
+            _bvh3f.CullingTestByViewFrustum(_viewFrustum, isMineAABB: !_isCullingByHZB);
 
             // ✅ HZB 업데이트
             _hzbuffer.BindFramebuffer();
@@ -177,7 +192,15 @@ namespace FormTools
             // ✅ 밉맵 생성
             _hzbuffer.GenerateMipmapsUsingFragment();
 
-            //_bvh3f.CullingTestByHiZBuffer(camera.VPMatrix, camera.ViewMatrix, _hzbuffer, canMineVisibleAABB: _isCullingByHZB);
+            _bvh3f.CullingTestByHiZBuffer(camera.VPMatrix, camera.ViewMatrix, _hzbuffer, isMineAABB: _isCullingByHZB);
+
+            _textNamePlate.Text = $"{FramePerSecond.FPS}FPS " +
+                $"해상도={_hzbuffer.Width}x{_hzbuffer.Height} " +
+                $"레벨{_level}/{_hzbuffer.Levels - 1} " +
+                $"가시성통과{_bvh3f.LinkLeafCount} " +
+                $"HiZ통과{_bvh3f.FinalLeafCount} ";
+            _textNamePlate.WorldPosition = camera.Position + camera.Forward * 1f - camera.Right * 0.2f;
+            _textNamePlate.Update(deltaTime);
 
         }
 
@@ -191,11 +214,24 @@ namespace FormTools
             Gl.Viewport(0, 0, w, h);
             Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
 
-            // 계층적 Z-버퍼 렌더링
-            _hzbuffer.RenderDepthBuffer(_hzmDepthShader, camera, level: _level);
-
+            if (_isDepthZBuffer)
+            {
+                // 계층적 Z-버퍼 렌더링
+                _hzbuffer.RenderDepthBuffer(_hzmDepthShader, camera, level: _level);
+            }
+            else
+            {
+                // 일반 렌더링 화면
+                Renderer3d.RenderByTerrainTessellationShader(_terrainShader, _terrainRegion.TerrainEntity,camera,_levelTextureMap,                    _detailTextureMap,
+                    isDetailMap: true,
+                    lightDirection: Vertex3f.UnitZ,
+                    vegetationMap: 0,
+                    heightScale: TerrainConstants.DEFAULT_VERTICAL_SCALE
+                    );
+            }
+ 
             // AABB 박스 렌더링
-            //Renderer3d.RenderAABBGeometry(_aabbBoxShader, in _bvh3f.VisibleAABBs, _bvh3f.LinkLeafCount, camera);
+            Renderer3d.RenderAABBGeometry(_aabbBoxShader, in _bvh3f.VisibleAABBs, _bvh3f.LinkLeafCount, camera);
 
             // FPS 렌더링
             _textNamePlate.Render();
@@ -238,8 +274,7 @@ namespace FormTools
             }
             else if (e.KeyCode == Keys.D3)
             {
-                if (Directory.Exists(dirPath)) Directory.Delete(dirPath, true);
-                DebugZBufferVisualizer.SaveAllLevelsAsImages(_hzbuffer.Zbuffer, _hzbuffer.Width, _hzbuffer.Height, dirPath, true);
+                _isDepthZBuffer = !_isDepthZBuffer;
             }
             else if (e.KeyData == Keys.D4)
             {
@@ -247,7 +282,7 @@ namespace FormTools
             }
         }
 
-        private void FormHZBuffer_Resize(object sender, EventArgs e)
+        private void FormCulling_Resize(object sender, EventArgs e)
         {
             int width = _glControl3.Width;
             int height = _glControl3.Height;

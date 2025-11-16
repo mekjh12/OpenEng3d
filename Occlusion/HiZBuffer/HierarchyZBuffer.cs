@@ -352,9 +352,11 @@ namespace Occlusion
         /// <returns>AABB가 보이면 true, 가려졌으면 false</returns>
         public bool TestVisibility(Matrix4x4f vp, Matrix4x4f view, AABB3f aabb)
         {
-            aabb.TransformViewSpace(vp, view, ref _trans);
+            aabb.TransformViewSpace(vp, view, ref _trans, ref _cornersInViewSpace);
             return !TestOcclusion(_trans.Min.x, _trans.Min.y, _trans.Min.z, _trans.Max.x, _trans.Max.y, _trans.Max.z);
         }
+
+        private Vertex3f[] _cornersInViewSpace = new Vertex3f[8];
 
         /// <summary>
         /// AABB가 깊이 버퍼에 의해 가려졌는지 검사한다.

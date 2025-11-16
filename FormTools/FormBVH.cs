@@ -25,6 +25,9 @@ namespace FormTools
 
         private Polyhedron _viewFrustum;
 
+        /// <summary>
+        /// Binary Volume Hierarchy 테스트 폼
+        /// </summary>
         public FormBVH()
         {
             InitializeComponent();

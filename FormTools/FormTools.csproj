@@ -92,6 +92,12 @@
     <Compile Include="FormCloud.Designer.cs">
       <DependentUpon>FormCloud.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormCulling.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormCulling.Designer.cs">
+      <DependentUpon>FormCulling.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormHZBuffer.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -169,6 +175,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormCloud.resx">
       <DependentUpon>FormCloud.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormCulling.resx">
+      <DependentUpon>FormCulling.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormHZBuffer.resx">
       <DependentUpon>FormHZBuffer.cs</DependentUpon>

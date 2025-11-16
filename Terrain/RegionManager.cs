@@ -584,7 +584,7 @@ namespace Terrain
 
             if (_regions.ContainsKey(regionCoord))
             {
-                Vertex3f res = _regions[regionCoord].GetTerrainHeightVertex3f(positionInRegionSpace);
+                Vertex3f res = _regions[regionCoord].GetTerrainHeightVertex3f(ref positionInRegionSpace);
                 res.x = orginalX;
                 res.y = orginalY;
                 return res;

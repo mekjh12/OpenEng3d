@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using ZetaExt;
 using static OpenGL.Gl;
 
@@ -568,6 +569,9 @@ namespace Renderer
         public static void RenderByTerrainTessellationShader(TerrainTessellationShader shader, Entity entity, Camera camera, Texture[] ground,
             Texture detailMap, bool isDetailMap, Vertex3f lightDirection, uint vegetationMap, float heightScale = 1.0f)
         {
+            if (entity is null) return;
+            if (entity.Model == null) return;
+
             GlobalUniformBuffers.BindUBOsToShader(shader.ProgramID);
 
             shader.Bind();
@@ -580,9 +584,9 @@ namespace Renderer
                 Gl.EnableVertexAttribArray(2);
 
                 TexturedModel modelTextured = rawModel as TexturedModel;
-                shader.LoadUniform(TerrainTessellationShader.UNIFORM_NAME.gIsDetailMap, isDetailMap);
-                shader.LoadUniform(TerrainTessellationShader.UNIFORM_NAME.gLightDir, lightDirection);
-                shader.LoadUniform(TerrainTessellationShader.UNIFORM_NAME.heightScale, heightScale);
+                shader.LoadIsDetailMap(isDetailMap);
+                shader.LoadLightDirection(lightDirection);
+                shader.LoadHeightScale(heightScale);
 
                 shader.SetInt("gHeightMap", 0);
                 Gl.ActiveTexture(TextureUnit.Texture0);
@@ -619,11 +623,11 @@ namespace Renderer
                 Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.CLAMP_TO_EDGE);
                 Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.CLAMP_TO_EDGE);
 
-                shader.LoadUniform(TerrainTessellationShader.UNIFORM_NAME.color, entity.Material.Ambient);
-                shader.LoadUniform(TerrainTessellationShader.UNIFORM_NAME.proj, camera.ProjectiveMatrix);
-                shader.LoadUniform(TerrainTessellationShader.UNIFORM_NAME.view, camera.ViewMatrix);
-                shader.LoadUniform(TerrainTessellationShader.UNIFORM_NAME.model, entity.ModelMatrix);
-                shader.LoadUniform(TerrainTessellationShader.UNIFORM_NAME.camPos, camera.Position);
+                shader.LoadColor(entity.Material.Ambient);
+                shader.LoadProjectionMatrix(camera.ProjectiveMatrix);
+                shader.LoadViewMatrix(camera.ViewMatrix);
+                shader.LoadModelMatrix(entity.ModelMatrix);
+                shader.LoadCameraPosition(camera.Position);
 
                 Gl.BindBuffer(BufferTarget.ElementArrayBuffer, rawModel.IBO);
                 Gl.PatchParameter(PatchParameterName.PatchVertices, 4);

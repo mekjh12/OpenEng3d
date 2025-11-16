@@ -336,17 +336,17 @@ namespace Terrain
         /// 입력된 position의 x, y 좌표는 그대로 사용되며,
         /// z 좌표만 계산된 높이값으로 대체됩니다.
         /// </remarks>
-        public Vertex3f GetTerrainHeightVertex3f(Vertex3f positionInRegionSpace)
+        public void GetTerrainHeightVertex3f(ref Vertex3f positionInRegionSpace)
         {
-            float height = GetTerrainHeight(positionInRegionSpace, TerrainConstants.DEFAULT_VERTICAL_SCALE);
-            return new Vertex3f(positionInRegionSpace.x, positionInRegionSpace.y, height);
+            float height = GetTerrainHeight(ref positionInRegionSpace, TerrainConstants.DEFAULT_VERTICAL_SCALE);
+            positionInRegionSpace.z = height;
         }
 
         /// <summary>
         /// 지형의 특정 위치에서 보간된 높이값을 계산합니다.
         /// 두 맵이 모두 로딩된 경우 블렌딩 계수를 사용해 부드럽게 전환합니다.
         /// </summary>
-        public float GetTerrainHeight(Vertex3f positionInRegionSpace, float verticalScale, float blendFactor = 1.0f)
+        public float GetTerrainHeight(ref Vertex3f positionInRegionSpace, float verticalScale, float blendFactor = 1.0f)
         {
             // 아무 높이맵도 로드되지 않았다면 0 반환
             if (!_isLowResLoaded && !_isHighResLoaded) return 0.0f;
@@ -372,7 +372,6 @@ namespace Terrain
                     heightLow = 0.0f;
                 else
                     heightLow = InterpolateHeight(_heightmapLowRes, ix, iy, s, t, _heightmapWidth);
-                    //heightLow = InterpolateHeight(_heightmapLowRes, ix, iy, s, t, _heightmapWidth);
             }
 
             // 고해상도 맵이 로드되어 있다면 고해상도 높이 계산

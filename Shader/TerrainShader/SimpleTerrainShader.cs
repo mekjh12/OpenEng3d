@@ -1,49 +1,34 @@
 ﻿using OpenGL;
-using Shader;
 using Common;
 
 namespace Shader
 {
     /// <summary>
-    /// 지형의 깊이맵 생성을 위한 셰이더입니다.
-    /// 테셀레이션을 사용하여 지형의 높이맵을 처리하고 깊이값만 계산합니다.
+    /// 지형의 간단한 렌더링을 위한 셰이더입니다. (Zero-allocation)
+    /// 테셀레이션을 사용하여 지형의 높이맵을 처리합니다.
     /// </summary>
-    public class SimpleTerrainShader : ShaderProgram<UnlitShader.UNIFORM_NAME>
+    public class SimpleTerrainShader : ShaderProgramBase
     {
-        /// <summary>
-        /// 셰이더의 유니폼 변수 식별자입니다.
-        /// </summary>
-        public enum UNIFORM_NAME
-        {
-            gReversedLightDir,
-            camPos,
-            /// <summary>높이 스케일</summary>
-            heightScale,
-            /// <summary>모델 변환 행렬</summary>
-            model,
-            /// <summary>뷰 변환 행렬</summary>
-            view,
-            /// <summary>투영 변환 행렬</summary>
-            proj,
-            /// <summary>지형의 높이맵 텍스처</summary>
-            gHeightMap,
-            /// <summary>유니폼 변수의 총 개수</summary>
-            Count
-        }
-
         /// <summary>버텍스 셰이더 파일 경로</summary>
         const string VERTEX_FILE = @"\Shader\TerrainShader\terrain.vert";
-        /// <summary>프래그먼트 셰이더 파일 경로 (빈 셰이더)</summary>
+        /// <summary>프래그먼트 셰이더 파일 경로</summary>
         const string FRAGMENT_FILE = @"\Shader\TerrainShader\simple.frag";
-        /// <summary>지오메트리 셰이더 파일 경로 (미사용)</summary>
-        const string GEOMETRY_FILE = "";
         /// <summary>테셀레이션 컨트롤 셰이더 파일 경로</summary>
         const string TCS_FILE = @"\Shader\TerrainShader\simple.tcs.glsl";
         /// <summary>테셀레이션 평가 셰이더 파일 경로</summary>
         const string TES_FILE = @"\Shader\TerrainShader\simple.tes.glsl";
 
+        // ✅ 유니폼 위치 캐싱 (GC 할당 없음)
+        private int loc_gReversedLightDir;
+        private int loc_camPos;
+        private int loc_heightScale;
+        private int loc_model;
+        private int loc_view;
+        private int loc_proj;
+        private int loc_gHeightMap;
+
         /// <summary>
-        /// 지형 깊이맵 셰이더를 초기화합니다.
+        /// 간단한 지형 셰이더를 초기화합니다.
         /// </summary>
         /// <param name="projectPath">셰이더 파일이 위치한 프로젝트 경로</param>
         public SimpleTerrainShader(string projectPath) : base()
@@ -58,15 +43,16 @@ namespace Shader
 
         /// <summary>
         /// 셰이더의 유니폼 변수 위치를 가져옵니다.
-        /// 변환 행렬과 높이맵 텍스처의 위치를 조회합니다.
         /// </summary>
         protected override void GetAllUniformLocations()
         {
-            for (int i = 0; i < (int)UNIFORM_NAME.Count; i++)
-            {
-                string uniformname = ((UNIFORM_NAME)i).ToString();
-                UniformLocation(uniformname);
-            }
+            loc_gReversedLightDir = GetUniformLocation("gReversedLightDir");
+            loc_camPos = GetUniformLocation("camPos");
+            loc_heightScale = GetUniformLocation("heightScale");
+            loc_model = GetUniformLocation("model");
+            loc_view = GetUniformLocation("view");
+            loc_proj = GetUniformLocation("proj");
+            loc_gHeightMap = GetUniformLocation("gHeightMap");
         }
 
         /// <summary>
@@ -78,32 +64,65 @@ namespace Shader
             //base.BindAttribute(0, "position");
         }
 
-        #region Uniform 전달을 위한 기본 함수
+        #region Uniform 로딩 함수 (Zero-allocation)
 
-        public void LoadTexture(UNIFORM_NAME textureUniformName, TextureUnit textureUnit, uint texture)
+        public void LoadTexture(TextureUnit textureUnit, uint texture)
         {
             int ind = textureUnit - TextureUnit.Texture0;
-            base.LoadInt(_location[textureUniformName.ToString()], ind);
+            //base.LoadInt(_location[textureUniformName.ToString()], ind);
             Gl.ActiveTexture(textureUnit);
             Gl.BindTexture(TextureTarget.Texture2d, texture);
         }
 
-        public void LoadUniform(UNIFORM_NAME uniform, float value) => base.LoadFloat(_location[uniform.ToString()], value);
+        /// <summary>역방향 광원 방향을 설정합니다.</summary>
+        public void LoadReversedLightDirection(in Vertex3f direction)
+        {
+            Gl.Uniform3(loc_gReversedLightDir, direction.x, direction.y, direction.z);
+        }
 
-        public void LoadUniform(UNIFORM_NAME uniform, int value) => base.LoadInt(_location[uniform.ToString()], value);
+        /// <summary>카메라 위치를 설정합니다.</summary>
+        public void LoadCameraPosition(in Vertex3f position)
+        {
+            Gl.Uniform3(loc_camPos, position.x, position.y, position.z);
+        }
 
-        public void LoadUniform(UNIFORM_NAME uniform, bool value) => base.LoadBoolean(_location[uniform.ToString()], value);
+        /// <summary>높이 스케일 값을 설정합니다.</summary>
+        public void LoadHeightScale(float scale)
+        {
+            Gl.Uniform1(loc_heightScale, scale);
+        }
 
-        public void LoadUniform(UNIFORM_NAME uniform, Vertex3f vec) => base.LoadVector(_location[uniform.ToString()], vec);
+        /// <summary>모델 변환 행렬을 설정합니다.</summary>
+        public void LoadModelMatrix(in Matrix4x4f matrix)
+        {
+            LoadUniformMatrix4(loc_model, matrix);
+        }
 
-        public void LoadUniform(UNIFORM_NAME uniform, Vertex2f vec) => base.LoadVector(_location[uniform.ToString()], vec);
+        /// <summary>뷰 변환 행렬을 설정합니다.</summary>
+        public void LoadViewMatrix(in Matrix4x4f matrix)
+        {
+            LoadUniformMatrix4(loc_view, matrix);
+        }
 
-        public void LoadUniform(UNIFORM_NAME uniform, Matrix4x4f mat) => base.LoadMatrix(_location[uniform.ToString()], mat);
+        /// <summary>투영 변환 행렬을 설정합니다.</summary>
+        public void LoadProjectionMatrix(in Matrix4x4f matrix)
+        {
+            LoadUniformMatrix4(loc_proj, matrix);
+        }
 
-        public void LoadUniform(UNIFORM_NAME uniform, Matrix3x3f mat) => base.LoadMatrix(_location[uniform.ToString()], mat);
+        /// <summary>
+        /// 높이맵 텍스처를 바인딩합니다.
+        /// </summary>
+        /// <param name="textureUnit">텍스처 유닛</param>
+        /// <param name="texture">텍스처 ID</param>
+        public void LoadHeightMap(TextureUnit textureUnit, uint texture)
+        {
+            int textureIndex = textureUnit - TextureUnit.Texture0;
+            Gl.Uniform1(loc_gHeightMap, textureIndex);
+            Gl.ActiveTexture(textureUnit);
+            Gl.BindTexture(TextureTarget.Texture2d, texture);
+        }
+
         #endregion
-
-
-
     }
 }

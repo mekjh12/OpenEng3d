@@ -164,7 +164,7 @@ namespace Terrain
             Gl.EnableVertexAttribArray(0);
             Gl.EnableVertexAttribArray(1);
 
-            shader.LoadTexture(SimpleTerrainShader.UNIFORM_NAME.gHeightMap, TextureUnit.Texture0, _textureId);
+            shader.LoadTexture(TextureUnit.Texture0, _textureId);
             Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, Gl.LINEAR);
             Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, Gl.LINEAR);
             Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.CLAMP_TO_EDGE);
@@ -189,13 +189,12 @@ namespace Terrain
                 Gl.BindTexture(TextureTarget.Texture2d, adjacentHeightMap[i]);
             }
 
-            shader.LoadUniform(SimpleTerrainShader.UNIFORM_NAME.heightScale, heightScale);
-            shader.LoadUniform(SimpleTerrainShader.UNIFORM_NAME.proj, camera.ProjectiveMatrix);
-            shader.LoadUniform(SimpleTerrainShader.UNIFORM_NAME.view, camera.ViewMatrix);
-            shader.LoadUniform(SimpleTerrainShader.UNIFORM_NAME.model, _model);
-
-            shader.LoadUniform(SimpleTerrainShader.UNIFORM_NAME.camPos, camera.Position);
-            shader.LoadUniform(SimpleTerrainShader.UNIFORM_NAME.gReversedLightDir, -lightDirection);
+            shader.LoadHeightScale(heightScale);
+            shader.LoadProjectionMatrix(camera.ProjectiveMatrix);
+            shader.LoadViewMatrix(camera.ViewMatrix);
+            shader.LoadModelMatrix(_model);
+            shader.LoadCameraPosition(camera.Position);
+            shader.LoadReversedLightDirection(-lightDirection);
 
             Gl.BindBuffer(BufferTarget.ElementArrayBuffer, _rawModel.IBO);
             Gl.PatchParameter(PatchParameterName.PatchVertices, 4);
@@ -206,6 +205,7 @@ namespace Terrain
             Gl.BindVertexArray(0);
 
             shader.Unbind();
+
         }
     }
 }
