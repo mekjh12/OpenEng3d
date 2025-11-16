@@ -4,16 +4,16 @@ using System;
 namespace Occlusion
 {
     /// <summary>
-    /// AMD RX 580 GPU 완전 호환 버전
-    /// 핵심 해결: 이미지 바인딩과 텍스처 접근 사이의 동기화
+    /// 
     /// </summary>
-    public class HierarchicalGpuZBuffer : HierarchicalAbstracZBuffer
+    public class HierarchiyCompZBuffer : HierarchyZBuffer
     {
         protected HzbComputeShader _computeShader;
 
-        public HierarchicalGpuZBuffer(int width, int height, string projectPath)
+        public HierarchiyCompZBuffer(int width, int height, string projectPath)
             : base(width, height, projectPath)
         {
+            // 컴퓨트 셰이더 초기화
             if (_computeShader == null)
                 _computeShader = new HzbComputeShader(projectPath);
 
@@ -58,22 +58,6 @@ namespace Occlusion
             Gl.FramebufferTexture2D(FramebufferTarget.Framebuffer,
                 FramebufferAttachment.ColorAttachment0,
                 TextureTarget.Texture2d, _colorTexture, 0);
-        }
-
-        public void GenerateMipmapsUsingFragment(int maxLevel = -1)
-        {
-            if (maxLevel < 0)
-                maxLevel = _levels - 1;
-
-            BindFramebuffer();
-            GenerateHierachyZBufferOnGPU(maxLevel);
-            UnbindFramebuffer();
-
-            // CPU 전송
-            if (_zbuffer != null)
-            {
-                TransferDepthDataToCPU(maxLevel);
-            }
         }
 
         [Obsolete("이 메서드는 AMD GPU에서 호환성 문제가 발생할 수 있습니다. GenerateMipmapsUsingFragment 메서드를 사용하세요.")]
@@ -159,76 +143,6 @@ namespace Occlusion
             {
                 TransferDepthDataToCPU(maxLevel);
             }
-        }
-
-        /// <summary>
-        /// HZB 레벨 검증 (간소화 버전)
-        /// </summary>
-        public void ValidateHZBLevels()
-        {
-            Console.WriteLine("\n╔═══════════════════════════════════════════╗");
-            Console.WriteLine("║        HZB 전체 레벨 검증 시작           ║");
-            Console.WriteLine("╚═══════════════════════════════════════════╝");
-
-            bool hasErrors = false;
-
-            for (int level = 0; level < _levels; level++)
-            {
-                int w = _width >> level;
-                int h = _height >> level;
-                float[] data = new float[w * h];
-
-                Gl.BindTexture(TextureTarget.Texture2d, _hzbTextures[level]);
-                Gl.GetTexImage(TextureTarget.Texture2d, 0, PixelFormat.Red, PixelType.Float, data);
-                Gl.BindTexture(TextureTarget.Texture2d, 0);
-
-                float minVal = float.MaxValue;
-                float maxVal = float.MinValue;
-                int zeroCount = 0;
-
-                for (int i = 0; i < data.Length; i++)
-                {
-                    float val = data[i];
-                    if (val == 0.0f) zeroCount++;
-                    minVal = Math.Min(minVal, val);
-                    maxVal = Math.Max(maxVal, val);
-                }
-
-                // ✅ 정상 범위: 0.0 ~ 1.0 (정규화된 깊이값)
-                bool isValid = maxVal <= 1.0f || (level == 0 && maxVal <= 1.0f);
-
-                string statusIcon = isValid ? "✅" : "❌";
-                ConsoleColor color = isValid ? ConsoleColor.Green : ConsoleColor.Red;
-
-                if (!isValid) hasErrors = true;
-
-                Console.ForegroundColor = color;
-                Console.WriteLine($"{statusIcon} 레벨 {level} ({w}x{h})");
-                Console.ResetColor();
-                Console.WriteLine($"   깊이 범위: {minVal:F6} ~ {maxVal:F6}");
-                Console.WriteLine($"   통계: Total={data.Length}, Zero={zeroCount}");
-
-                if (!isValid)
-                {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"   ⚠️ 비정상 깊이값 감지! (최댓값 > 1.0)");
-                    Console.ResetColor();
-                }
-            }
-
-            Console.WriteLine("\n╔═══════════════════════════════════════════╗");
-            if (hasErrors)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("║          ❌ 검증 실패 - 오류 발견        ║");
-            }
-            else
-            {
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("║          ✅ 모든 레벨 검증 통과          ║");
-            }
-            Console.ResetColor();
-            Console.WriteLine("╚═══════════════════════════════════════════╝\n");
         }
     }
 }

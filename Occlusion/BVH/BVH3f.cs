@@ -18,6 +18,7 @@ namespace Occlusion
         // 성능 향상용 
         Node3f _cnode = null;               // 순회를 위한 현재 노드
         Queue<Node3f> _queue;               // 순회를 위한 노드 큐
+        AABB3f _travAABB;                     // 순회를 위한 AABB
 
         // -----------------------------------------------------------
         // 속성
@@ -89,7 +90,7 @@ namespace Occlusion
             }
         }
 
-        public void CullingTestByHiZBuffer(Matrix4x4f vp, Matrix4x4f view, HierarchicalZBuffer hiZbuffer, bool canMineVisibleAABB = false)
+        public void CullingTestByHiZBuffer(Matrix4x4f vp, Matrix4x4f view, HierarchyZBuffer hiZbuffer, bool canMineVisibleAABB = false)
         {
             _recentTravNodeCount = 0;
             _linkLeafCount = 0;
@@ -102,14 +103,16 @@ namespace Occlusion
                 _cnode = _queue.Dequeue();
                 if (_cnode == null) continue;
 
-                if (hiZbuffer.TestVisibility(vp, view, _cnode.AABB))
+                _travAABB = _cnode.AABB;
+
+                if (hiZbuffer.TestVisibility(vp, view, _travAABB))
                 {
                     _recentTravNodeCount++;
                     if (_cnode.IsLeaf)
                     {
                         if (canMineVisibleAABB && _linkLeafCount < _visibleAABBs.Length)
                         {
-                            _visibleAABBs[_linkLeafCount] = _cnode.AABB;
+                            _visibleAABBs[_linkLeafCount] = _travAABB;
                         }
 
                         _linkLeafCount++;

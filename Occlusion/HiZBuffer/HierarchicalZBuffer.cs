@@ -1,5 +1,4 @@
-﻿using Common.Abstractions;
-using Model3d;
+﻿using Model3d;
 using OpenGL;
 using Shader;
 using System;
@@ -9,7 +8,8 @@ using System.Threading;
 
 namespace Occlusion
 {
-    public class HierarchicalZBuffer : HierarchicalAbstracZBuffer
+    [Obsolete("이 클래스는 향후 제거될 예정입니다. HierarchyZBuffer 클래스를 사용하십시오.")]
+    public class HierarchicalZBuffer : HierarchyZBuffer
     {
         // ===================================================================
         // 멀티스레딩 필드

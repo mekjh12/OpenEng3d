@@ -237,10 +237,10 @@ namespace FormTools
             {
                 if (terrainRegion.TerrainEntity == null) continue;
                 _hzbuffer.RenderSimpleTerrain(
-                    terrainRegion.TerrainEntity, 
                     camera.ProjectiveMatrix,
                     camera.ViewMatrix,
-                    TerrainConstants.DEFAULT_VERTICAL_SCALE);
+                    TerrainConstants.DEFAULT_VERTICAL_SCALE,
+                terrainRegion.TerrainEntity);
             }
 
             // 계층적 Z-버퍼의 밉맵 생성

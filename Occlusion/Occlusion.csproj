@@ -57,8 +57,8 @@
     <Compile Include="BVH\BVH.cs" />
     <Compile Include="HiZBuffer\DebugZBufferVisualizer.cs" />
     <Compile Include="FogOcclusion.cs" />
-    <Compile Include="HiZBuffer\HierarchicalAbstracZBuffer.cs" />
-    <Compile Include="HiZBuffer\HierarchicalGpuZBuffer.cs" />
+    <Compile Include="HiZBuffer\HierarchyZBuffer.cs" />
+    <Compile Include="HiZBuffer\HierarchiyCompZBuffer.cs" />
     <Compile Include="HiZBuffer\HierarchicalZBuffer.cs" />
     <Compile Include="IOcclusionable.cs" />
     <Compile Include="BVH\Node3f.cs" />

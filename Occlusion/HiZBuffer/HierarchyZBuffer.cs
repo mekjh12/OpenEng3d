@@ -15,7 +15,7 @@ namespace Occlusion
     /// 깊이 맵의 다양한 해상도 레벨을 관리하여 occlusion culling을 수행합니다.
     /// 참고문헌: Hierarchical-Z map based occlusion culling
     /// </summary>
-    public abstract class HierarchicalAbstracZBuffer
+    public class HierarchyZBuffer
     {
         // ===================================================================
         // 상수 정의
@@ -43,8 +43,12 @@ namespace Occlusion
         protected List<float[]> _zbuffer;           // CPU 측 Z-버퍼 배열
 
         // 셰이더
-        protected TerrainDepthShader _terrainDepthShader;     // 간단지형 쉐이더
+        protected TerrainDepthShader _terrainDepthShader;   // 간단지형 쉐이더
         protected HzmMipmapShader _mipmapShader;            // 밉맵쉐이더
+
+        // 임시 변수
+        private AABB3f _trans;                      // AABB 변환용 임시 변수
+
 
         // ===================================================================
         // 속성
@@ -72,7 +76,7 @@ namespace Occlusion
         /// <param name="width">Z-버퍼의 너비 (픽셀 단위)</param>
         /// <param name="height">Z-버퍼의 높이 (픽셀 단위)</param>
         /// <param name="projectPath">셰이더 파일이 위치한 프로젝트의 루트 경로</param>
-        public HierarchicalAbstracZBuffer(int width, int height, string projectPath)
+        public HierarchyZBuffer(int width, int height, string projectPath)
         {
             // 기본 속성 초기화
             _width = width;
@@ -113,7 +117,7 @@ namespace Occlusion
             // 깊이 텍스처 초기화 (32비트 부동소수점 포맷)
             _depthTexture = Gl.GenTexture();
             Gl.BindTexture(TextureTarget.Texture2d, _depthTexture);
-            Gl.TexImage2D(TextureTarget.Texture2d, 0, InternalFormat.DepthComponent32f, 
+            Gl.TexImage2D(TextureTarget.Texture2d, 0, InternalFormat.DepthComponent32f,
                 _width, _height, 0, PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
             Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.CLAMP_TO_EDGE);
             Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.CLAMP_TO_EDGE);
@@ -166,9 +170,109 @@ namespace Occlusion
             }
         }
 
+
+        // ===================================================================
+        // 프레임버퍼 관리
+        // ===================================================================
+
+        /// <summary>
+        /// 현재 프레임버퍼를 HierarchicalZBuffer의 FBO로 바인딩합니다.
+        /// </summary>
+        public void BindFramebuffer()
+        {
+            Gl.BindFramebuffer(FramebufferTarget.Framebuffer, _fbo);
+        }
+
+        /// <summary>
+        /// HierarchicalZBuffer의 FBO에서 해제한다.
+        /// </summary>
+        public void UnbindFramebuffer()
+        {
+            Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+        }
+
+        /// <summary>
+        /// OpenGL 뷰포트를 설정하고 렌더링 깊이 표면을 초기화합니다
+        /// </summary>
+        public void PrepareRenderSurface()
+        {
+            Gl.Viewport(0, 0, _width, _height);
+            Gl.Clear(ClearBufferMask.DepthBufferBit);
+        }
+
+
+        // ===================================================================
+        // 지형 렌더링
+        // ===================================================================
+
+        /// <summary>
+        /// 지형을 간단하게 그려 지평선 깊이맵을 생성합니다.
+        /// 
+        /// 주의: 지형 렌더링시 오클루더로 나무와 같은 작은 오브젝트 사용은 권장하지 않습니다.
+        /// 깜빡임 현상이 발생할 수 있습니다.
+        /// </summary>
+        /// <param name="proj">투영 행렬</param>
+        /// <param name="view">뷰 행렬</param>
+        /// <param name="heightScale">높이 스케일</param>
+        /// <param name="terrianPatchEntity">지형 패치</param>
+        public void RenderSimpleTerrain(Matrix4x4f proj, Matrix4x4f view, float heightScale, Entity terrianPatchEntity)
+        {
+            if (terrianPatchEntity == null) return;
+            if (terrianPatchEntity?.Model == null || terrianPatchEntity.Model.Length == 0)
+                throw new ArgumentNullException(nameof(terrianPatchEntity));
+
+            TerrainDepthShader shader = _terrainDepthShader;
+            TexturedModel terrainModel = terrianPatchEntity.Model[0] as TexturedModel;
+
+            shader.Bind();
+            shader.LoadProjectionMatrix(proj);
+            shader.LoadViewMatrix(view);
+            shader.LoadModelMatrix(terrianPatchEntity.ModelMatrix);
+            shader.LoadHeightScale(heightScale);
+            shader.LoadHeightMap(TextureUnit.Texture0, terrainModel.Texture == null ? 0 : terrainModel.Texture.TextureID);
+
+            try
+            {
+                Gl.BindVertexArray(terrainModel.VAO);
+                Gl.EnableVertexAttribArray(POSITION_ATTRIB);
+                Gl.EnableVertexAttribArray(TEXCOORD_ATTRIB);
+                Gl.BindBuffer(BufferTarget.ElementArrayBuffer, terrainModel.IBO);
+                Gl.PatchParameter(PatchParameterName.PatchVertices, PATCH_VERTICES);
+                Gl.DrawElements(PrimitiveType.Patches, terrainModel.VertexCount, DrawElementsType.UnsignedInt, IntPtr.Zero);
+            }
+            finally
+            {
+                Gl.DisableVertexAttribArray(TEXCOORD_ATTRIB);
+                Gl.DisableVertexAttribArray(POSITION_ATTRIB);
+                Gl.BindVertexArray(0);
+                shader.Unbind();
+            }
+        }
+
+
         // ===================================================================
         // 계층적 Z-버퍼 생성
         // ===================================================================
+
+        /// <summary>
+        /// Fragment 셰이더를 사용하여 밉맵을 생성합니다.
+        /// </summary>
+        /// <param name="maxLevel">생성할 최대 레벨</param>
+        public void GenerateMipmapsUsingFragment(int maxLevel = -1)
+        {
+            if (maxLevel < 0)
+                maxLevel = _levels - 1;
+
+            BindFramebuffer();
+            GenerateHierachyZBufferOnGPU(maxLevel);
+            UnbindFramebuffer();
+
+            // CPU 전송
+            if (_zbuffer != null)
+            {
+                TransferDepthDataToCPU(maxLevel);
+            }
+        }
 
         /// <summary>
         /// 밉맵쉐이더를 이용하여 GPU에서 계층적 깊이 맵을 생성합니다.
@@ -204,7 +308,7 @@ namespace Occlusion
             _mipmapShader.Unbind();
 
             // 프레임버퍼 상태 복원
-            Gl.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, 
+            Gl.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0,
                 TextureTarget.Texture2d, _colorTexture, 0);
         }
 
@@ -234,10 +338,11 @@ namespace Occlusion
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
         }
 
+
         // ===================================================================
         // Occlusion Culling 테스트
         // ===================================================================
-        AABB3f _trans;
+
         /// <summary>
         /// AABB가 시야에 보이는지 검사합니다.
         /// </summary>
@@ -278,7 +383,7 @@ namespace Occlusion
             // 유효성 검사
             if (minx >= maxx || miny >= maxy) return true;                              // AABB 유효성 검사
             if (maxx < 0.0f || minx > 1.0f || maxy < 0.0f || miny > 1.0f) return true;  // 뷰포트 검사
-            if (Zbuffer == null || Zbuffer.Count == 0) return true;                   // 버퍼 검사
+            if (Zbuffer == null || Zbuffer.Count == 0) return true;                     // 버퍼 검사
 
             // 스크린 공간 영역 계산(s=start, e=end)
             int sx = Math.Max(0, (int)(minx * _width) - EXTRA_PADDING);
@@ -343,36 +448,6 @@ namespace Occlusion
 
 
         // ===================================================================
-        // 프레임버퍼 관리
-        // ===================================================================
-
-        /// <summary>
-        /// 현재 프레임버퍼를 HierarchicalZBuffer의 FBO로 바인딩합니다.
-        /// </summary>
-        public void BindFramebuffer()
-        {
-            Gl.BindFramebuffer(FramebufferTarget.Framebuffer, _fbo);
-        }
-
-        /// <summary>
-        /// HierarchicalZBuffer의 FBO에서 해제한다.
-        /// </summary>
-        public void UnbindFramebuffer()
-        {
-            Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-        }
-
-        /// <summary>
-        /// OpenGL 뷰포트를 설정하고 렌더링 깊이 표면을 초기화합니다
-        /// </summary>
-        public void PrepareRenderSurface()
-        {
-            Gl.Viewport(0, 0, _width, _height);
-            Gl.Clear(ClearBufferMask.DepthBufferBit);
-        }
-
-
-        // ===================================================================
         // 유틸리티 메서드
         // ===================================================================
 
@@ -390,53 +465,18 @@ namespace Occlusion
         }
 
 
+        // ===================================================================
+        // 디버깅 및 시각화
+        // ===================================================================
+
         /// <summary>
-        /// 지형을 간단하게 그려 지평선 깊이맵을 생성합니다.
-        /// 
-        /// 주의: 지형 렌더링시 오클루더로 나무와 같은 작은 오브젝트 사용은 권장하지 않습니다.
-        /// 깜빡임 현상이 발생할 수 있습니다.
+        /// 텍스처를 컬러맵 이미지로 저장합니다.
         /// </summary>
-        /// <param name="terrianPatchEntity">지형 패치</param>
-        /// <param name="proj">투영 행렬</param>
-        /// <param name="view">뷰 행렬</param>
-        /// <param name="heightScale">높이 스케일</param>
-        public void RenderSimpleTerrain(Entity terrianPatchEntity, Matrix4x4f proj, Matrix4x4f view, float heightScale)
-        {
-            if (terrianPatchEntity == null) return;
-            if (terrianPatchEntity?.Model == null || terrianPatchEntity.Model.Length == 0)
-                throw new ArgumentNullException(nameof(terrianPatchEntity));
-
-            TerrainDepthShader shader = _terrainDepthShader;
-            TexturedModel terrainModel = terrianPatchEntity.Model[0] as TexturedModel;
-
-            shader.Bind();
-            shader.LoadProjectionMatrix(proj);
-            shader.LoadViewMatrix(view);
-            shader.LoadModelMatrix(terrianPatchEntity.ModelMatrix);
-            shader.LoadHeightScale(heightScale);
-            shader.LoadHeightMap(TextureUnit.Texture0, terrainModel.Texture == null ? 0 : terrainModel.Texture.TextureID);
-
-            try
-            {
-                Gl.BindVertexArray(terrainModel.VAO);
-                Gl.EnableVertexAttribArray(POSITION_ATTRIB);
-                Gl.EnableVertexAttribArray(TEXCOORD_ATTRIB);
-                Gl.BindBuffer(BufferTarget.ElementArrayBuffer, terrainModel.IBO);
-                Gl.PatchParameter(PatchParameterName.PatchVertices, PATCH_VERTICES);
-                Gl.DrawElements(PrimitiveType.Patches, terrainModel.VertexCount, DrawElementsType.UnsignedInt, IntPtr.Zero);
-            }
-            finally
-            {
-                Gl.DisableVertexAttribArray(TEXCOORD_ATTRIB);
-                Gl.DisableVertexAttribArray(POSITION_ATTRIB);
-                Gl.BindVertexArray(0);
-                shader.Unbind();
-            }
-        }
-
+        /// <param name="level">저장할 밉맵 레벨</param>
+        /// <param name="filepath">저장할 파일 경로</param>
         public void SaveTextureToImageWithColorMap(int level, string filepath)
         {
-            if (!Directory.Exists(filepath)) 
+            if (!Directory.Exists(filepath))
                 Directory.CreateDirectory(Path.GetDirectoryName(filepath));
 
             int levelWidth = _width >> level;

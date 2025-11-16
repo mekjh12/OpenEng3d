@@ -26,10 +26,11 @@ namespace FormTools
         private TextNamePlate _textNamePlate;               // 텍스트 네임플레이트
         private Polyhedron _viewFrustum;                    // 뷰 프러스텀
 
-        HierarchicalGpuZBuffer _hzbuffer;           // 계층적 GPU Z 버퍼
+        HierarchyZBuffer _hzbuffer;                 // 계층적 GPU Z 버퍼
         TerrainRegion _terrainRegion;               // 지형 영역
         int _level = 0;                             // 현재 Z 버퍼 레벨
-        const int DOWN_LEVEL = 0;                   // 다운샘플링 레벨
+        const int DOWN_LEVEL = 3;                   // 다운샘플링 레벨
+        bool _isCullingByHZB = true;                // HZB에 의한 컬링 여부
 
         private BVH3f _bvh3f;                       // BVH 구조체
         private AABBBoxShader _aabbBoxShader;       // AABB 박스 셰이더
@@ -111,23 +112,30 @@ namespace FormTools
             _bvh3f = new BVH3f(4000);
             _bvh3f.Clear();
 
-            // 랜덤 AABB 20개 삽입
-            for (int i = -30; i < 30; i++)
-            {
-                for (int j = -30; j < 30; j++)
+            // 지형 영역 초기화
+            RegionCoord regionCoord = new RegionCoord(0, 0);
+            _terrainRegion = new TerrainRegion(regionCoord, chunkSize: 100, n: 10, null);
+            _terrainRegion.LoadTerrainLowResMap(regionCoord, EXE_PATH + "\\Res\\Terrain\\low\\region0x0.png",
+                completed: () =>
                 {
-                    Vertex3f center = new Vertex3f(i * 25f, j * 25, Rand.NextFloat * 200f);
-                    Vertex3f halfSize = Rand.NextVector3f * 5f + Vertex3f.One * 10.0f;
-                    _bvh3f.InsertLeaf(new AABB3f(center - halfSize, center + halfSize));
-                }
-            }
+                    _terrainRegion.LoadTerrainHighResMap(regionCoord, EXE_PATH + "\\Res\\Terrain\\region_0x0_tiles", null);
+                    
+                    // 랜덤 AABB 20개 삽입
+                    for (int i = -30; i < 30; i++)
+                    {
+                        for (int j = -30; j < 30; j++)
+                        {
+                            Vertex3f center = new Vertex3f(i * 30, j * 30, Rand.NextFloat * 200f);
+                            center = _terrainRegion.TerrainData.GetTerrainHeightVertex3f(center);
+                            Vertex3f halfSize = Rand.NextVector3f * 5f + Vertex3f.One * 10.0f;
+                            _bvh3f.InsertLeaf(new AABB3f(center - halfSize, center + halfSize));
+                        }
+                    }
+
+                });
 
             // 계층적깊이버퍼 생성
-            _hzbuffer = new HierarchicalGpuZBuffer(width >> DOWN_LEVEL, height >> DOWN_LEVEL, PROJECT_PATH);
-
-            // 지형 영역 초기화
-            _terrainRegion = new TerrainRegion(new RegionCoord(0, 0), chunkSize: 100, n: 10, null);
-            _terrainRegion.LoadTerrainLowResMap(new RegionCoord(0, 0), EXE_PATH + "\\Res\\Terrain\\low\\region0x0.png");
+            _hzbuffer = new HierarchyZBuffer(width >> DOWN_LEVEL, height >> DOWN_LEVEL, PROJECT_PATH);
 
             // 셰리더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
@@ -147,7 +155,7 @@ namespace FormTools
 
             _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
             _bvh3f.ClearBackTreeNodeLink();
-            _bvh3f.CullingTestByViewFrustum(_viewFrustum, canMineVisibleAABB: true);
+            _bvh3f.CullingTestByViewFrustum(_viewFrustum, canMineVisibleAABB: !_isCullingByHZB);
 
             _textNamePlate.Text = $"{FramePerSecond.FPS}FPS " +
                 $"해상도={_hzbuffer.Width}x{_hzbuffer.Height} " +
@@ -159,18 +167,14 @@ namespace FormTools
             // ✅ HZB 업데이트
             _hzbuffer.BindFramebuffer();
             _hzbuffer.PrepareRenderSurface();
-            _hzbuffer.RenderSimpleTerrain(
-                _terrainRegion.TerrainEntity,
-                camera.ProjectiveMatrix,
-                camera.ViewMatrix,
-                TerrainConstants.DEFAULT_VERTICAL_SCALE);
+            _hzbuffer.RenderSimpleTerrain(camera.ProjectiveMatrix, camera.ViewMatrix, TerrainConstants.DEFAULT_VERTICAL_SCALE,
+                _terrainRegion.TerrainEntity);
             _hzbuffer.UnbindFramebuffer();
 
-            // ✅ 밉맵 생성 (디버깅 코드 제거)
+            // ✅ 밉맵 생성
             _hzbuffer.GenerateMipmapsUsingFragment();
-            //_hzbuffer.ValidateHZBLevels();
 
-            //_bvh3f.CullingTestByHiZBuffer(camera.VPMatrix, camera.ViewMatrix, _hzbuffer, canMineVisibleAABB: true);
+            //_bvh3f.CullingTestByHiZBuffer(camera.VPMatrix, camera.ViewMatrix, _hzbuffer, canMineVisibleAABB: _isCullingByHZB);
 
         }
 
@@ -184,14 +188,14 @@ namespace FormTools
             Gl.Viewport(0, 0, w, h);
             Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
 
-            // FPS 렌더링
-            _textNamePlate.Render();
-
             // 계층적 Z-버퍼 렌더링
             _hzbuffer.RenderDepthBuffer(_hzmDepthShader, camera, level: _level);
 
             // AABB 박스 렌더링
             //Renderer3d.RenderAABBGeometry(_aabbBoxShader, in _bvh3f.VisibleAABBs, _bvh3f.LinkLeafCount, camera);
+
+            // FPS 렌더링
+            _textNamePlate.Render();
 
             // 카메라 중심점 렌더링
             Renderer3d.RenderPoint(_colorShader, camera.PivotPosition, camera, new Vertex4f(1, 1, 0, 1), 0.02f);
@@ -236,11 +240,7 @@ namespace FormTools
             }
             else if (e.KeyData == Keys.D4)
             {
-                if (Directory.Exists(dirPath)) Directory.Delete(dirPath, true);
-                for (int i = 0; i < 5; i++)
-                {
-                    _hzbuffer.SaveTextureToImageWithColorMap(i, dirPath + $"\\hzb_level{i}.png");
-                }
+                _isCullingByHZB = !_isCullingByHZB;
             }
         }
 
@@ -248,7 +248,7 @@ namespace FormTools
         {
             int width = _glControl3.Width;
             int height = _glControl3.Height;
-            //_hzbuffer = new HierarchicalGpuZBuffer(width >> DOWN_LEVEL, height >> DOWN_LEVEL, PROJECT_PATH);
+            _hzbuffer = new HierarchyZBuffer(width >> DOWN_LEVEL, height >> DOWN_LEVEL, PROJECT_PATH);
         }
     }
 }
