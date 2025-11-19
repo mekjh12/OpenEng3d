@@ -3,14 +3,11 @@ using FastMath;
 using Geometry;
 using GlWindow;
 using Occlusion;
-using Occlusion.Visualization;
 using OpenGL;
 using Renderer;
 using Shader;
-using Sky;
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Drawing;
 using System.Windows.Forms;
 using Terrain;
 using Ui3d;
@@ -18,19 +15,25 @@ using ZetaExt;
 
 namespace FormTools
 {
-    public partial class FormCulling : Form
+    public partial class FormQuadTree : Form, GlControlerable
     {
         readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
         readonly string EXE_PATH = Application.StartupPath;
 
         private GlControl3 _glControl3;                     // OpenGL 컨트롤
+        private bool _isLoaded = false;                     // 로드 여부
 
         private ColorShader _colorShader;                   // 컬러 셰이더
         private HzmDepthShader _hzmDepthShader;             // HZM 깊이 셰이더
         private TerrainTessellationShader _terrainShader;   // 지형 테셀레이션 셰이더
+        private AABBBoxShader _aabbBoxShader;               // AABB 박스 셰이더
 
         private TextNamePlate _textNamePlate;               // 텍스트 네임플레이트
         private Polyhedron _viewFrustum;                    // 뷰 프러스텀
+        private Text2d _fpsText;                            // FPS 텍스트
+        private Text2d _titleText;                          // 타이틀 텍스트
+
+        private QuadTree3f _quadTree;
 
         HierarchyZBuffer _hzbuffer;                 // 계층적 GPU Z 버퍼
         TerrainRegion _terrainRegion;               // 지형 영역
@@ -39,16 +42,10 @@ namespace FormTools
 
         int _level = 0;                             // 현재 Z 버퍼 레벨
         const int DOWN_LEVEL = 3;                   // 다운샘플링 레벨
-        bool _isCullingByHZB = true;                // HZB에 의한 컬링 여부
         bool _isDepthZBuffer = false;               // 깊이 Z-버퍼 표시 여부
+        bool _isViewFrustum = false;                // 뷰 프러스텀 표시 여부
 
-        private BVH3f _bvh3f;                       // BVH 구조체
-        private AABBBoxShader _aabbBoxShader;       // AABB 박스 셰이더
-
-        /// <summary>
-        /// Hierarchy Z-Buffer 테스트 폼
-        /// </summary>
-        public FormCulling()
+        public FormQuadTree()
         {
             InitializeComponent();
 
@@ -72,6 +69,7 @@ namespace FormTools
             _glControl3.MouseUp += (s, e) => MouseUpEvent(s, e);
             _glControl3.KeyDown += (s, e) => KeyDownEvent(s, e);
             _glControl3.KeyUp += (s, e) => KeyUpEvent(s, e);
+            _glControl3.Load += (s, e) => Form_Load(s, e);
 
             // GL 컨트롤 시작
             _glControl3.Start();
@@ -83,11 +81,6 @@ namespace FormTools
 
             // 로그 프로파일 초기화
             LogProfile.Create(PROJECT_PATH + "\\log.txt");
-        }
-
-        private void FormCulling_Load(object sender, EventArgs e)
-        {
-            MemoryProfiler.StartFrameMonitoring();
         }
 
         public void Init(int width, int height)
@@ -110,6 +103,17 @@ namespace FormTools
             Ui3d.BillboardShader.Initialize();
         }
 
+        public void Init2d(int width, int height)
+        {            
+            _fpsText = new Text2d("FPS: 60.0", 10, 10, width, height,
+                Text2d.TextAlignment.Left,heightInPixels: 20);
+            _fpsText.Color = Color.Yellow;
+
+            _titleText = new Text2d("게임 제목", width / 2, 10, width, height,
+                Text2d.TextAlignment.Center, heightInPixels: 20);
+            _titleText.Color = Color.White;
+        }
+
         public void Init3d(int width, int height)
         {
             // 그리드셰이더 초기화
@@ -122,9 +126,8 @@ namespace FormTools
             CharacterTextureAtlas.Initialize();
             TextBillboardShader.Initialize();
 
-            // BVH 구조체 초기화
-            _bvh3f = new BVH3f(4000);
-            _bvh3f.Clear();
+            AABB3f worldBound = new AABB3f(new Vertex3f(-3000, -3000, 0), new Vertex3f(3000, 3000, 1000));
+            _quadTree = new QuadTree3f(worldBound);
 
             // 지형 영역 초기화
             RegionCoord regionCoord = new RegionCoord(0, 0);
@@ -132,9 +135,8 @@ namespace FormTools
             _terrainRegion.LoadTerrainLowResMap(regionCoord, EXE_PATH + "\\Res\\Terrain\\low\\region0x0.png",
                 completed: () =>
                 {
-                    // 랜덤 AABB 20개 삽입
-                    int numBoxes = 47;
-                    List<AABB3f> boxList = new List<AABB3f>();
+                    int idx = 0;
+                    int numBoxes = 1;
                     for (int i = -numBoxes; i < numBoxes; i++)
                     {
                         for (int j = -numBoxes; j < numBoxes; j++)
@@ -142,21 +144,15 @@ namespace FormTools
                             Vertex3f center = new Vertex3f(i * 30, j * 30, 0);
                             _terrainRegion.TerrainData.GetTerrainHeightVertex3f(ref center);
                             Vertex3f halfSize = Rand.NextVector3f * 5f + Vertex3f.One * 10.0f;
-                            boxList.Add(new AABB3f(center - halfSize, center + halfSize));
+                            AABB3f aabb = new AABB3f(center - halfSize, center + halfSize);
+                            _quadTree.Insert(aabb, idx, center);
+                            idx++;
                         }
                     }
- 
-                    for (int i = 0; i < boxList.Count; i++)
-                    {
-                        _bvh3f.InsertLeaf(boxList[i], BVH3f.INSERT_ALGORITHM_METHOD.BRANCH_AND_BOUND);
-                    }
-
-                    // 히트맵 저장
-                    BVHBalanceHeatmap.SaveHeatmap(_bvh3f.Root,
-                        PROJECT_PATH + "/bvh_heatmap_basic.png",
-                        width: numBoxes*2,
-                        height: numBoxes*2);
+                    _isLoaded = true;
+                    _quadTree.PrintStatistics();
                 });
+
 
             // 지형 레벨 텍스쳐 로딩
             string heightMap = PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\";
@@ -181,21 +177,15 @@ namespace FormTools
             FileHashManager.SaveHashes();
         }
 
-        public void Init2d(int width, int height)
-        {
-            // 화면 구성요소 초기화
-
-            // 전체화면 모드 설정
-            //if (Screen.PrimaryScreen.DeviceName.IndexOf("DISPLAY") > 0) _glControl3.FullScreen(true);
-        }
-
         public void UpdateFrame(int deltaTime, int width, int height, Camera camera)
         {
             float duration = deltaTime * 0.001f;
+            if (!_isLoaded) return;
 
             _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
-            _bvh3f.ClearBackTreeNodeLink();
-            _bvh3f.CullingTestByViewFrustum(_viewFrustum, isMineAABB: !_isCullingByHZB);
+
+            _quadTree.Clear();
+            _quadTree.CullingTestByViewFrustum(_viewFrustum);
 
             // ✅ HZB 업데이트
             _hzbuffer.BindFramebuffer();
@@ -207,20 +197,20 @@ namespace FormTools
             // ✅ 밉맵 생성
             _hzbuffer.GenerateMipmapsUsingFragment();
 
-            _bvh3f.CullingTestByHiZBuffer(camera.VPMatrix, camera.ViewMatrix, _hzbuffer, isMineAABB: _isCullingByHZB);
-
-            _textNamePlate.Text = $"{FramePerSecond.FPS}FPS " +
-                $"해상도={_hzbuffer.Width}x{_hzbuffer.Height} " +
-                $"레벨{_level}/{_hzbuffer.Levels - 1} " +
-                $"가시성통과{_bvh3f.LinkLeafCount} " +
-                $"HiZ통과{_bvh3f.FinalLeafCount} ";
+            // 네임플레이트 업데이트            
+            _textNamePlate.Text = $"뷰컬링수{_quadTree.TempAABBCount}개";
             _textNamePlate.WorldPosition = camera.Position + camera.Forward * 1f - camera.Right * 0.2f;
             _textNamePlate.Update(deltaTime);
 
+            // 렌더링 루프에서
+            _fpsText.Text = $"FPS: {FramePerSecond.FPS:F1}";
+            _titleText.Text = $"해상도={_hzbuffer.Width}x{_hzbuffer.Height} 레벨{_level}/{_hzbuffer.Levels - 1}";
         }
 
         public void RenderFrame(double deltaTime, Vertex4f backcolor, Camera camera)
         {
+            if (!_isLoaded) return;
+
             int w = _glControl3.Width;
             int h = _glControl3.Height;
 
@@ -237,48 +227,46 @@ namespace FormTools
             else
             {
                 // 일반 렌더링 화면
-                Renderer3d.RenderByTerrainTessellationShader(_terrainShader, _terrainRegion.TerrainEntity,camera,_levelTextureMap,                    _detailTextureMap,
+                Renderer3d.RenderByTerrainTessellationShader(_terrainShader, _terrainRegion.TerrainEntity, camera, _levelTextureMap, _detailTextureMap,
                     isDetailMap: true,
                     lightDirection: Vertex3f.UnitZ,
                     vegetationMap: 0,
                     heightScale: TerrainConstants.DEFAULT_VERTICAL_SCALE
                     );
             }
- 
+
             // AABB 박스 렌더링
-            Renderer3d.RenderAABBGeometry(_aabbBoxShader, in _bvh3f.VisibleAABBs, _bvh3f.LinkLeafCount, camera);
+            Renderer3d.RenderAABBGeometry(_aabbBoxShader, in _quadTree.NodeAABBs, _quadTree.TempAABBCount, camera);
+
+            // 2D 렌더링을 위한 완전한 상태 리셋
+            Gl.Disable(EnableCap.DepthTest);           // 깊이 테스트 끄기
+            Gl.Enable(EnableCap.Blend);                // 블렌딩 켜기
+            Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            Gl.Disable(EnableCap.CullFace);            // 컬링 끄기
+            Gl.Viewport(0, 0, w, h);
 
             // FPS 렌더링
+            Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
             _textNamePlate.Render();
+            _fpsText.Render();
+            _titleText.Render();
 
             // 카메라 중심점 렌더링
             Renderer3d.RenderPoint(_colorShader, camera.PivotPosition, camera, new Vertex4f(1, 1, 0, 1), 0.02f);
             Gl.Enable(EnableCap.DepthTest);
         }
 
-        private void MouseDnEvent(object sender, MouseEventArgs e)
+        public void Form_Load(object sender, EventArgs e)
         {
-            if (e.Button == MouseButtons.Right)
-            {
-                _glControl3.MouseMode = GlControl3.MOUSE_GAME_MODE.CAMERA_ROUND_ROT;
-            }
+            MemoryProfiler.StartFrameMonitoring();
         }
 
-        private void MouseUpEvent(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Right)
-            {
-                _glControl3.MouseMode = GlControl3.MOUSE_GAME_MODE.NONE;
-            }
-        }
-
-        private void KeyDownEvent(object sender, KeyEventArgs e)
+        public void KeyDownEvent(object sender, KeyEventArgs e)
         {
         }
 
-        private void KeyUpEvent(object sender, KeyEventArgs e)
+        public void KeyUpEvent(object sender, KeyEventArgs e)
         {
-            string dirPath = @"C:\Users\mekjh\OneDrive\바탕 화면\HiZ";
             if (e.KeyCode == Keys.D1)
             {
                 _level = Math.Max(0, _level - 1);
@@ -291,17 +279,38 @@ namespace FormTools
             {
                 _isDepthZBuffer = !_isDepthZBuffer;
             }
-            else if (e.KeyData == Keys.D4)
+            else if (e.KeyCode == Keys.D4)
             {
-                _isCullingByHZB = !_isCullingByHZB;
+                _isViewFrustum = !_isViewFrustum;
             }
         }
 
-        private void FormCulling_Resize(object sender, EventArgs e)
+        public void MouseDnEvent(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                _glControl3.MouseMode = GlControl3.MOUSE_GAME_MODE.CAMERA_ROUND_ROT;
+            }
+        }
+
+        public void MouseUpEvent(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                _glControl3.MouseMode = GlControl3.MOUSE_GAME_MODE.NONE;
+            }
+        }
+
+        private void FormQuadTree_Resize(object sender, EventArgs e)
         {
             int width = _glControl3.Width;
             int height = _glControl3.Height;
             _hzbuffer = new HierarchyZBuffer(width >> DOWN_LEVEL, height >> DOWN_LEVEL, PROJECT_PATH);
+        }
+
+        private void FormQuadTree_Load(object sender, EventArgs e)
+        {
+
         }
     }
 }

@@ -55,9 +55,9 @@ namespace Renderer
         private static uint _aabbCenterVBO = 0;
         private static bool _isAABBBoxSetup = false;
 
-        private static Vertex3f[] _aabbCenters = new Vertex3f[10000];
-        private static Vertex3f[] _aabbHalfSizes = new Vertex3f[10000];
-        private static Vertex4f[] _aabbColors = new Vertex4f[10000];
+        private static Vertex3f[] _aabbCenters = new Vertex3f[100000];
+        private static Vertex3f[] _aabbHalfSizes = new Vertex3f[100000];
+        private static Vertex4f[] _aabbColors = new Vertex4f[100000];
 
         /// <summary>
         /// 지오메트리 셰이더를 사용한 AABB 렌더링

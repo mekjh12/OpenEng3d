@@ -204,6 +204,14 @@ namespace Ui3d
         }
 
         /// <summary>
+        /// 인스턴스 개수를 직접 설정 (외부에서 데이터를 직접 관리할 때 사용)
+        /// </summary>
+        public void SetInstanceCount(int count)
+        {
+            _instanceCount = count;
+        }
+
+        /// <summary>
         /// 인스턴스 VBO를 VAO에 설정
         /// </summary>
         /// <param name="vao">설정할 VAO</param>

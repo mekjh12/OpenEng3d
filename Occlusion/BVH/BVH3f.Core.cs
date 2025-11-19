@@ -48,7 +48,8 @@ namespace Occlusion
         public enum INSERT_ALGORITHM_METHOD
         {
             GLOBAL_SEARCH,
-            BRANCH_AND_BOUND
+            BRANCH_AND_BOUND,
+            BRANCH_AND_BOUND_BALANCED
         }
 
         private const string STRING_NODE_ISNOT_LEAF = "현재 선택한 노드 ({0})는 leaf가 아닙니다.";
@@ -285,9 +286,13 @@ namespace Occlusion
             {
                 bestSibling = this.PickBestGlobalSearch(in box);
             }
-            else
+            else if (mode == INSERT_ALGORITHM_METHOD.BRANCH_AND_BOUND)
             {
                 bestSibling = this.PickBestBranchAndBound(in box);
+            }
+            else
+            {
+                bestSibling = this.PickBestBranchAndBoundBalanced(in box);
             }
 
             // Stage 2: 새로운 부모 생성
@@ -309,8 +314,14 @@ namespace Occlusion
             while (tourNode != null)
             {
                 tourNode.Refit(in box);
-                // RotateNode(tourNode); // 필요시 활성화
+                //RotateNode(tourNode); // 필요시 활성화
                 tourNode = tourNode.Parent;
+            }
+
+            // ✅ 추가: 형제 노드도 회전 시도
+            if (newParent.Parent != null)
+            {
+                //RotateNode(newParent.Brother);
             }
 
             // 정상적으로 삽입하면 leaf의 개수를 증가
@@ -318,6 +329,128 @@ namespace Occlusion
             _recentNode = insertNode;
 
             return insertNode;
+        }
+
+        /// <summary>
+        /// 불균형 지수 계산
+        /// </summary>
+        public float GetImbalanceFactor()
+        {
+            if (IsEmpty) return 0.0f;
+
+            int maxDepth = MaxDepth;
+            int leafCount = (int)_countLeafByBB;
+            float idealDepth = (float)Math.Log(leafCount, 2);
+
+            return (maxDepth - idealDepth) / Math.Max(idealDepth, 1.0f);
+        }
+
+        /// <summary>
+        /// 반복적으로 회전 최적화 (수렴할 때까지)
+        /// </summary>
+        public void OptimizeTreeIterative(int maxIterations = 10)
+        {
+            if (IsEmpty) return;
+
+            float prevImbalance = GetImbalanceFactor();
+
+            for (int iter = 0; iter < maxIterations; iter++)
+            {
+                OptimizeTree();
+
+                float currentImbalance = GetImbalanceFactor();
+                float improvement = prevImbalance - currentImbalance;
+
+                Console.WriteLine($"[BVH] 반복 {iter + 1}: Imbalance={currentImbalance:F3}, " +
+                                 $"Improvement={improvement:F3}, MaxDepth={MaxDepth}");
+
+                // 개선이 미미하면 중단
+                if (improvement < 0.01f)
+                {
+                    Console.WriteLine($"[BVH] 수렴 완료 (반복 {iter + 1}회)");
+                    break;
+                }
+
+                prevImbalance = currentImbalance;
+            }
+        }
+
+        /// <summary>
+        /// 전체 트리를 순회하며 회전 최적화
+        /// </summary>
+        public void OptimizeTree()
+        {
+            if (IsEmpty) return;
+
+            Queue<Node3f> queue = new Queue<Node3f>();
+            queue.Enqueue(_root);
+
+            int rotationCount = 0;
+
+            while (queue.Count > 0)
+            {
+                Node3f node = queue.Dequeue();
+
+                if (!node.IsLeaf)
+                {
+                    // 회전 전 비용
+                    float beforeCost = node.AABB.Area;
+
+                    RotateNode(node);
+
+                    // 회전 후 비용
+                    float afterCost = node.AABB.Area;
+
+                    if (afterCost < beforeCost)
+                    {
+                        rotationCount++;
+                    }
+
+                    if (node.Child1 != null) queue.Enqueue(node.Child1);
+                    if (node.Child2 != null) queue.Enqueue(node.Child2);
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// SAH + 깊이 페널티를 고려한 비용 함수
+        /// </summary>
+        private float CostWithBalance(Node3f targetNode, in AABB3f insertBox)
+        {
+            float sahCost = Cost(targetNode, in insertBox);
+
+            // 깊이가 깊을수록 페널티 증가
+            float depthPenalty = targetNode.Depth * 0.1f; // 튜닝 가능한 가중치
+
+            return sahCost * (1.0f + depthPenalty);
+        }
+
+        private Node3f PickBestBranchAndBoundBalanced(in AABB3f insertBox)
+        {
+            Queue<Node3f> queue = new Queue<Node3f>();
+
+            Node3f bestSibling = _root;
+            float bestCost = float.MaxValue;
+            queue.Enqueue(_root);
+
+            while (queue.Count > 0)
+            {
+                Node3f currentNode = queue.Dequeue();
+
+                float cost = CostWithBalance(currentNode, in insertBox); // ✅ 변경
+
+                if (cost < bestCost)
+                {
+                    bestSibling = currentNode;
+                    bestCost = cost;
+
+                    if (currentNode.Child1 != null) queue.Enqueue(currentNode.Child1);
+                    if (currentNode.Child2 != null) queue.Enqueue(currentNode.Child2);
+                }
+            }
+
+            return bestSibling;
         }
 
         /// <summary>

@@ -55,6 +55,7 @@
     <Compile Include="BVH\BVH3f.Core.cs" />
     <Compile Include="BVH\BVH3f.cs" />
     <Compile Include="BVH\BVH.cs" />
+    <Compile Include="BVH\BVHBalanceHeatmap.cs" />
     <Compile Include="HiZBuffer\DebugZBufferVisualizer.cs" />
     <Compile Include="FogOcclusion.cs" />
     <Compile Include="HiZBuffer\HierarchyZBuffer.cs" />
@@ -70,6 +71,9 @@
     <Compile Include="PhysicalRenderEntity.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="BVH\Sphere.cs" />
+    <Compile Include="QuadTree\QuadNode.cs" />
+    <Compile Include="QuadTree\QuadTree3f.cs" />
+    <Compile Include="QuadTree\TreeObject.cs" />
     <Compile Include="TerrainOccluder3.cs" />
     <Compile Include="TreeBalanceInfo.cs" />
     <Compile Include="ViewFrustum.cs" />
@@ -100,5 +104,6 @@
       <Name>ZetaExt</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

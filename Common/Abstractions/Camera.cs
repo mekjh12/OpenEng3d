@@ -129,14 +129,12 @@ namespace Common.Abstractions
         public virtual Matrix4x4f ModelMatrix => ViewMatrix.Inverse;
         // 뷰*투영 행렬
         public virtual Matrix4x4f VPMatrix => ProjectiveMatrix * ViewMatrix;
-        public virtual Matrix4x4f V2PMatrix => ProjectiveMatrix * ViewMatrix2;
         // 모델*뷰*투영 행렬
         public Matrix4x4f MVPMatrix => ProjectiveMatrix * ViewMatrix * ModelMatrix;
 
         /// <summary>카메라의 뷰 행렬을 계산합니다.</summary>
         public virtual Matrix4x4f ViewMatrix => Matrix4x4f.LookAtDirection(Position, _cameraForward, _cameraUp);
         /// <summary>피봇 위치를 기준으로 한 뷰 행렬을 계산합니다.</summary>
-        public virtual Matrix4x4f ViewMatrix2 => Matrix4x4f.LookAtDirection(PivotPosition, _cameraForward, _cameraUp);
 
         /// <summary>투영 행렬을 계산합니다.</summary>
         public Matrix4x4f ProjectiveMatrix

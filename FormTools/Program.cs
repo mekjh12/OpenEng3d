@@ -13,7 +13,8 @@ namespace FormTools
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new FormCulling());                     // 작동됨
+            Application.Run(new FormQuadTree());                    // 작동됨
+            //Application.Run(new FormCulling());                   // 작동됨
             //Application.Run(new FormHZBuffer());                  // 작동됨
             //Application.Run(new FormBVH());                       // 작동됨
             //Application.Run(new FormCloud());                     // 작동됨

@@ -21,7 +21,7 @@ namespace Shader
         private uint _instanceHalfSizeBuffer;
         private uint _instanceColorBuffer;
 
-        private const int MAX_INSTANCES = 10000;
+        private const int MAX_INSTANCES = 100000;
             
         // 재사용 버퍼
         private float[] _centerData; 

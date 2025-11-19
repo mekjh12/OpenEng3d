@@ -128,6 +128,12 @@
     <Compile Include="FormPhysics.Designer.cs">
       <DependentUpon>FormPhysics.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormQuadTree.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormQuadTree.Designer.cs">
+      <DependentUpon>FormQuadTree.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormTerrain.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -193,6 +199,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormPhysics.resx">
       <DependentUpon>FormPhysics.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormQuadTree.resx">
+      <DependentUpon>FormQuadTree.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormTerrain.resx">
       <DependentUpon>FormTerrain.cs</DependentUpon>
