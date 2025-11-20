@@ -122,6 +122,12 @@
     <Compile Include="FormEntityTest.Designer.cs">
       <DependentUpon>FormEntityTest.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormOcclusionOpt.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormOcclusionOpt.Designer.cs">
+      <DependentUpon>FormOcclusionOpt.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormPhysics.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -196,6 +202,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormEntityTest.resx">
       <DependentUpon>FormEntityTest.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormOcclusionOpt.resx">
+      <DependentUpon>FormOcclusionOpt.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormPhysics.resx">
       <DependentUpon>FormPhysics.cs</DependentUpon>

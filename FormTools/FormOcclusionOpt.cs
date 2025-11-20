@@ -17,8 +17,14 @@ using ZetaExt;
 
 namespace FormTools
 {
-    public partial class FormQuadTree : Form, GlControlerable
+    public partial class FormOcclusionOpt : Form, GlControlerable
     {
+        int _level = 0;                             // 현재 Z 버퍼 레벨
+        const int DOWN_LEVEL = 2;                   // 다운샘플링 레벨
+        bool _isDepthZBuffer = false;               // 깊이 Z-버퍼 표시 여부
+        bool _isViewFrustum = false;                // 뷰 프러스텀 표시 여부
+        bool _isAABBDepth = true;                   // AABB 깊이 표시 여부
+
         readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
         readonly string EXE_PATH = Application.StartupPath;
 
@@ -52,13 +58,7 @@ namespace FormTools
         Entity _entity;                             // 나무 엔티티   
         Model3dManager _model3DManager;             // 3D 모델 매니저
 
-        int _level = 0;                             // 현재 Z 버퍼 레벨
-        const int DOWN_LEVEL = 2;                   // 다운샘플링 레벨
-        bool _isDepthZBuffer = false;               // 깊이 Z-버퍼 표시 여부
-        bool _isViewFrustum = false;                // 뷰 프러스텀 표시 여부
-        bool _isAABBDepth = true;                   // AABB 깊이 표시 여부
-
-        public FormQuadTree()
+        public FormOcclusionOpt()
         {
             InitializeComponent();
 
@@ -73,6 +73,7 @@ namespace FormTools
                 IsVisibleUi2d = true,
             };
 
+            // GL 이벤트 연결
             _glControl3.Init += (w, h) => Init(w, h);
             _glControl3.Init3d += (w, h) => Init3d(w, h);
             _glControl3.Init2d += (w, h) => Init2d(w, h);
@@ -94,6 +95,11 @@ namespace FormTools
 
             // 로그 프로파일 초기화
             LogProfile.Create(PROJECT_PATH + "\\log.txt");
+        }
+
+        public void Form_Load(object sender, EventArgs e)
+        {
+            MemoryProfiler.StartFrameMonitoring();
         }
 
         public void Init(int width, int height)
@@ -123,21 +129,21 @@ namespace FormTools
         public void Init2d(int width, int height)
         {
             _fpsText = new Text2d("FPS: 60.0", width / 2, 10, width, height,
-                Text2d.TextAlignment.Center ,heightInPixels: 20);
+                Text2d.TextAlignment.Center, heightInPixels: 20);
             _fpsText.Color = Color.Yellow;
 
             _titleText = new Text2d("쿼드트리탐색 최적화", 10, 10, width, height,
                 Text2d.TextAlignment.Left, heightInPixels: 15);
             _titleText.Color = Color.Red;
 
-            _descText = new Text2d("1,2번키: Z버퍼 레벨 변경, 3번키: Z버퍼 On/Off" , 10, height, width, height,
+            _descText = new Text2d("1,2번키: Z버퍼 레벨 변경, 3번키: Z버퍼 On/Off", 10, height, width, height,
                 Text2d.TextAlignment.TopLeft, heightInPixels: 15);
             _descText.Color = Color.LightGray;
 
-            _camPosText = new Text2d("카메라 위치 (0,0,0)", width-10, height, width, height,
+            _camPosText = new Text2d("카메라 위치 (0,0,0)", width - 10, height, width, height,
                 Text2d.TextAlignment.TopRight, heightInPixels: 15);
 
-            _culledText = new Text2d("컬링된 노드 0개", width-10, 10, width, height,
+            _culledText = new Text2d("컬링된 노드 0개", width - 10, 10, width, height,
                 Text2d.TextAlignment.Right, heightInPixels: 15);
         }
 
@@ -244,7 +250,7 @@ namespace FormTools
             _hzbuffer.PrepareRenderSurface();
 
             _hzbuffer.RenderSimpleTerrain(camera.ProjectiveMatrix, camera.ViewMatrix, TerrainConstants.DEFAULT_VERTICAL_SCALE, _terrainRegion.TerrainEntity);
-            
+
             if (_isAABBDepth)
                 _aabbDepthShader.RenderAABBDepth(in _quadTree.VisibleObjectsLod0, _quadTree.IndexLod0, camera);
 
@@ -322,10 +328,6 @@ namespace FormTools
             Gl.Enable(EnableCap.DepthTest);
         }
 
-        public void Form_Load(object sender, EventArgs e)
-        {
-            MemoryProfiler.StartFrameMonitoring();
-        }
 
         public void KeyDownEvent(object sender, KeyEventArgs e)
         {
@@ -373,16 +375,11 @@ namespace FormTools
             }
         }
 
-        private void FormQuadTree_Resize(object sender, EventArgs e)
+        private void FormOcclusionOpt_Resize(object sender, EventArgs e)
         {
             int width = _glControl3.Width;
             int height = _glControl3.Height;
             _hzbuffer = new HierarchyZBuffer(width >> DOWN_LEVEL, height >> DOWN_LEVEL, PROJECT_PATH);
-        }
-
-        private void FormQuadTree_Load(object sender, EventArgs e)
-        {
-
         }
     }
 }
