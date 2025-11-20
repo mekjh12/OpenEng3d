@@ -174,7 +174,7 @@ namespace FormTools
             levelTextureMap[4] = EXE_PATH + @"\Res\Terrain\blend\highestTile.png";
             string detailMap = EXE_PATH + @"\Res\Terrain\blend\detailMap.png";
 
-            _model3DManager = new Model3dManager(PROJECT_PATH, EXE_PATH + "nullTexture.jpg");
+            _model3DManager = new Model3dManager(PROJECT_PATH, EXE_PATH + "\\nullTexture.jpg");
             //_model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\tree1.obj");
             //_model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm1.obj");
 

@@ -1,7 +1,10 @@
-﻿using Geometry;
+﻿using Common;
+using Common.Abstractions;
+using Geometry;
 using OpenGL;
 using System;
 using System.Collections.Generic;
+using ZetaExt;
 
 namespace Occlusion
 {
@@ -23,15 +26,13 @@ namespace Occlusion
 
         // 객체 목록
         private List<TreeObject> _treeObjects;          // 전체 객체 목록
-        private AABB3f[] _aabbList;                     // AABB 재사용 버퍼
         private HashSet<int> _cullingCache;             // 컬링 중복 체크용 캐시 
-        private List<TreeObject> _visibleObjects;       // 컬링 결과 재사용 버퍼
-        private List<TreeObject> _visibleObjsLod0;      // LOD0 전용 재사용 버퍼
-        private List<TreeObject> _visibleObjsLod1;      // LOD1 전용 재사용 버퍼
-        private List<TreeObject> _visibleObjsLod2;      // LOD2 전용 재사용 버퍼
+        private AABB3f[] _visibleObjectsLod0;           // LOD0 전용 재사용 버퍼
+        private AABB3f[] _visibleObjects;               // AABB 재사용 버퍼
         private int _visbleObjectIndex = 0;             // 재사용 인덱스
         private AABB3f[] _tempAABBs;                    // 임시 AABB 버퍼
         private int _tempAABBIndex = 0;
+        private int _indexLod0 = 0;                     // LOD0 전용 인덱스
 
         // 통계
         private int _totalObjects = 0;
@@ -40,13 +41,15 @@ namespace Occlusion
 
         // 속성
         public QuadNode Root => _root;
-        public int TotalObjects => _totalObjects;
+        public int TotalCountObjects => _totalObjects;
         public int TotalNodes => _totalNodes;
         public int BoundaryObjectCount => _boundaryObjectCount;
-        public ref AABB3f[] AABBArray => ref _aabbList;
-        public int VisibleObjectCount => _visibleObjects.Count;
+        public ref AABB3f[] VisibleObjects => ref _visibleObjects;
+        public int VisibleObjectCount => _visbleObjectIndex;
         public ref AABB3f[] NodeAABBs => ref _tempAABBs;
         public int TempAABBCount => _tempAABBIndex;
+        public ref AABB3f[] VisibleObjectsLod0  => ref _visibleObjectsLod0;
+        public int IndexLod0 { get => _indexLod0; }
 
         /// <summary>
         /// 생성자
@@ -55,7 +58,6 @@ namespace Occlusion
         {
             // 루트 노드 생성
             _root = new QuadNode(worldBounds, 0);
-            _root.SetVisible(true);
 
             _maxDepth = maxDepth;
             _maxObjectsPerNode = maxObjectsPerNode;
@@ -63,12 +65,9 @@ namespace Occlusion
 
             // 객체 목록 초기화
             _treeObjects = new List<TreeObject>();
-            _aabbList = new AABB3f[maxCapacity];
+            _visibleObjects = new AABB3f[maxCapacity];
             _cullingCache = new HashSet<int>();
-            _visibleObjects = new List<TreeObject>(maxCapacity);
-            _visibleObjsLod0 = new List<TreeObject>();
-            _visibleObjsLod1 = new List<TreeObject>();
-            _visibleObjsLod2 = new List<TreeObject>();
+            _visibleObjectsLod0 = new AABB3f[maxCapacity];
 
             _tempAABBs = new AABB3f[maxCapacity];
         }
@@ -103,6 +102,8 @@ namespace Occlusion
             {
                 // 리프 노드
                 node.Objects.Add(obj);
+                node.AABB.Max.z = Math.Max(node.AABB.Max.z, obj.AABB.Max.z);
+                node.AABB.Min.z = Math.Min(node.AABB.Min.z, obj.AABB.Min.z);
             }
             else
             {
@@ -123,6 +124,8 @@ namespace Occlusion
                 if (intersectCount > 1)
                 {
                     node.BoundaryObjects.Add(obj);
+                    node.AABB.Max.z = Math.Max(node.AABB.Max.z, obj.AABB.Max.z);
+                    node.AABB.Min.z = Math.Min(node.AABB.Min.z, obj.AABB.Min.z);
                     _boundaryObjectCount++;
                 }
             }
@@ -139,7 +142,6 @@ namespace Occlusion
 
             // 자식 노드 링크 플래그 설정
             node.Children = new QuadNode[4];
-            node.SetVisible(true);
 
             // XY 평면으로 4분할 (Z는 그대로)
 
@@ -179,6 +181,10 @@ namespace Occlusion
                 node.Depth + 1
             );
 
+            for (int i = 0; i < 4; i++)
+            {
+                node.Children[i].IsLinked = true;
+            }
             _totalNodes += 4;
 
             // 기존 객체들을 자식으로 재분배
@@ -228,12 +234,81 @@ namespace Occlusion
         /// <summary>
         /// Hi-Z Buffer Occlusion Culling
         /// </summary>
-        public void CullingTestByHiZBuffer(Matrix4x4f vp, Matrix4x4f view,
-                                          HierarchyZBuffer hiZBuffer,
-                                          ref List<TreeObject> visibleObjects)
-        {
-            visibleObjects.Clear();
-            HiZCullingRecursive(_root, vp, view, hiZBuffer, visibleObjects);
+        public void CullingTestByHiZBuffer(Camera camera, Matrix4x4f vp, Matrix4x4f view,
+                                          HierarchyZBuffer hiZBuffer, bool enablePickLeaf = false)
+        {            
+            if (enablePickLeaf)
+            {
+                // 재사용 버퍼 초기화
+                _visbleObjectIndex = 0;
+
+                // 재사용 버퍼 초기화
+                _cullingCache.Clear();
+            }
+
+            // 루트 노드부터 시작
+            _nodeQueue.Clear();
+            _nodeQueue.Enqueue(_root);
+            while (_nodeQueue.Count > 0)
+            {
+                QuadNode node = _nodeQueue.Dequeue();
+
+                // 깊이가 낮은 노드는 화면 공간의 넓이가 크고 갯수가 적으므로 무조건 통과시킨다.
+                if (node.Depth >= 3)
+                {
+                    // 노드가 뷰 프러스텀과 교차하지 않으면 스킵
+                    float distSquared = (camera.Position - node.AABB.Center).LengthSquared();
+                    
+                    if (!hiZBuffer.TestVisibility(vp, view, node.AABB))
+                    {
+                        node.IsLinked = false;
+                        continue;
+                    }
+                    else
+                    {
+                        node.IsLinked = true;
+                    }
+
+                    if (enablePickLeaf && node.IsLeaf)
+                    {
+                        // 경계 객체들 추가 (중복 체크)
+                        foreach (var obj in node.BoundaryObjects)
+                        {
+                            if (hiZBuffer.TestVisibility(vp, view, obj.AABB))
+                            {
+                                if (_cullingCache.Add(obj.ObjectID))
+                                {
+                                    _visibleObjects[_visbleObjectIndex] = obj.AABB;
+                                    _visbleObjectIndex++;
+                                }
+                            }
+                        }
+
+                        // 일반 객체들 추가
+                        for (int i = 0; i < node.Objects.Count; i++)
+                        {
+                            TreeObject obj = node.Objects[i];
+                            if (hiZBuffer.TestVisibility(vp, view, obj.AABB))
+                            {
+                                if (_cullingCache.Add(obj.ObjectID))
+                                {
+                                    _visibleObjects[_visbleObjectIndex] = obj.AABB;
+                                    _visbleObjectIndex++;
+                                }
+                            }
+                        }
+                    }
+                }                
+
+                // 자식 노드들을 큐에 추가
+                if (!node.IsLeaf)
+                {
+                    if (node.Children[0].IsLinked) _nodeQueue.Enqueue(node.Children[0]);
+                    if (node.Children[1].IsLinked) _nodeQueue.Enqueue(node.Children[1]);
+                    if (node.Children[2].IsLinked) _nodeQueue.Enqueue(node.Children[2]);
+                    if (node.Children[3].IsLinked) _nodeQueue.Enqueue(node.Children[3]);
+                }
+            }
         }
 
         private void HiZCullingRecursive(QuadNode node, Matrix4x4f vp, Matrix4x4f view,
@@ -275,68 +350,78 @@ namespace Occlusion
         public void Clear()
         {
             _treeObjects.Clear();
+            ClearLinked();
         }
 
         // 멤버 변수에 큐 추가 (재사용)
         private Queue<QuadNode> _nodeQueue = new Queue<QuadNode>();
 
-        /// <summary>
-        /// View Frustum Culling (큐 기반)
-        /// </summary>
-        public void CullingTestByViewFrustum(Polyhedron viewFrustum)
+        public void CullTestFinish(Vertex3f cameraPosition)
         {
-            // 재사용 버퍼 초기화
+            _indexLod0 = 0;
             _cullingCache.Clear();
-            _visibleObjects.Clear();
-            _nodeQueue.Clear();
-
-            _visbleObjectIndex = 0;
-            _tempAABBIndex = 0;
+            const int Lod0Distance = 300;
+            const int DistanceSquaredThreshold = Lod0Distance * Lod0Distance;
 
             // 루트 노드부터 시작
+            _nodeQueue.Clear();
             _nodeQueue.Enqueue(_root);
             while (_nodeQueue.Count > 0)
             {
                 QuadNode node = _nodeQueue.Dequeue();
 
-                // 노드가 뷰 프러스텀과 교차하지 않으면 스킵
-                if (!node.AABB.Visible(viewFrustum.Planes))
-                    continue;
-
                 if (node.IsLeaf)
                 {
-                    _tempAABBs[_tempAABBIndex] =(node.AABB);
-                    _tempAABBIndex++;
+                    float distSquared = (cameraPosition - node.AABB.Center).LengthSquared();
+                    if (distSquared < DistanceSquaredThreshold)
+                    {
+
+                        // 경계 객체들 추가 (중복 체크)
+                        foreach (var obj in node.BoundaryObjects)
+                        {
+                            if (_cullingCache.Add(obj.ObjectID))
+                            {
+                                _visibleObjectsLod0[_indexLod0] = obj.AABB;
+                                _indexLod0++;
+                            }
+                        }
+
+                        // 일반 객체들 추가
+                        foreach (var obj in node.Objects)
+                        {
+                            if (_cullingCache.Add(obj.ObjectID))
+                            {
+                                _visibleObjectsLod0[_indexLod0] = obj.AABB;
+                                _indexLod0++;
+                            }
+                        }
+                    }
+
                 }
 
-                // 경계 객체들 추가 (중복 체크)
-                foreach (var obj in node.BoundaryObjects)
+                // 자식 노드들을 큐에 추가
+                if (!node.IsLeaf)
                 {
-                    if (obj.AABB.Visible(viewFrustum.Planes))
+                    for (int i = 0; i < 4; i++)
                     {
-                        if (_cullingCache.Add(obj.ObjectID))
+                        if (node.Children[i].IsLinked)
                         {
-                            _visibleObjects.Add(obj);
-                            _aabbList[_visbleObjectIndex] = obj.AABB;
-                            _visbleObjectIndex++;
+                            _nodeQueue.Enqueue(node.Children[i]);
                         }
                     }
                 }
+            }
+        }
 
-                // 일반 객체들 추가
-                for (int i = 0; i < node.Objects.Count; i++)
-                {
-                    TreeObject obj = node.Objects[i];
-                    if (obj.AABB.Visible(viewFrustum.Planes))
-                    {
-                        if (_cullingCache.Add(obj.ObjectID))
-                        {
-                            _visibleObjects.Add(obj);
-                            _aabbList[_visbleObjectIndex] = obj.AABB;
-                            _visbleObjectIndex++;
-                        }
-                    }
-                }
+        public void ClearLinked()
+        {
+            // 루트 노드부터 시작
+            _nodeQueue.Clear();
+            _nodeQueue.Enqueue(_root);
+            while (_nodeQueue.Count > 0)
+            {
+                QuadNode node = _nodeQueue.Dequeue();
+                node.IsLinked = true;                
 
                 // 자식 노드들을 큐에 추가
                 if (!node.IsLeaf)
@@ -347,12 +432,81 @@ namespace Occlusion
                     }
                 }
             }
+        }
 
-            // AABB 리스트 업데이트
-            for (int i = 0; i < _visibleObjects.Count; i++)
+        /// <summary>
+        /// View Frustum Culling (큐 기반)
+        /// </summary>
+        public void CullingTestByViewFrustum(Polyhedron viewFrustum, bool enablePickLeaf = false)
+        {
+            if (enablePickLeaf)
             {
-                TreeObject obj = _visibleObjects[i];
-                _aabbList[i] = obj.AABB;
+                // 재사용 버퍼 초기화
+                _visbleObjectIndex = 0;
+
+                // 재사용 버퍼 초기화
+                _cullingCache.Clear();
+            }
+
+            // 루트 노드부터 시작
+            _nodeQueue.Clear();
+            _nodeQueue.Enqueue(_root);
+            while (_nodeQueue.Count > 0)
+            {
+                QuadNode node = _nodeQueue.Dequeue();
+
+                // 노드가 뷰 프러스텀과 교차하지 않으면 스킵
+                if (!node.AABB.Visible(viewFrustum.Planes))
+                {
+                    node.IsLinked = false;
+                    continue;
+                }
+                else
+                {
+                    node.IsLinked = true;
+                }
+
+                if (enablePickLeaf && node.IsLeaf)
+                {
+                    // 경계 객체들 추가 (중복 체크)
+                    foreach (var obj in node.BoundaryObjects)
+                    {
+                        if (obj.AABB.Visible(viewFrustum.Planes))
+                        {
+                            if (_cullingCache.Add(obj.ObjectID))
+                            {
+                                _visibleObjects[_visbleObjectIndex] = obj.AABB;
+                                _visbleObjectIndex++;
+                            }
+                        }
+                    }
+
+                    // 일반 객체들 추가
+                    for (int i = 0; i < node.Objects.Count; i++)
+                    {
+                        TreeObject obj = node.Objects[i];
+                        if (obj.AABB.Visible(viewFrustum.Planes))
+                        {
+                            if (_cullingCache.Add(obj.ObjectID))
+                            {
+                                _visibleObjects[_visbleObjectIndex] = obj.AABB;
+                                _visbleObjectIndex++;
+                            }
+                        }
+                    }
+                }
+                
+                // 자식 노드들을 큐에 추가
+                if (!node.IsLeaf)
+                {
+                    for (int i = 0; i < 4; i++)
+                    {
+                        if (node.Children[i].IsLinked)
+                        {
+                            _nodeQueue.Enqueue(node.Children[i]);
+                        }
+                    }
+                }
             }
         }
 

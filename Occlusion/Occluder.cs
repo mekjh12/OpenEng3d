@@ -3,6 +3,7 @@ using OpenGL;
 using System;
 using ZetaExt;
 using System.Collections.Generic;
+using Common;
 
 
 namespace Occlusion

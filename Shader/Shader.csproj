@@ -67,6 +67,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AABBShader\AABBDepthShader.cs" />
     <Compile Include="AnimateShader\AnimateShader.cs" />
     <Compile Include="AnimateShader\BoneMatrixUBO.cs" />
     <Compile Include="AtmosphericScatteringLUT\AtmosphericScatteringLUT.cs" />
@@ -115,6 +116,9 @@
     <Compile Include="VolumeRenderShader\VolumeRenderShader.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="AABBShader\aabb_depth.frag" />
+    <None Include="AABBShader\aabb_depth.gem.glsl" />
+    <None Include="AABBShader\aabb_depth.vert" />
     <None Include="AABBShader\aabb.gem.glsl" />
     <None Include="AnimateShader\ani.frag" />
     <None Include="AnimateShader\ani.vert" />

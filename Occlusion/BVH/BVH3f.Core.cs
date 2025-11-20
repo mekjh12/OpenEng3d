@@ -23,6 +23,7 @@
 //
 //------------------------------------------------------------------------------
 
+using Common;
 using Geometry;
 using Model3d;
 using OpenGL;

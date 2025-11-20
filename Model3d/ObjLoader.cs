@@ -60,7 +60,7 @@ public class ObjLoader
                 Assimp.Mesh mesh = scene.Meshes[node.MeshIndices[i]];
                 Assimp.Material material = scene.Materials[mesh.MaterialIndex];
                 models.AddRange(LoadMeshObj(mesh, scene, material, _directory));
-                Console.WriteLine($"- mesh name=[{mesh.Name}] has a material name of [{material.Name}]");
+                //Console.WriteLine($"- mesh name=[{mesh.Name}] has a material name of [{material.Name}]");
             }
 
             // 자식 노드들을 스택에 추가
@@ -82,7 +82,7 @@ public class ObjLoader
         float[] normals = null;    // 노말 벡터
         float[] texCoords = null;  // 텍스처 좌표
 
-        Console.WriteLine($"\t\tMesh 정보 {mesh.Name} mesh count={mesh.VertexCount}");
+        //Console.WriteLine($"\t\tMesh 정보 {mesh.Name} mesh count={mesh.VertexCount}");
 
         List<TexturedModel> models = new List<TexturedModel>();
 
@@ -264,7 +264,7 @@ public class ObjLoader
             TextureStorage.Add(filename);
         }
 
-        Console.WriteLine(mat.GetMaterialTextureCount(typeName) + "=>mc");
+        //Console.WriteLine(mat.GetMaterialTextureCount(typeName) + "=>mc");
         return textures;
     }
 }

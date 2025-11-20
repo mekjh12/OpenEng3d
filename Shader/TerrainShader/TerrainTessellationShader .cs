@@ -42,9 +42,9 @@ namespace Shader
         {
             _name = this.GetType().Name;
             VertFileName = projectPath + VERTEX_FILE;
-            FragFilename = projectPath + FRAGMENT_FILE;
-            TcsFilename = projectPath + TCS_FILE;
-            TesFilename = projectPath + TES_FILE;
+            FragFileName = projectPath + FRAGMENT_FILE;
+            TcsFileName = projectPath + TCS_FILE;
+            TesFileName = projectPath + TES_FILE;
             InitCompileShader();
         }
 

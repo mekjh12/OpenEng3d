@@ -1,4 +1,5 @@
-﻿using Geometry;
+﻿using Common;
+using Geometry;
 using System.Collections.Generic;
 
 namespace Occlusion
@@ -15,7 +16,7 @@ namespace Occlusion
         // [0] = 남서(SW), [1] = 남동(SE), [2] = 북서(NW), [3] = 북동(NE)
         public QuadNode[] Children;
 
-        public bool[] IsLinked;
+        public bool IsLinked;       // 부모와 링크되었는지 여부
 
         // 이 노드에 속한 객체들
         public List<TreeObject> Objects;
@@ -33,19 +34,8 @@ namespace Occlusion
             Depth = depth;
             Objects = new List<TreeObject>();
             BoundaryObjects = new List<TreeObject>();
+            IsLinked = false;
         }
 
-        public void SetVisible(bool visible)
-        {
-            if (IsLinked == null)
-            {
-                IsLinked = new bool[4] { false, false, false, false };
-            }
-
-            for (int i = 0; i < 4; i++)
-            {
-                IsLinked[i] = visible;
-            }
-        }
     }
 }

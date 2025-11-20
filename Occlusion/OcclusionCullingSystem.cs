@@ -1,4 +1,5 @@
-﻿using Common.Abstractions;
+﻿using Common;
+using Common.Abstractions;
 using Geometry;
 using Model3d;
 using OpenGL;

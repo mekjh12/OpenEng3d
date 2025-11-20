@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using ZetaExt;
 
-namespace Geometry
+namespace Common
 {
     /// <summary>
     /// 3차원 축 정렬 바운딩 박스 (float 정밀도)
@@ -152,7 +152,7 @@ namespace Geometry
             Color = Rand.NextColor3f;
             flags = 0x01;
             EntityId = -1;
-
+            
             _center = (Min + Max) * 0.5f;
             _size = Max - Min;
             _radius = MathFast.Sqrt(_size.x * _size.x + _size.y * _size.y + _size.z * _size.z) * 0.5f;

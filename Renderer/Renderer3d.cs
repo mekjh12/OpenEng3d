@@ -55,10 +55,17 @@ namespace Renderer
         private static uint _aabbCenterVBO = 0;
         private static bool _isAABBBoxSetup = false;
 
-        private static Vertex3f[] _aabbCenters = new Vertex3f[100000];
-        private static Vertex3f[] _aabbHalfSizes = new Vertex3f[100000];
-        private static Vertex4f[] _aabbColors = new Vertex4f[100000];
+        private const int MAX_AABB_COUNT = 100000;
+        private static Vertex3f[] _aabbCenters = new Vertex3f[MAX_AABB_COUNT];
+        private static Vertex3f[] _aabbHalfSizes = new Vertex3f[MAX_AABB_COUNT];
+        private static Vertex4f[] _aabbColors = new Vertex4f[MAX_AABB_COUNT];
 
+        // 정적 필드 추가 (클래스 상단에)
+        private static uint _aabbDepthVAO = 0;
+        private static uint _aabbDepthVBO = 0;
+        private static uint _aabbSSBO = 0;
+
+        
         /// <summary>
         /// 지오메트리 셰이더를 사용한 AABB 렌더링
         /// </summary>
@@ -165,7 +172,7 @@ namespace Renderer
                         {
                             if (modelTextured.Texture.TextureType.HasFlag(Texture.TextureMapType.Diffuse))
                             {
-                                shader.LoadTexture( UnlitShader.UNIFORM_NAME.modelTexture, TextureUnit.Texture0, modelTextured.Texture.DiffuseMapID);
+                                shader.LoadTexture(UnlitShader.UNIFORM_NAME.modelTexture, TextureUnit.Texture0, modelTextured.Texture.DiffuseMapID);
                             }
                             Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.REPEAT);
                             Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.REPEAT);

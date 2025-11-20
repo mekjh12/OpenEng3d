@@ -49,14 +49,29 @@ namespace Ui3d
         private static readonly Color DEFAULT_COLOR = Color.FromArgb(255, 255, 255, 255);
 
         // 캐시된 문자 높이
-        private static float _cachedCharHeight = -1f;  // 캐시된 문자 높이
+        private static float _cachedCharHeight = -1f;
 
-        /// <summary>텍스트 정렬 방식</summary>
+        /// <summary>텍스트 정렬 방식 (플래그 조합 가능)</summary>
+        [Flags]
         public enum TextAlignment
         {
-            Left,       // 왼쪽 정렬
-            Center,     // 중앙 정렬
-            Right       // 오른쪽 정렬
+            // 수평 정렬
+            Left = 1 << 0,    // 0x01
+            Center = 1 << 1,    // 0x02
+            Right = 1 << 2,    // 0x04
+
+            // 수직 정렬
+            Top = 1 << 3,    // 0x08
+            Middle = 1 << 4,    // 0x10
+            Bottom = 1 << 5,    // 0x20
+
+            // 기본 조합 (하위 호환성)
+            TopLeft = Top | Left,
+            TopCenter = Top | Center,
+            TopRight = Top | Right,
+            MiddleLeft = Middle | Left,
+            MiddleCenter = Middle | Center,
+            MiddleRight = Middle | Right,
         }
 
         /// <summary>표시할 텍스트</summary>
@@ -136,7 +151,28 @@ namespace Ui3d
             set => _alpha = Math.Max(0, Math.Min(1, value));
         }
 
-        public Text2d(string text, float x, float y, int screenWidth, int screenHeight, TextAlignment alignment = TextAlignment.Left, float heightInPixels = 24.0f)
+        /// <summary>
+        /// 생성자
+        /// <code>
+        /// 
+        ///  TopRight |  TopLeft
+        ///           |
+        /// --------기준점---------
+        ///           |
+        ///     Right |  Left
+        /// 
+        /// </code>
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="screenWidth"></param>
+        /// <param name="screenHeight"></param>
+        /// <param name="alignment"></param>
+        /// <param name="heightInPixels"></param>
+        public Text2d(string text, float x, float y, int screenWidth, int screenHeight,
+                     TextAlignment alignment = TextAlignment.Left | TextAlignment.Top,
+                     float heightInPixels = 24.0f)
         {
             float fpsScale = Text2d.CalculateScaleForHeight(heightInPixels);
             _text = text;
@@ -182,14 +218,14 @@ namespace Ui3d
         {
             float left = 0;
             float right = _screenWidth;
-            float top = 0;                  // ✅ 위가 0
-            float bottom = _screenHeight;   // ✅ 아래가 height
+            float top = 0;
+            float bottom = _screenHeight;
             float near = -1.0f;
             float far = 1.0f;
 
             _projectionMatrix = Matrix4x4f.Identity;
             _projectionMatrix[0, 0] = 2.0f / (right - left);
-            _projectionMatrix[1, 1] = 2.0f / (top - bottom);  // ✅ 음수가 되어 Y축 반전
+            _projectionMatrix[1, 1] = 2.0f / (top - bottom);
             _projectionMatrix[2, 2] = -2.0f / (far - near);
             _projectionMatrix[3, 0] = -(right + left) / (right - left);
             _projectionMatrix[3, 1] = -(top + bottom) / (top - bottom);
@@ -213,15 +249,14 @@ namespace Ui3d
         /// </summary>
         private static void CreateSharedQuad()
         {
-            // ✅ UV의 V 좌표를 반전 (0 ↔ 1)
             float[] vertices = new float[]
             {
-                -0.5f,  0.5f, 0.0f,   0.0f, 1.0f,  // ✅ 0.0f → 1.0f
-                -0.5f, -0.5f, 0.0f,   0.0f, 0.0f,  // ✅ 1.0f → 0.0f
-                 0.5f, -0.5f, 0.0f,   1.0f, 0.0f,  // ✅ 1.0f → 0.0f
-                -0.5f,  0.5f, 0.0f,   0.0f, 1.0f,  // ✅ 0.0f → 1.0f
-                 0.5f, -0.5f, 0.0f,   1.0f, 0.0f,  // ✅ 1.0f → 0.0f
-                 0.5f,  0.5f, 0.0f,   1.0f, 1.0f   // ✅ 0.0f → 1.0f
+                -0.5f,  0.5f, 0.0f,   0.0f, 1.0f,
+                -0.5f, -0.5f, 0.0f,   0.0f, 0.0f,
+                 0.5f, -0.5f, 0.0f,   1.0f, 0.0f,
+                -0.5f,  0.5f, 0.0f,   0.0f, 1.0f,
+                 0.5f, -0.5f, 0.0f,   1.0f, 0.0f,
+                 0.5f,  0.5f, 0.0f,   1.0f, 1.0f
             };
 
             _sharedQuadVBO = Gl.GenBuffer();
@@ -261,6 +296,48 @@ namespace Ui3d
             Gl.BindBuffer(BufferTarget.ArrayBuffer, 0);
         }
 
+        /// <summary>
+        /// 수평 정렬 오프셋 계산
+        /// </summary>
+        private float CalculateHorizontalOffset(float textWidth)
+        {
+            if ((_alignment & TextAlignment.Right) != 0)
+            {
+                return -textWidth;
+            }
+            else if ((_alignment & TextAlignment.Center) != 0)
+            {
+                return -textWidth * 0.5f;
+            }
+            // Left 또는 수평 정렬 없음
+            return 0f;
+        }
+
+        /// <summary>
+        /// 수직 정렬 오프셋 계산
+        /// </summary>
+        private float CalculateVerticalOffset(float textHeight)
+        {
+            if ((_alignment & TextAlignment.Top) != 0)
+            {
+                return -textHeight;
+            }
+            else if ((_alignment & TextAlignment.Middle) != 0)
+            {
+                return -textHeight * 0.5f;
+            }
+            // Top 또는 수직 정렬 없음
+            return 0f;
+        }
+
+        /// <summary>
+        /// 텍스트 높이 계산 (스케일 적용 전 기준)
+        /// </summary>
+        private float CalculateTextHeight()
+        {
+            return GetStandardCharHeight();
+        }
+
         private void UpdateInstanceData()
         {
             if (!CharacterTextureAtlas.IsInitialized)
@@ -277,27 +354,21 @@ namespace Ui3d
                 return;
             }
 
-            // ✅ 정렬 오프셋 먼저 계산 (스케일 적용 전 원본 크기 기준)
-            float alignmentOffsetX = 0f;
+            // 수평 정렬 오프셋 계산
+            float textWidth = CharacterTextureAtlas.Instance.CalculateTextWidth(_text);
+            float alignmentOffsetX = CalculateHorizontalOffset(textWidth);
 
-            if (_alignment == TextAlignment.Right)
-            {
-                float textWidth = CharacterTextureAtlas.Instance.CalculateTextWidth(_text);
-                alignmentOffsetX = -textWidth;
-            }
-            else if (_alignment == TextAlignment.Center)
-            {
-                float textWidth = CharacterTextureAtlas.Instance.CalculateTextWidth(_text);
-                alignmentOffsetX = -textWidth * 0.5f;
-            }
+            // 수직 정렬 오프셋 계산
+            float textHeight = CalculateTextHeight();
+            float alignmentOffsetY = CalculateVerticalOffset(textHeight);
 
-            // ✅ 정렬 오프셋을 적용하여 인스턴스 데이터 생성
+            // 정렬 오프셋을 적용하여 인스턴스 데이터 생성
             var instances = _instanceBuilder.GenerateInstanceData(
                 _text,
                 CharacterTextureAtlas.Instance,
-                alignmentOffsetX, 0f, 0f);  // 정렬 오프셋 적용
+                alignmentOffsetX, alignmentOffsetY, 0f);
 
-            // ✅ 스케일 적용 (스케일이 1이 아니면)
+            // 스케일 적용
             if (Math.Abs(_scale - 1.0f) > 0.001f)
             {
                 for (int i = 0; i < instances.Length; i++)
@@ -309,7 +380,7 @@ namespace Ui3d
                 }
             }
 
-            // ✅ 버퍼 업데이트
+            // 버퍼 업데이트
             float[] data = _instanceBuilder.ConvertToFloatArray(instances);
             Gl.BindBuffer(BufferTarget.ArrayBuffer, _instanceBuilder.InstanceVBO);
             int requiredSize = instances.Length * CharInstanceData.FloatCount * sizeof(float);
@@ -324,7 +395,7 @@ namespace Ui3d
 
             Gl.BindBuffer(BufferTarget.ArrayBuffer, 0);
 
-            // ✅ 인스턴스 개수 업데이트
+            // 인스턴스 개수 업데이트
             _instanceBuilder.SetInstanceCount(instances.Length);
 
             SetupVAO();

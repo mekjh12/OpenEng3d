@@ -21,7 +21,7 @@ namespace Shader
             _name = this.GetType().Name;
             VertFileName = projectPath + VERTEX_FILE;
             GeomFileName = projectPath + GEOMETRY_FILE;
-            FragFilename = projectPath + FRAGMENT_FILE;
+            FragFileName = projectPath + FRAGMENT_FILE;
             InitCompileShader();
         }
 

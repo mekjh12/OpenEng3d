@@ -3,7 +3,7 @@ using OpenGL;
 using System;
 using ZetaExt;
 
-namespace Geometry
+namespace Common
 {
     public struct Plane
     {

@@ -88,6 +88,8 @@
     <Compile Include="Core\GUID.cs" />
     <Compile Include="Mathematics\Pose.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Struct\AABB3f.cs" />
+    <Compile Include="Struct\Plane.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="주의사항.txt" />
@@ -96,6 +98,10 @@
     <Folder Include="Geometry\" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\MathFast\FastMath.csproj">
+      <Project>{f0dab839-81b8-46fd-bfdd-529a17dde3db}</Project>
+      <Name>FastMath</Name>
+    </ProjectReference>
     <ProjectReference Include="..\ZetaExt\ZetaExt.csproj">
       <Project>{878cf1d9-16ce-4e58-a6e7-165d00c56d1f}</Project>
       <Name>ZetaExt</Name>

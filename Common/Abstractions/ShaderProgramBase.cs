@@ -58,17 +58,17 @@ namespace Common
             set => _geomFilename = value;
         }
 
-        public string FragFilename
+        public string FragFileName
         {
             set => _fragFilename = value;
         }
 
-        public string TcsFilename
+        public string TcsFileName
         {
             set => _tcsFilename = value;
         }
 
-        public string TesFilename
+        public string TesFileName
         {
             set => _tesFilename = value;
         }

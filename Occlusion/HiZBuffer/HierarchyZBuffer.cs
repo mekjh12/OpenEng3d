@@ -1,4 +1,5 @@
-﻿using Common.Abstractions;
+﻿using Common;
+using Common.Abstractions;
 using Geometry;
 using Model3d;
 using OpenGL;
@@ -554,7 +555,6 @@ namespace Occlusion
         {
             // ✅ 바인딩 전 상태 초기화
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-
             shader.Bind();
             shader.LoadCameraFar(camera.FAR);
             shader.LoadCameraNear(camera.NEAR);
