@@ -20,6 +20,7 @@ namespace Shader
         {
             /// <summary>Model-View-Projection 행렬</summary>
             mvp,
+            vp,
             /// <summary>모델 텍스처</summary> 
             modelTexture,
             /// <summary>유니폼 변수 개수</summary>

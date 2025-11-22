@@ -22,6 +22,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -61,6 +62,7 @@
     <Compile Include="HiZBuffer\HierarchyZBuffer.cs" />
     <Compile Include="HiZBuffer\HierarchiyCompZBuffer.cs" />
     <Compile Include="HiZBuffer\HierarchicalZBuffer.cs" />
+    <Compile Include="InstancedRenderer.cs" />
     <Compile Include="IOcclusionable.cs" />
     <Compile Include="BVH\Node3f.cs" />
     <Compile Include="BVH\Node.cs" />
@@ -73,7 +75,7 @@
     <Compile Include="BVH\Sphere.cs" />
     <Compile Include="QuadTree\QuadNode.cs" />
     <Compile Include="QuadTree\QuadTree3f.cs" />
-    <Compile Include="QuadTree\TreeObject.cs" />
+    <Compile Include="QuadTree\WorldObject.cs" />
     <Compile Include="TerrainOccluder3.cs" />
     <Compile Include="TreeBalanceInfo.cs" />
     <Compile Include="ViewFrustum.cs" />

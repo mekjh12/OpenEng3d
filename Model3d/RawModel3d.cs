@@ -102,14 +102,19 @@ namespace Model3d
         /// AABB, OBB 바운딩박스를 만든다.
         /// </summary>
         /// <returns></returns>
-        public void GenerateBoundingBox()
+        public void GenerateBoundingBox(bool isAABB = true, bool isOBB = false)
         {
             Vertex3f lowerBound = Vertex3f.Min(_vertices);
             Vertex3f upperBound = Vertex3f.Max(_vertices);
-            _aabb = new AABB(lowerBound, upperBound, false);
 
-            bool chked = OBBUtility.CalculateOBB(_vertices, out Vertex3f center, out Vertex3f size, out Vertex3f[] axis);
-            _obb = new OBB(center, size, axis);
+            if (isAABB)
+                _aabb = new AABB(lowerBound, upperBound, false);
+
+            if (isOBB)
+            {
+                bool chked = OBBUtility.CalculateOBB(_vertices, out Vertex3f center, out Vertex3f size, out Vertex3f[] axis);
+                _obb = new OBB(center, size, axis);
+            }
         }
 
         /// <summary>

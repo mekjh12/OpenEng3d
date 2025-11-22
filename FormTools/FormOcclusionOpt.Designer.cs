@@ -41,6 +41,7 @@
             this.Name = "FormOcclusionOpt";
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "오클루전 최적화";
+            this.Load += new System.EventHandler(this.FormOcclusionOpt_Load);
             this.Resize += new System.EventHandler(this.FormOcclusionOpt_Resize);
             this.ResumeLayout(false);
 

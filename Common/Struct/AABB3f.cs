@@ -648,6 +648,81 @@ namespace Common
             );
         }
 
+        /// <summary>
+        /// AABB를 월드 행렬로 변환하여 새로운 AABB 생성
+        /// </summary>
+        public static AABB3f FromMatrix(AABB3f aabb, Matrix4x4f worldMatrix)
+        {
+            // AABB의 8개 코너 가져오기
+            Vertex3f[] corners = aabb.GetCorners();
+
+            Vertex3f min = new Vertex3f(float.MaxValue, float.MaxValue, float.MaxValue);
+            Vertex3f max = new Vertex3f(float.MinValue, float.MinValue, float.MinValue);
+
+            // 각 코너를 월드 행렬로 변환
+            for (int i = 0; i < 8; i++)
+            {
+                Vertex4f transformed = worldMatrix * new Vertex4f(corners[i].x, corners[i].y, corners[i].z, 1f);
+                Vertex3f point = new Vertex3f(
+                    transformed.x / transformed.w,
+                    transformed.y / transformed.w,
+                    transformed.z / transformed.w
+                );
+
+                min.x = MathFast.Min(min.x, point.x);
+                min.y = MathFast.Min(min.y, point.y);
+                min.z = MathFast.Min(min.z, point.z);
+
+                max.x = MathFast.Max(max.x, point.x);
+                max.y = MathFast.Max(max.y, point.y);
+                max.z = MathFast.Max(max.z, point.z);
+            }
+
+            return new AABB3f(min, max);
+        }
+
+        /// <summary>
+        /// 월드 행렬로부터 AABB 생성 (단위 큐브 기준)
+        /// </summary>
+        public static AABB3f FromMatrix(Matrix4x4f worldMatrix)
+        {
+            // 단위 큐브의 8개 코너
+            Vertex3f[] unitCorners = new Vertex3f[8]
+            {
+                new Vertex3f(-0.5f, -0.5f, -0.5f),
+                new Vertex3f( 0.5f, -0.5f, -0.5f),
+                new Vertex3f( 0.5f,  0.5f, -0.5f),
+                new Vertex3f(-0.5f,  0.5f, -0.5f),
+                new Vertex3f(-0.5f, -0.5f,  0.5f),
+                new Vertex3f( 0.5f, -0.5f,  0.5f),
+                new Vertex3f( 0.5f,  0.5f,  0.5f),
+                new Vertex3f(-0.5f,  0.5f,  0.5f)
+            };
+
+            Vertex3f min = new Vertex3f(float.MaxValue, float.MaxValue, float.MaxValue);
+            Vertex3f max = new Vertex3f(float.MinValue, float.MinValue, float.MinValue);
+
+            // 각 코너를 월드 행렬로 변환
+            for (int i = 0; i < 8; i++)
+            {
+                Vertex4f transformed = worldMatrix * new Vertex4f(unitCorners[i].x, unitCorners[i].y, unitCorners[i].z, 1f);
+                Vertex3f point = new Vertex3f(
+                    transformed.x / transformed.w,
+                    transformed.y / transformed.w,
+                    transformed.z / transformed.w
+                );
+
+                min.x = MathFast.Min(min.x, point.x);
+                min.y = MathFast.Min(min.y, point.y);
+                min.z = MathFast.Min(min.z, point.z);
+
+                max.x = MathFast.Max(max.x, point.x);
+                max.y = MathFast.Max(max.y, point.y);
+                max.z = MathFast.Max(max.z, point.z);
+            }
+
+            return new AABB3f(min, max);
+        }
 
         /// <summary>
         /// 광선과 AABB의 교차 검사 (Ray-Box Intersection)

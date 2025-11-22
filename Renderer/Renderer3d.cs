@@ -139,6 +139,56 @@ namespace Renderer
             Gl.Disable(EnableCap.Blend);
         }
 
+        public static void Render(UnlitShader shader, Entity entity, Camera camera, bool isCullface = true)
+        {
+            OrbitCamera orbitCamera = camera as OrbitCamera;
+            shader.Bind();
+
+            Matrix4x4f vp = orbitCamera.VPMatrix;
+
+            if (entity.IsDrawOneSide == false)
+            {
+                Gl.Disable(EnableCap.CullFace);
+            }
+            else
+            {
+                Gl.Enable(EnableCap.CullFace);
+                Gl.CullFace(CullFaceMode.Back);
+            }
+
+            shader.LoadUniform(UnlitShader.UNIFORM_NAME.mvp, vp * entity.ModelMatrix);
+
+            BaseModel3d[] models = (entity is LodEntity) ? (entity as LodEntity).Models.ToArray() : entity.Models.ToArray();
+
+            // 모델을 그린다.
+            foreach (BaseModel3d rawModel in models)
+            {
+                if (entity.IsTextured)
+                {
+                    TexturedModel modelTextured = rawModel as TexturedModel;
+                    if (modelTextured.Texture != null)
+                    {
+                        if (modelTextured.Texture.TextureType.HasFlag(Texture.TextureMapType.Diffuse))
+                        {
+                            shader.LoadTexture(UnlitShader.UNIFORM_NAME.modelTexture, TextureUnit.Texture0, modelTextured.Texture.DiffuseMapID);
+                        }
+                        Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.REPEAT);
+                        Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.REPEAT);
+                    }
+                }
+
+                Gl.BindVertexArray(rawModel.VAO);
+                Gl.EnableVertexAttribArray(0);
+                Gl.EnableVertexAttribArray(1);
+                Gl.DrawArrays(PrimitiveType.Triangles, 0, rawModel.VertexCount);
+                Gl.DisableVertexAttribArray(1);
+                Gl.DisableVertexAttribArray(0);
+                Gl.BindVertexArray(0);
+            }
+
+            shader.Unbind();
+        }
+
         public static void Render(UnlitShader shader, List<Entity> entities, Camera camera, bool isCullface = true)
         {
             OrbitCamera orbitCamera = camera as OrbitCamera;

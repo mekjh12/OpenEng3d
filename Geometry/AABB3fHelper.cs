@@ -13,11 +13,7 @@ namespace Geometry
     {
         
 
-        #region 포함 및 교차 테스트
-
         
-
-        #endregion
 
 
 

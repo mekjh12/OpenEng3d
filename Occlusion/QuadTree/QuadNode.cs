@@ -19,10 +19,10 @@ namespace Occlusion
         public bool IsLinked;       // 부모와 링크되었는지 여부
 
         // 이 노드에 속한 객체들
-        public List<TreeObject> Objects;
+        public List<WorldObject> Objects;
 
         // 경계에 걸친 객체들 (자식 노드들과 공유)
-        public List<TreeObject> BoundaryObjects;
+        public List<WorldObject> BoundaryObjects;
 
         // 노드 정보
         public int Depth;
@@ -32,8 +32,8 @@ namespace Occlusion
         {
             AABB = aabb;
             Depth = depth;
-            Objects = new List<TreeObject>();
-            BoundaryObjects = new List<TreeObject>();
+            Objects = new List<WorldObject>();
+            BoundaryObjects = new List<WorldObject>();
             IsLinked = false;
         }
 

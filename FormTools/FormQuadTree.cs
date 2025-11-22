@@ -196,7 +196,7 @@ namespace FormTools
                             center.z += 5.0f;
                             Vertex3f halfSize = Rand.NextVector3f * 1f + Vertex3f.One * 5.0f;
                             AABB3f aabb = new AABB3f(center - halfSize, center + halfSize);
-                            _quadTree.Insert(aabb, idx, center);
+                            _quadTree.Insert(aabb, idx);
                             idx++;
                         }
                     }
@@ -236,7 +236,7 @@ namespace FormTools
             _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera, scaled: 0.5f);
 
             _quadTree.Clear();
-            _quadTree.CullingTestByViewFrustum(_viewFrustum, false);
+            _quadTree.CullingTestByViewFrustum(_viewFrustum, camera, false);
             _quadTree.CullTestFinish(camera.Position);
 
             // ✅ HZB 업데이트
@@ -246,7 +246,7 @@ namespace FormTools
             _hzbuffer.RenderSimpleTerrain(camera.ProjectiveMatrix, camera.ViewMatrix, TerrainConstants.DEFAULT_VERTICAL_SCALE, _terrainRegion.TerrainEntity);
             
             if (_isAABBDepth)
-                _aabbDepthShader.RenderAABBDepth(in _quadTree.VisibleObjectsLod0, _quadTree.IndexLod0, camera);
+                _aabbDepthShader.RenderAABBDepth(in _quadTree.VisibleObjects, _quadTree.VisibleObjectCount, camera);
 
             //Renderer3d.RenderAABBGeometry(_aabbBoxShader, in _quadTree.VisibleObjectsLod0, _quadTree.IndexLod0, camera);
 
