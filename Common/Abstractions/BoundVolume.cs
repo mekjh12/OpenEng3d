@@ -83,11 +83,11 @@ namespace Common.Abstractions
                 Vertex4f clipSpace = vpMatrix * corners[i].Vertex4f();
                 if (Math.Abs(clipSpace.w) > float.Epsilon)  // 0으로 나누기 방지
                 {
-                    float ndcX = clipSpace.x / clipSpace.w;
+                    float ndcx = clipSpace.x / clipSpace.w;
                     float ndcY = clipSpace.y / clipSpace.w;
                     // NDC 좌표를 -1~1 범위로 클램핑
                     ndcPoints[validPoints++] = new Vertex2f(
-                        ndcX.Clamp(-1.0f, 1.0f),
+                        ndcx.Clamp(-1.0f, 1.0f),
                         ndcY.Clamp(-1.0f, 1.0f)
                     );
                 }
@@ -98,20 +98,20 @@ namespace Common.Abstractions
                 return 0;
 
             // 경계 상자 계산
-            float minX = ndcPoints[0].x;
+            float minx = ndcPoints[0].x;
             float minY = ndcPoints[0].y;
-            float maxX = minX;
+            float maxx = minx;
             float maxY = minY;
 
             for (int i = 1; i < validPoints; i++)
             {
-                minX = Math.Min(minX, ndcPoints[i].x);
+                minx = Math.Min(minx, ndcPoints[i].x);
                 minY = Math.Min(minY, ndcPoints[i].y);
-                maxX = Math.Max(maxX, ndcPoints[i].x);
+                maxx = Math.Max(maxx, ndcPoints[i].x);
                 maxY = Math.Max(maxY, ndcPoints[i].y);
             }
 
-            float width = maxX - minX;
+            float width = maxx - minx;
             float height = maxY - minY;
 
             return Math.Max(0, width * height * 0.25f);

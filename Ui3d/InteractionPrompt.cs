@@ -13,8 +13,8 @@ namespace Ui3d
     public class InteractionPrompt : Billboard3D
     {
         // 기본 텍스처 크기
-        private const int TEXTURE_WIDTH = 256;
-        private const int TEXTURE_HEIGHT = 64;
+        private const int TExTURE_WIDTH = 256;
+        private const int TExTURE_HEIGHT = 64;
 
         // 패딩
         private const float PADDING_HORIZONTAL = 12f;
@@ -22,8 +22,8 @@ namespace Ui3d
 
         // 기본 색상
         private static readonly Color DEFAULT_KEY_BG_COLOR = Color.FromArgb(255, 50, 50, 50);
-        private static readonly Color DEFAULT_KEY_TEXT_COLOR = Color.FromArgb(255, 255, 255, 255);
-        private static readonly Color DEFAULT_ACTION_TEXT_COLOR = Color.FromArgb(255, 200, 200, 200);
+        private static readonly Color DEFAULT_KEY_TExT_COLOR = Color.FromArgb(255, 255, 255, 255);
+        private static readonly Color DEFAULT_ACTION_TExT_COLOR = Color.FromArgb(255, 200, 200, 200);
         private static readonly Color DEFAULT_BORDER_COLOR = Color.FromArgb(255, 150, 150, 150);
         private static readonly Color DEFAULT_BACKGROUND_COLOR = Color.FromArgb(0, 0, 0, 0);
 
@@ -145,8 +145,8 @@ namespace Ui3d
             _keyText = keyText;
             _actionText = actionText;
             _keyBgColor = DEFAULT_KEY_BG_COLOR;
-            _keyTextColor = DEFAULT_KEY_TEXT_COLOR;
-            _actionTextColor = DEFAULT_ACTION_TEXT_COLOR;
+            _keyTextColor = DEFAULT_KEY_TExT_COLOR;
+            _actionTextColor = DEFAULT_ACTION_TExT_COLOR;
             _borderColor = DEFAULT_BORDER_COLOR;
             _showBorder = true;
             _width = DEFAULT_WIDTH;
@@ -156,7 +156,7 @@ namespace Ui3d
             _pulseAlpha = 1.0f;
 
             // 재사용할 그래픽 리소스 초기화
-            _reusableBitmap = new Bitmap(TEXTURE_WIDTH, TEXTURE_HEIGHT);
+            _reusableBitmap = new Bitmap(TExTURE_WIDTH, TExTURE_HEIGHT);
             _reusableGraphics = Graphics.FromImage(_reusableBitmap);
             _reusableGraphics.SmoothingMode = SmoothingMode.AntiAlias;
             _reusableGraphics.TextRenderingHint = TextRenderingHint.AntiAlias;
@@ -191,13 +191,13 @@ namespace Ui3d
             // 키 버튼 크기 계산
             SizeF keySize = _reusableGraphics.MeasureString(_keyText, _keyFont);
             float keyBoxSize = System.Math.Max(keySize.Width, keySize.Height) + PADDING_HORIZONTAL * 2;
-            float keyBoxX = PADDING_HORIZONTAL;
-            float keyBoxY = (TEXTURE_HEIGHT - keyBoxSize) / 2;
+            float keyBoxx = PADDING_HORIZONTAL;
+            float keyBoxY = (TExTURE_HEIGHT - keyBoxSize) / 2;
 
             // 키 버튼 배경
             using (SolidBrush keyBgBrush = new SolidBrush(_keyBgColor))
             {
-                _reusableGraphics.FillRectangle(keyBgBrush, keyBoxX, keyBoxY, keyBoxSize, keyBoxSize);
+                _reusableGraphics.FillRectangle(keyBgBrush, keyBoxx, keyBoxY, keyBoxSize, keyBoxSize);
             }
 
             // 키 버튼 테두리
@@ -205,7 +205,7 @@ namespace Ui3d
             {
                 using (Pen borderPen = new Pen(_borderColor, 2f))
                 {
-                    _reusableGraphics.DrawRectangle(borderPen, keyBoxX, keyBoxY, keyBoxSize, keyBoxSize);
+                    _reusableGraphics.DrawRectangle(borderPen, keyBoxx, keyBoxY, keyBoxSize, keyBoxSize);
                 }
             }
 
@@ -217,7 +217,7 @@ namespace Ui3d
                 LineAlignment = StringAlignment.Center
             })
             {
-                RectangleF keyRect = new RectangleF(keyBoxX, keyBoxY, keyBoxSize, keyBoxSize);
+                RectangleF keyRect = new RectangleF(keyBoxx, keyBoxY, keyBoxSize, keyBoxSize);
                 _reusableGraphics.DrawString(_keyText, _keyFont, keyTextBrush, keyRect, keyFormat);
             }
 
@@ -231,12 +231,12 @@ namespace Ui3d
                     LineAlignment = StringAlignment.Center
                 })
                 {
-                    float actionX = keyBoxX + keyBoxSize + PADDING_HORIZONTAL;
-                    float actionY = TEXTURE_HEIGHT / 2;
+                    float actionx = keyBoxx + keyBoxSize + PADDING_HORIZONTAL;
+                    float actionY = TExTURE_HEIGHT / 2;
                     RectangleF actionRect = new RectangleF(
-                        actionX, 0,
-                        TEXTURE_WIDTH - actionX - PADDING_HORIZONTAL,
-                        TEXTURE_HEIGHT);
+                        actionx, 0,
+                        TExTURE_WIDTH - actionx - PADDING_HORIZONTAL,
+                        TExTURE_HEIGHT);
                     _reusableGraphics.DrawString(_actionText, _actionFont, actionTextBrush, actionRect, actionFormat);
                 }
             }

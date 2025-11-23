@@ -12,14 +12,14 @@ namespace Shader
         int loc_DepthBuffer;
         int loc_LastMipSize;
 
-        const string VERTEX_FILE = @"\Shader\HzmShader\dummy.vert";
+        const string VERTEx_FILE = @"\Shader\HzmShader\dummy.vert";
         const string GEOMETRY_FILE = @"\Shader\HzmShader\hi-z.gs.glsl";
         const string FRAGMENT_FILE = @"\Shader\HzmShader\hi-z.frag";
 
         public HzmMipmapShader(string projectPath) : base()
         {
             _name = this.GetType().Name;
-            VertFileName = projectPath + VERTEX_FILE;
+            VertFileName = projectPath + VERTEx_FILE;
             GeomFileName = projectPath + GEOMETRY_FILE;
             FragFileName = projectPath + FRAGMENT_FILE;
             InitCompileShader();

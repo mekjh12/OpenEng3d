@@ -20,7 +20,7 @@ namespace FormTools
     public partial class FormTerrainImposter : Form
     {
         private string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
-        private string EXE_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\FormTools\bin\Debug\";
+        private string ExE_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\FormTools\bin\Debug\";
 
         private OcclusionCullingSystem _ocs;
         ImpostorLODSystem _impostorLODSystem;  // LOD 기반 임포스터 시스템
@@ -101,14 +101,14 @@ namespace FormTools
             _glControl3.InitGridShader(PROJECT_PATH);
 
             // terrain init
-            string heightMap = EXE_PATH + @"\Res\Terrain\209147.png";
+            string heightMap = ExE_PATH + @"\Res\Terrain\209147.png";
             string[] levelTextureMap = new string[5];
-            levelTextureMap[0] = EXE_PATH + @"\Res\Terrain\water1.png";
-            levelTextureMap[1] = EXE_PATH + @"\Res\Terrain\grass_1.png";
-            levelTextureMap[2] = EXE_PATH + @"\Res\Terrain\lowestTile.png";
-            levelTextureMap[3] = EXE_PATH + @"\Res\Terrain\HighTile.png";
-            levelTextureMap[4] = EXE_PATH + @"\Res\Terrain\highestTile.png";
-            string detailMap = EXE_PATH + @"\Res\Terrain\detailMap.png";
+            levelTextureMap[0] = ExE_PATH + @"\Res\Terrain\water1.png";
+            levelTextureMap[1] = ExE_PATH + @"\Res\Terrain\grass_1.png";
+            levelTextureMap[2] = ExE_PATH + @"\Res\Terrain\lowestTile.png";
+            levelTextureMap[3] = ExE_PATH + @"\Res\Terrain\HighTile.png";
+            levelTextureMap[4] = ExE_PATH + @"\Res\Terrain\highestTile.png";
+            string detailMap = ExE_PATH + @"\Res\Terrain\detailMap.png";
             _terrainMap = new TerrainMap();
             _terrainMap.LoadMap(heightMap, levelTextureMap, detailMap, 20, 50);
 

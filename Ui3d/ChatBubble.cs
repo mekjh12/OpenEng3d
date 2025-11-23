@@ -14,8 +14,8 @@ namespace Ui3d
     public class ChatBubble : Billboard3D
     {
         // 기본 텍스처 크기
-        private int TEXTURE_WIDTH = 512;
-        private int TEXTURE_HEIGHT = 128;
+        private int TExTURE_WIDTH = 512;
+        private int TExTURE_HEIGHT = 128;
 
         // 말풍선 설정
         private const float PADDING_HORIZONTAL = 20f;
@@ -29,7 +29,7 @@ namespace Ui3d
         private const int FADE_OUT_DURATION = 500;          // 페이드아웃 시간 (밀리초)
 
         // 기본 색상
-        private static readonly Color DEFAULT_TEXT_COLOR = Color.FromArgb(255, 50, 50, 50);
+        private static readonly Color DEFAULT_TExT_COLOR = Color.FromArgb(255, 50, 50, 50);
         private static readonly Color DEFAULT_BUBBLE_COLOR = Color.FromArgb(255, 255, 255, 255);
         private static readonly Color DEFAULT_BORDER_COLOR = Color.FromArgb(255, 150, 150, 150);
 
@@ -142,7 +142,7 @@ namespace Ui3d
             _isFinished = false;
 
             // 색상 설정
-            _textColor = DEFAULT_TEXT_COLOR;
+            _textColor = DEFAULT_TExT_COLOR;
             _bubbleColor = DEFAULT_BUBBLE_COLOR;
             _borderColor = DEFAULT_BORDER_COLOR;
 
@@ -155,7 +155,7 @@ namespace Ui3d
             _height = DEFAULT_HEIGHT;
 
             // 재사용할 그래픽 리소스 초기화
-            _reusableBitmap = new Bitmap(TEXTURE_WIDTH, TEXTURE_HEIGHT);
+            _reusableBitmap = new Bitmap(TExTURE_WIDTH, TExTURE_HEIGHT);
             _reusableGraphics = Graphics.FromImage(_reusableBitmap);
             _reusableGraphics.SmoothingMode = SmoothingMode.AntiAlias;
             _reusableGraphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
@@ -240,36 +240,36 @@ namespace Ui3d
                 int newHeight = (int)(textSize.Height + PADDING_VERTICAL * 2 + TAIL_HEIGHT);
 
                 // 텍스처 크기가 변경된 경우에만 재생성
-                if (TEXTURE_WIDTH != newWidth || TEXTURE_HEIGHT != newHeight)
+                if (TExTURE_WIDTH != newWidth || TExTURE_HEIGHT != newHeight)
                 {
-                    TEXTURE_WIDTH = newWidth;
-                    TEXTURE_HEIGHT = newHeight;
+                    TExTURE_WIDTH = newWidth;
+                    TExTURE_HEIGHT = newHeight;
 
                     // 기존 리소스 해제 및 재생성
                     _reusableGraphics?.Dispose();
                     _reusableBitmap?.Dispose();
-                    _reusableBitmap = new Bitmap(TEXTURE_WIDTH, TEXTURE_HEIGHT);
+                    _reusableBitmap = new Bitmap(TExTURE_WIDTH, TExTURE_HEIGHT);
                     _reusableGraphics = Graphics.FromImage(_reusableBitmap);
                     _reusableGraphics.SmoothingMode = SmoothingMode.AntiAlias;
                     _reusableGraphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
                 }
 
                 // 빌보드 크기 설정
-                _width = 0.001f * TEXTURE_WIDTH;
-                _height = 0.001f * TEXTURE_HEIGHT;
+                _width = 0.001f * TExTURE_WIDTH;
+                _height = 0.001f * TExTURE_HEIGHT;
             }
 
             // 배경 투명하게
             _reusableGraphics.Clear(Color.Transparent);
 
             // 말풍선 영역 계산 (꼬리 제외)
-            float bubbleX = 0;
+            float bubblex = 0;
             float bubbleY = 0;
-            float bubbleWidth = TEXTURE_WIDTH;
-            float bubbleHeight = TEXTURE_HEIGHT - TAIL_HEIGHT;
+            float bubbleWidth = TExTURE_WIDTH;
+            float bubbleHeight = TExTURE_HEIGHT - TAIL_HEIGHT;
 
             // 말풍선 경로 생성 (둥근 사각형 + 꼬리)
-            GraphicsPath bubblePath = CreateBubblePath(bubbleX, bubbleY, bubbleWidth, bubbleHeight);
+            GraphicsPath bubblePath = CreateBubblePath(bubblex, bubbleY, bubbleWidth, bubbleHeight);
 
             // 말풍선 배경 그리기
             using (SolidBrush bubbleBrush = new SolidBrush(_bubbleColor))
@@ -298,7 +298,7 @@ namespace Ui3d
                     RectangleF textRect = new RectangleF(
                         PADDING_HORIZONTAL / 2,
                         PADDING_VERTICAL / 2,
-                        TEXTURE_WIDTH - PADDING_HORIZONTAL,
+                        TExTURE_WIDTH - PADDING_HORIZONTAL,
                         bubbleHeight - PADDING_VERTICAL
                     );
                     _reusableGraphics.DrawString(_message, _messageFont, textBrush, textRect, format);
@@ -332,19 +332,19 @@ namespace Ui3d
             path.AddArc(arc, 0, 90);
 
             // 꼬리 오른쪽
-            float tailCenterX = x + width / 2;
+            float tailCenterx = x + width / 2;
             float tailBottomY = y + height + TAIL_HEIGHT;
-            path.AddLine(x + width - CORNER_RADIUS, y + height, tailCenterX + TAIL_WIDTH / 2, y + height);
+            path.AddLine(x + width - CORNER_RADIUS, y + height, tailCenterx + TAIL_WIDTH / 2, y + height);
 
             // 꼬리 끝
-            path.AddLine(tailCenterX + TAIL_WIDTH / 2, y + height, tailCenterX, tailBottomY);
+            path.AddLine(tailCenterx + TAIL_WIDTH / 2, y + height, tailCenterx, tailBottomY);
 
             // 꼬리 왼쪽
-            path.AddLine(tailCenterX, tailBottomY, tailCenterX - TAIL_WIDTH / 2, y + height);
+            path.AddLine(tailCenterx, tailBottomY, tailCenterx - TAIL_WIDTH / 2, y + height);
 
             // 좌하단
             arc.X = x;
-            path.AddLine(tailCenterX - TAIL_WIDTH / 2, y + height, x + CORNER_RADIUS, y + height);
+            path.AddLine(tailCenterx - TAIL_WIDTH / 2, y + height, x + CORNER_RADIUS, y + height);
             path.AddArc(arc, 90, 90);
 
             path.CloseFigure();

@@ -12,12 +12,12 @@ namespace Animate
             string itemName, 
             TexturedModel model,
             float size = 1.0f,
-            float positionX = 0.0f, float positionY = 0.0f, float positionZ = 0.0f,
+            float positionx = 0.0f, float positionY = 0.0f, float positionZ = 0.0f,
             float pitch = 0.0f, float yaw = 0.0f, float roll = 0.0f)
         {
             int boneIndex = ((PrimateRig)_aniRig)[where];
             EquipItem(boneIndex, itemUniqueName, itemName, model, size,
-                     positionX, positionY, positionZ,
+                     positionx, positionY, positionZ,
                      pitch, yaw, roll);
         }
 
@@ -30,15 +30,15 @@ namespace Animate
         /// <param name="itemName">아이템 타입 이름</param>
         /// <param name="model">아이템의 3D 모델</param>
         /// <param name="size">아이템 크기 (균등 스케일링)</param>
-        /// <param name="positionX">X축 위치 오프셋</param>
+        /// <param name="positionx">x축 위치 오프셋</param>
         /// <param name="positionY">Y축 위치 오프셋</param>
         /// <param name="positionZ">Z축 위치 오프셋</param>
-        /// <param name="pitch">X축 회전 (피치, 도 단위)</param>
+        /// <param name="pitch">x축 회전 (피치, 도 단위)</param>
         /// <param name="yaw">Y축 회전 (요, 도 단위)</param>
         /// <param name="roll">Z축 회전 (롤, 도 단위)</param>
         public void EquipItem(int boneIndex, string itemUniqueName, string itemName, TexturedModel model,
             float size = 1.0f,
-            float positionX = 0.0f, float positionY = 0.0f, float positionZ = 0.0f,
+            float positionx = 0.0f, float positionY = 0.0f, float positionZ = 0.0f,
             float pitch = 0.0f, float yaw = 0.0f, float roll = 0.0f)
         {
             // 변환 행렬 조합: Scale -> Rotate -> Translate 순서
@@ -46,7 +46,7 @@ namespace Animate
             Matrix4x4f rotationMatrix = Matrix4x4f.RotatedX(pitch) *
                                        Matrix4x4f.RotatedY(yaw) *
                                        Matrix4x4f.RotatedZ(roll);
-            Matrix4x4f translationMatrix = Matrix4x4f.Translated(positionX, positionY, positionZ);
+            Matrix4x4f translationMatrix = Matrix4x4f.Translated(positionx, positionY, positionZ);
 
             // 최종 변환: T * R * S (오른쪽부터 먼저 적용)
             Matrix4x4f attachmentTransform = translationMatrix * rotationMatrix * scaleMatrix;

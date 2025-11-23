@@ -120,11 +120,11 @@ namespace Occlusion
 
                     // Work Group 계산
                     const int WORK_GROUP_SIZE = 16;
-                    int groupsX = (outputWidth + WORK_GROUP_SIZE - 1) / WORK_GROUP_SIZE;
+                    int groupsx = (outputWidth + WORK_GROUP_SIZE - 1) / WORK_GROUP_SIZE;
                     int groupsY = (outputHeight + WORK_GROUP_SIZE - 1) / WORK_GROUP_SIZE;
 
                     // Compute Shader 실행
-                    Gl.DispatchCompute((uint)groupsX, (uint)groupsY, 1);
+                    Gl.DispatchCompute((uint)groupsx, (uint)groupsY, 1);
 
                     // ✅ AMD GPU: 각 디스패치 후 완전 동기화
                     Gl.MemoryBarrier(MemoryBarrierMask.AllBarrierBits);

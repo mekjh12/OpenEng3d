@@ -32,7 +32,7 @@ namespace Animate
         /// <param name="motionFileName"></param>
         public static Motion LoadMixamoMotion(AnimRig targetAniRig, string motionFileName)
         {
-            // Xml을 준비한다.
+            // xml을 준비한다.
             XmlDocument xml = new XmlDocument();
             xml.Load(motionFileName);
             string motionName = Path.GetFileNameWithoutExtension(motionFileName);

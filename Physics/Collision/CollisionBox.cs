@@ -22,9 +22,9 @@ namespace Physics.Collision
         }
 
         /// <summary>
-        /// 상자의 질량중심으로부터의 X축 월드벡터
+        /// 상자의 질량중심으로부터의 x축 월드벡터
         /// </summary>
-        public Vertex3f AxisX => _body.TransformMatrix.Column0.xyz().Normalized;
+        public Vertex3f Axisx => _body.TransformMatrix.Column0.xyz().Normalized;
 
         /// <summary>
         /// 상자의 질량중심으로부터의 Y축 월드벡터
@@ -43,7 +43,7 @@ namespace Physics.Collision
         /// <returns></returns>
         public Vertex3f Axis(int index)
         {
-            if (index == 0) return AxisX;
+            if (index == 0) return Axisx;
             else if (index == 1) return AxisY;
             else if (index == 2) return AxisZ;
             else return Vertex3f.Zero;
@@ -68,7 +68,7 @@ namespace Physics.Collision
         public float TransformToAxis(Vertex3f axis)
         {
             Vertex3f unitAxis = axis.Normalized;
-            return _halfSize.x * MathFast.Abs(unitAxis * AxisX) +
+            return _halfSize.x * MathFast.Abs(unitAxis * Axisx) +
                    _halfSize.y * MathFast.Abs(unitAxis * AxisY) +
                    _halfSize.z * MathFast.Abs(unitAxis * AxisZ);
         }
@@ -81,7 +81,7 @@ namespace Physics.Collision
         public float BoxRadius(Vertex3f axis)
         {
             Vertex3f unitAxis = axis.Normalized;
-            return _halfSize.x * MathFast.Abs(unitAxis * AxisX) +
+            return _halfSize.x * MathFast.Abs(unitAxis * Axisx) +
                    _halfSize.y * MathFast.Abs(unitAxis * AxisY) +
                    _halfSize.z * MathFast.Abs(unitAxis * AxisZ);
         }

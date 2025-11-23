@@ -51,21 +51,21 @@ void main()
 
    // 테셀레이션 제어 상수
    const float MIN_DISTANCE = 1;      // 최대 테셀레이션 적용 거리
-   const float MAX_DISTANCE = 400;    // 최소 테셀레이션 적용 거리
+   const float MAx_DISTANCE = 400;    // 최소 테셀레이션 적용 거리
    const int MIN_TESS_LEVEL = 8;      // 최소 테셀레이션 분할 수
-   const int MAX_TESS_LEVEL = 128;    // 최대 테셀레이션 분할 수
+   const int MAx_TESS_LEVEL = 128;    // 최대 테셀레이션 분할 수
 
    // 거리 정규화
-   float Distance00 = clamp((Len00 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0.0, 1.0);
-   float Distance01 = clamp((Len01 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0.0, 1.0);
-   float Distance10 = clamp((Len10 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0.0, 1.0);
-   float Distance11 = clamp((Len11 - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0.0, 1.0);
+   float Distance00 = clamp((Len00 - MIN_DISTANCE) / (MAx_DISTANCE - MIN_DISTANCE), 0.0, 1.0);
+   float Distance01 = clamp((Len01 - MIN_DISTANCE) / (MAx_DISTANCE - MIN_DISTANCE), 0.0, 1.0);
+   float Distance10 = clamp((Len10 - MIN_DISTANCE) / (MAx_DISTANCE - MIN_DISTANCE), 0.0, 1.0);
+   float Distance11 = clamp((Len11 - MIN_DISTANCE) / (MAx_DISTANCE - MIN_DISTANCE), 0.0, 1.0);
 
    // 엣지별 테셀레이션 레벨 계산
-   float TessLevel0 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(Distance10, Distance00));  // 좌측
-   float TessLevel1 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(Distance00, Distance01));  // 하단
-   float TessLevel2 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(Distance01, Distance11));  // 우측
-   float TessLevel3 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(Distance11, Distance10));  // 상단
+   float TessLevel0 = mix(MAx_TESS_LEVEL, MIN_TESS_LEVEL, min(Distance10, Distance00));  // 좌측
+   float TessLevel1 = mix(MAx_TESS_LEVEL, MIN_TESS_LEVEL, min(Distance00, Distance01));  // 하단
+   float TessLevel2 = mix(MAx_TESS_LEVEL, MIN_TESS_LEVEL, min(Distance01, Distance11));  // 우측
+   float TessLevel3 = mix(MAx_TESS_LEVEL, MIN_TESS_LEVEL, min(Distance11, Distance10));  // 상단
 
    // 테셀레이션 레벨 설정
    gl_TessLevelOuter[0] = TessLevel0;  // 좌측 엣지

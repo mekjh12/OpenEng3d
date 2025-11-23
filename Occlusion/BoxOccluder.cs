@@ -22,7 +22,7 @@ namespace Occlusion
     /// c = Obb의 중심
     /// s, t, u는 방향벡터로서 중심으로 부터 OBB의 크기의 반인 벡터이다.
     ///   
-    /// 모델행렬은 X=s, Y=t, Z=u, P=c이다.
+    /// 모델행렬은 x=s, Y=t, Z=u, P=c이다.
     /// </summary>
     public class BoxOccluder
     {

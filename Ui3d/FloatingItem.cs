@@ -14,11 +14,11 @@ namespace Ui3d
     public class FloatingItem : Billboard3D
     {
         // 기본 텍스처 크기
-        private const int TEXTURE_WIDTH = 128;
-        private const int TEXTURE_HEIGHT = 128;
+        private const int TExTURE_WIDTH = 128;
+        private const int TExTURE_HEIGHT = 128;
 
         // 기본 색상
-        private static readonly Color DEFAULT_TEXT_COLOR = Color.FromArgb(255, 255, 255, 255);
+        private static readonly Color DEFAULT_TExT_COLOR = Color.FromArgb(255, 255, 255, 255);
         private static readonly Color DEFAULT_COUNT_COLOR = Color.FromArgb(255, 255, 220, 0);
         private static readonly Color DEFAULT_BACKGROUND_COLOR = Color.FromArgb(0, 0, 0, 0);
 
@@ -133,7 +133,7 @@ namespace Ui3d
             _itemIcon = itemIcon;
             _itemName = itemName;
             _count = count;
-            _textColor = DEFAULT_TEXT_COLOR;
+            _textColor = DEFAULT_TExT_COLOR;
             _countColor = DEFAULT_COUNT_COLOR;
             _width = DEFAULT_WIDTH;
             _height = DEFAULT_HEIGHT;
@@ -144,7 +144,7 @@ namespace Ui3d
             _startPosition = _worldPosition;
 
             // 재사용할 그래픽 리소스 초기화
-            _reusableBitmap = new Bitmap(TEXTURE_WIDTH, TEXTURE_HEIGHT);
+            _reusableBitmap = new Bitmap(TExTURE_WIDTH, TExTURE_HEIGHT);
             _reusableGraphics = Graphics.FromImage(_reusableBitmap);
             _reusableGraphics.SmoothingMode = SmoothingMode.AntiAlias;
             _reusableGraphics.TextRenderingHint = TextRenderingHint.AntiAlias;
@@ -204,12 +204,12 @@ namespace Ui3d
             if (_itemIcon != null)
             {
                 // 아이콘을 중앙에 그리기
-                int iconSize = Math.Min(TEXTURE_WIDTH, TEXTURE_HEIGHT) - 20;
-                int iconX = (TEXTURE_WIDTH - iconSize) / 2;
-                int iconY = (TEXTURE_HEIGHT - iconSize) / 2 - 10;
+                int iconSize = Math.Min(TExTURE_WIDTH, TExTURE_HEIGHT) - 20;
+                int iconx = (TExTURE_WIDTH - iconSize) / 2;
+                int iconY = (TExTURE_HEIGHT - iconSize) / 2 - 10;
 
                 _reusableGraphics.DrawImage(_itemIcon,
-                    new Rectangle(iconX, iconY, iconSize, iconSize),
+                    new Rectangle(iconx, iconY, iconSize, iconSize),
                     new Rectangle(0, 0, _itemIcon.Width, _itemIcon.Height),
                     GraphicsUnit.Pixel);
             }
@@ -226,7 +226,7 @@ namespace Ui3d
                 {
                     string countText = $"+{_count}";
                     _reusableGraphics.DrawString(countText, _countFont, countBrush,
-                        new RectangleF(0, 0, TEXTURE_WIDTH - 5, TEXTURE_HEIGHT - 5), format);
+                        new RectangleF(0, 0, TExTURE_WIDTH - 5, TExTURE_HEIGHT - 5), format);
                 }
             }
 
@@ -242,7 +242,7 @@ namespace Ui3d
                 using (Font nameFont = new Font(DEFAULT_FONT_FAMILY, 10, FontStyle.Regular))
                 {
                     _reusableGraphics.DrawString(_itemName, nameFont, textBrush,
-                        new RectangleF(0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT - 5), format);
+                        new RectangleF(0, 0, TExTURE_WIDTH, TExTURE_HEIGHT - 5), format);
                 }
             }
 

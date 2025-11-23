@@ -1,8 +1,8 @@
 ﻿#version 420 core
 
 // 상수 정의
-const int MAX_JOINTS = 128;    // 최대 조인트 수
-const int MAX_WEIGHTS = 4;     // 정점당 최대 가중치 수
+const int MAx_JOINTS = 128;    // 최대 조인트 수
+const int MAx_WEIGHTS = 4;     // 정점당 최대 가중치 수
 
 // 입력 속성
 layout(location = 0) in vec3 in_position;      // 정점 위치
@@ -17,7 +17,7 @@ out vec2 pass_textureCoords;   // 프래그먼트 셰이더로 전달할 텍스�
 out vec4 pass_weights;         // 프래그먼트 셰이더로 전달할 가중치
 
 // 유니폼 변수
-//uniform mat4 finalAnimatedBoneMatrix[MAX_JOINTS]; // 애니메이션된 뼈대 변환 행렬들
+//uniform mat4 finalAnimatedBoneMatrix[MAx_JOINTS]; // 애니메이션된 뼈대 변환 행렬들
 
 // 새로 추가
 layout (std140) uniform BoneMatrices
@@ -46,13 +46,13 @@ void main(void)
         
         // 가중치 합 계산 (정규화용)
         float weightSum = 0.0;
-        for (int i = 0; i < MAX_WEIGHTS; i++)
+        for (int i = 0; i < MAx_WEIGHTS; i++)
         {
             weightSum += in_weights[i];
         }
         
         // 각 조인트별 변환 적용
-        for (int i = 0; i < MAX_WEIGHTS; i++)
+        for (int i = 0; i < MAx_WEIGHTS; i++)
         {
             float weight = in_weights[i];
             if (weight > 0.0) // 0인 가중치는 스킵

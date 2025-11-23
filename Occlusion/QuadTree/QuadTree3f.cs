@@ -478,6 +478,8 @@ namespace Occlusion
         {
             Vertex3f cameraPosition = camera.Position;
 
+            _indexLod0 = 0;
+
             if (enablePickLeaf)
             {
                 // 재사용 버퍼 초기화

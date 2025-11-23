@@ -9,14 +9,14 @@ namespace Animate
     {
         // 블렌딩 모션 캐시
         private string _name; // 캐시 이름
-        private const int MAX_BLENDMOTION_CACHE_COUNT = 64;
+        private const int MAx_BLENDMOTION_CACHE_COUNT = 64;
         private Motionable[] _blendingMotionCache;
         private int _blendMotionCacheIndex = 0; // 블렌딩 모션 캐시 인덱스
 
         public MotionCache(string name)
         {
             _name = name;
-            _blendingMotionCache = new Motionable[MAX_BLENDMOTION_CACHE_COUNT];
+            _blendingMotionCache = new Motionable[MAx_BLENDMOTION_CACHE_COUNT];
         }
 
         public void AddMotionToCache(Motionable blendMotion)
@@ -27,7 +27,7 @@ namespace Animate
             }
 
             // 캐시가 가득 찬 경우, 가장 오래된 모션을 제거
-            if (_blendMotionCacheIndex >= MAX_BLENDMOTION_CACHE_COUNT)
+            if (_blendMotionCacheIndex >= MAx_BLENDMOTION_CACHE_COUNT)
             {
                 _blendMotionCacheIndex = 0; // 인덱스를 초기화
             }
@@ -39,7 +39,7 @@ namespace Animate
 
         public Motionable GetMotionFromCache(string blendMotionName)
         {
-            for (int i = 0; i < MAX_BLENDMOTION_CACHE_COUNT; i++)
+            for (int i = 0; i < MAx_BLENDMOTION_CACHE_COUNT; i++)
             {
                 if (_blendingMotionCache[i] != null && _blendingMotionCache[i].Name == blendMotionName)
                 {
@@ -54,7 +54,7 @@ namespace Animate
         {
             Console.WriteLine($"----------------------{_name}-----------------------");
             Console.WriteLine($"_blendMotionCacheIndex = {_blendMotionCacheIndex}");
-            for (int i = 0; i < MAX_BLENDMOTION_CACHE_COUNT; i++)
+            for (int i = 0; i < MAx_BLENDMOTION_CACHE_COUNT; i++)
             {
                 if (_blendingMotionCache[i] != null)
                 {

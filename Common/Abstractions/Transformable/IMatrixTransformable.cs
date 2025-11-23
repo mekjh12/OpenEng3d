@@ -13,13 +13,13 @@ namespace Common.Abstractions
         /// <summary>
         /// 로컬 바인드 변환을 적용한다.
         /// </summary>
-        /// <param name="sx">X축 스케일</param>
+        /// <param name="sx">x축 스케일</param>
         /// <param name="sy">Y축 스케일</param>
         /// <param name="sz">Z축 스케일</param>
-        /// <param name="rotx">X축 회전</param>
+        /// <param name="rotx">x축 회전</param>
         /// <param name="roty">Y축 회전</param>
         /// <param name="rotz">Z축 회전</param>
-        /// <param name="x">X축 위치</param>
+        /// <param name="x">x축 위치</param>
         /// <param name="y">Y축 위치</param>
         /// <param name="z">Z축 위치</param>
         void LocalBindTransform(float sx = 1.0f, float sy = 1.0f, float sz = 1.0f,

@@ -11,7 +11,7 @@ namespace Animate
         // ------------------------------------------------------------------------------
         // 멤버 변수
         // ------------------------------------------------------------------------------
-        const int MAX_BONES_COUNT = 128;            // 최대 뼈대 개수
+        const int MAx_BONES_COUNT = 128;            // 최대 뼈대 개수
         string _animationName;                      // 애니메이션 이름
         float _length;                              // 애니메이션 길이(초)
         Dictionary<float, KeyFrame> _keyframes;     // 키프레임 딕셔너리 (시간 -> 키프레임)
@@ -73,7 +73,7 @@ namespace Animate
             _length = lengthInSeconds;
 
             // 초기화
-            _currentPose = new Dictionary<string, Matrix4x4f>(MAX_BONES_COUNT);
+            _currentPose = new Dictionary<string, Matrix4x4f>(MAx_BONES_COUNT);
             _keyframes = new Dictionary<float, KeyFrame>();
 
             // 시간 찾기 유틸리티

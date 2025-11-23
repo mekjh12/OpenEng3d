@@ -6,7 +6,7 @@ namespace Shader
 {
     public class AABBBoxShader : ShaderProgram<AABBBoxShader.UNIFORM_NAME>
     {
-        const string VERTEX_FILE = @"\Shader\AABBShader\aabb.vert";
+        const string VERTEx_FILE = @"\Shader\AABBShader\aabb.vert";
         const string GEOMETRY_FILE = @"\Shader\AABBShader\aabb.gem.glsl";
         const string FRAGMENT_FILE = @"\Shader\AABBShader\aabb.frag";
 
@@ -21,7 +21,7 @@ namespace Shader
         private uint _instanceHalfSizeBuffer;
         private uint _instanceColorBuffer;
 
-        private const int MAX_INSTANCES = 100000;
+        private const int MAx_INSTANCES = 100000;
             
         // 재사용 버퍼
         private float[] _centerData; 
@@ -31,15 +31,15 @@ namespace Shader
         public AABBBoxShader(string projectPath) : base()
         {
             _name = this.GetType().Name;
-            VertFileName = projectPath + VERTEX_FILE;
+            VertFileName = projectPath + VERTEx_FILE;
             GeomFileName = projectPath + GEOMETRY_FILE;
             FragFilename = projectPath + FRAGMENT_FILE;
             InitCompileShader();
 
             // 데이터 버퍼 초기화
-            _centerData = new float[MAX_INSTANCES * 3];    // ⭐ 추가
-            _halfSizeData = new float[MAX_INSTANCES * 3];  // vec3 = 3 floats
-            _colorData = new float[MAX_INSTANCES * 4];     // vec4 = 4 floats
+            _centerData = new float[MAx_INSTANCES * 3];    // ⭐ 추가
+            _halfSizeData = new float[MAx_INSTANCES * 3];  // vec3 = 3 floats
+            _colorData = new float[MAx_INSTANCES * 4];     // vec4 = 4 floats
 
             // VBO 생성
             _instanceCenterBuffer = Gl.GenBuffer();        // ⭐ 추가
@@ -49,21 +49,21 @@ namespace Shader
             // ⭐ Center 버퍼 설정
             Gl.BindBuffer(BufferTarget.ArrayBuffer, _instanceCenterBuffer);
             Gl.BufferData(BufferTarget.ArrayBuffer,
-                (uint)(MAX_INSTANCES * 3 * sizeof(float)),
+                (uint)(MAx_INSTANCES * 3 * sizeof(float)),
                 IntPtr.Zero,
                 BufferUsage.DynamicDraw);
 
             // HalfSize 버퍼 설정
             Gl.BindBuffer(BufferTarget.ArrayBuffer, _instanceHalfSizeBuffer);
             Gl.BufferData(BufferTarget.ArrayBuffer,
-                (uint)(MAX_INSTANCES * 3 * sizeof(float)),
+                (uint)(MAx_INSTANCES * 3 * sizeof(float)),
                 IntPtr.Zero,
                 BufferUsage.DynamicDraw);
 
             // Color 버퍼 설정
             Gl.BindBuffer(BufferTarget.ArrayBuffer, _instanceColorBuffer);
             Gl.BufferData(BufferTarget.ArrayBuffer,
-                (uint)(MAX_INSTANCES * 4 * sizeof(float)),
+                (uint)(MAx_INSTANCES * 4 * sizeof(float)),
                 IntPtr.Zero,
                 BufferUsage.DynamicDraw);
 
@@ -82,9 +82,9 @@ namespace Shader
         /// </summary>
         public unsafe void UploadInstanceData(Vertex3f[] centers, Vertex3f[] halfSizes, Vertex4f[] colors, int count)
         {
-            if (count > MAX_INSTANCES)
+            if (count > MAx_INSTANCES)
             {
-                count = MAX_INSTANCES;
+                count = MAx_INSTANCES;
             }
 
             // ⭐ Center 데이터 복사

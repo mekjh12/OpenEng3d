@@ -122,15 +122,15 @@ namespace Animate
             ZetaExt.Quaternion finalRot = constrainedRot;
 
             // 스케일 선형 보간
-            float scaleX = originalTransform.Column0.xyz().Length();
+            float scalex = originalTransform.Column0.xyz().Length();
             float scaleY = originalTransform.Column1.xyz().Length();
             float scaleZ = originalTransform.Column2.xyz().Length();
 
-            float constrainedScaleX = constrainedTransform.Column0.xyz().Length();
+            float constrainedScalex = constrainedTransform.Column0.xyz().Length();
             float constrainedScaleY = constrainedTransform.Column1.xyz().Length();
             float constrainedScaleZ = constrainedTransform.Column2.xyz().Length();
 
-            float finalScaleX = scaleX + (constrainedScaleX - scaleX);
+            float finalScalex = scalex + (constrainedScalex - scalex);
             float finalScaleY = scaleY + (constrainedScaleY - scaleY);
             float finalScaleZ = scaleZ + (constrainedScaleZ - scaleZ);
 
@@ -138,7 +138,7 @@ namespace Animate
             Matrix4x4f result = (Matrix4x4f)finalRot;
 
             // 스케일 적용
-            Vertex3f col0 = result.Column0.xyz().Normalized * finalScaleX;
+            Vertex3f col0 = result.Column0.xyz().Normalized * finalScalex;
             Vertex3f col1 = result.Column1.xyz().Normalized * finalScaleY;
             Vertex3f col2 = result.Column2.xyz().Normalized * finalScaleZ;
 

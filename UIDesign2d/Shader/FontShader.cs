@@ -9,7 +9,7 @@ namespace Ui2d
 {
     public class FontShader : ShaderProgram<Enum>
     {        
-        const string VERTEX_FILE = @"\font.vert";
+        const string VERTEx_FILE = @"\font.vert";
         const string FRAGMENT_FILE = @"\font.frag";
 
         private int location_colour;
@@ -18,7 +18,7 @@ namespace Ui2d
         public FontShader(string projectPath) : base()
         {
             _name = this.GetType().Name;
-            VertFileName = projectPath + VERTEX_FILE;
+            VertFileName = projectPath + VERTEx_FILE;
             FragFilename = projectPath + FRAGMENT_FILE;
             InitCompileShader();
         }

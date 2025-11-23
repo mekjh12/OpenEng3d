@@ -92,16 +92,16 @@ namespace Animate
             SetupArmIK();
             SetupHeadIK();
 
-            _hip = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_Hips];
-            _neck = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_Neck];
-            _spine2 = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_Spine2];
+            _hip = _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_Hips];
+            _neck = _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_Neck];
+            _spine2 = _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_Spine2];
         }
 
         private void SetupHeadIK()
         {
-            _head = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_Head];
-            _neck = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_Neck];
-            _spine2 = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_Spine2];
+            _head = _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_Head];
+            _neck = _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_Neck];
+            _spine2 = _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_Spine2];
 
             _threeBoneLookAtIK = new ThreeBoneLookAtIK(_head, _neck, _spine2);
             _threeBoneLookAtIK.FirstLookAt.SetAngleLimits(90, 60);
@@ -117,13 +117,13 @@ namespace Animate
         private void SetupArmIK()
         {
             // 본 설정
-            _leftArm = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftArm];
-            _leftForeArm = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftForeArm];
-            _leftHand = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftHand];
+            _leftArm = _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_LeftArm];
+            _leftForeArm = _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_LeftForeArm];
+            _leftHand = _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_LeftHand];
 
-            _rightArm = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightArm];
-            _rightForeArm = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightForeArm];
-            _rightHand = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightHand];
+            _rightArm = _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_RightArm];
+            _rightForeArm = _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_RightForeArm];
+            _rightHand = _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_RightHand];
 
             // TwoBoneIK 생성
             _leftArmTwoBoneIK = new ArmTwoBoneIK(_leftArm, _leftForeArm, _leftHand, true);
@@ -133,30 +133,30 @@ namespace Animate
             _rightArmRollIK = new ThreeBoneRoll(_rightArm, _rightForeArm, _rightHand, LocalSpaceAxis.Y);
 
             // 관절 제약조건 설정
-            //AddSwingTwistConstraint(MIXAMORIG_BONENAME.mixamorig_LeftArm, 110, 30, LocalSpaceAxis.Y);
-            //AddSwingTwistConstraint(MIXAMORIG_BONENAME.mixamorig_LeftForeArm, 110, 30, LocalSpaceAxis.Y);
-            //AddSwingTwistConstraint(MIXAMORIG_BONENAME.mixamorig_RightArm, 110, 30, LocalSpaceAxis.Y);
-            //AddSwingTwistConstraint(MIXAMORIG_BONENAME.mixamorig_RightForeArm, 110, 30, LocalSpaceAxis.Y);
+            //AddSwingTwistConstraint(MIxAMORIG_BONENAME.mixamorig_LeftArm, 110, 30, LocalSpaceAxis.Y);
+            //AddSwingTwistConstraint(MIxAMORIG_BONENAME.mixamorig_LeftForeArm, 110, 30, LocalSpaceAxis.Y);
+            //AddSwingTwistConstraint(MIxAMORIG_BONENAME.mixamorig_RightArm, 110, 30, LocalSpaceAxis.Y);
+            //AddSwingTwistConstraint(MIxAMORIG_BONENAME.mixamorig_RightForeArm, 110, 30, LocalSpaceAxis.Y);
         }
 
         private void SetupFootIK()
         {
-            _leftFootToe = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftToeBase];
-            _rightFootToe = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightToeBase];
-            _leftFoot = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftFoot];
-            _rightFoot = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightFoot];
-            _leftLeg = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftLeg];
-            _rightLeg = _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightLeg];
+            _leftFootToe = _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_LeftToeBase];
+            _rightFootToe = _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_RightToeBase];
+            _leftFoot = _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_LeftFoot];
+            _rightFoot = _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_RightFoot];
+            _leftLeg = _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_LeftLeg];
+            _rightLeg = _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_RightLeg];
 
             _leftFootTwoBoneIK = new FootTwoBoneIK(
-                _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftUpLeg],
-                _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftLeg],
-                _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_LeftFoot]);
+                _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_LeftUpLeg],
+                _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_LeftLeg],
+                _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_LeftFoot]);
 
             _rightFootTwoBoneIK = new FootTwoBoneIK(
-                _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightUpLeg],
-                _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightLeg],
-                _aniRig.Armature[MIXAMORIG_BONENAME.mixamorig_RightFoot]);
+                _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_RightUpLeg],
+                _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_RightLeg],
+                _aniRig.Armature[MIxAMORIG_BONENAME.mixamorig_RightFoot]);
 
         }
         // ====== 팔 IK 메서드 (신규) ======
@@ -525,7 +525,7 @@ namespace Animate
         public Vertex3f LookAt;
     }
 
-    public static class MIXAMORIG_BONENAME
+    public static class MIxAMORIG_BONENAME
     {
         // Hips (Root)
         public const string mixamorig_Hips = "mixamorig_Hips";

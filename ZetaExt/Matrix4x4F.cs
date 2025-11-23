@@ -409,11 +409,11 @@ namespace ZetaExt
 
         public static Matrix4x4f CreateWorldMatrix(Vertex3f translation,
             float rx, float ry, float rz,
-            float scaleX, float scaleY, float scaleZ)
+            float scalex, float scaleY, float scaleZ)
         {
             // SRT순서 중요
             Matrix4x4f matrix = Matrix4x4f.Identity;
-            matrix.Scale(scaleX, scaleY, scaleZ);
+            matrix.Scale(scalex, scaleY, scaleZ);
             matrix.RotateX((float)(rx.ToDegree()));
             matrix.RotateY((float)(ry.ToDegree()));
             matrix.RotateZ((float)(rz.ToDegree()));

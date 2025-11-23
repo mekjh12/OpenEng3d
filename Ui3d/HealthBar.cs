@@ -13,8 +13,8 @@ namespace Ui3d
     public class HealthBar : Billboard3D
     {
         // 기본 텍스처 크기
-        private const int TEXTURE_WIDTH = 256;
-        private const int TEXTURE_HEIGHT = 32;
+        private const int TExTURE_WIDTH = 256;
+        private const int TExTURE_HEIGHT = 32;
 
         // 바 여백 및 크기
         private const float BAR_PADDING = 4f;
@@ -164,7 +164,7 @@ namespace Ui3d
             _offset = new Vertex3f(0, 0, DEFAULT_Z_OFFSET);
 
             // 재사용할 그래픽 리소스 초기화
-            _reusableBitmap = new Bitmap(TEXTURE_WIDTH, TEXTURE_HEIGHT);
+            _reusableBitmap = new Bitmap(TExTURE_WIDTH, TExTURE_HEIGHT);
             _reusableGraphics = Graphics.FromImage(_reusableBitmap);
             _reusableGraphics.SmoothingMode = SmoothingMode.AntiAlias;
         }
@@ -200,19 +200,19 @@ namespace Ui3d
             _reusableGraphics.Clear(_backgroundColor);
 
             // 바 영역 계산
-            float barX = BAR_PADDING;
+            float barx = BAR_PADDING;
             float barY = BAR_PADDING;
-            float barWidth = TEXTURE_WIDTH - BAR_PADDING * 2;
-            float barHeight = TEXTURE_HEIGHT - BAR_PADDING * 2;
+            float barWidth = TExTURE_WIDTH - BAR_PADDING * 2;
+            float barHeight = TExTURE_HEIGHT - BAR_PADDING * 2;
 
             // 테두리 그리기
             if (_showBorder)
             {
                 using (Pen borderPen = new Pen(_borderColor, BAR_BORDER_WIDTH))
                 {
-                    _reusableGraphics.DrawRectangle(borderPen, barX, barY, barWidth, barHeight);
+                    _reusableGraphics.DrawRectangle(borderPen, barx, barY, barWidth, barHeight);
                 }
-                barX += BAR_BORDER_WIDTH;
+                barx += BAR_BORDER_WIDTH;
                 barY += BAR_BORDER_WIDTH;
                 barWidth -= BAR_BORDER_WIDTH * 2;
                 barHeight -= BAR_BORDER_WIDTH * 2;
@@ -221,7 +221,7 @@ namespace Ui3d
             // 손실된 체력 배경 (회색 바)
             using (SolidBrush lostHPBrush = new SolidBrush(_lostHPColor))
             {
-                _reusableGraphics.FillRectangle(lostHPBrush, barX, barY, barWidth, barHeight);
+                _reusableGraphics.FillRectangle(lostHPBrush, barx, barY, barWidth, barHeight);
             }
 
             // 현재 체력 바
@@ -231,7 +231,7 @@ namespace Ui3d
                 float hpBarWidth = barWidth * hpRatio;
                 using (SolidBrush hpBrush = new SolidBrush(_hpColor))
                 {
-                    _reusableGraphics.FillRectangle(hpBrush, barX, barY, hpBarWidth, barHeight);
+                    _reusableGraphics.FillRectangle(hpBrush, barx, barY, hpBarWidth, barHeight);
                 }
             }
 

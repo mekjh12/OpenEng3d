@@ -42,8 +42,8 @@ namespace Occlusion
 
                 // test 4
                 float r = (float)Math.Sqrt(R * R - d0 * d0);
-                float dXn = Math.Abs(d.Cross(n).Length());
-                if (cutoff < ((r * dXn) - d0 * dn) / R) { contactCount++; continue; }
+                float dxn = Math.Abs(d.Cross(n).Length());
+                if (cutoff < ((r * dxn) - d0 * dn) / R) { contactCount++; continue; }
             }
 
             return (contactCount == 6);

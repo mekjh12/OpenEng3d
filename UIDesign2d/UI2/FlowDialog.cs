@@ -6,11 +6,11 @@ namespace Ui2d
 {
     public class FlowDialog : PictureBox
     {
-        public static uint TEXT_GUID = 0;
+        public static uint TExT_GUID = 0;
 
-        float TEXT_INTIME_FLOW_VELOCITY = 0.1f;
-        float TEXT_ONTIME_FLOW_VELOCITY = 0.008f;
-        float TEXT_OUTTIME_FLOW_VELOCITY = 0.25f;
+        float TExT_INTIME_FLOW_VELOCITY = 0.1f;
+        float TExT_ONTIME_FLOW_VELOCITY = 0.008f;
+        float TExT_OUTTIME_FLOW_VELOCITY = 0.25f;
         public float LINE_SPACE = 1.01f;
 
         protected event Action<TimeControl, float> _inTime;
@@ -19,20 +19,20 @@ namespace Ui2d
 
         public float INTIME_FLOW_VELOCITY
         {
-            get => TEXT_INTIME_FLOW_VELOCITY;
-            set => TEXT_INTIME_FLOW_VELOCITY = value;
+            get => TExT_INTIME_FLOW_VELOCITY;
+            set => TExT_INTIME_FLOW_VELOCITY = value;
         }
 
         public float ONTIME_FLOW_VELOCITY
         {
-            get => TEXT_ONTIME_FLOW_VELOCITY;
-            set => TEXT_ONTIME_FLOW_VELOCITY = value;
+            get => TExT_ONTIME_FLOW_VELOCITY;
+            set => TExT_ONTIME_FLOW_VELOCITY = value;
         }
 
         public float OUTTIME_FLOW_VELOCITY
         {
-            get => TEXT_OUTTIME_FLOW_VELOCITY;
-            set => TEXT_OUTTIME_FLOW_VELOCITY = value;
+            get => TExT_OUTTIME_FLOW_VELOCITY;
+            set => TExT_OUTTIME_FLOW_VELOCITY = value;
         }
 
         public Action<TimeControl, float> InTime
@@ -87,7 +87,7 @@ namespace Ui2d
         {
             _labels.Add(timeControl);
             AddChild(timeControl.Control);
-            TEXT_GUID++;
+            TExT_GUID++;
         }
 
         public void Clear()
@@ -104,7 +104,7 @@ namespace Ui2d
                     if (InTime != null)
                     {
                         InTime(_labels[i], _labels[i].InTime);
-                        _labels[i].InTime -= TEXT_INTIME_FLOW_VELOCITY;
+                        _labels[i].InTime -= TExT_INTIME_FLOW_VELOCITY;
                     }                    
                 }
 
@@ -113,7 +113,7 @@ namespace Ui2d
                     if (OnTime != null)
                     {
                         OnTime(_labels[i], _labels[i].OnTime);
-                        _labels[i].OnTime -= TEXT_ONTIME_FLOW_VELOCITY;
+                        _labels[i].OnTime -= TExT_ONTIME_FLOW_VELOCITY;
                     }
                 }
 
@@ -122,7 +122,7 @@ namespace Ui2d
                     if (OutTime != null)
                     {
                         OutTime(_labels[i], _labels[i].OutTime);
-                        _labels[i].OutTime -= TEXT_OUTTIME_FLOW_VELOCITY;
+                        _labels[i].OutTime -= TExT_OUTTIME_FLOW_VELOCITY;
                     }
                 }
 

@@ -187,7 +187,7 @@ namespace Shader
             // 카메라 UBO 연결
             /*
             uint cameraBlockIndex = Gl.GetUniformBlockIndex(programID, UBOBlockName.CameraUniforms.ToString());
-            if (cameraBlockIndex != Gl.INVALID_INDEX)
+            if (cameraBlockIndex != Gl.INVALID_INDEx)
                 Gl.UniformBlockBinding(programID, cameraBlockIndex, CAMERA_UBO_BINDING_POINT);
             */
 

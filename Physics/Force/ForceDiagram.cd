@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ClassDiagram MajorVersion="1" MinorVersion="1">
   <Class Name="Physics.Buoyancy">
-    <Position X="5.75" Y="3" Width="2" />
+    <Position x="5.75" Y="3" Width="2" />
     <TypeIdentifier>
       <HashCode>AIAAAAAAAAAAAAAgAAAAAAAABAAAAEAAAAAAAACIAAA=</HashCode>
       <FileName>Force\Buoyancy.cs</FileName>
@@ -9,7 +9,7 @@
     <Lollipop Position="0.2" />
   </Class>
   <Class Name="Physics.Gravity">
-    <Position X="3.5" Y="3" Width="2" />
+    <Position x="3.5" Y="3" Width="2" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAIAAA=</HashCode>
       <FileName>Force\Gravity.cs</FileName>
@@ -17,7 +17,7 @@
     <Lollipop Position="0.2" />
   </Class>
   <Class Name="Physics.BaseForce">
-    <Position X="4.75" Y="0.75" Width="2" />
+    <Position x="4.75" Y="0.75" Width="2" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAA=</HashCode>
       <FileName>Force\BaseForce.cs</FileName>
@@ -25,7 +25,7 @@
     <Lollipop Position="0.2" />
   </Class>
   <Interface Name="Physics.IForceGenerator">
-    <Position X="8" Y="3" Width="1.5" />
+    <Position x="8" Y="3" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAA=</HashCode>
       <FileName>Force\IForceGenerator.cs</FileName>

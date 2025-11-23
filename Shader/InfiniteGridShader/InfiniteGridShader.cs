@@ -10,13 +10,13 @@ namespace Shader
     /// </summary>
     public class InfiniteGridShader : ShaderProgram<UnlitShader.UNIFORM_NAME>
     {
-        const string VERTEX_FILE = @"\Shader\InfiniteGridShader\grid.vert";
+        const string VERTEx_FILE = @"\Shader\InfiniteGridShader\grid.vert";
         const string FRAGMENT_FILE = @"\Shader\InfiniteGridShader\grid.frag";
 
         public InfiniteGridShader(string projectPath) : base()
         {
             _name = this.GetType().Name;
-            VertFileName = projectPath + VERTEX_FILE;
+            VertFileName = projectPath + VERTEx_FILE;
             FragFilename = projectPath + FRAGMENT_FILE;
             InitCompileShader();
         }

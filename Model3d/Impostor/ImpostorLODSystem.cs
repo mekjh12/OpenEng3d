@@ -42,7 +42,7 @@ namespace Model3d
     ///       ↓               ↓               ↓
     ///      [■]            [■]             [■]
     ///       ↺              ↺               ↺
-    ///                      X               X
+    ///                      x               x
     /// 
     /// 해결 가능한 접근 방법들:
     /// 1. 제한적 사용:
@@ -110,7 +110,7 @@ namespace Model3d
                 Vertex3f up = -rotationMatrix.Column2.Vertex3f().Normalized;  // z 오른손 법칙
 
                 // pitch와 roll이 0인 경우:
-                // - right 벡터는 XY 평면에 있어야 함 (z가 0에 가까움)
+                // - right 벡터는 xY 평면에 있어야 함 (z가 0에 가까움)
                 // - up 벡터는 Z축과 일치해야 함 (x, y가 0에 가까움)
                 const float TOLERANCE = 0.01f;  // 허용 오차
 

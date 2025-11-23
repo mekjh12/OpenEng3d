@@ -21,7 +21,7 @@ namespace Ui3d
         // 계산용 임시 변수
         private static float[] _matrixBuffer = new float[16];
 
-        private const string VERTEX_SHADER = @"
+        private const string VERTEx_SHADER = @"
 #version 430 core
 
 layout(location = 0) in vec3 aPosition;
@@ -81,9 +81,9 @@ void main()
         {
             // 버텍스 셰이더 컴파일
             uint vertexShader = Gl.CreateShader(ShaderType.VertexShader);
-            Gl.ShaderSource(vertexShader, new string[] { VERTEX_SHADER });
+            Gl.ShaderSource(vertexShader, new string[] { VERTEx_SHADER });
             Gl.CompileShader(vertexShader);
-            CheckShaderCompileErrors(vertexShader, "BillboardShader VERTEX");
+            CheckShaderCompileErrors(vertexShader, "BillboardShader VERTEx");
 
             // 프래그먼트 셰이더 컴파일
             uint fragmentShader = Gl.CreateShader(ShaderType.FragmentShader);

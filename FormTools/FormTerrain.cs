@@ -20,7 +20,7 @@ namespace FormTools
     public partial class FormTerrain : Form
     {
         private string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
-        private string EXE_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\FormTools\bin\Debug\";
+        private string ExE_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\FormTools\bin\Debug\";
 
         private GlControl3 _glControl3;
 
@@ -78,7 +78,7 @@ namespace FormTools
             FileHashManager.ROOT_FILE_PATH = PROJECT_PATH;
 
             // 로그 프로파일 초기화
-            LogProfile.Create(EXE_PATH + "\\log.txt");
+            LogProfile.Create(ExE_PATH + "\\log.txt");
         }
 
         private void FormTerrain_Load(object sender, EventArgs e)
@@ -167,14 +167,14 @@ namespace FormTools
             // terrain init
             string heightMap = PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\";
             string[] levelTextureMap = new string[5];
-            levelTextureMap[0] = EXE_PATH + @"\Res\Terrain\blend\water1.png";
-            levelTextureMap[1] = EXE_PATH + @"\Res\Terrain\blend\grass_1.png";
-            levelTextureMap[2] = EXE_PATH + @"\Res\Terrain\blend\lowestTile.png";
-            levelTextureMap[3] = EXE_PATH + @"\Res\Terrain\blend\HighTile.png";
-            levelTextureMap[4] = EXE_PATH + @"\Res\Terrain\blend\highestTile.png";
-            string detailMap = EXE_PATH + @"\Res\Terrain\blend\detailMap.png";
+            levelTextureMap[0] = ExE_PATH + @"\Res\Terrain\blend\water1.png";
+            levelTextureMap[1] = ExE_PATH + @"\Res\Terrain\blend\grass_1.png";
+            levelTextureMap[2] = ExE_PATH + @"\Res\Terrain\blend\lowestTile.png";
+            levelTextureMap[3] = ExE_PATH + @"\Res\Terrain\blend\HighTile.png";
+            levelTextureMap[4] = ExE_PATH + @"\Res\Terrain\blend\highestTile.png";
+            string detailMap = ExE_PATH + @"\Res\Terrain\blend\detailMap.png";
 
-            _model3DManager = new Model3dManager(PROJECT_PATH, EXE_PATH + "\\nullTexture.jpg");
+            _model3DManager = new Model3dManager(PROJECT_PATH, ExE_PATH + "\\nullTexture.jpg");
             //_model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\tree1.obj");
             //_model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm1.obj");
 

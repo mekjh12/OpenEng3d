@@ -126,21 +126,21 @@ namespace Animate
             Matrix4x4f res = (Matrix4x4f)rot;
 
             // frameA와 frameB의 스케일 추출
-            float scaleA_X = frameA.Column0.Vertex3f().Length();
+            float scaleA_x = frameA.Column0.Vertex3f().Length();
             float scaleA_Y = frameA.Column1.Vertex3f().Length();
             float scaleA_Z = frameA.Column2.Vertex3f().Length();
 
-            float scaleB_X = frameB.Column0.Vertex3f().Length();
+            float scaleB_x = frameB.Column0.Vertex3f().Length();
             float scaleB_Y = frameB.Column1.Vertex3f().Length();
             float scaleB_Z = frameB.Column2.Vertex3f().Length();
 
             // 스케일 선형 보간
-            float finalScale_X = scaleA_X + (scaleB_X - scaleA_X) * progression;
+            float finalScale_x = scaleA_x + (scaleB_x - scaleA_x) * progression;
             float finalScale_Y = scaleA_Y + (scaleB_Y - scaleA_Y) * progression;
             float finalScale_Z = scaleA_Z + (scaleB_Z - scaleA_Z) * progression;
 
             // 보간된 스케일을 회전 행렬에 적용
-            Vertex3f c0 = res.Column0.Vertex3f().Normalized * finalScale_X;
+            Vertex3f c0 = res.Column0.Vertex3f().Normalized * finalScale_x;
             Vertex3f c1 = res.Column1.Vertex3f().Normalized * finalScale_Y;
             Vertex3f c2 = res.Column2.Vertex3f().Normalized * finalScale_Z;
 

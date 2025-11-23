@@ -5,7 +5,7 @@ namespace Model3d
     /// <summary>
     /// Material은 Light Source에 따라 재질의 특성을 고려하여 빛을 반사한다.
     /// Ma, Md, Ms, Me
-    /// Sa, Sd, Ss, Se(X)
+    /// Sa, Sd, Ss, Se(x)
     /// 이때, Md=Sd와 같다.
     /// </summary>
     public class Material

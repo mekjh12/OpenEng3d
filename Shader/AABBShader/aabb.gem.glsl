@@ -98,11 +98,11 @@ void main()
     // corners[2,3,6,7]
     emitQuad(corners[3], corners[2], corners[7], corners[6], vec3(0, 1, 0), color);
     
-    // 왼쪽면 (X-) - 왼쪽을 향함
+    // 왼쪽면 (x-) - 왼쪽을 향함
     // corners[0,2,4,6]
     emitQuad(corners[2], corners[0], corners[6], corners[4], vec3(-1, 0, 0), color);
     
-    // 오른쪽면 (X+) - 오른쪽을 향함
+    // 오른쪽면 (x+) - 오른쪽을 향함
     // corners[1,3,5,7]
     emitQuad(corners[1], corners[3], corners[5], corners[7], vec3(1, 0, 0), color);
 }

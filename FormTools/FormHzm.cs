@@ -18,7 +18,7 @@ namespace FormTools
     public partial class FormHzm : Form
     {
         private readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
-        private readonly string EXE_PATH = @"";
+        private readonly string ExE_PATH = @"";
 
         private GlControl3 _glControl3;     // OpenGL 컨트롤
         HierarchicalZBuffer _hzbuffer;      // 계층깊이버퍼
@@ -49,7 +49,7 @@ namespace FormTools
             InitializeComponent();
 
             // 프로젝트 경로 및 실행 파일 경로 설정
-            EXE_PATH = Application.StartupPath;
+            ExE_PATH = Application.StartupPath;
 
             // GL 생성
             _glControl3 = new GlControl3("hzb", Application.StartupPath, @"\fonts\fontList.txt", @"\Res\")
@@ -149,7 +149,7 @@ namespace FormTools
             // 지형 초기화
             RegionCoord regionCoord = new RegionCoord(0, 0);
             _terrainRegion = new TerrainRegion(regionCoord, chunkSize: 100, n : 10, null);
-            _terrainRegion.LoadTerrainLowResMap(regionCoord, EXE_PATH + "\\Res\\Terrain\\low\\region0x0.png");
+            _terrainRegion.LoadTerrainLowResMap(regionCoord, ExE_PATH + "\\Res\\Terrain\\low\\region0x0.png");
 
             // UBO 초기화 및 로딩
             GlobalUniformBuffers.Initialize();
@@ -170,12 +170,12 @@ namespace FormTools
             // 지형 텍스쳐 로딩
             string heightMap = PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\";
             string[] levelTextureMap = new string[5];
-            levelTextureMap[0] = EXE_PATH + @"\Res\Terrain\blend\water1.png";
-            levelTextureMap[1] = EXE_PATH + @"\Res\Terrain\blend\grass_1.png";
-            levelTextureMap[2] = EXE_PATH + @"\Res\Terrain\blend\lowestTile.png";
-            levelTextureMap[3] = EXE_PATH + @"\Res\Terrain\blend\HighTile.png";
-            levelTextureMap[4] = EXE_PATH + @"\Res\Terrain\blend\highestTile.png";
-            string detailMap = EXE_PATH + @"\Res\Terrain\blend\detailMap.png";
+            levelTextureMap[0] = ExE_PATH + @"\Res\Terrain\blend\water1.png";
+            levelTextureMap[1] = ExE_PATH + @"\Res\Terrain\blend\grass_1.png";
+            levelTextureMap[2] = ExE_PATH + @"\Res\Terrain\blend\lowestTile.png";
+            levelTextureMap[3] = ExE_PATH + @"\Res\Terrain\blend\HighTile.png";
+            levelTextureMap[4] = ExE_PATH + @"\Res\Terrain\blend\highestTile.png";
+            string detailMap = ExE_PATH + @"\Res\Terrain\blend\detailMap.png";
 
             // 지형 레벨 텍스쳐 로딩
             _levelTextureMap = new Texture[levelTextureMap.Length];

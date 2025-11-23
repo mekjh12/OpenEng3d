@@ -14,14 +14,14 @@ namespace Ui3d
     public class FPSDisplay : Billboard3D
     {
         // 기본 텍스처 크기
-        private const int TEXTURE_WIDTH = 256;
-        private const int TEXTURE_HEIGHT = 64;
+        private const int TExTURE_WIDTH = 256;
+        private const int TExTURE_HEIGHT = 64;
 
         // 패딩
         private const float PADDING = 0.0f;
 
         // 기본 색상
-        private static readonly Color DEFAULT_TEXT_COLOR = Color.FromArgb(255, 0, 255, 0);
+        private static readonly Color DEFAULT_TExT_COLOR = Color.FromArgb(255, 0, 255, 0);
         private static readonly Color DEFAULT_BACKGROUND_COLOR = Color.FromArgb(180, 0, 0, 0);
         private static readonly Color DEFAULT_WARNING_COLOR = Color.FromArgb(255, 255, 200, 0);
         private static readonly Color DEFAULT_CRITICAL_COLOR = Color.FromArgb(255, 255, 50, 50);
@@ -108,7 +108,7 @@ namespace Ui3d
         public FPSDisplay(Camera camera, int updateInterval = 100)
             : base(camera)
         {
-            _textColor = DEFAULT_TEXT_COLOR;
+            _textColor = DEFAULT_TExT_COLOR;
             _backgroundColor = DEFAULT_BACKGROUND_COLOR;
             _showBackground = true;
             _updateInterval = updateInterval;
@@ -124,7 +124,7 @@ namespace Ui3d
             _fadeWithDistance = false;
 
             // 재사용할 그래픽 리소스 초기화
-            _reusableBitmap = new Bitmap(TEXTURE_WIDTH, TEXTURE_HEIGHT);
+            _reusableBitmap = new Bitmap(TExTURE_WIDTH, TExTURE_HEIGHT);
             _reusableGraphics = Graphics.FromImage(_reusableBitmap);
             _reusableGraphics.SmoothingMode = SmoothingMode.AntiAlias;
             _reusableGraphics.TextRenderingHint = TextRenderingHint.AntiAlias;
@@ -191,7 +191,7 @@ namespace Ui3d
             })
             {
                 _reusableGraphics.DrawString(fpsText, _fpsFont, textBrush,
-                    new RectangleF(0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT), format);
+                    new RectangleF(0, 0, TExTURE_WIDTH, TExTURE_HEIGHT), format);
             }
 
             // GPU에 업로드

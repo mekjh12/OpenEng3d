@@ -48,7 +48,7 @@ namespace Ui3d
         private const float ATLAS_FONT_SIZE = 12f;
         private const float WORLD_SCALE = 0.0048f;
 
-        // ✅ 한글 완성형 2,350자 (KS X 1001)
+        // ✅ 한글 완성형 2,350자 (KS x 1001)
         private const string HANGUL_2350 =
             "가각간갇갈갉갊감갑값갓갔강갖갗같갚갛개객갠갤갬갭갯갰갱갸갹갼걀걋걍걔걘걜거걱건걷걸걺검겁것겄겅겆겉겊겋게겐겔겜겝겟겠겡겨격겪견겯결겸겹겻겼경곁계곈곌곕곗고곡곤곧골곪곬곯곰곱곳공곶과곽관괄괆괌괍괏광괘괜괠괩괬괭괴괵괸괼굄굅굇굉교굔굘굡굣구국군굳굴굵굶굻굼굽굿궁궂궈궉권궐궜궝궤궷귀귁귄귈귐귑귓규균귤그극근귿글긁금급긋긍긔기긱긴긷길긺김깁깃깅깆깊까깍깎깐깔깖깜깝깟깠깡깥깨깩깬깰깸" +
             "깹깻깼깽꺄꺅꺌꺼꺽꺾껀껄껌껍껏껐껑께껙껜껨껫껭껴껸껼꼇꼈꼍꼐꼬꼭꼰꼲꼴꼼꼽꼿꽁꽂꽃꽈꽉꽐꽜꽝꽤꽥꽹꾀꾄꾈꾐꾑꾕꾜꾸꾹꾼꿀꿇꿈꿉꿋꿍꿎꿔꿜꿨꿩꿰꿱꿴꿸뀀뀁뀄뀌뀐뀔뀜뀝뀨끄끅끈끊끌끎끓끔끕끗끙끝끼끽낀낄낌낍낏낑나낙낚난낟날낡낢남납낫났낭낮낯낱낳내낵낸낼냄냅냇냈냉냐냑냔냘냠냥너넉넋넌널넒넓넘넙넛넜넝넣네넥넨넬넴넵넷넸넹녀녁년녈념녑녔녕녘녜녠노녹논놀놂놈놉놋농높놓놔놘놜놨뇌뇐뇔뇜뇝" +
@@ -66,7 +66,7 @@ namespace Ui3d
 
         // ✅ 문자 세트 (영문 + 숫자 + 특수문자 + 한글)
         private const string CHARACTER_SET =
-            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789`~!@#$%^&*()-_=+[{]}\\|;:'\",.<>/? " +
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWxYZ0123456789`~!@#$%^&*()-_=+[{]}\\|;:'\",.<>/? " +
             HANGUL_2350;
 
         // 폰트 설정
@@ -107,7 +107,7 @@ namespace Ui3d
             if (_charInfoMap.TryGetValue(c, out CharInfo info))
                 return info;
 
-            Console.WriteLine($"Warning: Character '{c}' (U+{((int)c):X4}) not found in atlas, using default");
+            Console.WriteLine($"Warning: Character '{c}' (U+{((int)c):x4}) not found in atlas, using default");
             return _charInfoMap.TryGetValue('A', out CharInfo defaultInfo) ? defaultInfo : new CharInfo();
         }
 
@@ -185,7 +185,7 @@ namespace Ui3d
                 }
 
                 // 글자를 한 줄씩 배치
-                float currentX = PADDING;
+                float currentx = PADDING;
                 float currentY = PADDING;
                 int placedCount = 0;
 
@@ -195,9 +195,9 @@ namespace Ui3d
                     float charWidth = charSize.Width + PADDING * 4;
 
                     // 현재 줄에 공간이 없으면 다음 줄로
-                    if (currentX + charWidth > ATLAS_WIDTH)
+                    if (currentx + charWidth > ATLAS_WIDTH)
                     {
-                        currentX = PADDING;
+                        currentx = PADDING;
                         currentY += rowHeight;
 
                         if (currentY + rowHeight > ATLAS_HEIGHT)
@@ -207,18 +207,18 @@ namespace Ui3d
                         }
                     }
 
-                    float drawX = currentX + PADDING * 2;
+                    float drawx = currentx + PADDING * 2;
                     float renderTop = currentY + PADDING * 2;
 
                     using (SolidBrush brush = new SolidBrush(Color.White))
                     {
-                        g.DrawString(c.ToString(), _font, brush, drawX, renderTop, format);
+                        g.DrawString(c.ToString(), _font, brush, drawx, renderTop, format);
                     }
 
                     CharInfo info = new CharInfo
                     {
                         character = c,
-                        uvX = drawX / ATLAS_WIDTH,
+                        uvX = drawx / ATLAS_WIDTH,
                         uvY = renderTop / ATLAS_HEIGHT,
                         uvWidth = charSize.Width / ATLAS_WIDTH,
                         uvHeight = commonHeight / ATLAS_HEIGHT,
@@ -228,7 +228,7 @@ namespace Ui3d
                     };
 
                     _charInfoMap[c] = info;
-                    currentX += charWidth;
+                    currentx += charWidth;
                     placedCount++;
 
                     if (placedCount % 500 == 0)
@@ -354,7 +354,7 @@ namespace Ui3d
                             CharInfo info = kvp.Value;
 
                             // 픽셀 좌표로 변환
-                            float pixelX = info.uvX * ATLAS_WIDTH;
+                            float pixelx = info.uvX * ATLAS_WIDTH;
                             float pixelY = info.uvY * ATLAS_HEIGHT;
                             float pixelWidth = info.uvWidth * ATLAS_WIDTH;
                             float pixelHeight = info.uvHeight * ATLAS_HEIGHT;
@@ -363,11 +363,11 @@ namespace Ui3d
                             using (SolidBrush brush = new SolidBrush(Color.White))
                             {
                                 g.DrawString(kvp.Key.ToString(), _font, brush,
-                                    pixelX, pixelY, format);
+                                    pixelx, pixelY, format);
                             }
 
                             // 경계선 표시
-                            g.DrawRectangle(boundsPen, pixelX, pixelY, pixelWidth, pixelHeight);
+                            g.DrawRectangle(boundsPen, pixelx, pixelY, pixelWidth, pixelHeight);
 
                             count++;
                             if (count % 500 == 0)

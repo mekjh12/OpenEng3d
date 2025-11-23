@@ -88,13 +88,13 @@ namespace Shader
             LoadUniform(UNIFORM_NAME.numCellsPerAxis, (float)_numCellsPerAxis);
 
             // 워크 그룹 계산 및 디스패치
-            int groupsX = (int)Math.Ceiling(_textureWidth / (float)WORK_GROUP_SIZE);
+            int groupsx = (int)Math.Ceiling(_textureWidth / (float)WORK_GROUP_SIZE);
             int groupsY = (int)Math.Ceiling(_textureHeight / (float)WORK_GROUP_SIZE);
             int groupsZ = (int)Math.Ceiling(_textureDepth / (float)WORK_GROUP_SIZE);
 
-            Console.WriteLine($"디스패치 그룹 크기: ({groupsX}, {groupsY}, {groupsZ})");
+            Console.WriteLine($"디스패치 그룹 크기: ({groupsx}, {groupsY}, {groupsZ})");
 
-            Gl.DispatchCompute((uint)groupsX, (uint)groupsY, (uint)groupsZ);
+            Gl.DispatchCompute((uint)groupsx, (uint)groupsY, (uint)groupsZ);
             GetError("after DispatchCompute");
 
             // 메모리 배리어로 쓰기 작업 완료 대기

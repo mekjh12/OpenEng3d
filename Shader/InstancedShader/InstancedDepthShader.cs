@@ -9,7 +9,7 @@ namespace Shader
     /// </summary>
     public class InstancedDepthShader : ShaderProgramBase
     {
-        const string VERTEX_FILE = @"\Shader\InstancedShader\instanced_depth.vert";
+        const string VERTEx_FILE = @"\Shader\InstancedShader\instanced_depth.vert";
         const string FRAGMENT_FILE = @"\Shader\InstancedShader\instanced_depth.frag";
 
         // 유니폼 위치 캐싱
@@ -23,7 +23,7 @@ namespace Shader
         public InstancedDepthShader(string projectPath) : base()
         {
             _name = this.GetType().Name;
-            VertFileName = projectPath + VERTEX_FILE;
+            VertFileName = projectPath + VERTEx_FILE;
             FragFileName = projectPath + FRAGMENT_FILE;
 
             InitCompileShader();

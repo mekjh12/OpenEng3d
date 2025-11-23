@@ -8,7 +8,7 @@ namespace Physics
 {
     public class FireworkSet
     {
-        const int MAX_FIREWORKS = 1024;
+        const int MAx_FIREWORKS = 1024;
         const int RULE_COUNT = 9;
 
         Firework[] _fireworkList;
@@ -17,7 +17,7 @@ namespace Physics
 
         public FireworkSet()
         {
-            _fireworkList = new Firework[MAX_FIREWORKS];
+            _fireworkList = new Firework[MAx_FIREWORKS];
             _fireWorkRules = new FireWorkRule[RULE_COUNT];
         }
 
@@ -57,7 +57,7 @@ namespace Physics
                 _fireworkList[_nextFirework] = new Firework();
             }
             rule.Create(_fireworkList[_nextFirework], start, parent);
-            _nextFirework = (_nextFirework + 1) % MAX_FIREWORKS;
+            _nextFirework = (_nextFirework + 1) % MAx_FIREWORKS;
         }
 
         public void Create(uint type, int number, Vertex3f start, Firework parent)

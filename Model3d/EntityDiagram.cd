@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ClassDiagram MajorVersion="1" MinorVersion="1">
   <Class Name="Model3d.Entity">
-    <Position X="2.75" Y="8" Width="2.25" />
+    <Position x="2.75" Y="8" Width="2.25" />
     <TypeIdentifier>
       <HashCode>AEQAAAAAAWgAkAUgKfIAEAIAEAYEAICQCAhEAEkAiAA=</HashCode>
       <FileName>Entity.cs</FileName>
@@ -9,12 +9,12 @@
     <Lollipop Position="0.2" />
   </Class>
   <Class Name="Common.Abstractions.BaseEntity">
-    <Position X="3" Y="4" Width="1.5" />
+    <Position x="3" Y="4" Width="1.5" />
     <TypeIdentifier />
     <Lollipop Position="0.2" />
   </Class>
   <Class Name="Model3d.LodEntity">
-    <Position X="0.75" Y="17.25" Width="1.5" />
+    <Position x="0.75" Y="17.25" Width="1.5" />
     <TypeIdentifier>
       <HashCode>gAQAAAAAAAAAAAAAAAggABAAAAAIAAAAAAgAgAAAAAA=</HashCode>
       <FileName>LodEntity.cs</FileName>
@@ -22,7 +22,7 @@
     <Lollipop Position="0.2" />
   </Class>
   <Class Name="Model3d.LODComponent" BaseTypeListCollapsed="true">
-    <Position X="2.5" Y="19.25" Width="1.5" />
+    <Position x="2.5" Y="19.25" Width="1.5" />
     <TypeIdentifier>
       <HashCode>gAQAAAAAAAAAACAAAAAgAAAAAAAICAAgAAAAgAAAAAA=</HashCode>
       <FileName>LODComponent.cs</FileName>
@@ -30,24 +30,24 @@
     <Lollipop Position="0.2" Collapsed="true" />
   </Class>
   <Class Name="Occlusion.OccluderEntity">
-    <Position X="5.75" Y="18.25" Width="1.5" />
+    <Position x="5.75" Y="18.25" Width="1.5" />
     <TypeIdentifier />
     <Lollipop Position="0.2" />
   </Class>
   <Interface Name="Common.Abstractions.ITransformable">
-    <Position X="5.25" Y="8" Width="1.5" />
+    <Position x="5.25" Y="8" Width="1.5" />
     <TypeIdentifier />
   </Interface>
   <Interface Name="Geometry.IBoundBoxable">
-    <Position X="5.25" Y="12" Width="1.5" />
+    <Position x="5.25" Y="12" Width="1.5" />
     <TypeIdentifier />
   </Interface>
   <Interface Name="Occlusion.IOcclusionable">
-    <Position X="7.5" Y="18.25" Width="1.5" />
+    <Position x="7.5" Y="18.25" Width="1.5" />
     <TypeIdentifier />
   </Interface>
   <Interface Name="Model3d.ILodable">
-    <Position X="2.5" Y="17.25" Width="1.5" />
+    <Position x="2.5" Y="17.25" Width="1.5" />
     <TypeIdentifier>
       <HashCode>gAQAAAAAAAAAAAAAAAAgAAAAAAAIAAAAAAAAgAAAAAA=</HashCode>
       <FileName>ILodable.cs</FileName>

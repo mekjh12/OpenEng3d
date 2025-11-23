@@ -98,6 +98,12 @@
     <Compile Include="FormCulling.Designer.cs">
       <DependentUpon>FormCulling.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormGPUDriven.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormGPUDriven.Designer.cs">
+      <DependentUpon>FormGPUDriven.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormHZBuffer.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -190,6 +196,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormCulling.resx">
       <DependentUpon>FormCulling.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormGPUDriven.resx">
+      <DependentUpon>FormGPUDriven.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormHZBuffer.resx">
       <DependentUpon>FormHZBuffer.cs</DependentUpon>

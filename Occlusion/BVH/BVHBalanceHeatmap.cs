@@ -134,7 +134,7 @@ namespace Occlusion.Visualization
             float pixelSize = Math.Min(pixelWidth, pixelHeight);
 
             // 중앙 정렬을 위한 오프셋
-            float offsetX = (width - (cols * pixelSize)) / 2;
+            float offsetx = (width - (cols * pixelSize)) / 2;
             float offsetY = (height - (rows * pixelSize)) / 2;
 
             // 각 리프를 2D 그리드의 픽셀로 그리기
@@ -145,7 +145,7 @@ namespace Occlusion.Visualization
                 int row = i / cols;
                 int col = i % cols;
 
-                float x = offsetX + col * pixelSize;
+                float x = offsetx + col * pixelSize;
                 float y = offsetY + row * pixelSize;
 
                 // 깊이에 따른 색상 계산
@@ -207,7 +207,7 @@ namespace Occlusion.Visualization
         /// </summary>
         private static void DrawColorBar(Graphics g, int width, int height, int minDepth, int maxDepth)
         {
-            int barX = 50;
+            int barx = 50;
             int barY = height - 120;
             int barWidth = width - 100;
             int barHeight = 30;
@@ -221,28 +221,28 @@ namespace Occlusion.Visualization
 
                 using (Pen pen = new Pen(color, 1))
                 {
-                    g.DrawLine(pen, barX + i, barY, barX + i, barY + barHeight);
+                    g.DrawLine(pen, barx + i, barY, barx + i, barY + barHeight);
                 }
             }
 
             // 테두리
             using (Pen borderPen = new Pen(Color.Black, 2))
             {
-                g.DrawRectangle(borderPen, barX, barY, barWidth, barHeight);
+                g.DrawRectangle(borderPen, barx, barY, barWidth, barHeight);
             }
 
             // 레이블
             using (Font font = new Font("Arial", 10, FontStyle.Bold))
             using (SolidBrush brush = new SolidBrush(Color.Black))
             {
-                g.DrawString($"Depth: {minDepth}", font, brush, barX, barY + barHeight + 5);
-                g.DrawString($"{maxDepth}", font, brush, barX + barWidth - 30, barY + barHeight + 5);
+                g.DrawString($"Depth: {minDepth}", font, brush, barx, barY + barHeight + 5);
+                g.DrawString($"{maxDepth}", font, brush, barx + barWidth - 30, barY + barHeight + 5);
 
                 // 중간값들
                 for (int i = 1; i <= 3; i++)
                 {
                     int depth = minDepth + (maxDepth - minDepth) * i / 4;
-                    float x = barX + barWidth * i / 4f;
+                    float x = barx + barWidth * i / 4f;
                     g.DrawString($"{depth}", font, brush, x - 10, barY + barHeight + 5);
                     g.DrawLine(Pens.Black, x, barY + barHeight, x, barY + barHeight + 5);
                 }

@@ -21,7 +21,7 @@ layout(binding = 0) uniform sampler3D cloudTexture;     // 구름 밀도 텍스�
 layout(binding = 1) uniform sampler3D shadowTexture;    // 그림자 텍스처
 
 
-const int MAX_STEPS = 32;               // 최대 레이마칭 단계 수
+const int MAx_STEPS = 32;               // 최대 레이마칭 단계 수
 const int SHADOW_STEPS = 64;            // 그림자 계산용 단계 수
 const float STEP_SIZE = 0.05f;          // 레이마칭 스텝 크기
 const float SHADOW_STEP_SIZE = 0.02f;   // 그림자 계산용 스텝 크기 (더 크게 설정하여 최적화)
@@ -214,7 +214,7 @@ void main()
     // 광원 색상과 세기 조정
     vec3 ambientLight = cloudColor * AMBIENT_FACTOR;
 
-    for (int i = 0; i < MAX_STEPS; i++) 
+    for (int i = 0; i < MAx_STEPS; i++) 
     {
         // 큐브를 벗어났는지 확인
         if (!isInCube(pos)) break;

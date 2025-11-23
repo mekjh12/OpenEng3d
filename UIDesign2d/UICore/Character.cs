@@ -24,11 +24,11 @@
 		/// <param name="yTexSize">the height of the character in the texture atlas.</param>
 		/// <param name="xOffset">the x distance from the curser to the left edge of the character's quad.</param>
 		/// <param name="yOffset">the y distance from the curser to the top edge of the character's quad.</param>
-		/// <param name="sizeX">the width of the character's quad in screen space.</param>
+		/// <param name="sizex">the width of the character's quad in screen space.</param>
 		/// <param name="sizeY">the height of the character's quad in screen space.</param>
 		/// <param name="xAdvance">how far in pixels the cursor should advance after adding  this character.</param>
 		public Character(int id, double xTextureCoord, double yTextureCoord, double xTexSize, double yTexSize,
-				double xOffset, double yOffset, double sizeX, double sizeY, double xAdvance)
+				double xOffset, double yOffset, double sizex, double sizeY, double xAdvance)
 		{
 			this.character = (char)id;
 			this.id = id;
@@ -36,7 +36,7 @@
 			this.yTextureCoord = yTextureCoord;
 			this.xOffset = xOffset;
 			this.yOffset = yOffset;
-			this.sizeX = sizeX;
+			this.sizeX = sizex;
 			this.sizeY = sizeY;
 			this.xMaxTextureCoord = xTexSize + xTextureCoord;
 			this.yMaxTextureCoord = yTexSize + yTextureCoord;

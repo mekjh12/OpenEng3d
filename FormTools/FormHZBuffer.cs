@@ -19,7 +19,7 @@ namespace FormTools
     public partial class FormHZBuffer : Form
     {
         readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
-        readonly string EXE_PATH = Application.StartupPath;
+        readonly string ExE_PATH = Application.StartupPath;
 
         private GlControl3 _glControl3;                     // OpenGL 컨트롤
         private ColorShader _colorShader;                   // 컬러 셰이더
@@ -119,10 +119,10 @@ namespace FormTools
             // 지형 영역 초기화
             RegionCoord regionCoord = new RegionCoord(0, 0);
             _terrainRegion = new TerrainRegion(regionCoord, chunkSize: 100, n: 10, null);
-            _terrainRegion.LoadTerrainLowResMap(regionCoord, EXE_PATH + "\\Res\\Terrain\\low\\region0x0.png",
+            _terrainRegion.LoadTerrainLowResMap(regionCoord, ExE_PATH + "\\Res\\Terrain\\low\\region0x0.png",
                 completed: () =>
                 {
-                    _terrainRegion.LoadTerrainHighResMap(regionCoord, EXE_PATH + "\\Res\\Terrain\\region_0x0_tiles", null);
+                    _terrainRegion.LoadTerrainHighResMap(regionCoord, ExE_PATH + "\\Res\\Terrain\\region_0x0_tiles", null);
                     
                     // 랜덤 AABB 20개 삽입
                     for (int i = -30; i < 30; i++)

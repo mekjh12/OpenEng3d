@@ -13,8 +13,8 @@ namespace Ui3d
     public class HitMarker : Billboard3D
     {
         // 기본 텍스처 크기
-        private const int TEXTURE_WIDTH = 128;
-        private const int TEXTURE_HEIGHT = 128;
+        private const int TExTURE_WIDTH = 128;
+        private const int TExTURE_HEIGHT = 128;
 
         // 기본 색상
         private static readonly Color DEFAULT_NORMAL_COLOR = Color.FromArgb(255, 255, 255, 255);
@@ -28,7 +28,7 @@ namespace Ui3d
         // 애니메이션 설정
         private const int LIFETIME_MS = 500;
         private const int FADE_START_MS = 200;
-        private const float EXPAND_SCALE = 1.5f;
+        private const float ExPAND_SCALE = 1.5f;
         private const float LINE_WIDTH = 4f;
         private const float LINE_LENGTH = 20f;
         private const float LINE_GAP = 8f;
@@ -90,7 +90,7 @@ namespace Ui3d
             _currentScale = 1.0f;
 
             // 재사용할 그래픽 리소스 초기화
-            _reusableBitmap = new Bitmap(TEXTURE_WIDTH, TEXTURE_HEIGHT);
+            _reusableBitmap = new Bitmap(TExTURE_WIDTH, TExTURE_HEIGHT);
             _reusableGraphics = Graphics.FromImage(_reusableBitmap);
             _reusableGraphics.SmoothingMode = SmoothingMode.AntiAlias;
         }
@@ -119,7 +119,7 @@ namespace Ui3d
 
             // 확장 애니메이션
             float progress = (float)_elapsedTime / LIFETIME_MS;
-            _currentScale = 1.0f + (EXPAND_SCALE - 1.0f) * progress;
+            _currentScale = 1.0f + (ExPAND_SCALE - 1.0f) * progress;
             _isDirty = true;
 
             // 페이드 아웃 처리
@@ -141,8 +141,8 @@ namespace Ui3d
             _reusableGraphics.Clear(DEFAULT_BACKGROUND_COLOR);
 
             // 중심점
-            float centerX = TEXTURE_WIDTH / 2f;
-            float centerY = TEXTURE_HEIGHT / 2f;
+            float centerx = TExTURE_WIDTH / 2f;
+            float centerY = TExTURE_HEIGHT / 2f;
 
             // 스케일 적용된 길이와 간격
             float scaledLength = LINE_LENGTH * _currentScale;
@@ -155,23 +155,23 @@ namespace Ui3d
 
                 // 상단 라인
                 _reusableGraphics.DrawLine(markerPen,
-                    centerX, centerY - scaledGap,
-                    centerX, centerY - scaledGap - scaledLength);
+                    centerx, centerY - scaledGap,
+                    centerx, centerY - scaledGap - scaledLength);
 
                 // 하단 라인
                 _reusableGraphics.DrawLine(markerPen,
-                    centerX, centerY + scaledGap,
-                    centerX, centerY + scaledGap + scaledLength);
+                    centerx, centerY + scaledGap,
+                    centerx, centerY + scaledGap + scaledLength);
 
                 // 좌측 라인
                 _reusableGraphics.DrawLine(markerPen,
-                    centerX - scaledGap, centerY,
-                    centerX - scaledGap - scaledLength, centerY);
+                    centerx - scaledGap, centerY,
+                    centerx - scaledGap - scaledLength, centerY);
 
                 // 우측 라인
                 _reusableGraphics.DrawLine(markerPen,
-                    centerX + scaledGap, centerY,
-                    centerX + scaledGap + scaledLength, centerY);
+                    centerx + scaledGap, centerY,
+                    centerx + scaledGap + scaledLength, centerY);
             }
 
             // GPU에 업로드

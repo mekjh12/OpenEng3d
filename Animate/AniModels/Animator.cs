@@ -19,7 +19,7 @@ namespace Animate
             Blending    // 모션 블렌딩 중
         }
 
-        private const int MAX_BONES_COUNT = 128;
+        private const int MAx_BONES_COUNT = 128;
         private const string SWITCH_MOTION_NAME = "switchMotion";
         private const float MIN_MOTION_TIME = 0.0f;
 
@@ -119,8 +119,8 @@ namespace Animate
 
             _currentPose = new Dictionary<string, Matrix4x4f>();
 
-            _animatedTransforms = new Matrix4x4f[MAX_BONES_COUNT];
-            _rootTransforms = new Matrix4x4f[MAX_BONES_COUNT];
+            _animatedTransforms = new Matrix4x4f[MAx_BONES_COUNT];
+            _rootTransforms = new Matrix4x4f[MAx_BONES_COUNT];
 
             // 초기화 시 순회 순서를 미리 계산
             BuildBoneTraversalOrder(rootBone);

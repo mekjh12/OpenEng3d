@@ -1,14 +1,13 @@
 ﻿#version 430 core
-
 // 버텍스 속성
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec2 texcoord;
 
-// 인스턴스별 모델 행렬 (mat4는 4개의 vec4로 전달)
-layout(location = 2) in vec4 instanceModel0;
-layout(location = 3) in vec4 instanceModel1;
-layout(location = 4) in vec4 instanceModel2;
-layout(location = 5) in vec4 instanceModel3;
+// ✅ SSBO 방식으로 변경
+layout(std430, binding = 0) buffer InstanceBuffer
+{
+    mat4 modelMatrices[];
+};
 
 // 유니폼
 uniform mat4 vp;
@@ -18,13 +17,8 @@ out vec2 pass_texcoord;
 
 void main()
 {
-    // 인스턴스별 모델 행렬 재구성
-    mat4 instanceModel = mat4(
-        instanceModel0*0.1f,
-        instanceModel1*0.1f,
-        instanceModel2*0.1f,
-        instanceModel3
-    );
+    // ✅ SSBO에서 인스턴스 행렬 읽기
+    mat4 instanceModel = modelMatrices[gl_InstanceID];
     
     // 월드-뷰-투영 변환
     gl_Position = vp * instanceModel * vec4(position, 1.0);

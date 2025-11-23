@@ -109,7 +109,7 @@ namespace Terrain
                 int totalWidth = 2 * _n;                  // 총 가로 청크 수
                 float halfSize = _n * _chunkSize;         // 리전 반경 크기
                 float regionWidth = halfSize * 2;         // 리전 전체 너비
-                float baseX = _currentCoord.X * regionWidth;  // 리전 시작 X 좌표
+                float basex = _currentCoord.X * regionWidth;  // 리전 시작 x 좌표
                 float baseY = _currentCoord.Y * regionWidth;  // 리전 시작 Y 좌표
                 float verticalScale = TerrainConstants.DEFAULT_VERTICAL_SCALE;  // 수직 스케일
 
@@ -136,13 +136,13 @@ namespace Terrain
                     for (int y = -_n; y < _n; y++)
                     {
                         int i = y + _n;  // 높이맵 배열 인덱스 Y
-                        int j = x + _n;  // 높이맵 배열 인덱스 X
+                        int j = x + _n;  // 높이맵 배열 인덱스 x
 
                         // 높이 데이터 미리 가져오기
                         Vertex2f h = _terrainData.GetHeightBound(j, i, _n);
 
                         // 객체 재사용하여 AABB 좌표 계산
-                        lower.x = _chunkSize * x + baseX;
+                        lower.x = _chunkSize * x + basex;
                         lower.y = _chunkSize * y + baseY;
                         lower.z = verticalScale * h.x;    // 최소 높이
 

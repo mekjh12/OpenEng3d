@@ -175,7 +175,7 @@ namespace Animate
             Vertex3f position = localTransform.Position;  // 위치 보존
 
             // 스케일 추출
-            float scaleX = localTransform.Column0.xyz().Length();
+            float scalex = localTransform.Column0.xyz().Length();
             float scaleY = localTransform.Column1.xyz().Length();
             float scaleZ = localTransform.Column2.xyz().Length();
 
@@ -183,7 +183,7 @@ namespace Animate
             Matrix4x4f rotation = EulerConverter.EulerToMatrix(_currentAngles, _eulerOrder);
 
             // 스케일 재적용
-            Matrix4x4f scale = Matrix4x4f.Scaled(scaleX, scaleY, scaleZ);
+            Matrix4x4f scale = Matrix4x4f.Scaled(scalex, scaleY, scaleZ);
             Matrix4x4f result = rotation * scale;
 
             // 위치 복원

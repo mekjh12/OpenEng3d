@@ -3,7 +3,7 @@
 namespace ZetaExt
 {
     /// <summary>
-    /// ZYX 오일러 각도 구조체
+    /// ZYx 오일러 각도 구조체
     /// <para>
     /// 3D 공간에서의 회전을 세 개의 각도로 표현한다.
     /// </para>
@@ -18,7 +18,7 @@ namespace ZetaExt
         // 멤버 변수
         // -----------------------------------------------------------------------
 
-        private float _pitch;  // X축 회전 (피치)
+        private float _pitch;  // x축 회전 (피치)
         private float _roll;   // Y축 회전 (롤)
         private float _yaw;    // Z축 회전 (요)
 
@@ -27,7 +27,7 @@ namespace ZetaExt
         // -----------------------------------------------------------------------
 
         /// <summary>
-        /// X축 회전 각도 (Pitch)
+        /// x축 회전 각도 (Pitch)
         /// <para>범위: -180° ~ 180° (라디안: -π ~ π)</para>
         /// <para>고개를 끄덕이는 동작 (위/아래)</para>
         /// </summary>
@@ -66,7 +66,7 @@ namespace ZetaExt
         /// <summary>
         /// 지정된 오일러 각도로 초기화한다
         /// </summary>
-        /// <param name="pitch">X축 회전 (Pitch, 도 단위)</param>
+        /// <param name="pitch">x축 회전 (Pitch, 도 단위)</param>
         /// <param name="roll">Y축 회전 (Roll, 도 단위)</param>
         /// <param name="yaw">Z축 회전 (Yaw, 도 단위)</param>
         public EulerAngle(float pitch, float roll, float yaw)
@@ -86,7 +86,7 @@ namespace ZetaExt
         /// <returns>각도 정보 문자열 (소수점 0자리)</returns>
         public override string ToString()
         {
-            return $"Pitch(X){_pitch:F0}, Roll(Y){_roll:F0}, Yaw(Z){_yaw:F0}";
+            return $"Pitch(x){_pitch:F0}, Roll(Y){_roll:F0}, Yaw(Z){_yaw:F0}";
         }
 
         /// <summary>

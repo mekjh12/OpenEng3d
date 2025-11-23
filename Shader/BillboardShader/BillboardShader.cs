@@ -8,14 +8,14 @@ namespace Shader
     /// </summary>
     public class BillboardShader : ShaderProgram<UnlitShader.UNIFORM_NAME>
     {
-        const string VERTEX_FILE = @"\Shader\BillboardShader\billboard.vert";
+        const string VERTEx_FILE = @"\Shader\BillboardShader\billboard.vert";
         const string FRAGMENT_FILE = @"\Shader\BillboardShader\billboard.frag";
         const string GEOMETRY_FILE = @"\Shader\BillboardShader\billboard.gem.glsl";
 
         public BillboardShader(string projectPath) : base()
         {
             _name = this.GetType().Name;
-            VertFileName = projectPath + VERTEX_FILE;
+            VertFileName = projectPath + VERTEx_FILE;
             FragFilename = projectPath + FRAGMENT_FILE;
             GeomFileName = projectPath + GEOMETRY_FILE;
             InitCompileShader();

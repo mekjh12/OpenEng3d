@@ -266,7 +266,7 @@ namespace FormTools
             //_aniActors[0].EquipItem(ATTACHMENT_SLOT.LeftHand, "sword0", "sword", sword, 1.0f, yaw: 90);
 
             //_headLookAt = new SingleBoneLookAt(_aniActors[0].AniRig.Armature["mixamorig_Head"], Vertex3f.UnitZ, Vertex3f.UnitY);
-            //_headLookAt = new SingleBoneLookAt(_aniActors[1].AniRig.Armature["Head"], Vertex3f.UnitY, Vertex3f.UnitX);
+            //_headLookAt = new SingleBoneLookAt(_aniActors[1].AniRig.Armature["Head"], Vertex3f.UnitY, Vertex3f.Unitx);
             //_headLookAt.SetAngleLimits(60, 60);
             //_neckHeadLookAt = ThreeBoneLookAt.CreateNeckHead(_aniActors[0].AniRig.Armature, 
             //localForward: Vertex3f.UnitZ, localUp: Vertex3f.UnitY);
@@ -286,7 +286,7 @@ namespace FormTools
             _twoBoneIK2 = TwoBoneIKFactory.CreateLeftLegIK(_aniActors[0].AniRig.Armature);
 
             _singleBoneRotationIK = SingleBoneRotationIK.Create(_aniActors[0].AniRig.Armature["mixamorig_LeftFoot"],
-                Vertex3f.UnitX, Vertex3f.UnitY);
+                Vertex3f.Unitx, Vertex3f.UnitY);
 
             _twoBoneRotationIK = TwoBoneRotationIK.Create(_aniActors[0].AniRig.Armature["mixamorig_LeftArm"],
                 _aniActors[0].AniRig.Armature["mixamorig_LeftForeArm"]);

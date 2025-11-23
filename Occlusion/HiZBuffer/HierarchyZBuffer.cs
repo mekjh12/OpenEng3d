@@ -23,7 +23,7 @@ namespace Occlusion
         // ===================================================================
 
         protected const int POSITION_ATTRIB = 0;    // 위치 속성 위치
-        protected const int TEXCOORD_ATTRIB = 1;    // 텍스처 좌표 속성 위치
+        protected const int TExCOORD_ATTRIB = 1;    // 텍스처 좌표 속성 위치
         protected const int PATCH_VERTICES = 4;     // 패치 정점 수
 
 
@@ -148,7 +148,7 @@ namespace Occlusion
                 Gl.GetTexLevelParameter(TextureTarget.Texture2d, 0, GetTextureParameter.TextureInternalFormat, out actualFormat);
                 Gl.GetTexLevelParameter(TextureTarget.Texture2d, 0, GetTextureParameter.TextureWidth, out width);
                 Gl.GetTexLevelParameter(TextureTarget.Texture2d, 0, GetTextureParameter.TextureHeight, out height);
-                Console.WriteLine($"HZB Texture {i}: Format = 0x{actualFormat:X} (예상: 0x{(int)InternalFormat.R32f:X}) wxh={width}x{height}, ");
+                Console.WriteLine($"HZB Texture {i}: Format = 0x{actualFormat:x} (예상: 0x{(int)InternalFormat.R32f:x}) wxh={width}x{height}, ");
             }
             Gl.BindTexture(TextureTarget.Texture2d, 0);
 
@@ -236,14 +236,14 @@ namespace Occlusion
             {
                 Gl.BindVertexArray(terrainModel.VAO);
                 Gl.EnableVertexAttribArray(POSITION_ATTRIB);
-                Gl.EnableVertexAttribArray(TEXCOORD_ATTRIB);
+                Gl.EnableVertexAttribArray(TExCOORD_ATTRIB);
                 Gl.BindBuffer(BufferTarget.ElementArrayBuffer, terrainModel.IBO);
                 Gl.PatchParameter(PatchParameterName.PatchVertices, PATCH_VERTICES);
                 Gl.DrawElements(PrimitiveType.Patches, terrainModel.VertexCount, DrawElementsType.UnsignedInt, IntPtr.Zero);
             }
             finally
             {
-                Gl.DisableVertexAttribArray(TEXCOORD_ATTRIB);
+                Gl.DisableVertexAttribArray(TExCOORD_ATTRIB);
                 Gl.DisableVertexAttribArray(POSITION_ATTRIB);
                 Gl.BindVertexArray(0);
                 shader.Unbind();
@@ -372,7 +372,7 @@ namespace Occlusion
         private bool TestOcclusion(float minx, float miny, float minz, float maxx, float maxy, float maxz)
         {
             const float NDC_TRANSFORM = 0.5f;   // NDC변환을 위한 상수
-            const int EXTRA_PADDING = 1;        // 패딩 크기
+            const int ExTRA_PADDING = 1;        // 패딩 크기
 
             // 카메라 좌표공간에서 물체가 앞, 뒤로 걸쳐있는 경우는 무조건 가려지지 않는 것으로 하드코딩한다.
             if (minz < 0 && maxz > 0) return false;
@@ -389,15 +389,15 @@ namespace Occlusion
             if (Zbuffer == null || Zbuffer.Count == 0) return true;                     // 버퍼 검사
 
             // 스크린 공간 영역 계산(s=start, e=end)
-            int sx = Math.Max(0, (int)(minx * _width) - EXTRA_PADDING);
-            int sy = Math.Max(0, (int)(miny * _height) - EXTRA_PADDING);
-            int ex = Math.Min(_width - 1, (int)(maxx * _width) + EXTRA_PADDING);
-            int ey = Math.Min(_height - 1, (int)(maxy * _height) + EXTRA_PADDING);
+            int sx = Math.Max(0, (int)(minx * _width) - ExTRA_PADDING);
+            int sy = Math.Max(0, (int)(miny * _height) - ExTRA_PADDING);
+            int ex = Math.Min(_width - 1, (int)(maxx * _width) + ExTRA_PADDING);
+            int ey = Math.Min(_height - 1, (int)(maxy * _height) + ExTRA_PADDING);
 
             // LOD 레벨 계산
-            int sizeX = ex - sx;
+            int sizex = ex - sx;
             int sizeY = ey - sy;
-            int searchLOD = ComputeLODLevel(sizeX, sizeY);
+            int searchLOD = ComputeLODLevel(sizex, sizeY);
 
             // 각 레벨별 깊이값 검사 (coarse-to-fine)
             for (int level = searchLOD; level >= 0; level--)
@@ -407,17 +407,17 @@ namespace Occlusion
                 int levelHeight = _height >> level;
 
                 // AABB 영역 계산 (패딩 포함)
-                int startX = Math.Max(0, (int)(minx * levelWidth) - EXTRA_PADDING);
-                int startY = Math.Max(0, (int)(miny * levelHeight) - EXTRA_PADDING);
-                int endX = Math.Min(levelWidth - 1, (int)(maxx * levelWidth) + EXTRA_PADDING);
-                int endY = Math.Min(levelHeight - 1, (int)(maxy * levelHeight) + EXTRA_PADDING);
+                int startx = Math.Max(0, (int)(minx * levelWidth) - ExTRA_PADDING);
+                int startY = Math.Max(0, (int)(miny * levelHeight) - ExTRA_PADDING);
+                int endx = Math.Min(levelWidth - 1, (int)(maxx * levelWidth) + ExTRA_PADDING);
+                int endY = Math.Min(levelHeight - 1, (int)(maxy * levelHeight) + ExTRA_PADDING);
 
                 bool allOccluded = true;
 
                 // AABB 영역 내 픽셀 검사
                 for (int y = startY; y <= endY && allOccluded; y++)
                 {
-                    for (int x = startX; x <= endX; x++)
+                    for (int x = startx; x <= endx; x++)
                     {
                         int index = y * levelWidth + x;
                         float terrainDepth = depthBuffer[index];

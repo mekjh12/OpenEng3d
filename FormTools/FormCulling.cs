@@ -22,7 +22,7 @@ namespace FormTools
     public partial class FormCulling : Form
     {
         readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
-        readonly string EXE_PATH = Application.StartupPath;
+        readonly string ExE_PATH = Application.StartupPath;
 
         private GlControl3 _glControl3;                     // OpenGL 컨트롤
 
@@ -130,7 +130,7 @@ namespace FormTools
             // 지형 영역 초기화
             RegionCoord regionCoord = new RegionCoord(0, 0);
             _terrainRegion = new TerrainRegion(regionCoord, chunkSize: 100, n: 10, null);
-            _terrainRegion.LoadTerrainLowResMap(regionCoord, EXE_PATH + "\\Res\\Terrain\\low\\region0x0.png",
+            _terrainRegion.LoadTerrainLowResMap(regionCoord, ExE_PATH + "\\Res\\Terrain\\low\\region0x0.png",
                 completed: () =>
                 {
                     // 랜덤 AABB 20개 삽입
@@ -162,12 +162,12 @@ namespace FormTools
             // 지형 레벨 텍스쳐 로딩
             string heightMap = PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\";
             string[] levelTextureMap = new string[5];
-            levelTextureMap[0] = EXE_PATH + @"\Res\Terrain\blend\water1.png";
-            levelTextureMap[1] = EXE_PATH + @"\Res\Terrain\blend\grass_1.png";
-            levelTextureMap[2] = EXE_PATH + @"\Res\Terrain\blend\lowestTile.png";
-            levelTextureMap[3] = EXE_PATH + @"\Res\Terrain\blend\HighTile.png";
-            levelTextureMap[4] = EXE_PATH + @"\Res\Terrain\blend\highestTile.png";
-            string detailMap = EXE_PATH + @"\Res\Terrain\blend\detailMap.png";
+            levelTextureMap[0] = ExE_PATH + @"\Res\Terrain\blend\water1.png";
+            levelTextureMap[1] = ExE_PATH + @"\Res\Terrain\blend\grass_1.png";
+            levelTextureMap[2] = ExE_PATH + @"\Res\Terrain\blend\lowestTile.png";
+            levelTextureMap[3] = ExE_PATH + @"\Res\Terrain\blend\HighTile.png";
+            levelTextureMap[4] = ExE_PATH + @"\Res\Terrain\blend\highestTile.png";
+            string detailMap = ExE_PATH + @"\Res\Terrain\blend\detailMap.png";
             _levelTextureMap = new Texture[levelTextureMap.Length];
             _detailTextureMap = new Texture(detailMap);
             for (int i = 0; i < _levelTextureMap.Length; i++)

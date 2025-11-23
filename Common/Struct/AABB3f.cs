@@ -436,7 +436,7 @@ namespace Common
         {
             float sqDist = 0.0f;
 
-            // X축
+            // x축
             if (point.x < Min.x)
             {
                 float d = Min.x - point.x;

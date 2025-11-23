@@ -203,9 +203,9 @@ namespace Model3d
             _transform.IsMoved = true;
         }
 
-        public void Scale(float scaleX, float scaleY, float scaleZ)
+        public void Scale(float scalex, float scaleY, float scaleZ)
         {
-            ((ITransformable)_transform).Scale(scaleX, scaleY, scaleZ);
+            ((ITransformable)_transform).Scale(scalex, scaleY, scaleZ);
             _transform.IsMoved = true;
         }
 
@@ -259,7 +259,7 @@ namespace Model3d
                 // 계산의 효율성을 위해 8개의 꼭지점을 직접 변환하는 대신 하드코딩된 방식 사용
                 Vertex3f low = _boundingBox.ModelAABB.LowerBound;      // AABB의 최소점
                 Vertex3f size = _boundingBox.ModelAABB.Size;           // AABB의 크기
-                Vertex3f s = model.Column0.Vertex3f() * size.x;        // X축 방향 벡터
+                Vertex3f s = model.Column0.Vertex3f() * size.x;        // x축 방향 벡터
                 Vertex3f t = model.Column1.Vertex3f() * size.y;        // Y축 방향 벡터
                 Vertex3f u = model.Column2.Vertex3f() * size.z;        // Z축 방향 벡터
                 Vertex3f l = model.Transform(low);                      // 변환된 최소점
@@ -267,12 +267,12 @@ namespace Model3d
                 // AABB의 8개 꼭지점 계산
                 Vertex3f[] vertices = new Vertex3f[8];
                 vertices[0] = l;                  // 최소점
-                vertices[1] = l + s;              // 최소점 + X축
-                vertices[2] = l + s + t;          // 최소점 + X축 + Y축
+                vertices[1] = l + s;              // 최소점 + x축
+                vertices[2] = l + s + t;          // 최소점 + x축 + Y축
                 vertices[3] = l + t;              // 최소점 + Y축
                 vertices[4] = l + u;              // 최소점 + Z축
-                vertices[5] = l + u + s;          // 최소점 + Z축 + X축
-                vertices[6] = l + u + s + t;      // 최소점 + Z축 + X축 + Y축
+                vertices[5] = l + u + s;          // 최소점 + Z축 + x축
+                vertices[6] = l + u + s + t;      // 최소점 + Z축 + x축 + Y축
                 vertices[7] = l + u + t;          // 최소점 + Z축 + Y축
 
                 // 새로운 AABB의 최소/최대 경계점 계산
@@ -285,7 +285,7 @@ namespace Model3d
 
                 // OBB의 3개 주축 방향 계산
                 Vertex3f[] newAxis = new Vertex3f[3];
-                newAxis[0] = (rot * _boundingBox.ModelOBB.Axis[0]).Normalized;     // X축 방향
+                newAxis[0] = (rot * _boundingBox.ModelOBB.Axis[0]).Normalized;     // x축 방향
                 newAxis[1] = (rot * _boundingBox.ModelOBB.Axis[1]).Normalized;     // Y축 방향
                 newAxis[2] = (rot * _boundingBox.ModelOBB.Axis[2]).Normalized;     // Z축 방향
 

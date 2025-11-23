@@ -160,15 +160,15 @@ namespace Ui2d
 
                 if (_txt != "")
                 {
-                    Vertex2f offset = new Vertex2f(renderingPaddingX, renderingPaddingY);
+                    Vertex2f offset = new Vertex2f(renderingPaddingx, renderingPaddingY);
 
                     // 배경 위에 글자를 그린다.
                     if (_horizonAlign == ALIGN.CENTER)
                         offset.x = (renderingWidth - _text.Width) * 0.5f;
                     else if (_horizonAlign == ALIGN.RIGHT)
-                        offset.x = renderingWidth - _text.Width - renderingPaddingX;
+                        offset.x = renderingWidth - _text.Width - renderingPaddingx;
                     else if (_horizonAlign == ALIGN.LEFT)
-                        offset.x = renderingPaddingX;
+                        offset.x = renderingPaddingx;
                     else if (_horizonAlign == ALIGN.CUSTOM)
                         offset.x = _location.x * renderingWidth;
 

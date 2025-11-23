@@ -68,7 +68,7 @@ namespace Shader
             Count
         }
 
-        const string VERTEX_FILE = @"\Shader\AtmosphericScatteringLUT\atmosphere.vert";
+        const string VERTEx_FILE = @"\Shader\AtmosphericScatteringLUT\atmosphere.vert";
         const string FRAGMENT_FILE = @"\Shader\AtmosphericScatteringLUT\atmosphere.frag";
 
         public AtmosphericRenderShader(string projectPath) : base()
@@ -76,7 +76,7 @@ namespace Shader
             _name = this.GetType().Name;
 
             // 버텍스/프래그먼트 셰이더만 설정
-            VertFileName = projectPath + VERTEX_FILE;
+            VertFileName = projectPath + VERTEx_FILE;
             FragFilename = projectPath + FRAGMENT_FILE;
 
             InitCompileShader();

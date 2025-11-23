@@ -28,11 +28,11 @@ namespace Physics.Collision
 
             // 두번째 상자의 입장에서 normal 방향의 꼭짓점을 얻기 위하여 좌표가 반대로 있으면 반대로 설정해 준다.
             // normal 벡터는 두번째 상자에서 첫번째 상자를 향하는 벡터이므로,
-            // 월드 공간의 normal 벡터가 두 번째 상자의 X,Y,Z축과 같은 방향으로 향하도록 한다.
+            // 월드 공간의 normal 벡터가 두 번째 상자의 x,Y,Z축과 같은 방향으로 향하도록 한다.
             // 예를 들어, x축과 normal벡터가 내적이 음수이면 반대방향에 있으므로 vertex의 방향을 반대로 한다.
             // 이후에 vertex를 월드 변환한다.
             Vertex3f vertex = two.HalfSize;
-            if (two.AxisX * normal < 0) vertex.x *= -1.0f;
+            if (two.Axisx * normal < 0) vertex.x *= -1.0f;
             if (two.AxisY * normal < 0) vertex.y *= -1.0f;
             if (two.AxisZ * normal < 0) vertex.z *= -1.0f;
             Vertex3f contactPoint = two.RigidBody.TransformMatrix.Transform(vertex);
@@ -178,7 +178,7 @@ namespace Physics.Collision
         /// <returns></returns>
         private static float TransformToAxis(CollisionBox box, Vertex3f axis)
         {
-            return box.HalfSize.x * MathFast.Abs(axis * box.AxisX) +
+            return box.HalfSize.x * MathFast.Abs(axis * box.Axisx) +
                 box.HalfSize.y * MathFast.Abs(axis * box.AxisY) +
                 box.HalfSize.z * MathFast.Abs(axis * box.AxisZ);
         }
@@ -192,21 +192,21 @@ namespace Physics.Collision
         public static bool BoxAndBox(CollisionBox one, CollisionBox two)
         {
             return
-                OverlapOnAxis(one, two, one.AxisX) &&
+                OverlapOnAxis(one, two, one.Axisx) &&
                 OverlapOnAxis(one, two, one.AxisY) &&
                 OverlapOnAxis(one, two, one.AxisZ) &&
 
-                OverlapOnAxis(one, two, two.AxisX) &&
+                OverlapOnAxis(one, two, two.Axisx) &&
                 OverlapOnAxis(one, two, two.AxisY) &&
                 OverlapOnAxis(one, two, two.AxisZ) &&
 
-                OverlapOnAxis(one, two, one.AxisX.Cross(two.AxisX)) &&
-                OverlapOnAxis(one, two, one.AxisX.Cross(two.AxisY)) &&
-                OverlapOnAxis(one, two, one.AxisX.Cross(two.AxisZ)) &&
-                OverlapOnAxis(one, two, one.AxisY.Cross(two.AxisX)) &&
+                OverlapOnAxis(one, two, one.Axisx.Cross(two.Axisx)) &&
+                OverlapOnAxis(one, two, one.Axisx.Cross(two.AxisY)) &&
+                OverlapOnAxis(one, two, one.Axisx.Cross(two.AxisZ)) &&
+                OverlapOnAxis(one, two, one.AxisY.Cross(two.Axisx)) &&
                 OverlapOnAxis(one, two, one.AxisY.Cross(two.AxisY)) &&
                 OverlapOnAxis(one, two, one.AxisY.Cross(two.AxisZ)) &&
-                OverlapOnAxis(one, two, one.AxisZ.Cross(two.AxisX)) &&
+                OverlapOnAxis(one, two, one.AxisZ.Cross(two.Axisx)) &&
                 OverlapOnAxis(one, two, one.AxisZ.Cross(two.AxisY)) &&
                 OverlapOnAxis(one, two, one.AxisZ.Cross(two.AxisZ));
         }

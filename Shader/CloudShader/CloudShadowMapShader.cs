@@ -116,13 +116,13 @@ namespace Shader
             LoadUniform(UNIFORM_NAME.cloudDensity, cloudDensity);
 
             // 워크 그룹 계산 및 디스패치
-            int groupsX = (int)Math.Ceiling(_textureSize / (float)WORK_GROUP_SIZE);
+            int groupsx = (int)Math.Ceiling(_textureSize / (float)WORK_GROUP_SIZE);
             int groupsY = (int)Math.Ceiling(_textureSize / (float)WORK_GROUP_SIZE);
             int groupsZ = (int)Math.Ceiling(_textureSize / (float)WORK_GROUP_SIZE);
 
-            Console.WriteLine($"그림자 맵 계산 중: ({groupsX}, {groupsY}, {groupsZ}) 그룹");
+            Console.WriteLine($"그림자 맵 계산 중: ({groupsx}, {groupsY}, {groupsZ}) 그룹");
 
-            Gl.DispatchCompute((uint)groupsX, (uint)groupsY, (uint)groupsZ);
+            Gl.DispatchCompute((uint)groupsx, (uint)groupsY, (uint)groupsZ);
 
             // 메모리 배리어로 쓰기 작업 완료 대기
             Gl.MemoryBarrier(MemoryBarrierMask.ShaderImageAccessBarrierBit);

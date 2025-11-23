@@ -11,7 +11,7 @@ namespace Shader
     public class ImpostorShader : ShaderProgram<ImpostorShader.UNIFORM_NAME>
     {
         // 쉐이더 파일 경로 상수 정의 (Path.Combine 사용하여 크로스 플랫폼 호환성 확보)
-        private static readonly string VERTEX_FILE = "Shader/ImpostorShader/impostor.vert";
+        private static readonly string VERTEx_FILE = "Shader/ImpostorShader/impostor.vert";
         private static readonly string FRAGMENT_FILE = "Shader/ImpostorShader/impostor.frag";
         private static readonly string GEOMETRY_FILE = "Shader/ImpostorShader/impostor.gem.glsl";
 
@@ -51,7 +51,7 @@ namespace Shader
             _name = GetType().Name;
 
             // Path.Combine을 사용하여 OS에 독립적인 경로 생성
-            VertFileName = Path.Combine(projectPath, VERTEX_FILE);
+            VertFileName = Path.Combine(projectPath, VERTEx_FILE);
             GeomFileName = Path.Combine(projectPath, GEOMETRY_FILE);
             FragFilename = Path.Combine(projectPath, FRAGMENT_FILE);
 

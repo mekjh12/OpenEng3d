@@ -19,7 +19,7 @@ namespace Shader
             Count
         }
 
-        const string VERTEX_FILE = @"\Shader\AnimateShader\ani.vert";
+        const string VERTEx_FILE = @"\Shader\AnimateShader\ani.vert";
         const string FRAGMENT_FILE = @"\Shader\AnimateShader\ani.frag";
 
         // UBO 관련 멤버
@@ -32,7 +32,7 @@ namespace Shader
         public AnimateShader(string projectPath) : base()
         {
             _name = this.GetType().Name;
-            VertFileName = projectPath + VERTEX_FILE;
+            VertFileName = projectPath + VERTEx_FILE;
             FragFilename = projectPath + FRAGMENT_FILE;
 
             // UBO 초기화

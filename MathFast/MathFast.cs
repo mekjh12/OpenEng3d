@@ -171,9 +171,9 @@ namespace FastMath
         /// 두 점 사이의 방향 각도 계산 (2D)
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float DirectionAngle(float fromX, float fromZ, float toX, float toZ)
+        public static float DirectionAngle(float fromx, float fromZ, float tox, float toZ)
         {
-            return Atan2(toZ - fromZ, toX - fromX);
+            return Atan2(toZ - fromZ, tox - fromx);
         }
 
         // ==================== 역삼각함수 ====================

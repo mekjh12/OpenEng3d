@@ -45,7 +45,7 @@ namespace Shader
             Count
         }
 
-        const string VERTEX_FILE = @"\Shader\CloudShader\cloudRenderTest.vert";
+        const string VERTEx_FILE = @"\Shader\CloudShader\cloudRenderTest.vert";
         const string FRAGMENT_FILE = @"\Shader\CloudShader\volumeRaycasting.frag";
 
         // 구름을 렌더링할 큐브 메시
@@ -60,7 +60,7 @@ namespace Shader
             _name = this.GetType().Name;
 
             // 버텍스/프래그먼트 셰이더만 설정
-            VertFileName = projectPath + VERTEX_FILE;
+            VertFileName = projectPath + VERTEx_FILE;
             FragFilename = projectPath + FRAGMENT_FILE;
 
             InitCompileShader();

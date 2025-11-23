@@ -135,7 +135,7 @@ namespace Animate
 
             if (_boneIndices == null)
             {
-                _boneIndices = new Dictionary<string, int>(MAX_BONES_COUNT);
+                _boneIndices = new Dictionary<string, int>(MAx_BONES_COUNT);
             }
             else
             {

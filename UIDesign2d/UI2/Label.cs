@@ -264,7 +264,7 @@ namespace Ui2d
                     }
                     else
                     {
-                        fontRenderer.Render(_fontFamily, _text, renderingPosition1 + new Vertex2f(renderingPaddingX * 0.5f, renderingPaddingY));
+                        fontRenderer.Render(_fontFamily, _text, renderingPosition1 + new Vertex2f(renderingPaddingx * 0.5f, renderingPaddingY));
                     }
 
                     // 스크롤 설정을 한다.

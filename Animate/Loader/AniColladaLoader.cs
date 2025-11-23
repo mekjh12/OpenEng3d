@@ -196,7 +196,7 @@ namespace Animate
                             {
                                 if (input.Name == "input")
                                 {
-                                    if (input.Attributes["semantic"].Value == "VERTEX")
+                                    if (input.Attributes["semantic"].Value == "VERTEx")
                                     {
                                         vertexName = input.Attributes["source"].Value;
                                         vertexOffset = int.Parse(input.Attributes["offset"].Value);
@@ -206,7 +206,7 @@ namespace Animate
                                         normalName = input.Attributes["source"].Value;
                                         normalOffset = int.Parse(input.Attributes["offset"].Value);
                                     }
-                                    if (input.Attributes["semantic"].Value == "TEXCOORD")
+                                    if (input.Attributes["semantic"].Value == "TExCOORD")
                                     {
                                         texcoordName = input.Attributes["source"].Value;
                                         texcoordOffset = int.Parse(input.Attributes["offset"].Value);
@@ -254,7 +254,7 @@ namespace Animate
         }
 
         /// <summary>
-        /// COLLADA XML 파일에서 라이브러리 컨트롤러를 파싱하여 반환한다.
+        /// COLLADA xML 파일에서 라이브러리 컨트롤러를 파싱하여 반환한다.
         /// <remarks>
         /// <para>뼈대 애니메이션을 위한 본 이름, 역바인드 포즈, 본 인덱스 및 가중치 정보를 추출합니다.</para>
         /// <para>본 인덱스 및 가중치 정보는 읽어온 지오메트리의 정점의 갯수만큼 생성됩니다.</para>
@@ -315,7 +315,7 @@ namespace Animate
                                 case "JOINT":
                                     jointsName = input.Attributes["source"].Value;
                                     break;
-                                case "INV_BIND_MATRIX":
+                                case "INV_BIND_MATRIx":
                                     inverseBindMatrixName = input.Attributes["source"].Value;
                                     break;
                             }
@@ -338,7 +338,7 @@ namespace Animate
                                         }
                                     }
 
-                                    // INV_BIND_MATRIX 읽어오기
+                                    // INV_BIND_MATRIx 읽어오기
                                     if (source["float_array"] != null)
                                     {
                                         string[] value = source["float_array"].InnerText.Trim().Replace("\n", " ").Split(' ');
@@ -346,7 +346,7 @@ namespace Animate
                                         for (int i = 0; i < value.Length; i++)
                                             items[i] = float.Parse(value[i]);
 
-                                        // INV_BIND_MATRIX
+                                        // INV_BIND_MATRIx
                                         if ("#" + sourcesId == inverseBindMatrixName)
                                         {
                                             for (int i = 0; i < items.Length; i += 16)
@@ -478,9 +478,9 @@ namespace Animate
 
 
         /// <summary>
-        /// COLLADA XML 파일에서 뼈대 구조를 파싱하여 루트 본을 반환한다.
+        /// COLLADA xML 파일에서 뼈대 구조를 파싱하여 루트 본을 반환한다.
         /// </summary>
-        /// <param name="xml">XML</param>
+        /// <param name="xml">xML</param>
         /// <param name="invBindPoses">역바인드 포즈 딕셔너리</param>
         /// <param name="dicBoneIndex">본익덱스 딕셔너리</param>
         /// <param name="dicBones">생성한 본딕셔너리</param>
@@ -519,7 +519,7 @@ namespace Animate
                 return;
             }
 
-            // XML노드들을 순회하며 본을 생성한다.
+            // xML노드들을 순회하며 본을 생성한다.
             Dictionary<string, Bone> boneDics = new Dictionary<string, Bone>();
             Matrix4x4f startMatrix = Matrix4x4f.Identity;
             bool modifyStartMatrix = true;
@@ -614,15 +614,15 @@ namespace Animate
 
         /*
         /// <summary>
-        /// COLLADA XML 파일에서 애니메이션 라이브러리를 파싱하여 AniRig 객체에 모션 데이터를 추가하는 메서드
+        /// COLLADA xML 파일에서 애니메이션 라이브러리를 파싱하여 AniRig 객체에 모션 데이터를 추가하는 메서드
         /// </summary>
-        /// <param name="xml">파싱할 COLLADA XML 문서</param>
-        public static void LibraryAnimations(XmlDocument xml)
+        /// <param name="xml">파싱할 COLLADA xML 문서</param>
+        public static void LibraryAnimations(xmlDocument xml)
         {
             MotionStorage motions = new MotionStorage();
 
-            // XML에서 library_animations 노드를 찾음
-            XmlNodeList libraryAnimations = xml.GetElementsByTagName("library_animations");
+            // xML에서 library_animations 노드를 찾음
+            xmlNodeList libraryAnimations = xml.GetElementsByTagName("library_animations");
             if (libraryAnimations.Count == 0)
             {
                 Console.WriteLine($"현재 캐릭터 파일에 library_animations 노드가 없습니다.");
@@ -633,7 +633,7 @@ namespace Animate
             Dictionary<string, Dictionary<float, Matrix4x4f>> bonenameKeyframeDic = new Dictionary<string, Dictionary<float, Matrix4x4f>>();
 
             // 각 애니메이션을 순회
-            foreach (XmlNode libraryAnimation in libraryAnimations[0])
+            foreach (xmlNode libraryAnimation in libraryAnimations[0])
             {
                 // 애니메이션 이름 추출
                 string animationName = libraryAnimation.Attributes["name"].Value;
@@ -641,7 +641,7 @@ namespace Animate
                 string motionName = "";      // 모션 이름
 
                 // 각 본(bone)의 애니메이션 데이터를 순회
-                foreach (XmlNode boneAnimation in libraryAnimation.ChildNodes)
+                foreach (xmlNode boneAnimation in libraryAnimation.ChildNodes)
                 {
                     // 본 이름 추출 및 정리
                     string boneName = boneAnimation.Attributes["id"].Value.Substring(animationName.Length + 1);
@@ -656,11 +656,11 @@ namespace Animate
                     List<string> interpolationInput = new List<string>();   // 보간 방식 데이터
 
                     // 채널 정보 가져오기
-                    XmlNode channel = boneAnimation["channel"];
+                    xmlNode channel = boneAnimation["channel"];
                     string channelName = channel.Attributes["source"].Value;
 
                     // 샘플러 정보 가져오기
-                    XmlNode sampler = boneAnimation["sampler"];
+                    xmlNode sampler = boneAnimation["sampler"];
                     if (channelName != "#" + sampler.Attributes["id"].Value) continue;
 
                     // 입력, 출력, 보간 소스의 이름 저장용 변수들
@@ -669,7 +669,7 @@ namespace Animate
                     string interpolationName = "";
 
                     // 샘플러의 입력들을 순회하여 각 semantic(의미)의 소스 이름을 읽어옴
-                    foreach (XmlNode input in sampler.ChildNodes)
+                    foreach (xmlNode input in sampler.ChildNodes)
                     {
                         if (input.Attributes["semantic"].Value == "INPUT") inputName = input.Attributes["source"].Value;
                         if (input.Attributes["semantic"].Value == "OUTPUT") outputName = input.Attributes["source"].Value;
@@ -677,7 +677,7 @@ namespace Animate
                     }
 
                     // 본의 애니메이션 소스 데이터를 읽어옴
-                    foreach (XmlNode source in boneAnimation.ChildNodes)
+                    foreach (xmlNode source in boneAnimation.ChildNodes)
                     {
                         if (source.Name == "source")
                         {
@@ -777,17 +777,17 @@ namespace Animate
 
 
         /// <summary>
-        /// COLLADA XML 파일에서 뼈대 구조를 파싱하여 루트 본을 반환한다.
+        /// COLLADA xML 파일에서 뼈대 구조를 파싱하여 루트 본을 반환한다.
         /// </summary>
-        /// <param name="xml">XML</param>
+        /// <param name="xml">xML</param>
         /// <param name="invBindPoses">역바인드 포즈 딕셔너리</param>
         /// <param name="dicBoneIndex">본익덱스 딕셔너리</param>
         /// <param name="dicBones">생성한 본딕셔너리</param>
-        public static void LibraryVisualScenes_Orginal(XmlDocument xml,
+        public static void LibraryVisualScenes_Orginal(xmlDocument xml,
             Dictionary<string, Matrix4x4f> invBindPoses, ref Armature armature)
         {
             // 뼈대 구조를 읽기 위하여 준비한다.
-            XmlNodeList library_visual_scenes = xml.GetElementsByTagName("library_visual_scenes");
+            xmlNodeList library_visual_scenes = xml.GetElementsByTagName("library_visual_scenes");
             if (library_visual_scenes.Count == 0)
             {
                 Console.WriteLine($"[주의] 파일구조에서 뼈대구조가 없습니다.");
@@ -795,11 +795,11 @@ namespace Animate
             }
 
             // 뼈대 구조를 읽기 위해 스택을 준비한다.
-            XmlNode visual_scene_nodes = library_visual_scenes[0]["visual_scene"];
-            XmlNode rootNode = null;
+            xmlNode visual_scene_nodes = library_visual_scenes[0]["visual_scene"];
+            xmlNode rootNode = null;
 
             // Armature 노드를 찾는다.
-            foreach ((XmlNode parent, XmlNode node) in visual_scene_nodes.TraverseXmlNodesWithParent())
+            foreach ((xmlNode parent, xmlNode node) in visual_scene_nodes.TraversexmlNodesWithParent())
             {
                 if (node.Name != "node") continue;
                 if (node.HasAttribute("id") && node.Attributes["id"].Value == "Armature")
@@ -816,11 +816,11 @@ namespace Animate
                 return;
             }
 
-            // XML노드들을 순회하며 본을 생성한다.
+            // xML노드들을 순회하며 본을 생성한다.
             // ** 확장메소드의 내부 로직으로 스택을 사용하지 않고 자식노드를 순회한다. **
             Dictionary<string, Bone> boneDics = new Dictionary<string, Bone>();
 
-            foreach ((XmlNode parentNode, XmlNode node) in rootNode.TraverseXmlNodesWithParent())
+            foreach ((xmlNode parentNode, xmlNode node) in rootNode.TraversexmlNodesWithParent())
             {
                 // 노드가 "node" 또는 "JOINT" 타입인지 확인한다.
                 if (!node.HasAttribute("type")) continue;

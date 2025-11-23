@@ -157,23 +157,23 @@ namespace Physics.Collision
             // 0-2: 첫번째 상자의 면축, 3-5: 두번째 상자의 면축, 6-14 선선에 기반한 축
             // 각각의 축에 대하여 가장 작은 관통을 가진 축을 찾는다.
             bool intersected = true;
-            intersected &= IntersectionTest.TryAxis(one, two, one.AxisX, 0, ref best, ref penetration);
+            intersected &= IntersectionTest.TryAxis(one, two, one.Axisx, 0, ref best, ref penetration);
             intersected &= IntersectionTest.TryAxis(one, two, one.AxisY, 1, ref best, ref penetration);
             intersected &= IntersectionTest.TryAxis(one, two, one.AxisZ, 2, ref best, ref penetration);
 
-            intersected &= IntersectionTest.TryAxis(one, two, two.AxisX, 3, ref best, ref penetration);
+            intersected &= IntersectionTest.TryAxis(one, two, two.Axisx, 3, ref best, ref penetration);
             intersected &= IntersectionTest.TryAxis(one, two, two.AxisY, 4, ref best, ref penetration);
             intersected &= IntersectionTest.TryAxis(one, two, two.AxisZ, 5, ref best, ref penetration);
 
             int bestSingleAxis = best;
 
-            intersected &= IntersectionTest.TryAxis(one, two, one.AxisX.Cross(two.AxisX), 6, ref best, ref penetration);
-            intersected &= IntersectionTest.TryAxis(one, two, one.AxisX.Cross(two.AxisY), 7, ref best, ref penetration);
-            intersected &= IntersectionTest.TryAxis(one, two, one.AxisX.Cross(two.AxisZ), 8, ref best, ref penetration);
-            intersected &= IntersectionTest.TryAxis(one, two, one.AxisY.Cross(two.AxisX), 9, ref best, ref penetration);
+            intersected &= IntersectionTest.TryAxis(one, two, one.Axisx.Cross(two.Axisx), 6, ref best, ref penetration);
+            intersected &= IntersectionTest.TryAxis(one, two, one.Axisx.Cross(two.AxisY), 7, ref best, ref penetration);
+            intersected &= IntersectionTest.TryAxis(one, two, one.Axisx.Cross(two.AxisZ), 8, ref best, ref penetration);
+            intersected &= IntersectionTest.TryAxis(one, two, one.AxisY.Cross(two.Axisx), 9, ref best, ref penetration);
             intersected &= IntersectionTest.TryAxis(one, two, one.AxisY.Cross(two.AxisY), 10, ref best, ref penetration);
             intersected &= IntersectionTest.TryAxis(one, two, one.AxisY.Cross(two.AxisZ), 11, ref best, ref penetration);
-            intersected &= IntersectionTest.TryAxis(one, two, one.AxisZ.Cross(two.AxisX), 12, ref best, ref penetration);
+            intersected &= IntersectionTest.TryAxis(one, two, one.AxisZ.Cross(two.Axisx), 12, ref best, ref penetration);
             intersected &= IntersectionTest.TryAxis(one, two, one.AxisZ.Cross(two.AxisY), 13, ref best, ref penetration);
             intersected &= IntersectionTest.TryAxis(one, two, one.AxisZ.Cross(two.AxisZ), 14, ref best, ref penetration);
 

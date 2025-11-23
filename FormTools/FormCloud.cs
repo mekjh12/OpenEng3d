@@ -11,7 +11,7 @@ namespace FormTools
     public partial class FormCloud : Form
     {
         private string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
-        //private string EXE_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\FormTools\bin\Debug\";
+        //private string ExE_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\FormTools\bin\Debug\";
 
         private GlControl3 _glControl3;
          

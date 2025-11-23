@@ -144,7 +144,7 @@ namespace Model3d
                     };
 
                     // 구면 좌표계를 사용하여 카메라 위치 계산
-                    float theta = horizontalAngle.ToRadian(); // 방위각 (XY 평면에서의 각도)
+                    float theta = horizontalAngle.ToRadian(); // 방위각 (xY 평면에서의 각도)
                     float phi = (90 - verticalAngle).ToRadian(); // 극각 (Z축으로부터의 각도)
                     float r = radius * 4.0f; // 카메라 거리
 
@@ -563,13 +563,13 @@ namespace Model3d
                             {
                                 for (int h = 0; h < horizontalCells; h++)
                                 {
-                                    int startX = h * settings.IndividualSize;
+                                    int startx = h * settings.IndividualSize;
                                     int startY = v * settings.IndividualSize;
-                                    int endX = startX + settings.IndividualSize - 1;
+                                    int endx = startx + settings.IndividualSize - 1;
                                     int endY = startY + settings.IndividualSize - 1;
 
                                     // 테두리 픽셀 그리기
-                                    for (int x = startX; x <= endX; x++)
+                                    for (int x = startx; x <= endx; x++)
                                     {
                                         // 상단과 하단 테두리
                                         for (int offset = 0; offset < 2; offset++)
@@ -599,8 +599,8 @@ namespace Model3d
                                         // 왼쪽과 오른쪽 테두리
                                         for (int offset = 0; offset < 2; offset++)
                                         {
-                                            int x1 = startX + offset;
-                                            int x2 = endX - offset;
+                                            int x1 = startx + offset;
+                                            int x2 = endx - offset;
 
                                             int idx1 = (y * stride) + (x1 * 4);
                                             int idx2 = (y * stride) + (x2 * 4);

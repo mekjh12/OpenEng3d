@@ -99,7 +99,7 @@ namespace Ui2d
             RIGHTTOP_START, 
             RIGHTBOTTOM_START, 
             LEFTBOTTOM_MARGIN_Y_START,
-            LEFTBOTTOM_MARGIN_XY_START,
+            LEFTBOTTOM_MARGIN_xY_START,
             ADJOINT_LEFT,
             ADJOINT_RIGHT,
             ADJOINT_TOP,
@@ -202,14 +202,14 @@ namespace Ui2d
         protected float renderingMarginY;
 
         /// <summary>
-        /// 절대 MarginX
+        /// 절대 Marginx
         /// </summary>
-        protected float renderingMarginX;
+        protected float renderingMarginx;
 
         /// <summary>
-        /// 절대 PaddingX
+        /// 절대 Paddingx
         /// </summary>
-        protected float renderingPaddingX;
+        protected float renderingPaddingx;
 
         /// <summary>
         /// 절대 PaddingY
@@ -259,7 +259,7 @@ namespace Ui2d
         /// </summary>
         public float RenderingHeight => renderingHeight;
 
-        public float RenderingPaddingX => renderingPaddingX;
+        public float RenderingPaddingx => renderingPaddingx;
 
         public float RenderingPaddingY => renderingPaddingY;
 
@@ -727,12 +727,12 @@ namespace Ui2d
                 float y1 = H * _position.y;
                 
                 float h = H * _height;
-                float my = h * _margin; //marginX
+                float my = h * _margin; //marginx
 
                 float w = W * _width;
                 float mx = my / aspect;
 
-                float py = h * _padding; //paddingX
+                float py = h * _padding; //paddingx
                 float px = w * _padding / aspect;
 
                 int absPixelHeight = (int)(h * UIEngine.Height);
@@ -822,7 +822,7 @@ namespace Ui2d
                         delta.y = 0;
                         if (_adjointControl != null)
                         {
-                            X1 = _adjointControl.renderingPosition2.x;
+                            x1 = _adjointControl.renderingPosition2.x;
                             Y1 = _adjointControl.renderingPosition1.y;
                         }
                         break;
@@ -832,17 +832,17 @@ namespace Ui2d
                         delta.y = my;
                         if (_adjointControl != null)
                         {
-                            X1 = _adjointControl.renderingPosition1.x;
+                            x1 = _adjointControl.renderingPosition1.x;
                             Y1 = _adjointControl.renderingPosition2.y;
                         }
                         break;
 
-                    case CONTROL_ALIGN.LEFTBOTTOM_MARGIN_XY_START:
+                    case CONTROL_ALIGN.LEFTBOTTOM_MARGIN_xY_START:
                         delta.x = mx;
                         delta.y = my;
                         if (_adjointControl != null)
                         {
-                            X1 = _adjointControl.renderingPosition1.x;
+                            x1 = _adjointControl.renderingPosition1.x;
                             Y1 = _adjointControl.renderingPosition2.y;
                         }
                         break;
@@ -852,7 +852,7 @@ namespace Ui2d
                         delta.y = my;
                         if (_adjointControl != null)
                         {
-                            X1 = _adjointControl.renderingPosition2.x;
+                            x1 = _adjointControl.renderingPosition2.x;
                             Y1 = _adjointControl.renderingPosition2.y;
                         }
                         break;
@@ -862,7 +862,7 @@ namespace Ui2d
                         delta.y = my;
                         if (_adjointControl != null)
                         {
-                            X1 = _adjointControl.renderingPosition1.x - renderingWidth;
+                            x1 = _adjointControl.renderingPosition1.x - renderingWidth;
                             //Y1 = _adjointControl.renderingPosition1.y;
                         }
                         break;
@@ -872,7 +872,7 @@ namespace Ui2d
                         //delta.y = my;
                         if (_adjointControl != null)
                         {
-                            X1 = _adjointControl.renderingPosition2.x;
+                            x1 = _adjointControl.renderingPosition2.x;
                             Y1 = _adjointControl.renderingPosition1.y;
                         }
                         break;
@@ -882,7 +882,7 @@ namespace Ui2d
                         delta.y = my;
                         if (_adjointControl != null)
                         {
-                            X1 = _adjointControl.renderingPosition1.x;
+                            x1 = _adjointControl.renderingPosition1.x;
                             Y1 = _adjointControl.renderingPosition1.y - renderingHeight;
                         }
                         break;
@@ -892,7 +892,7 @@ namespace Ui2d
                         delta.y = my;
                         if (_adjointControl != null)
                         {
-                            X1 = _adjointControl.renderingPosition1.x;
+                            x1 = _adjointControl.renderingPosition1.x;
                             Y1 = _adjointControl.renderingPosition2.y;
                         }
                         break;
@@ -901,7 +901,7 @@ namespace Ui2d
                         break;
                 }
 
-                renderingPosition1.x = X1 + delta.x;
+                renderingPosition1.x = x1 + delta.x;
                 renderingPosition1.y = Y1 + delta.y;
                 renderingPosition2.x = renderingPosition1.x + w;
                 renderingPosition2.y = renderingPosition1.y + h;
@@ -914,8 +914,8 @@ namespace Ui2d
                 }
 
                 renderingMarginY = my;
-                renderingMarginX = mx;
-                renderingPaddingX = px;
+                renderingMarginx = mx;
+                renderingPaddingx = px;
                 renderingPaddingY = py;
                 renderingWidth = w;
                 renderingHeight = h;
@@ -937,9 +937,9 @@ namespace Ui2d
 
                     renderingWidth = w;
                     renderingHeight = h;
-                    renderingMarginX = 0.0f;
+                    renderingMarginx = 0.0f;
                     renderingMarginY = 0.0f;
-                    renderingPaddingX = 0.0f;
+                    renderingPaddingx = 0.0f;
                     renderingPaddingY = 0.0f;
                 }
                 //---------------------------------------------------------------------------
@@ -950,9 +950,9 @@ namespace Ui2d
                     renderingPosition2.x = renderingPosition1.x + _width;
                     renderingPosition2.y = renderingPosition1.y + _height;
 
-                    renderingMarginX = 0.0f;
+                    renderingMarginx = 0.0f;
                     renderingMarginY = 0.0f;
-                    renderingPaddingX = 0.0f;
+                    renderingPaddingx = 0.0f;
                     renderingPaddingY = 0.0f;
                     renderingWidth = _width;
                     renderingHeight = _height;

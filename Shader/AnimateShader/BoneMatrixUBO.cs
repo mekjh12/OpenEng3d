@@ -9,7 +9,7 @@ namespace Shader
     /// </summary>
     public class BoneMatrixUBO : IDisposable
     {
-        private const int MAX_BONES = 128;
+        private const int MAx_BONES = 128;
         private const int BINDING_POINT = 0; // 셰이더의 binding point와 일치해야 함
 
         private uint _uboHandle;
@@ -31,7 +31,7 @@ namespace Shader
 
                 // 본 행렬 저장을 위한 메모리 할당
                 // Matrix4x4f = 16 floats = 64 bytes
-                int bufferSize = MAX_BONES * 16 * sizeof(float);
+                int bufferSize = MAx_BONES * 16 * sizeof(float);
                 Gl.BufferData(BufferTarget.UniformBuffer, (uint)bufferSize, IntPtr.Zero, BufferUsage.DynamicDraw);
 
                 // 바인딩 포인트에 UBO 연결
@@ -64,7 +64,7 @@ namespace Shader
                 return;
             }
 
-            int matrixCount = Math.Min(boneMatrices.Length, MAX_BONES);
+            int matrixCount = Math.Min(boneMatrices.Length, MAx_BONES);
 
             // UBO 바인딩
             Gl.BindBuffer(BufferTarget.UniformBuffer, _uboHandle);

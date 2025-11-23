@@ -17,15 +17,25 @@ using ZetaExt;
 
 namespace FormTools
 {
+    /// <summary>
+    /// 오클루전 최적화 폼 (쿼드트리 + 계층적 Z-버퍼)
+    /// CPU(쿼드트리) -> GPU(계층적 Z-버퍼 생성) -> CPU(Hi-ZBuffer컬링) 오클루전 컬링 최적화 데모
+    /// (1) 쿼드트리 구성
+    /// (2) 쿼드트리 뷰 프러스텀 컬링
+    /// (3) 계층적 GPU Z-버퍼 생성
+    /// (3-1) 단순 지형 렌더링
+    /// (3-2) LOD0 인스턴스 렌더링
+    /// (4) 계층적 Z-버퍼 밉맵 생성
+    /// </summary>
     public partial class FormOcclusionOpt : Form, GlControlerable
     {
         int _level = 0;                             // 현재 Z 버퍼 레벨
-        const int DOWN_LEVEL = 2;                   // 다운샘플링 레벨
+        const int DOWN_LEVEL = 0;                   // 다운샘플링 레벨
         bool _isDepthZBuffer = false;               // 깊이 Z-버퍼 표시 여부
         bool _isAABBDepth = false;                  // AABB 깊이 표시 여부
 
         readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
-        readonly string EXE_PATH = Application.StartupPath;
+        readonly string ExE_PATH = Application.StartupPath;
 
         private GlControl3 _glControl3;                     // OpenGL 컨트롤
         private bool _isLoaded = false;                     // 로드 여부
@@ -56,7 +66,6 @@ namespace FormTools
 
         RawModel3d _treeRawModel;                   // 나무 로우 모델
         TexturedModel[] _treeModel;                 // 나무 모델
-        AABB3f _treeRawAABB;                        // 나무 로우 AABB
         Model3dManager _model3DManager;             // 3D 모델 매니저
         InstancedRenderer _instancedRenderer;       // 인스턴스 렌더러
 
@@ -138,7 +147,7 @@ namespace FormTools
                 Text2d.TextAlignment.Center, heightInPixels: 20);
             _fpsText.Color = Color.Yellow;
 
-            _titleText = new Text2d("쿼드트리탐색 최적화", 10, 10, width, height,
+            _titleText = new Text2d("오클루전 최적화 폼 (쿼드트리 + 계층적 Z-버퍼)", 10, 10, width, height,
                 Text2d.TextAlignment.Left, heightInPixels: 15);
             _titleText.Color = Color.Red;
 
@@ -165,13 +174,9 @@ namespace FormTools
             CharacterTextureAtlas.Initialize();
             TextBillboardShader.Initialize();
 
-            _model3DManager = new Model3dManager(PROJECT_PATH, EXE_PATH + "\\nullTexture.jpg");
+            _model3DManager = new Model3dManager(PROJECT_PATH, ExE_PATH + "\\nullTexture.jpg");
             _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\tree1.obj");
             _treeModel = _model3DManager.GetModels("tree1");
-            _treeModel[0].GenerateBoundingBox();
-            _treeModel[1].GenerateBoundingBox();
-            _treeRawAABB = AABB3f.Union( new AABB3f(_treeModel[0].AABB.LowerBound, _treeModel[0].AABB.UpperBound)
-                , new AABB3f(_treeModel[1].AABB.LowerBound, _treeModel[1].AABB.UpperBound));
 
             _instancedRenderer = new InstancedRenderer(_treeModel);
 
@@ -181,11 +186,13 @@ namespace FormTools
             // 지형 영역 초기화
             RegionCoord regionCoord = new RegionCoord(0, 0);
             _terrainRegion = new TerrainRegion(regionCoord, chunkSize: 100, n: 10, null);
-            _terrainRegion.LoadTerrainLowResMap(regionCoord, EXE_PATH + "\\Res\\Terrain\\low\\region0x0.png",
+            _terrainRegion.LoadTerrainLowResMap(regionCoord, ExE_PATH + "\\Res\\Terrain\\low\\region0x0.png",
                 completed: () =>
                 {
                     int idx = 0;
                     int numBoxes = 150;
+
+                    AABB3f treeRawAABB = _instancedRenderer.RawModelAABB;
 
                     _instancedRenderer.ClearInstances();
                     for (int i = -numBoxes; i < numBoxes; i++)
@@ -195,9 +202,11 @@ namespace FormTools
                             Vertex3f center = new Vertex3f(i * 30, j * 30, 0);
                             _terrainRegion.TerrainData.GetTerrainHeightVertex3f(ref center);
 
-                            Matrix4x4f worldModel = Matrix4x4f.Translated(center.x, center.y, center.z - _treeRawAABB.Size.z * 0.5f);
+                            float scaled = Rand.Next(0.07f, 0.2f);
+                            Matrix4x4f worldModel = Matrix4x4f.Translated(center.x, center.y, center.z - treeRawAABB.Size.z * 0.5f) *
+                                Matrix4x4f.Scaled(scaled, scaled, scaled);
 
-                            AABB3f aabb = AABB3f.FromMatrix(_treeRawAABB, worldModel);
+                            AABB3f aabb = AABB3f.FromMatrix(treeRawAABB, worldModel);
 
                             _instancedRenderer.AddInstance(worldModel);
                             _quadTree.Insert(aabb, idx);
@@ -213,12 +222,12 @@ namespace FormTools
             // 지형 레벨 텍스쳐 로딩
             string heightMap = PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\";
             string[] levelTextureMap = new string[5];
-            levelTextureMap[0] = EXE_PATH + @"\Res\Terrain\blend\water1.png";
-            levelTextureMap[1] = EXE_PATH + @"\Res\Terrain\blend\grass_1.png";
-            levelTextureMap[2] = EXE_PATH + @"\Res\Terrain\blend\lowestTile.png";
-            levelTextureMap[3] = EXE_PATH + @"\Res\Terrain\blend\HighTile.png";
-            levelTextureMap[4] = EXE_PATH + @"\Res\Terrain\blend\highestTile.png";
-            string detailMap = EXE_PATH + @"\Res\Terrain\blend\detailMap.png";
+            levelTextureMap[0] = ExE_PATH + @"\Res\Terrain\blend\water1.png";
+            levelTextureMap[1] = ExE_PATH + @"\Res\Terrain\blend\grass_1.png";
+            levelTextureMap[2] = ExE_PATH + @"\Res\Terrain\blend\lowestTile.png";
+            levelTextureMap[3] = ExE_PATH + @"\Res\Terrain\blend\HighTile.png";
+            levelTextureMap[4] = ExE_PATH + @"\Res\Terrain\blend\highestTile.png";
+            string detailMap = ExE_PATH + @"\Res\Terrain\blend\detailMap.png";
             _levelTextureMap = new Texture[levelTextureMap.Length];
             _detailTextureMap = new Texture(detailMap);
             for (int i = 0; i < _levelTextureMap.Length; i++)
@@ -262,9 +271,14 @@ namespace FormTools
             _hzbuffer.GenerateMipmapsUsingFragment();
 
             // 쿼드트리 컬링 테스트
-            //_quadTree.CullingTestByHiZBuffer(camera, camera.VPMatrix, camera.ViewMatrix, _hzbuffer, enablePickLeaf: true);
-            //_quadTree.CullTestFinish(camera.Position);
+            _quadTree.CullingTestByHiZBuffer(camera, camera.VPMatrix, camera.ViewMatrix, _hzbuffer, enablePickLeaf: true);
 
+            _instancedRenderer.ClearVisibleInstances();
+            for (int i = 0; i < _quadTree.VisibleObjectCount; i++)
+            {
+                AABB3f aabb = _quadTree.VisibleObjects[i];
+                _instancedRenderer.AddVisibleInstance(aabb.ModelMatrix, aabb);
+            }
 
             // 네임플레이트 업데이트            
             _textNamePlate.Text = $"LOD0={_quadTree.CountLod0}개, 가시={_quadTree.VisibleObjectCount}개";
@@ -305,7 +319,7 @@ namespace FormTools
                     heightScale: TerrainConstants.DEFAULT_VERTICAL_SCALE
                     );
 
-                //_instancedRenderer.Render(_instancedShader, camera);
+                _instancedRenderer.Render(_instancedShader, camera);
 
                 // AABB 박스 렌더링
                 //Renderer3d.RenderAABBGeometry(_aabbBoxShader, in _quadTree.VisibleObjectsLod0, _quadTree.IndexLod0, camera);

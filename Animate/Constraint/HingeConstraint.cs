@@ -25,7 +25,7 @@ namespace Animate
         // 바인드 포즈 정보
         // -----------------------------------------------------------------------
 
-        private Vertex3f _xBind;  // 바인드 포즈 X축 (굽힘 참조 벡터)
+        private Vertex3f _xBind;  // 바인드 포즈 x축 (굽힘 참조 벡터)
         private Vertex3f _yBind;  // 바인드 포즈 Y축 (힌지 축)
         private Vertex3f _zBind;  // 바인드 포즈 Z축 (비틀기 참조 벡터)
         private Matrix4x4f _bindRotation;  // 바인드 포즈 회전 행렬
@@ -44,7 +44,7 @@ namespace Animate
         // 재사용 임시 변수 - 타겟 프레임 추출용
         // -----------------------------------------------------------------------
 
-        private Vertex3f _tempXTarget;  // 현재 변환의 X축
+        private Vertex3f _tempxTarget;  // 현재 변환의 x축
         private Vertex3f _tempYTarget;  // 현재 변환의 Y축
         private Vertex3f _tempZTarget;  // 현재 변환의 Z축
 
@@ -115,7 +115,7 @@ namespace Animate
             ExtractOrthonormalBasis(_bindRotation, ref _xBind, ref _yBind, ref _zBind);
 
             // 재사용 변수 초기화 (GC 방지)
-            _tempXTarget = new Vertex3f();
+            _tempxTarget = new Vertex3f();
             _tempYTarget = new Vertex3f();
             _tempZTarget = new Vertex3f();
             _tempBendRefProjected = new Vertex3f();
@@ -148,15 +148,15 @@ namespace Animate
                 return currentTransform;
 
             // 위치 및 스케일 추출
-            float posX = currentTransform[3, 0];
+            float posx = currentTransform[3, 0];
             float posY = currentTransform[3, 1];
             float posZ = currentTransform[3, 2];
 
-            float scaleX, scaleY, scaleZ;
-            ExtractScale(currentTransform, out scaleX, out scaleY, out scaleZ);
+            float scalex, scaleY, scaleZ;
+            ExtractScale(currentTransform, out scalex, out scaleY, out scaleZ);
 
             // 타겟 프레임 추출 (재사용 변수 사용)
-            ExtractOrthonormalBasis(currentTransform, ref _tempXTarget, ref _tempYTarget, ref _tempZTarget);
+            ExtractOrthonormalBasis(currentTransform, ref _tempxTarget, ref _tempYTarget, ref _tempZTarget);
 
             // 힌지 축에 따라 bind/target 벡터 선택
             Vertex3f hingeAxis, bendRefBind, bendRefCurrent, twistRefBind, twistRefCurrent;
@@ -174,7 +174,7 @@ namespace Animate
                 case LocalSpaceAxis.Z:
                     hingeAxis = _zBind;
                     bendRefBind = _xBind;
-                    bendRefCurrent = _tempXTarget;
+                    bendRefCurrent = _tempxTarget;
                     twistRefBind = _yBind;
                     twistRefCurrent = _tempYTarget;
                     break;
@@ -182,7 +182,7 @@ namespace Animate
                 default: // LocalSpaceAxis.Y
                     hingeAxis = _yBind;
                     bendRefBind = _xBind;
-                    bendRefCurrent = _tempXTarget;
+                    bendRefCurrent = _tempxTarget;
                     twistRefBind = _zBind;
                     twistRefCurrent = _tempZTarget;
                     break;
@@ -212,7 +212,7 @@ namespace Animate
             MultiplyRotationsInPlace(_bindRotation, _tempCombinedRotation, ref _tempFinalRotation);
 
             // 스케일 및 위치 복원
-            return ReconstructTransform(_tempFinalRotation, scaleX, scaleY, scaleZ, posX, posY, posZ);
+            return ReconstructTransform(_tempFinalRotation, scalex, scaleY, scaleZ, posx, posY, posZ);
         }
 
         // -----------------------------------------------------------------------
@@ -223,7 +223,7 @@ namespace Animate
         /// 행렬에서 정규직교 기저를 추출한다.
         /// </summary>
         /// <param name="matrix">입력 변환 행렬</param>
-        /// <param name="xAxis">출력 X축 (ref)</param>
+        /// <param name="xAxis">출력 x축 (ref)</param>
         /// <param name="yAxis">출력 Y축 (ref)</param>
         /// <param name="zAxis">출력 Z축 (ref)</param>
         private void ExtractOrthonormalBasis(Matrix4x4f matrix,
@@ -329,16 +329,16 @@ namespace Animate
         /// 행렬에서 스케일 성분을 추출한다.
         /// </summary>
         /// <param name="matrix">입력 변환 행렬</param>
-        /// <param name="scaleX">출력 X 스케일</param>
+        /// <param name="scalex">출력 x 스케일</param>
         /// <param name="scaleY">출력 Y 스케일</param>
         /// <param name="scaleZ">출력 Z 스케일</param>
-        private void ExtractScale(Matrix4x4f matrix, out float scaleX, out float scaleY, out float scaleZ)
+        private void ExtractScale(Matrix4x4f matrix, out float scalex, out float scaleY, out float scaleZ)
         {
             float c0x = matrix[0, 0], c0y = matrix[0, 1], c0z = matrix[0, 2];
             float c1x = matrix[1, 0], c1y = matrix[1, 1], c1z = matrix[1, 2];
             float c2x = matrix[2, 0], c2y = matrix[2, 1], c2z = matrix[2, 2];
 
-            scaleX = (float)MathFast.Sqrt(c0x * c0x + c0y * c0y + c0z * c0z);
+            scalex = (float)MathFast.Sqrt(c0x * c0x + c0y * c0y + c0z * c0z);
             scaleY = (float)MathFast.Sqrt(c1x * c1x + c1y * c1y + c1z * c1z);
             scaleZ = (float)MathFast.Sqrt(c2x * c2x + c2y * c2y + c2z * c2z);
         }
@@ -473,21 +473,21 @@ namespace Animate
         /// 회전, 스케일, 위치로부터 변환 행렬을 재구성한다.
         /// </summary>
         /// <param name="rotation">회전 행렬</param>
-        /// <param name="scaleX">X 스케일</param>
+        /// <param name="scalex">x 스케일</param>
         /// <param name="scaleY">Y 스케일</param>
         /// <param name="scaleZ">Z 스케일</param>
-        /// <param name="posX">X 위치</param>
+        /// <param name="posx">x 위치</param>
         /// <param name="posY">Y 위치</param>
         /// <param name="posZ">Z 위치</param>
         /// <returns>재구성된 변환 행렬</returns>
         private Matrix4x4f ReconstructTransform(Matrix4x4f rotation,
-            float scaleX, float scaleY, float scaleZ, float posX, float posY, float posZ)
+            float scalex, float scaleY, float scaleZ, float posx, float posY, float posZ)
         {
             return new Matrix4x4f(
-                rotation[0, 0] * scaleX, rotation[0, 1] * scaleX, rotation[0, 2] * scaleX, 0,
+                rotation[0, 0] * scalex, rotation[0, 1] * scalex, rotation[0, 2] * scalex, 0,
                 rotation[1, 0] * scaleY, rotation[1, 1] * scaleY, rotation[1, 2] * scaleY, 0,
                 rotation[2, 0] * scaleZ, rotation[2, 1] * scaleZ, rotation[2, 2] * scaleZ, 0,
-                posX, posY, posZ, 1
+                posx, posY, posZ, 1
             );
         }
 
@@ -505,7 +505,7 @@ namespace Animate
             if (!_enabled) return true;
 
             // 간단히 굽힘 각도만 체크
-            ExtractOrthonormalBasis(transform, ref _tempXTarget, ref _tempYTarget, ref _tempZTarget);
+            ExtractOrthonormalBasis(transform, ref _tempxTarget, ref _tempYTarget, ref _tempZTarget);
 
             Vertex3f hingeAxis, bendRefCurrent;
             switch (_hingeAxis)
@@ -516,11 +516,11 @@ namespace Animate
                     break;
                 case LocalSpaceAxis.Z:
                     hingeAxis = _zBind;
-                    bendRefCurrent = _tempXTarget;
+                    bendRefCurrent = _tempxTarget;
                     break;
                 default:
                     hingeAxis = _yBind;
-                    bendRefCurrent = _tempXTarget;
+                    bendRefCurrent = _tempxTarget;
                     break;
             }
 

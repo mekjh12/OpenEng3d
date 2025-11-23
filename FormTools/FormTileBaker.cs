@@ -57,20 +57,20 @@ namespace FormTools
                 Print($"높이맵 분할 완료. {tilesPerRow * tilesPerColumn}개 타일 생성됨.");
             }
         }
-        private void ProcessTile(Bitmap sourceImage, string outputDirectory, int tileX, int tileY, int tileSize, float a, float b)
+        private void ProcessTile(Bitmap sourceImage, string outputDirectory, int tilex, int tileY, int tileSize, float a, float b)
         {
-            string tileFileName = $"tile_{tileX}_{tileY}.png";
+            string tileFileName = $"tile_{tilex}_{tileY}.png";
             string tileFilePath = Path.Combine(outputDirectory, tileFileName);
 
             // UI 스레드에서 UI 업데이트
             this.Invoke((MethodInvoker)delegate {
-                Print($"({tileX},{tileY}) {tileFileName} 타일을 로드함.");
+                Print($"({tilex},{tileY}) {tileFileName} 타일을 로드함.");
                 this.textBox2.Refresh();
                 Application.DoEvents();
             });
 
             // 타일 영역 계산
-            Rectangle tileRect = new Rectangle(tileX * tileSize, tileY * tileSize, tileSize, tileSize);
+            Rectangle tileRect = new Rectangle(tilex * tileSize, tileY * tileSize, tileSize, tileSize);
 
             // 타일 비트맵 추출
             using (Bitmap tileBitmap = sourceImage.Clone(tileRect, sourceImage.PixelFormat))
@@ -278,14 +278,14 @@ namespace FormTools
                 {
                     string fileName = Path.GetFileNameWithoutExtension(filePath);
 
-                    // 파일명에서 region{X}x{Y} 형식 찾기
+                    // 파일명에서 region{x}x{Y} 형식 찾기
                     int regionIndex = fileName.IndexOf("region");
                     if (regionIndex < 0) continue;
 
                     int xIndex = fileName.IndexOf('x', regionIndex);
                     if (xIndex < 0) continue;
 
-                    // X, Y 값 추출
+                    // x, Y 값 추출
                     if (!int.TryParse(fileName.Substring(regionIndex + 6, xIndex - (regionIndex + 6)), out int x))
                         continue;
 
@@ -297,12 +297,12 @@ namespace FormTools
                     int tileHeight = 125;
 
                     // 위치 계산 (각 타일이 125x125 크기로 고정)
-                    // X 좌표는 그대로, Y 좌표는 반전 (음수 Y값은 상단에 위치)
-                    int posX = x * tileWidth;
+                    // x 좌표는 그대로, Y 좌표는 반전 (음수 Y값은 상단에 위치)
+                    int posx = x * tileWidth;
                     int posY = y * tileHeight; // Y 좌표 반전
 
-                    positions[filePath] = new Rectangle(posX, posY, tileWidth, tileHeight);
-                    Print($"위치 분석: {Path.GetFileName(filePath)} -> 위치 ({x}, {y}), 계산된 위치 ({posX}, {posY}), 크기 {tileWidth}x{tileHeight}");
+                    positions[filePath] = new Rectangle(posx, posY, tileWidth, tileHeight);
+                    Print($"위치 분석: {Path.GetFileName(filePath)} -> 위치 ({x}, {y}), 계산된 위치 ({posx}, {posY}), 크기 {tileWidth}x{tileHeight}");
                 }
                 catch (Exception ex)
                 {
@@ -344,18 +344,18 @@ namespace FormTools
                     }
 
                     // 전체 이미지 크기 계산
-                    int minX = int.MaxValue, minY = int.MaxValue;
-                    int maxX = int.MinValue, maxY = int.MinValue;
+                    int minx = int.MaxValue, minY = int.MaxValue;
+                    int maxx = int.MinValue, maxY = int.MinValue;
 
                     foreach (var pos in imagePositions.Values)
                     {
-                        minX = Math.Min(minX, pos.X);
+                        minx = Math.Min(minx, pos.X);
                         minY = Math.Min(minY, pos.Y);
-                        maxX = Math.Max(maxX, pos.X + pos.Width);
+                        maxx = Math.Max(maxx, pos.X + pos.Width);
                         maxY = Math.Max(maxY, pos.Y + pos.Height);
                     }
 
-                    int totalWidth = maxX - minX;
+                    int totalWidth = maxx - minx;
                     int totalHeight = maxY - minY;
 
                     Print($"병합된 이미지 크기: {totalWidth}x{totalHeight} (125x125 크기 타일 기준)");
@@ -374,9 +374,9 @@ namespace FormTools
                                     continue;
 
                                 Rectangle pos = imagePositions[filename];
-                                // 원점(minX, minY)를 (0,0)으로 변환
+                                // 원점(minx, minY)를 (0,0)으로 변환
                                 Rectangle drawRect = new Rectangle(
-                                    pos.X - minX, pos.Y - minY, pos.Width, pos.Height);
+                                    pos.X - minx, pos.Y - minY, pos.Width, pos.Height);
 
                                 Print($"이미지 배치 중: {Path.GetFileName(filename)} -> ({drawRect.X},{drawRect.Y})");
 

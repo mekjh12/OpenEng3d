@@ -1,5 +1,6 @@
 ﻿using Common;
 using Common.Abstractions;
+using Geometry;
 using Model3d;
 using OpenGL;
 using Shader;
@@ -10,9 +11,10 @@ namespace Occlusion
 {
     public class InstancedRenderer : IDisposable
     {
-        private BaseModel3d[] model;
+        private RawModel3d[] _model;
         private int _instanceCount;
         private Matrix4x4f[] _modelMatrices;
+        private AABB3f _rawModelAABB;
 
         private uint instanceSSBO;
         private bool isDirty;
@@ -37,10 +39,11 @@ namespace Occlusion
         public int BufferCount => _bufferCount;
         public ref Matrix4x4f[] Buffer => ref _buffer;
         public ref AABB3f[] BufferAABBs => ref _bufferAABBs;
+        public ref AABB3f RawModelAABB => ref _rawModelAABB;
 
-        public InstancedRenderer(BaseModel3d[] model, int maxInstances = 100000, bool isDrawOneSide = true)
+        public InstancedRenderer(RawModel3d[] model, int maxInstances = 100000, bool isDrawOneSide = true)
         {
-            this.model = model;
+            _model = model;
             this.maxInstances = maxInstances;
             this.isDrawOneSide = isDrawOneSide;
             _modelMatrices = new Matrix4x4f[maxInstances];
@@ -50,6 +53,18 @@ namespace Occlusion
             _bufferCount = 0;
             this.instanceSSBO = Gl.GenBuffer();
             this.isDirty = false;
+
+            // 원형모델로부터 합산된 AABB3f를 계산
+            _model[0].GenerateBoundingBox();
+            AABB3f unionAABB = new AABB3f(_model[0].AABB.LowerBound, _model[0].AABB.UpperBound);
+            for (int i = 1; i < _model.Length; i++)
+            {
+                _model[i].GenerateBoundingBox();
+
+                unionAABB = AABB3f.Union(unionAABB
+                    , new AABB3f(_model[i].AABB.LowerBound, _model[i].AABB.UpperBound));
+            }
+            _rawModelAABB = unionAABB;
 
             // SSBO 초기 생성 (최대 크기로)
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, instanceSSBO);
@@ -169,9 +184,9 @@ namespace Occlusion
             shader.LoadProjectionMatrix(camera.ProjectiveMatrix);
             shader.SetupRenderState();
 
-            for (int i = 0; i < model.Length; i++)
+            for (int i = 0; i < _model.Length; i++)
             {
-                TexturedModel texturedModel = model[i] as TexturedModel;
+                TexturedModel texturedModel = _model[i] as TexturedModel;
 
                 // ✅ 텍스처 설정
                 if (texturedModel != null)
@@ -182,7 +197,7 @@ namespace Occlusion
                     }
                 }
 
-                Gl.BindVertexArray(model[i].VAO);
+                Gl.BindVertexArray(_model[i].VAO);
 
                 // ✅ position과 texcoord 모두 활성화
                 Gl.EnableVertexAttribArray(0);  // position
@@ -191,7 +206,7 @@ namespace Occlusion
                 Gl.DrawArraysInstanced(
                     PrimitiveType.Triangles,
                     0,
-                    model[i].VertexCount,
+                    _model[i].VertexCount,
                     _bufferCount
                 );
 
@@ -228,9 +243,9 @@ namespace Occlusion
                 Gl.Disable(EnableCap.CullFace);
             }
 
-            for (int i = 0; i < model.Length; i++)
+            for (int i = 0; i < _model.Length; i++)
             {
-                TexturedModel texturedModel = model[i] as TexturedModel;
+                TexturedModel texturedModel = _model[i] as TexturedModel;
 
                 if (texturedModel != null)
                 {
@@ -242,13 +257,13 @@ namespace Occlusion
                     Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.REPEAT);
                 }
 
-                Gl.BindVertexArray(model[i].VAO);
+                Gl.BindVertexArray(_model[i].VAO);
 
                 // ✅ Vertex Attribute 활성화 (RenderDepth와 동일)
                 Gl.EnableVertexAttribArray(0); // position
                 Gl.EnableVertexAttribArray(1); // texcoord
 
-                Gl.DrawArraysInstanced(PrimitiveType.Triangles, 0, model[i].VertexCount, _bufferCount);
+                Gl.DrawArraysInstanced(PrimitiveType.Triangles, 0, _model[i].VertexCount, _bufferCount);
 
                 // ✅ 정리
                 Gl.DisableVertexAttribArray(1);

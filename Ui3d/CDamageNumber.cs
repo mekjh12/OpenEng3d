@@ -14,8 +14,8 @@ namespace Ui3d
     public class CDamageNumber : Billboard3D
     {
         // 기본 텍스처 크기
-        private const int TEXTURE_WIDTH = 256;
-        private const int TEXTURE_HEIGHT = 128;
+        private const int TExTURE_WIDTH = 256;
+        private const int TExTURE_HEIGHT = 128;
 
         // 애니메이션 설정
         private const float RISE_SPEED = 0.5f;              // 초당 상승 속도 (월드 단위)
@@ -109,7 +109,7 @@ namespace Ui3d
             _height = DEFAULT_HEIGHT * (_isCritical ? CRITICAL_SCALE : 1.0f);
 
             // 재사용할 그래픽 리소스 초기화
-            _reusableBitmap = new Bitmap(TEXTURE_WIDTH, TEXTURE_HEIGHT);
+            _reusableBitmap = new Bitmap(TExTURE_WIDTH, TExTURE_HEIGHT);
             _reusableGraphics = Graphics.FromImage(_reusableBitmap);
             _reusableGraphics.SmoothingMode = SmoothingMode.AntiAlias;
             _reusableGraphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
@@ -184,8 +184,8 @@ namespace Ui3d
                 SizeF textSize = _measureGraphics.MeasureString(_displayText, useFont);
 
                 // 중앙 위치 계산
-                float x = (TEXTURE_WIDTH - textSize.Width) / 2;
-                float y = (TEXTURE_HEIGHT - textSize.Height) / 2;
+                float x = (TExTURE_WIDTH - textSize.Width) / 2;
+                float y = (TExTURE_HEIGHT - textSize.Height) / 2;
 
                 // 외곽선 그리기 (여러 방향으로 그려서 두껍게)
                 using (SolidBrush outlineBrush = new SolidBrush(_outlineColor))

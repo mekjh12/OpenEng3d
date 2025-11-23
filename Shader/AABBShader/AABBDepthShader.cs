@@ -12,7 +12,7 @@ namespace Shader
     /// </summary>
     public class AABBDepthShader : ShaderProgramBase
     {
-        const string VERTEX_FILE = @"\Shader\AABBShader\aabb_depth.vert";
+        const string VERTEx_FILE = @"\Shader\AABBShader\aabb_depth.vert";
         const string GEOMETRY_FILE = @"\Shader\AABBShader\aabb_depth.gem.glsl";
         const string FRAGMENT_FILE = @"\Shader\AABBShader\aabb_depth.frag";
 
@@ -35,7 +35,7 @@ namespace Shader
         public AABBDepthShader(string projectPath) : base()
         {
             _name = this.GetType().Name;
-            VertFileName = projectPath + VERTEX_FILE;
+            VertFileName = projectPath + VERTEx_FILE;
             GeomFileName = projectPath + GEOMETRY_FILE;
             FragFileName = projectPath + FRAGMENT_FILE;
 

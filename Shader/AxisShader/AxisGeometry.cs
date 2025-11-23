@@ -22,7 +22,7 @@ namespace Shader
             // 3개 축의 선분 + 색상 정의
             float[] vertexData = {
             // Position (x,y,z)     Color (r,g,b,a)
-            // X축: (0,0,0) -> (1,0,0) - 빨강
+            // x축: (0,0,0) -> (1,0,0) - 빨강
             0.0f, 0.0f, 0.0f,      1.0f, 0.0f, 0.0f, 1.0f,
             1.0f, 0.0f, 0.0f,      1.0f, 0.0f, 0.0f, 1.0f,
             

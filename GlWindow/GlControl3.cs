@@ -89,7 +89,7 @@ namespace GlWindow
 
 
         private struct POINT
-        { public int X; public int Y; }
+        { public int x; public int Y; }
 
         private static Vertex2i _windowOffSet = Vertex2i.Zero;
         private static Vertex2f _currentMousePointFloat = Vertex2f.Zero;
@@ -273,10 +273,10 @@ namespace GlWindow
             Console.WriteLine("=======================================================");
             Console.WriteLine();
             Console.WriteLine("[ 좌표계 ]");
-            Console.WriteLine("  오른손 좌표계: X(right) Y(forward) Z(up)");
+            Console.WriteLine("  오른손 좌표계: x(right) Y(forward) Z(up)");
             Console.WriteLine();
             Console.WriteLine("[ 지형 시스템 ]");
-            Console.WriteLine("  X축(+) → 동쪽 | Y축(+) → 북쪽");
+            Console.WriteLine("  x축(+) → 동쪽 | Y축(+) → 북쪽");
             Console.WriteLine();
             Console.WriteLine("[ 행렬 정보 - OpenGL.Net ]");
             Console.WriteLine("  ㅇ 열 우선(Column-Major) 저장");
@@ -465,7 +465,7 @@ namespace GlWindow
         /// <summary>
         /// 윈도우api로부터 마우스의 위치좌표와 위치변화량을 가져온다.
         /// </summary>
-        /// <param name="ox">컨트롤의 화면의 절대위치 X</param>
+        /// <param name="ox">컨트롤의 화면의 절대위치 x</param>
         /// <param name="oy">컨트롤의 화면의 절대위치 Y</param>
         /// <param name="width">컨트롤의 화면너비</param>
         /// <param name="height">컨트롤의 화면높이</param>
@@ -478,7 +478,7 @@ namespace GlWindow
             POINT point;
             GetCursorPos(out point);
 
-            float fx = (float)(point.X - ox) / (float)width;
+            float fx = (float)(point.x - ox) / (float)width;
             float fy = (float)(point.Y - oy) / (float)height;
 
             // 2. 기존 객체에 값만 설정 (GC 없음)
@@ -486,14 +486,14 @@ namespace GlWindow
             _currentMousePointFloat.y = fy;
 
             // 3. 연산자 오버로딩 대신 직접 계산 (GC 없음)
-            float deltaX = fx - _prevMousePosition.x;
+            float deltax = fx - _prevMousePosition.x;
             float deltaY = fy - _prevMousePosition.y;
 
             // 4. 기존 객체에 값 설정 (GC 없음)
-            _mouseDeltaPos.x = deltaX;
+            _mouseDeltaPos.x = deltax;
             _mouseDeltaPos.y = deltaY;
 
-            _mousePosition.x = point.X;
+            _mousePosition.x = point.x;
             _mousePosition.y = point.Y;
         }
 

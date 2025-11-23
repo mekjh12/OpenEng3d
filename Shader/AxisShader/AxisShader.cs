@@ -5,7 +5,7 @@ namespace Shader
 {
     public class AxisShader : ShaderProgram<AxisShader.UNIFORM_NAME>
     {
-        const string VERTEX_FILE = @"\Shader\AxisShader\axis.vert";
+        const string VERTEx_FILE = @"\Shader\AxisShader\axis.vert";
         const string FRAGMENT_FILE = @"\Shader\AxisShader\axis.frag";
 
         public enum UNIFORM_NAME
@@ -17,7 +17,7 @@ namespace Shader
         public AxisShader(string projectPath) : base()
         {
             _name = this.GetType().Name;
-            VertFileName = projectPath + VERTEX_FILE;
+            VertFileName = projectPath + VERTEx_FILE;
             FragFilename = projectPath + FRAGMENT_FILE;
             InitCompileShader();
         }
@@ -87,7 +87,7 @@ namespace Shader
                 Matrix4x4f finalTransform = viewProjection * model * boneTransforms[i] * scaleMatrix;
                 LoadUniform(UNIFORM_NAME.mvp, finalTransform);
 
-                // X축(빨강) 굵게, Y축(초록), Z축(파랑)
+                // x축(빨강) 굵게, Y축(초록), Z축(파랑)
                 Gl.LineWidth(i == 8 ? 5.0f : 2.0f);
                 Gl.DrawArrays(PrimitiveType.Lines, 0, 2);
                 Gl.LineWidth(lineWidth);

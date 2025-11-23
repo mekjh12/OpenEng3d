@@ -80,10 +80,10 @@ namespace Common.Abstractions
         }
 
 
-        // 색상을 HTML/HEX 형식으로 변환
+        // 색상을 HTML/HEx 형식으로 변환
         public string ToHexString()
         {
-            return string.Format("#{0:X2}{1:X2}{2:X2}{3:X2}",
+            return string.Format("#{0:x2}{1:x2}{2:x2}{3:x2}",
                 (byte)(r * 255),
                 (byte)(g * 255),
                 (byte)(b * 255),

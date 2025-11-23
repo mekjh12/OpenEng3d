@@ -174,26 +174,26 @@ namespace ExtractIncludeGLSL
 
                     if (component.Count > 5)
                     {
-                        int minX = int.MaxValue;
+                        int minx = int.MaxValue;
                         int minY = int.MaxValue;
-                        int maxX = int.MinValue;
+                        int maxx = int.MinValue;
                         int maxY = int.MinValue;
 
                         foreach (Point p in component)
                         {
-                            minX = Math.Min(minX, p.X);
+                            minx = Math.Min(minx, p.X);
                             minY = Math.Min(minY, p.Y);
-                            maxX = Math.Max(maxX, p.X);
+                            maxx = Math.Max(maxx, p.X);
                             maxY = Math.Max(maxY, p.Y);
                         }
 
-                        int width = maxX - minX + 1;
+                        int width = maxx - minx + 1;
                         int height = maxY - minY + 1;
 
                         float ratio = (float)width / height;
                         if (ratio >= 0.5f && ratio <= 2.0f)
                         {
-                            regions.Add(new Rectangle(minX, minY, width, height));
+                            regions.Add(new Rectangle(minx, minY, width, height));
                         }
                     }
                 }
@@ -287,7 +287,7 @@ namespace ExtractIncludeGLSL
             {
                 Rectangle marker = markers[i];
                 resultTextBox.AppendText($"마커 #{i + 1}:\n");
-                resultTextBox.AppendText($"  위치: X={marker.X}, Y={marker.Y}\n");
+                resultTextBox.AppendText($"  위치: x={marker.X}, Y={marker.Y}\n");
                 resultTextBox.AppendText($"  크기: {marker.Width}x{marker.Height}\n\n");
             }
 
@@ -320,12 +320,12 @@ namespace ExtractIncludeGLSL
                         Rectangle marker4 = markers[3]; // 4번 마커 (인덱스 3)
 
                         // 2번 마커의 좌상단과 4번 마커의 우하단을 기준으로 사각형 생성
-                        int rectX = marker2.X; // 2번 마커의 X (좌상단)
+                        int rectx = marker2.X; // 2번 마커의 x (좌상단)
                         int rectY = marker2.Y; // 2번 마커의 Y (좌상단)
                         int rectWidth = (marker4.X + marker4.Width) - marker2.X; // 4번 마커의 우측 끝 - 2번 마커의 좌측
                         int rectHeight = (marker4.Y + marker4.Height) - marker2.Y; // 4번 마커의 하단 끝 - 2번 마커의 상단
 
-                        Rectangle newRect = new Rectangle(rectX, rectY, rectWidth, rectHeight);
+                        Rectangle newRect = new Rectangle(rectx, rectY, rectWidth, rectHeight);
 
                         // 사각형 그리기
                         Pen rectPen = new Pen(Color.Cyan, 3); // 사각형 테두리 색상 및 두께
@@ -379,8 +379,8 @@ namespace ExtractIncludeGLSL
             // 각 열(선택지 1, 2, 3, 4, 5)을 확인
             for (int col = 0; col < 5; col++)
             {
-                float colX = rect.X + col * colWidth + (colWidth / 2); // 각 열의 중앙
-                int x = (int)colX;
+                float colx = rect.X + col * colWidth + (colWidth / 2); // 각 열의 중앙
+                int x = (int)colx;
                 int y = (int)(rowY + (rowHeight / 2)); // 행의 중앙
 
                 if (x >= 0 && x < bitmap.Width && y >= 0 && y < bitmap.Height)

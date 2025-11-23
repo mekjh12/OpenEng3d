@@ -9,7 +9,7 @@ namespace Shader
     /// </summary>
     public class HzmDepthShader : ShaderProgramBase
     {
-        const string VERTEX_FILE = @"\Shader\HzmShader\dummy.vert";
+        const string VERTEx_FILE = @"\Shader\HzmShader\dummy.vert";
         const string GEOMETRY_FILE = @"\Shader\HzmShader\post.gs.glsl";
         const string FRAGMENT_FILE = @"\Shader\HzmShader\depth.frag";
 
@@ -24,7 +24,7 @@ namespace Shader
         {
             // 셰이더 초기화
             _name = this.GetType().Name;
-            VertFileName = projectPath + VERTEX_FILE;
+            VertFileName = projectPath + VERTEx_FILE;
             GeomFileName = projectPath + GEOMETRY_FILE;
             FragFileName = projectPath + FRAGMENT_FILE;
 

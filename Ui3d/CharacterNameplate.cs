@@ -13,8 +13,8 @@ namespace Ui3d
     public class CharacterNamePlate : Billboard3D
     {
         // 기본 텍스처 크기
-        private int TEXTURE_WIDTH = 256;
-        private int TEXTURE_HEIGHT = 64;
+        private int TExTURE_WIDTH = 256;
+        private int TExTURE_HEIGHT = 64;
 
         // 텍스트 주변 여백
         private const float PADDING_HORIZONTAL = 16f;
@@ -119,7 +119,7 @@ namespace Ui3d
             _offset = new Vertex3f(0, 0, DEFAULT_Z_OFFSET);
 
             // 재사용할 그래픽 리소스 초기화
-            _reusableBitmap = new Bitmap(TEXTURE_WIDTH, TEXTURE_HEIGHT);
+            _reusableBitmap = new Bitmap(TExTURE_WIDTH, TExTURE_HEIGHT);
             _reusableGraphics = Graphics.FromImage(_reusableBitmap);
             _reusableGraphics.SmoothingMode = SmoothingMode.AntiAlias;
             _reusableGraphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
@@ -164,23 +164,23 @@ namespace Ui3d
                 int newHeight = (int)(textSize.Height + PADDING_VERTICAL * 2);
 
                 // 텍스처 크기가 변경된 경우에만 재생성
-                if (TEXTURE_WIDTH != newWidth || TEXTURE_HEIGHT != newHeight)
+                if (TExTURE_WIDTH != newWidth || TExTURE_HEIGHT != newHeight)
                 {
-                    TEXTURE_WIDTH = newWidth;
-                    TEXTURE_HEIGHT = newHeight;
+                    TExTURE_WIDTH = newWidth;
+                    TExTURE_HEIGHT = newHeight;
 
                     // 기존 리소스 해제 및 재생성
                     _reusableGraphics?.Dispose();
                     _reusableBitmap?.Dispose();
-                    _reusableBitmap = new Bitmap(TEXTURE_WIDTH, TEXTURE_HEIGHT);
+                    _reusableBitmap = new Bitmap(TExTURE_WIDTH, TExTURE_HEIGHT);
                     _reusableGraphics = Graphics.FromImage(_reusableBitmap);
                     _reusableGraphics.SmoothingMode = SmoothingMode.AntiAlias;
                     _reusableGraphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
                 }
 
                 // 빌보드 크기 설정
-                _width = 0.001f * TEXTURE_WIDTH;
-                _height = 0.001f * TEXTURE_HEIGHT;
+                _width = 0.001f * TExTURE_WIDTH;
+                _height = 0.001f * TExTURE_HEIGHT;
             }
 
             // 배경 클리어
@@ -197,7 +197,7 @@ namespace Ui3d
                 if (_nameFont != null)
                 {
                     _reusableGraphics.DrawString(_characterName, _nameFont, nameBrush,
-                        new RectangleF(0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT), format);
+                        new RectangleF(0, 0, TExTURE_WIDTH, TExTURE_HEIGHT), format);
                 }
             }
 

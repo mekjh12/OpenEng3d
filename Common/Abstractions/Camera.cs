@@ -19,7 +19,7 @@ namespace Common.Abstractions
     /// <summary>3D 카메라의 기본 기능을 제공하는 추상 클래스입니다.</summary>
     public abstract class Camera : ICamera
     {
-        private const float MAX_VARIANCE = 20;          // 프레임당 최대 회전 각도 (도)
+        private const float MAx_VARIANCE = 20;          // 프레임당 최대 회전 각도 (도)
 
         protected string _name = "";                    // 카메라 식별자
         protected const float SENSITIVITY = 1.0f;       // 카메라 회전 감도
@@ -38,7 +38,7 @@ namespace Common.Abstractions
         protected Vertex3f _position;                        // 카메라 위치
         protected float _distance = 0.0f;                    // 초점까지의 거리
 
-        protected const float MAX_PITCH = 89;          // 최대 상하 회전 각도 (도)
+        protected const float MAx_PITCH = 89;          // 최대 상하 회전 각도 (도)
         protected float _pitch = 0.0f;                 // 현재 상하 회전 각도
         protected float _yaw = 0.0f;                   // 현재 좌우 회전 각도
 
@@ -189,9 +189,9 @@ namespace Common.Abstractions
         /// <summary>좌우 회전 (도)</summary>
         public virtual void Yaw(float deltaDegree)
         {
-            if (Math.Abs(deltaDegree) > MAX_VARIANCE)
+            if (Math.Abs(deltaDegree) > MAx_VARIANCE)
             {
-                deltaDegree = MAX_VARIANCE;
+                deltaDegree = MAx_VARIANCE;
             }
 
             _yaw += SENSITIVITY * deltaDegree;
@@ -205,9 +205,9 @@ namespace Common.Abstractions
         /// <summary>상하 회전 (도)</summary>
         public virtual void Pitch(float deltaDegree)
         {
-            if (Math.Abs(deltaDegree) > MAX_VARIANCE) return;
+            if (Math.Abs(deltaDegree) > MAx_VARIANCE) return;
             _pitch += SENSITIVITY * deltaDegree;
-            _pitch = _pitch.Clamp(-MAX_PITCH, MAX_PITCH);     // -89도에서 89도 사이로 제한
+            _pitch = _pitch.Clamp(-MAx_PITCH, MAx_PITCH);     // -89도에서 89도 사이로 제한
         }
 
         /// <summary>전방 이동</summary>
