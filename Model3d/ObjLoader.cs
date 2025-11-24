@@ -6,6 +6,7 @@ using System.IO;
 
 using System;
 using Common.Abstractions;
+using ZetaExt;
 
 /// <summary>
 /// Assimp를 사용하여 3D OBJ 파일을 로드하고 OpenGL 렌더링용으로 변환하는 클래스
@@ -138,6 +139,8 @@ public class ObjLoader
 
         Gl.BindVertexArray(0);
 
+        VaoDebugger.PrintConfiguration(vaoID, "Loaded OBJ Model VAO");
+
         return new RawModel3d(vaoID, positions);
     }
 
@@ -158,6 +161,9 @@ public class ObjLoader
         // VAO에 정점 속성 설정
         Gl.VertexAttribPointer(attributeNumber, coordinateSize,
             VertexAttribType.Float, false, 0, IntPtr.Zero);
+
+        // *** 이 줄을 추가해야 합니다! ***
+        Gl.EnableVertexAttribArray(attributeNumber);
 
         // 바인딩 해제
         Gl.BindBuffer(BufferTarget.ArrayBuffer, 0);

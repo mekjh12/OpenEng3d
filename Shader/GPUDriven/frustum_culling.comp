@@ -1,0 +1,76 @@
+﻿#version 450 core
+
+// 작업 그룹 크기
+layout(local_size_x = 256) in;
+
+// AABB 구조체 (std430 레이아웃)
+struct AABB {
+    vec3 min;
+    float padding1;
+    vec3 max;
+    float padding2;
+};
+
+// 입력: AABB 배열
+layout(std430, binding = 0) buffer AABBBuffer {
+    AABB aabbs[];
+};
+
+// 출력: 가시 인덱스
+layout(std430, binding = 1) buffer VisibleIndicesBuffer {
+    int visibleIndices[];
+};
+
+// 출력: Atomic 카운터
+layout(std430, binding = 2) buffer CounterBuffer {
+    uint visibleCount;
+};
+
+// Frustum planes (6개)
+uniform vec4 uFrustumPlanes[6];
+
+// AABB vs Plane 테스트
+// plane: (nx, ny, nz, d) 형태의 평면 방정식
+bool TestAABBPlane(AABB aabb, vec4 plane) {
+    // Positive vertex (평면 법선 방향으로 가장 먼 점)
+    vec3 pVertex;
+    pVertex.x = (plane.x >= 0.0) ? aabb.max.x : aabb.min.x;
+    pVertex.y = (plane.y >= 0.0) ? aabb.max.y : aabb.min.y;
+    pVertex.z = (plane.z >= 0.0) ? aabb.max.z : aabb.min.z;
+    
+    // 평면과의 signed distance
+    float distance = dot(plane.xyz, pVertex) + plane.w;
+    
+    // distance >= 0 이면 평면 앞쪽(가시 영역)
+    return distance >= 0.0;
+}
+
+// Frustum Culling 테스트
+bool IsInsideFrustum(AABB aabb) {
+    // 6개 평면 모두 통과해야 가시
+    // 하나라도 완전히 뒤에 있으면 컬링
+    for (int i = 0; i < 6; i++) {
+        if (!TestAABBPlane(aabb, uFrustumPlanes[i])) {
+            return false;  // 이 평면 뒤에 있음 -> 컬링
+        }
+    }
+    return true;  // 모든 평면 앞쪽 -> 가시
+}
+
+void main() {
+    // 글로벌 인덱스 (0 ~ 89999)
+    uint index = gl_GlobalInvocationID.x;
+    
+    // 범위 체크 (90000개 초과 방지)
+    if (index >= 90000) return;
+    
+    // Frustum 테스트
+    if (IsInsideFrustum(aabbs[index])) {
+        // Atomic하게 카운터 증가 및 슬롯 획득
+        uint slot = atomicAdd(visibleCount, 1);
+        
+        // 가시 인덱스 저장
+        visibleIndices[slot] = int(index);
+    }
+}
+

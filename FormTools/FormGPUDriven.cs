@@ -2,6 +2,7 @@
 using FastMath;
 using Geometry;
 using GlWindow;
+using GPUDriven;
 using Model3d;
 using Occlusion;
 using OpenGL;
@@ -36,7 +37,8 @@ namespace FormTools
 
         // 3D 관련 변수들
         Model3dManager _model3DManager;                     // 3D 모델 매니저
-        TexturedModel[] _treeModel;                         // 나무 모델 배열     
+        TexturedModel[] _treeModel;                         // 나무 모델 배열
+        GPUCullingRenderer _gpuDriven;  
 
         public FormGPUDriven()
         {
@@ -126,6 +128,9 @@ namespace FormTools
             _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\tree1.obj");
             _treeModel = _model3DManager.GetModels("tree1");
 
+            _gpuDriven = new GPUCullingRenderer();
+            _gpuDriven.Initialize(_treeModel[0], PROJECT_PATH);
+
             // UI 3D 텍스트 네임플레이트 초기화
             _textNamePlate = new TextNamePlate(_glControl3.Camera, "FPS");
             _textNamePlate.Height = 0.35f;
@@ -137,10 +142,31 @@ namespace FormTools
             FileHashManager.SaveHashes();
         }
 
+        public void UpdateFrame(int deltaTime, int width, int height, Camera camera)
+        {
+            float duration = deltaTime * 0.001f;
+            //if (!_isLoaded) return;
+
+            // 뷰 프러스텀 업데이트
+            _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
+
+            _gpuDriven.Update(camera, _viewFrustum);
+
+            // 네임플레이트 업데이트            
+            _textNamePlate.Text = $"정보";
+            _textNamePlate.WorldPosition = camera.Position + camera.Forward * 1f - camera.Right * 0.2f;
+            _textNamePlate.Update(deltaTime);
+
+            // 렌더링 루프에서
+            _fpsText.Text = $"FPS: {FramePerSecond.FPS:F1}";
+            _culledText.Text = $"컬링된 노드";
+            _camPosText.Text = $"카메라 위치 ({camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1})";
+        }
+
 
         public void RenderFrame(double deltaTime, Vertex4f backcolor, Camera camera)
         {
-            if (!_isLoaded) return;
+            //if (!_isLoaded) return;
 
             int w = _glControl3.Width;
             int h = _glControl3.Height;
@@ -150,8 +176,10 @@ namespace FormTools
             Gl.Viewport(0, 0, w, h);
             Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
 
+            Gl.Enable(EnableCap.Blend);                // 블렌딩 켜기
+            Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
-
+            _gpuDriven.Render(camera);
 
 
             // 2D 렌더링을 위한 완전한 상태 리셋
@@ -171,24 +199,9 @@ namespace FormTools
             _culledText.Render();
 
             // 카메라 중심점 렌더링
+            Gl.Disable(EnableCap.Blend);
             Renderer3d.RenderPoint(_colorShader, camera.PivotPosition, camera, new Vertex4f(1, 1, 0, 1), 0.02f);
             Gl.Enable(EnableCap.DepthTest);
-        }
-
-        public void UpdateFrame(int deltaTime, int width, int height, Camera camera)
-        {
-            float duration = deltaTime * 0.001f;
-            if (!_isLoaded) return;
-
-            // 네임플레이트 업데이트            
-            _textNamePlate.Text = $"정보";
-            _textNamePlate.WorldPosition = camera.Position + camera.Forward * 1f - camera.Right * 0.2f;
-            _textNamePlate.Update(deltaTime);
-
-            // 렌더링 루프에서
-            _fpsText.Text = $"FPS: {FramePerSecond.FPS:F1}";
-            _culledText.Text = $"컬링된 노드";
-            _camPosText.Text = $"카메라 위치 ({camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1})";
         }
 
         public void KeyDownEvent(object sender, KeyEventArgs e)
@@ -200,7 +213,7 @@ namespace FormTools
         {
             if (e.KeyCode == Keys.D1)
             {
-
+                _glControl3.Camera.PivotPosition = new Vertex3f(0, 0, 1.0f);
             }
         }
 
@@ -224,6 +237,11 @@ namespace FormTools
         {
             int width = _glControl3.Width;
             int height = _glControl3.Height;
+
+        }
+
+        private void FormGPUDriven_Load(object sender, EventArgs e)
+        {
 
         }
     }

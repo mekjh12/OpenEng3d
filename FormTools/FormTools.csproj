@@ -299,6 +299,10 @@
       <Project>{03f9af52-780f-4991-9aad-4127ba96ab72}</Project>
       <Name>glWindow</Name>
     </ProjectReference>
+    <ProjectReference Include="..\GPU\GPUDriven.csproj">
+      <Project>{3d776c52-eb76-439e-95ef-57457daf3997}</Project>
+      <Name>GPUDriven</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Light\Lights.csproj">
       <Project>{99eae591-f4e4-436b-98e1-81800d38a3e2}</Project>
       <Name>Lights</Name>

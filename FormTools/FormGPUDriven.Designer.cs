@@ -41,6 +41,7 @@
             this.Name = "FormGPUDriven";
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "GPU Driven";
+            this.Load += new System.EventHandler(this.FormGPUDriven_Load);
             this.Resize += new System.EventHandler(this.FormGPUDriven_Resize);
             this.ResumeLayout(false);
 
