@@ -40,8 +40,8 @@ namespace Shader
         protected override void BindAttributes()
         {
             BindAttribute(0, "aPosition");
-            BindAttribute(1, "aNormal");
-            BindAttribute(2, "aTexCoord");
+            BindAttribute(1, "aTexCoord");
+            BindAttribute(2, "aNormal");
         }
 
         /// <summary>

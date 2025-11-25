@@ -15,7 +15,7 @@ void main()
 {   
     // 텍스처 샘플링
     vec4 texColor = texture(uTexture, vTexCoord);
- 
+
     // 출력
     fragColor = texColor;
     

@@ -46,16 +46,18 @@ bool ContactTestAABBPlane(AABB aabb, vec4 plane) {
 bool IsInsideFrustum(AABB aabb) 
 {
     // 근평면으로 빠르게 후면을 컬링한다.
-    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[4])) return false; // 근접평이 제일 먼저 검사
+    vec4 nearPlane = uFrustumPlanes[4];
+    if (!ContactTestAABBPlane(aabb, nearPlane)) return false; // 근접평이 제일 먼저 검사
     if (!ContactTestAABBPlane(aabb, uFrustumPlanes[5])) return false; // 원거리 평면
     if (!ContactTestAABBPlane(aabb, uFrustumPlanes[0])) return false; // 오른쪽 평면
-    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[1])) return false; // 하단 평면
     if (!ContactTestAABBPlane(aabb, uFrustumPlanes[2])) return false; // 왼쪽 평면
+    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[1])) return false; // 하단 평면
     if (!ContactTestAABBPlane(aabb, uFrustumPlanes[3])) return false; // 상단 평면
     return true;
 }
 
-void main() {
+void main() 
+{
     uint index = gl_GlobalInvocationID.x;
     if (index >= 90000) return;
 
@@ -71,7 +73,8 @@ void main() {
             // LOD0: 전체 메시
             uint slot = atomicAdd(visibleCount_LOD0, 1);
             visibleIndices_LOD0[slot] = int(index);
-        } else 
+        } 
+        else 
         {
             // LOD1: 빌보드
             uint slot = atomicAdd(visibleCount_LOD1, 1);

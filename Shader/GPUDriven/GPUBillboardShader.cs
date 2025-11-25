@@ -10,8 +10,7 @@ namespace Shader
         const string FRAGMENT_FILE = @"\Shader\GPUDriven\billboard.frag";
 
         // 유니폼 위치
-        private int loc_proj;
-        private int loc_view;
+        private int loc_vp;
         private int loc_cameraPos;
         private int loc_cameraRight;
         private int loc_cameraUp;
@@ -29,8 +28,7 @@ namespace Shader
 
         protected override void GetAllUniformLocations()
         {
-            loc_proj = GetUniformLocation("proj");
-            loc_view = GetUniformLocation("view");
+            loc_vp = GetUniformLocation("vp");
             loc_cameraPos = GetUniformLocation("cameraPos");
             loc_cameraRight = GetUniformLocation("cameraRight");
             loc_cameraUp = GetUniformLocation("cameraUp");
@@ -44,14 +42,9 @@ namespace Shader
             BindAttribute(1, "aTexCoord");
         }
 
-        public void LoadProjectionMatrix(Matrix4x4f matrix)
+        public void LoadVPMatrix(Matrix4x4f matrix)
         {
-            LoadUniformMatrix4(loc_proj, matrix);
-        }
-
-        public void LoadViewMatrix(Matrix4x4f matrix)
-        {
-            LoadUniformMatrix4(loc_view, matrix);
+            LoadUniformMatrix4(loc_vp, matrix);
         }
 
         public void LoadCameraVectors(Vertex3f position, Vertex3f right, Vertex3f up)

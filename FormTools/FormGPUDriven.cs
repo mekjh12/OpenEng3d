@@ -129,9 +129,8 @@ namespace FormTools
             _treeModel = _model3DManager.GetModels("tree1");
 
             _gpuDriven = new GPUCullingRenderer();
-            _gpuDriven.Initialize(_treeModel[0], PROJECT_PATH);
+            _gpuDriven.Initialize(_treeModel, PROJECT_PATH);
                        
-
             // UI 3D 텍스트 네임플레이트 초기화
             _textNamePlate = new TextNamePlate(_glControl3.Camera, "FPS");
             _textNamePlate.Height = 0.35f;

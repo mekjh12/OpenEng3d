@@ -15,22 +15,22 @@ namespace GPUDriven
         private const float LOD_DISTANCE = 100f;
 
         // 빌보드 크기 (고정값으로 간단하게!)
-        private const float BILLBOARD_WIDTH = 8f;
-        private const float BILLBOARD_HEIGHT = 12f;
+        private float BILLBOARD_WIDTH = 8f;
+        private float BILLBOARD_HEIGHT = 12f;
         private const int FRAME_COUNT_DEBUG = 600;
-        private Vertex2f BILLBOARD_SIZE = new Vertex2f(BILLBOARD_WIDTH, BILLBOARD_HEIGHT);
+        private Vertex2f BILLBOARD_SIZE;
 
         // 나무 메시
-        private TexturedModel _treeModel;
-        private uint _vao;
-        private uint _vertexCount;
+        private TexturedModel[] _treeModel;
+        private uint[] _vao;
+        private uint[] _vertexCount;
 
         // SSBO들 (BillboardSize 제거!)
         private uint _transformSSBO;
         private uint _aabbSSBO;
         private uint _visibleIndicesSSBO;
         private uint _counterSSBO;
-        private uint _indirectBuffer;
+        private uint[] _indirectBuffers;  // LOD0 파트별
 
         // LOD1용 SSBO
         private uint _visibleIndicesSSBO_LOD1;
@@ -59,6 +59,8 @@ namespace GPUDriven
 
         private Stopwatch _computeTimer = new Stopwatch();
 
+        AABB _modelUnionAABB;
+
 
         public GPUCullingRenderer()
         {
@@ -66,7 +68,7 @@ namespace GPUDriven
             _aabbs = new AABB[MAX_INSTANCES];
         }
 
-        public void Initialize(TexturedModel treeModel, string projPath)
+        public void Initialize(TexturedModel[] treeModel, string projPath)
         {
             _treeModel = treeModel;
             SetupMeshVAO();
@@ -75,6 +77,16 @@ namespace GPUDriven
             CreateSSBOs();  // BillboardSize SSBO 제거!
             LoadShaders(projPath);
             UploadToGPU();
+
+            _modelUnionAABB = new AABB(new Vertex3f(float.MaxValue),new Vertex3f(float.MinValue));
+            for (int i = 0; i < _treeModel.Length; i++)
+            {
+                AABB b = CalculateLocalAABB(_treeModel[i]);
+                _modelUnionAABB.Min = Vertex3f.Min(_modelUnionAABB.Min, b.Min);
+                _modelUnionAABB.Max = Vertex3f.Max(_modelUnionAABB.Max, b.Max);
+            }
+
+            BILLBOARD_SIZE = new Vertex2f(_modelUnionAABB.SizeX, _modelUnionAABB.SizeZ);
 
             // 빌보드 텍스처
             Texture texture = new Texture(projPath + @"\Res\T_beech_tree_billboard.png");
@@ -92,12 +104,12 @@ namespace GPUDriven
             float[] vertices = new float[]
             {
                 // Position (3) + TexCoord (2)
-                -0.5f, -0.5f, 0.0f,   0.0f, 1.0f,  // 좌하
-                 0.5f, -0.5f, 0.0f,   1.0f, 1.0f,  // 우하
-                 0.5f,  0.5f, 0.0f,   1.0f, 0.0f,  // 우상
-                -0.5f, -0.5f, 0.0f,   0.0f, 1.0f,  // 좌하
-                 0.5f,  0.5f, 0.0f,   1.0f, 0.0f,  // 우상
-                -0.5f,  0.5f, 0.0f,   0.0f, 0.0f,  // 좌상
+                -0.5f, -0.0f, 0.0f,   0.0f, 1.0f,  // 좌하
+                 0.5f, -0.0f, 0.0f,   1.0f, 1.0f,  // 우하
+                 0.5f,  1.0f, 0.0f,   1.0f, 0.0f,  // 우상
+                -0.5f, -0.0f, 0.0f,   0.0f, 1.0f,  // 좌하
+                 0.5f,  1.0f, 0.0f,   1.0f, 0.0f,  // 우상
+                -0.5f,  1.0f, 0.0f,   0.0f, 0.0f,  // 좌상
             };
 
             _billboardVertexCount = 6;
@@ -134,9 +146,14 @@ namespace GPUDriven
 
         private void SetupMeshVAO()
         {
-            _vao = _treeModel.VAO;
-            _vertexCount = (uint)_treeModel.VertexCount;
-            Console.WriteLine($"Tree mesh loaded: {_vertexCount} vertices");
+            _vao = new uint[_treeModel.Length];
+            _vertexCount = new uint[_treeModel.Length];
+            for (int i = 0; i < _treeModel.Length; i++)
+            {
+                _vao[i] = _treeModel[i].VAO;
+                _vertexCount[i] = (uint)_treeModel[i].VertexCount;
+                Console.WriteLine($"Tree mesh loaded: {i}={_vertexCount} vertices");
+            }
         }
 
         private void GenerateInstancePositions()
@@ -144,7 +161,6 @@ namespace GPUDriven
             int gridSize = 300; // 300x300 = 90000
             float spacing = 10f;
             Random rand = new Random(42);
-            AABB localAABB = CalculateLocalAABB(_treeModel);
 
             for (int i = 0; i < MAX_INSTANCES; i++)
             {
@@ -168,7 +184,7 @@ namespace GPUDriven
                                 Matrix4x4f.Scaled(scale, scale, scale);
 
                 // 월드 공간 AABB
-                _aabbs[i] = TransformAABB(localAABB, _transforms[i]);
+                _aabbs[i] = TransformAABB(_modelUnionAABB, _transforms[i]);
             }
 
             Console.WriteLine($"Generated {MAX_INSTANCES} tree instances");
@@ -206,7 +222,12 @@ namespace GPUDriven
             Gl.MemoryBarrier(MemoryBarrierMask.AllBarrierBits);
 
             // 7. Indirect Buffers 업데이트
-            UpdateIndirectBuffer(_indirectBuffer, _counterSSBO, _vertexCount);
+
+            // Update
+            for (int i = 0; i < _treeModel.Length; i++)
+            {
+                UpdateIndirectBuffer(_indirectBuffers[i], _counterSSBO, _vertexCount[i]);
+            }
             UpdateIndirectBuffer(_indirectBuffer_LOD1, _counterSSBO_LOD1, _billboardVertexCount);
 
             _frameCount++;
@@ -293,23 +314,24 @@ namespace GPUDriven
             // ===== LOD0: Tree Mesh =====
             _instancedShader.Bind();
             _instancedShader.LoadVPMatrix(camera.VPMatrix);
-            _instancedShader.LoadTexture(TextureUnit.Texture0, _treeModel.Texture.TextureID);
-
+            
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO);
 
-            Gl.BindVertexArray(_vao);
-            Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectBuffer);
-            Gl.DrawArraysIndirect(PrimitiveType.Triangles, IntPtr.Zero);
+            // Render
+            for (int i = 0; i < _treeModel.Length; i++)
+            {
+                _instancedShader.LoadTexture(TextureUnit.Texture0, _treeModel[i].Texture.TextureID);
+                Gl.BindVertexArray(_vao[i]);
+                Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectBuffers[i]);
+                Gl.DrawArraysIndirect(PrimitiveType.Triangles, IntPtr.Zero);
+            }
 
             // ===== LOD1: Billboard =====
-            //Gl.Enable(EnableCap.Blend);
-            //Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             Gl.DepthMask(true);  // Depth 쓰기 비활성화
 
             _billboardShader.Bind();
-            _billboardShader.LoadProjectionMatrix(camera.ProjectiveMatrix);
-            _billboardShader.LoadViewMatrix(camera.ViewMatrix);
+            _billboardShader.LoadVPMatrix(camera.VPMatrix);
             _billboardShader.LoadBillboardSize(BILLBOARD_SIZE);
             _billboardShader.LoadCameraVectors(camera.Position, camera.Right, camera.Up);
             _billboardShader.LoadTexture(TextureUnit.Texture0, _billboardTextureID);
@@ -400,10 +422,14 @@ namespace GPUDriven
             Gl.BufferData(BufferTarget.ShaderStorageBuffer, 4,
                 IntPtr.Zero, BufferUsage.DynamicDraw);
 
-            _indirectBuffer = Gl.GenBuffer();
-            Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectBuffer);
-            Gl.BufferData(BufferTarget.DrawIndirectBuffer, 16,
-                IntPtr.Zero, BufferUsage.DynamicDraw);
+            // CreateSSBOs
+            _indirectBuffers = new uint[_treeModel.Length];
+            for (int i = 0; i < _treeModel.Length; i++)
+            {
+                _indirectBuffers[i] = Gl.GenBuffer();
+                Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectBuffers[i]);
+                Gl.BufferData(BufferTarget.DrawIndirectBuffer, 16, IntPtr.Zero, BufferUsage.DynamicDraw);
+            }
 
             // LOD1 버퍼들
             _visibleIndicesSSBO_LOD1 = Gl.GenBuffer();
@@ -449,7 +475,7 @@ namespace GPUDriven
             Gl.DeleteBuffers(_aabbSSBO);
             Gl.DeleteBuffers(_visibleIndicesSSBO);
             Gl.DeleteBuffers(_counterSSBO);
-            Gl.DeleteBuffers(_indirectBuffer);
+            Gl.DeleteBuffers(_indirectBuffers);
             Gl.DeleteBuffers(_visibleIndicesSSBO_LOD1);
             Gl.DeleteBuffers(_counterSSBO_LOD1);
             Gl.DeleteBuffers(_indirectBuffer_LOD1);

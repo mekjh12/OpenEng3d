@@ -12,8 +12,7 @@ layout(std430, binding = 1) buffer VisibleIndicesBuffer {
 };
 
 // 유니폼
-uniform mat4 proj;
-uniform mat4 view;
+uniform mat4 vp;
 uniform vec3 cameraPos;
 uniform vec3 cameraRight;  // 카메라 오른쪽 벡터
 uniform vec3 cameraUp;     // 카메라 위 벡터 (Z축 방향)
@@ -47,7 +46,7 @@ void main() {
         + cameraUp * aPosition.y * size.y;      // 위아래 (height, Z축)
     
     vWorldPos = worldPos;
-    gl_Position = proj * view * vec4(worldPos, 1.0);
+    gl_Position = vp * vec4(worldPos, 1.0);
     
     vTexCoord = aTexCoord;
 }

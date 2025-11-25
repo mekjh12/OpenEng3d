@@ -2,8 +2,8 @@
 
 // 버텍스 애트리뷰트
 layout(location = 0) in vec3 aPosition;
-layout(location = 1) in vec3 aNormal;
-layout(location = 2) in vec2 aTexCoord;
+layout(location = 1) in vec2 aTexCoord;
+layout(location = 2) in vec3 aNormal;
 
 // SSBO: 모든 변환 행렬 (90000개)
 layout(std430, binding = 0) buffer TransformBuffer {
