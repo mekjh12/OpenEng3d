@@ -81,6 +81,7 @@
     <Compile Include="AABBShader\AABBBoxShader .cs" />
     <Compile Include="GlobalUniformBuffers.cs" />
     <Compile Include="GPUDriven\FrustumCullingComputeShader.cs" />
+    <Compile Include="GPUDriven\GPUBillboardShader.cs" />
     <Compile Include="GPUDriven\GPUInstancedShader.cs" />
     <Compile Include="InstancedShader\InstancedDepthShader.cs" />
     <Compile Include="InstancedShader\InstancedShader.cs" />
@@ -140,6 +141,8 @@
     <None Include="AxisShader\axis.vert" />
     <None Include="AABBShader\aabb.frag" />
     <None Include="AABBShader\aabb.vert" />
+    <None Include="GPUDriven\billboard.vert" />
+    <None Include="GPUDriven\billboard.frag" />
     <None Include="GPUDriven\instanced.frag" />
     <None Include="GPUDriven\instanced.vert" />
     <None Include="GPUDriven\frustum_culling.comp" />

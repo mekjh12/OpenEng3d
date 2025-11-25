@@ -16,19 +16,26 @@ layout(std430, binding = 1) buffer VisibleIndicesBuffer {
 };
 
 // 유니폼
-uniform mat4 proj;
-uniform mat4 view;
+uniform mat4 vp;
 
 // 프래그먼트 셰이더로 전달
 out vec3 vNormal;
 out vec2 vTexCoord;
 out vec3 vWorldPos;
 
-void main() {
+void main() 
+{
     // gl_InstanceID: Indirect Draw에서 제공 (0 ~ visibleCount-1)
+
     // 실제 인스턴스 인덱스 가져오기
     int instanceIndex = visibleIndices[gl_InstanceID];
     
+    if (instanceIndex < 0 || instanceIndex >= 90000) 
+    {
+        gl_Position = vec4(0, 0, 0, 0);
+        return;
+    }
+
     // 해당 인스턴스의 변환 행렬
     mat4 model = allTransforms[instanceIndex];
     
@@ -37,7 +44,7 @@ void main() {
     vWorldPos = worldPos.xyz;
     
     // 클립 공간 변환
-    gl_Position = proj * view * worldPos;
+    gl_Position = vp * worldPos;
         
     // 텍스처 좌표
     vTexCoord = aTexCoord;

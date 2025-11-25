@@ -19,6 +19,8 @@ namespace Shader
 
         // 유니폼 위치
         private int[] loc_frustumPlanes = new int[6];
+        private int loc_cameraPosition;
+        private int loc_lodDistance;
 
         // Compute Shader 작업 그룹 크기
         private const int WORK_GROUP_SIZE = 256;
@@ -37,6 +39,18 @@ namespace Shader
             {
                 loc_frustumPlanes[i] = GetUniformLocation($"uFrustumPlanes[{i}]");
             }
+            loc_cameraPosition = GetUniformLocation("uCameraPosition");
+            loc_lodDistance = GetUniformLocation("uLODDistance");
+        }
+
+        public void LoadCameraPosition(Vertex3f position)
+        {
+            Gl.Uniform3f(loc_cameraPosition, 1, position);
+        }
+
+        public void LoadLODDistance(float distance)
+        {
+            Gl.Uniform1f(loc_lodDistance, 0, distance);
         }
 
         protected override void BindAttributes()
@@ -47,17 +61,6 @@ namespace Shader
         /// <summary>
         /// Frustum Plane을 설정합니다.
         /// </summary>
-        public void LoadFrustumPlanes(Vertex4f[] planes)
-        {
-            if (planes.Length != 6)
-                throw new ArgumentException("Frustum planes must be 6");
-
-            for (int i = 0; i < 6; i++)
-            {
-                Gl.Uniform4f(loc_frustumPlanes[i], 1, planes[i]);
-            }
-        }
-
         public void LoadFrustumPlanes(Plane[] planes)
         {
             if (planes.Length != 6)
@@ -67,24 +70,6 @@ namespace Shader
             {
                 Gl.Uniform4f(loc_frustumPlanes[i], 1, planes[i].Vertex4f);
             }
-        }
-
-        /// <summary>
-        /// Compute Shader를 실행합니다.
-        /// </summary>
-        /// <param name="instanceCount">처리할 인스턴스 개수</param>
-        public void Dispatch(int instanceCount)
-        {
-            // 작업 그룹 개수 계산 (올림)
-            int numWorkGroups = (instanceCount + WORK_GROUP_SIZE - 1) / WORK_GROUP_SIZE;
-
-            Bind();
-            Gl.DispatchCompute((uint)numWorkGroups, 1, 1);
-
-            // 메모리 배리어 - Compute 완료 대기
-            Gl.MemoryBarrier(MemoryBarrierMask.ShaderStorageBarrierBit |
-                            MemoryBarrierMask.CommandBarrierBit);
-            Unbind();
         }
     }
 }

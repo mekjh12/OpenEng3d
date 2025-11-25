@@ -130,6 +130,7 @@ namespace FormTools
 
             _gpuDriven = new GPUCullingRenderer();
             _gpuDriven.Initialize(_treeModel[0], PROJECT_PATH);
+                       
 
             // UI 3D 텍스트 네임플레이트 초기화
             _textNamePlate = new TextNamePlate(_glControl3.Camera, "FPS");
@@ -151,9 +152,10 @@ namespace FormTools
             _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
 
             _gpuDriven.Update(camera, _viewFrustum);
+            uint visibleCount = _gpuDriven.GetVisibleCountDebug();
 
             // 네임플레이트 업데이트            
-            _textNamePlate.Text = $"정보";
+            _textNamePlate.Text = $"가시객체{visibleCount}";
             _textNamePlate.WorldPosition = camera.Position + camera.Forward * 1f - camera.Right * 0.2f;
             _textNamePlate.Update(deltaTime);
 
@@ -176,17 +178,13 @@ namespace FormTools
             Gl.Viewport(0, 0, w, h);
             Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
 
-            Gl.Enable(EnableCap.Blend);                // 블렌딩 켜기
-            Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-
             _gpuDriven.Render(camera);
 
-
-            // 2D 렌더링을 위한 완전한 상태 리셋
-            Gl.Disable(EnableCap.DepthTest);           // 깊이 테스트 끄기
-            Gl.Enable(EnableCap.Blend);                // 블렌딩 켜기
+            // 2D 렌더링을 위한 상태 설정
+            Gl.Disable(EnableCap.DepthTest);
+            Gl.Enable(EnableCap.Blend);  // ← 여기서 켜기
             Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-            Gl.Disable(EnableCap.CullFace);            // 컬링 끄기
+            Gl.Disable(EnableCap.CullFace);
             Gl.Viewport(0, 0, w, h);
 
             // FPS 렌더링

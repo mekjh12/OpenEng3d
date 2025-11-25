@@ -1,9 +1,6 @@
 ﻿#version 450 core
-
-// 작업 그룹 크기
 layout(local_size_x = 256) in;
 
-// AABB 구조체 (std430 레이아웃)
 struct AABB {
     vec3 min;
     float padding1;
@@ -11,66 +8,74 @@ struct AABB {
     float padding2;
 };
 
-// 입력: AABB 배열
+// SSBO (binding 5 제거!)
 layout(std430, binding = 0) buffer AABBBuffer {
     AABB aabbs[];
 };
 
-// 출력: 가시 인덱스
-layout(std430, binding = 1) buffer VisibleIndicesBuffer {
-    int visibleIndices[];
+layout(std430, binding = 1) buffer VisibleIndicesBuffer_LOD0 {
+    int visibleIndices_LOD0[];
 };
 
-// 출력: Atomic 카운터
-layout(std430, binding = 2) buffer CounterBuffer {
-    uint visibleCount;
+layout(std430, binding = 2) buffer CounterBuffer_LOD0 {
+    uint visibleCount_LOD0;
 };
 
-// Frustum planes (6개)
+layout(std430, binding = 3) buffer VisibleIndicesBuffer_LOD1 {
+    int visibleIndices_LOD1[];
+};
+
+layout(std430, binding = 4) buffer CounterBuffer_LOD1 {
+    uint visibleCount_LOD1;
+};
+
+// 유니폼
 uniform vec4 uFrustumPlanes[6];
+uniform vec3 uCameraPosition;
+uniform float uLODDistance;
 
-// AABB vs Plane 테스트
-// plane: (nx, ny, nz, d) 형태의 평면 방정식
-bool TestAABBPlane(AABB aabb, vec4 plane) {
-    // Positive vertex (평면 법선 방향으로 가장 먼 점)
-    vec3 pVertex;
-    pVertex.x = (plane.x >= 0.0) ? aabb.max.x : aabb.min.x;
-    pVertex.y = (plane.y >= 0.0) ? aabb.max.y : aabb.min.y;
-    pVertex.z = (plane.z >= 0.0) ? aabb.max.z : aabb.min.z;
-    
-    // 평면과의 signed distance
-    float distance = dot(plane.xyz, pVertex) + plane.w;
-    
-    // distance >= 0 이면 평면 앞쪽(가시 영역)
-    return distance >= 0.0;
+bool ContactTestAABBPlane(AABB aabb, vec4 plane) {
+    vec3 center = (aabb.min + aabb.max) * 0.5;
+    vec3 extent = (aabb.max - aabb.min) * 0.5;
+    float dist = dot(plane.xyz, center) + plane.w;
+    float radius = dot(extent, abs(plane.xyz));
+    return (dist + radius) >= 0.0;
 }
 
-// Frustum Culling 테스트
-bool IsInsideFrustum(AABB aabb) {
-    // 6개 평면 모두 통과해야 가시
-    // 하나라도 완전히 뒤에 있으면 컬링
-    for (int i = 0; i < 6; i++) {
-        if (!TestAABBPlane(aabb, uFrustumPlanes[i])) {
-            return false;  // 이 평면 뒤에 있음 -> 컬링
-        }
-    }
-    return true;  // 모든 평면 앞쪽 -> 가시
+// 프러스텀 평면과 AABB의 충돌 검사
+bool IsInsideFrustum(AABB aabb) 
+{
+    // 근평면으로 빠르게 후면을 컬링한다.
+    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[4])) return false; // 근접평이 제일 먼저 검사
+    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[5])) return false; // 원거리 평면
+    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[0])) return false; // 오른쪽 평면
+    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[1])) return false; // 하단 평면
+    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[2])) return false; // 왼쪽 평면
+    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[3])) return false; // 상단 평면
+    return true;
 }
 
 void main() {
-    // 글로벌 인덱스 (0 ~ 89999)
     uint index = gl_GlobalInvocationID.x;
-    
-    // 범위 체크 (90000개 초과 방지)
     if (index >= 90000) return;
-    
+
     // Frustum 테스트
-    if (IsInsideFrustum(aabbs[index])) {
-        // Atomic하게 카운터 증가 및 슬롯 획득
-        uint slot = atomicAdd(visibleCount, 1);
+    if (IsInsideFrustum(aabbs[index])) 
+    {
+        vec3 center = (aabbs[index].min + aabbs[index].max) * 0.5;
+        float distance = length(uCameraPosition - center);
         
-        // 가시 인덱스 저장
-        visibleIndices[slot] = int(index);
+        // LOD 선택 (거리 기반)
+        if (distance < 100)
+        {
+            // LOD0: 전체 메시
+            uint slot = atomicAdd(visibleCount_LOD0, 1);
+            visibleIndices_LOD0[slot] = int(index);
+        } else 
+        {
+            // LOD1: 빌보드
+            uint slot = atomicAdd(visibleCount_LOD1, 1);
+            visibleIndices_LOD1[slot] = int(index);
+        }
     }
 }
-

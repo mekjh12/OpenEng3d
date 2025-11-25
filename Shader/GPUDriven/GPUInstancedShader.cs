@@ -1,5 +1,7 @@
 ﻿using Common;
+using Common.Abstractions;
 using OpenGL;
+using System;
 
 namespace Shader
 {
@@ -17,8 +19,7 @@ namespace Shader
         private const int VISIBLE_INDICES_BINDING = 1;
 
         // 유니폼 위치
-        private int loc_projection;
-        private int loc_view;
+        private int loc_vp;
         private int loc_texture;
 
         public GPUInstancedShader(string projectPath) : base()
@@ -32,8 +33,7 @@ namespace Shader
 
         protected override void GetAllUniformLocations()
         {
-            loc_projection = GetUniformLocation("proj");
-            loc_view = GetUniformLocation("view");
+            loc_vp = GetUniformLocation("vp");
             loc_texture = GetUniformLocation("uTexture");
         }
 
@@ -45,28 +45,21 @@ namespace Shader
         }
 
         /// <summary>
-        /// 투영 행렬을 설정합니다.
+        /// 뷰-투영 행렬을 설정합니다.
         /// </summary>
-        public void LoadProjectionMatrix(in Matrix4x4f matrix)
+        public void LoadVPMatrix(in Matrix4x4f matrix)
         {
-            LoadUniformMatrix4(loc_projection, matrix);
-        }
-
-        /// <summary>
-        /// 뷰 행렬을 설정합니다.
-        /// </summary>
-        public void LoadViewMatrix(in Matrix4x4f matrix)
-        {
-            LoadUniformMatrix4(loc_view, matrix);
+            LoadUniformMatrix4(loc_vp, matrix);
         }
 
         /// <summary>
         /// 텍스처 유닛을 설정합니다.
         /// </summary>
-        public void LoadTexture(int unit = 0)
+        public void LoadTexture(TextureUnit unit, uint textureId)
         {
-            Gl.Uniform1(loc_texture, unit);
+            Gl.Uniform1(loc_texture, (uint)unit);
+            Gl.ActiveTexture(TextureUnit.Texture0);
+            Gl.BindTexture(TextureTarget.Texture2d, textureId);
         }
-
     }
 }
