@@ -4,7 +4,7 @@ using Common;
 
 namespace Shader
 {
-    public class ZDepthShader : ShaderProgram<UnlitShader.UNIFORM_NAME>
+    public class ZDepthShader : ShaderProgram<ZDepthShader.UNIFORM_NAME>
     {
         public enum UNIFORM_NAME
         {

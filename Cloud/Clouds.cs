@@ -97,7 +97,7 @@ namespace Cloud
 
             shader.LoadFocalLength(camera.FocalLength);
             shader.LoadViewportSize(new Vertex2f(_width, _height));
-            shader.LoadRayOrgin(camera.Position);
+            shader.LoadRayOrigin(camera.Position);
             shader.LoadAspectRatio(camera.AspectRatio);
             shader.LoadGamma(_gamma);
             shader.LoadAbsorption(_absorption);

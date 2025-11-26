@@ -13,8 +13,9 @@ namespace FormTools
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new FormGPUDriven());                // 작동됨
-            //Application.Run(new FormOcclusionOpt());                // 작동됨
+            Application.Run(new FormImpostor());                    // 작동됨
+            //Application.Run(new FormGPUDriven());                 // 작동됨
+            //Application.Run(new FormOcclusionOpt());              // 작동됨
             //Application.Run(new FormQuadTree());                  // 작동됨
             //Application.Run(new FormCulling());                   // 작동됨
             //Application.Run(new FormHZBuffer());                  // 작동됨
@@ -29,7 +30,6 @@ namespace FormTools
             //Application.Run(new FormAsyncTest());
             //Application.Run(new FormColor3Channel());
             //Application.Run(new FormTerrainImposter());
-            //Application.Run(new FormImpostor());
             //Application.Run(new FormTileBaker());
             //Application.Run(new FormEntityTest());
             //Application.Run(new FormAtmosphereScattering());

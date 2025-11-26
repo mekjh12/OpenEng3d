@@ -156,7 +156,7 @@ namespace Renderer
                 Gl.CullFace(CullFaceMode.Back);
             }
 
-            shader.LoadUniform(UnlitShader.UNIFORM_NAME.mvp, vp * entity.ModelMatrix);
+            shader.LoadMVPMatrix(vp * entity.ModelMatrix);
 
             BaseModel3d[] models = (entity is LodEntity) ? (entity as LodEntity).Models.ToArray() : entity.Models.ToArray();
 
@@ -170,7 +170,7 @@ namespace Renderer
                     {
                         if (modelTextured.Texture.TextureType.HasFlag(Texture.TextureMapType.Diffuse))
                         {
-                            shader.LoadTexture(UnlitShader.UNIFORM_NAME.modelTexture, TextureUnit.Texture0, modelTextured.Texture.DiffuseMapID);
+                            shader.LoadModelTexture( TextureUnit.Texture0, modelTextured.Texture.DiffuseMapID);
                         }
                         Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.REPEAT);
                         Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.REPEAT);
@@ -208,7 +208,7 @@ namespace Renderer
                     Gl.CullFace(CullFaceMode.Back);
                 }
 
-                shader.LoadUniform(UnlitShader.UNIFORM_NAME.mvp, vp * entity.ModelMatrix);
+                shader.LoadMVPMatrix(vp * entity.ModelMatrix);
 
                 BaseModel3d[] models = (entity is LodEntity) ? (entity as LodEntity).Models.ToArray() : entity.Models.ToArray();
 
@@ -222,7 +222,7 @@ namespace Renderer
                         {
                             if (modelTextured.Texture.TextureType.HasFlag(Texture.TextureMapType.Diffuse))
                             {
-                                shader.LoadTexture(UnlitShader.UNIFORM_NAME.modelTexture, TextureUnit.Texture0, modelTextured.Texture.DiffuseMapID);
+                                shader.LoadModelTexture( TextureUnit.Texture0, modelTextured.Texture.DiffuseMapID);
                             }
                             Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.REPEAT);
                             Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.REPEAT);
@@ -275,7 +275,7 @@ namespace Renderer
 
             OrbitCamera orbitCamera = camera as OrbitCamera;
             shader.Bind();
-
+            /*
             shader.LoadUniform(ImpostorShader.UNIFORM_NAME.enableEdgeLine, true);
             shader.LoadUniform(ImpostorShader.UNIFORM_NAME.vp, orbitCamera.VPMatrix);
             shader.LoadUniform(ImpostorShader.UNIFORM_NAME.cameraPosition, orbitCamera.Position);
@@ -283,7 +283,7 @@ namespace Renderer
             foreach (Entity entity in impostorEntity)
             {
                 ImpostorSettings settings = impostor.GetImpostorSettings(entity);
-                Vertex2f atlasOffset = impostor.GetAtlasOffset(settings, orbitCamera.Position, entity);
+                Vertex2f atlasOffset = impostor.GetAtlasOffset(settings, orbitCamera.Position, entity.ModelMatrix);
                 uint textureId = impostor.AtlasTexture(entity);
 
                 shader.LoadTexture(ImpostorShader.UNIFORM_NAME.impostorAtlas, TextureUnit.Texture0, textureId);
@@ -302,6 +302,7 @@ namespace Renderer
                 Gl.BindVertexArray(0);
             }
             shader.Unbind();
+            */
 
             Gl.Enable(EnableCap.Blend);
         }

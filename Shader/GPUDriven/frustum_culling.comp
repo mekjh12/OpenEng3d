@@ -34,7 +34,8 @@ uniform vec4 uFrustumPlanes[6];
 uniform vec3 uCameraPosition;
 uniform float uLODDistance;
 
-bool ContactTestAABBPlane(AABB aabb, vec4 plane) {
+bool ContactTestAABBPlane(AABB aabb, vec4 plane) 
+{
     vec3 center = (aabb.min + aabb.max) * 0.5;
     vec3 extent = (aabb.max - aabb.min) * 0.5;
     float dist = dot(plane.xyz, center) + plane.w;
@@ -45,9 +46,7 @@ bool ContactTestAABBPlane(AABB aabb, vec4 plane) {
 // 프러스텀 평면과 AABB의 충돌 검사
 bool IsInsideFrustum(AABB aabb) 
 {
-    // 근평면으로 빠르게 후면을 컬링한다.
-    vec4 nearPlane = uFrustumPlanes[4];
-    if (!ContactTestAABBPlane(aabb, nearPlane)) return false; // 근접평이 제일 먼저 검사
+    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[4])) return false; // 근거리 평면
     if (!ContactTestAABBPlane(aabb, uFrustumPlanes[5])) return false; // 원거리 평면
     if (!ContactTestAABBPlane(aabb, uFrustumPlanes[0])) return false; // 오른쪽 평면
     if (!ContactTestAABBPlane(aabb, uFrustumPlanes[2])) return false; // 왼쪽 평면

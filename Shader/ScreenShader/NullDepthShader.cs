@@ -5,7 +5,7 @@ using Common;
 
 namespace Shader
 {
-    public class NullDepthShader : ShaderProgram<UnlitShader.UNIFORM_NAME>
+    public class NullDepthShader : ShaderProgram<NullDepthShader.UNIFORM_NAME>
     {
         public enum UNIFORM_NAME
         {

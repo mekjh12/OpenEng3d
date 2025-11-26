@@ -4,9 +4,13 @@ using Common;
 
 namespace Shader
 {
-    public class SkyBoxShader : ShaderProgram<UnlitShader.UNIFORM_NAME>
+    /// <summary>
+    /// 스카이박스 렌더링을 위한 셰이더 클래스입니다.
+    /// 큐브맵 텍스처를 사용하여 배경 하늘을 렌더링하며, 안개 효과를 지원합니다.
+    /// </summary>
+    public class SkyBoxShader : ShaderProgramBase
     {
-        const string vertex_sources = @"
+        const string VERTEX_SOURCES = @"
         #version 420 core
         // (-1,-1,-1)--(1,1,1)의 정보가 들어온다.
         in vec3 position;
@@ -21,7 +25,7 @@ namespace Shader
             vec4 pos = proj * view * vec4(position, 1.0);
             fragPos = position * 1000.0f;
 
-            // optimization : z=1로 만들어 이미 드린 픽셀은 생략가능하다.
+            // optimization : z=1로 만들어 이미 그린 픽셀은 생략가능하다.
             // (1) proj : pos.xyww; z=w로 만들어 무한 원점으로 만든다.
             // (2) revProj :  vec4(pos.x, pos.y, 0.0f, pos.w); z=0으로 만들어 무한 원점으로 만든다.
 
@@ -29,7 +33,7 @@ namespace Shader
         }
         ";
 
-        const string fragment_sources = @"
+        const string FRAGMENT_SOURCES = @"
         #version 420 core
 
         out vec4 FragColor;
@@ -44,8 +48,8 @@ namespace Shader
         uniform vec4 fogPlane;
 
         // ================================================================
-        // 픽셀에 세이더 색상으로부터 안개를 적용하여 반환한다.
-        // param : shadedColor 세이더한 픽셀의 색상
+        // 픽셀에 셰이더 색상으로부터 안개를 적용하여 반환한다.
+        // param : shadedColor 셰이더한 픽셀의 색상
         //         v  정규화되지 않은 뷰벡터 v 
         // ================================================================
         vec3 ApplyHalfspaceFog(vec3 shadedColor, vec3 fogcolor, vec3 v, float density, float fv, float u1, float u2)
@@ -58,7 +62,7 @@ namespace Shader
 
         void main(void)
         {
-	        //vec3 tex = vec3(TexCoords.x, TexCoords.y, TexCoords.z);
+            //vec3 tex = vec3(TexCoords.x, TexCoords.y, TexCoords.z);
             //vec4 textureColor4 = texture(skybox, tex);
 
             // 지울것
@@ -73,23 +77,44 @@ namespace Shader
             float u2 = fp * sign(fc);
 
             vec3 final = ApplyHalfspaceFog(textureColor4.xyz, fogColor, v, fogDensity, fv, u1, u2);
-	        FragColor = vec4(final, 1.0f);
+            FragColor = vec4(final, 1.0f);
         }
         ";
+
+        // 유니폼 위치 (캐싱)
+        private int loc_view;
+        private int loc_proj;
+        private int loc_camPos;
+        private int loc_skybox;
+        private int loc_fogColor;
+        private int loc_fogDensity;
+        private int loc_fogPlane;
 
         public SkyBoxShader(string projectPath) : base()
         {
             _name = this.GetType().Name;
 
-            string vertFileName = projectPath + "\\sky_vert.tmp";
-            File.WriteAllText(vertFileName, vertex_sources);
+            // 임시 파일로 셰이더 소스 저장
+            string vertFileName = Path.Combine(projectPath, "sky_vert.tmp");
+            File.WriteAllText(vertFileName, VERTEX_SOURCES);
             VertFileName = vertFileName;
 
-            string fragFileName = projectPath + "\\sky_frag.tmp";
-            File.WriteAllText(fragFileName, fragment_sources);
-            FragFilename = fragFileName;
+            string fragFileName = Path.Combine(projectPath, "sky_frag.tmp");
+            File.WriteAllText(fragFileName, FRAGMENT_SOURCES);
+            FragFileName = fragFileName;
 
             InitCompileShader();
+        }
+
+        protected override void GetAllUniformLocations()
+        {
+            loc_view = GetUniformLocation("view");
+            loc_proj = GetUniformLocation("proj");
+            loc_camPos = GetUniformLocation("camPos");
+            loc_skybox = GetUniformLocation("skybox");
+            loc_fogColor = GetUniformLocation("fogColor");
+            loc_fogDensity = GetUniformLocation("fogDensity");
+            loc_fogPlane = GetUniformLocation("fogPlane");
         }
 
         protected override void BindAttributes()
@@ -97,53 +122,75 @@ namespace Shader
             base.BindAttribute(0, "position");
         }
 
-        protected override void GetAllUniformLocations()
-        {
-            UniformLocations("view", "proj");
-            UniformLocations("camPos");
-            UniformLocations("fogColor", "fogDensity", "fogPlane");
-        }
+        // === Load 메서드들 ===
 
-        public void LoadTexture(string textureUniformName, TextureUnit textureUnit, uint texture)
-        {
-            base.LoadInt(_location[textureUniformName], textureUnit - TextureUnit.Texture0);
-            Gl.ActiveTexture(textureUnit);
-            Gl.BindTexture(TextureTarget.Texture2d, texture);
-        }
-
+        /// <summary>
+        /// 프로젝션 행렬 설정
+        /// </summary>
         public void LoadProjMatrix(Matrix4x4f matrix)
         {
-            base.LoadMatrix(_location["proj"], matrix);
+            Gl.UniformMatrix4f(loc_proj, 1, false, matrix);
         }
 
+        /// <summary>
+        /// 뷰 행렬 설정 (평행이동 제거하여 스카이박스가 카메라를 따라다니게 함)
+        /// </summary>
         public void LoadViewMatrix(Matrix4x4f matrix)
         {
-            base.LoadMatrix(_location["view"], matrix);
+            Gl.UniformMatrix4f(loc_view, 1, false, matrix);
         }
 
-        public void LoadObjectColor(Vertex4f color)
+        /// <summary>
+        /// 카메라 위치 설정
+        /// </summary>
+        public void LoadCameraPosition(Vertex3f position)
         {
-            base.LoadVector(_location["color"], color);
+            Gl.Uniform3f(loc_camPos, 1, position);
         }
 
-        public void LoadCameraPosition(Vertex3f pos)
+        /// <summary>
+        /// 스카이박스 큐브맵 텍스처 바인딩
+        /// </summary>
+        public void LoadSkyboxTexture(int textureUnit, uint texture)
         {
-            base.LoadVector(_location["camPos"], pos);
+            Gl.Uniform1i(loc_skybox, 1, textureUnit);
+            Gl.ActiveTexture((TextureUnit)((int)TextureUnit.Texture0 + textureUnit));
+            Gl.BindTexture(TextureTarget.TextureCubeMap, texture);
         }
 
-        public void LoadFogPlane(Vertex4f fogPlane)
+        /// <summary>
+        /// 안개 색상 설정
+        /// </summary>
+        public void LoadFogColor(Vertex3f fogColor)
         {
-            base.LoadVector(_location["fogPlane"], fogPlane);
+            Gl.Uniform3f(loc_fogColor, 1, fogColor);
         }
 
+        /// <summary>
+        /// 안개 밀도 설정
+        /// </summary>
         public void LoadFogDensity(float density)
         {
-            base.LoadFloat(_location["fogDensity"], density);
+            Gl.Uniform1f(loc_fogDensity, 1, density);
         }
 
-        public void LoadFogColor(Vertex3f fogcolor)
+        /// <summary>
+        /// 안개 평면 설정 (높이 기반 안개)
+        /// </summary>
+        public void LoadFogPlane(Vertex4f fogPlane)
         {
-            base.LoadVector(_location["fogColor"], fogcolor);
+            Gl.Uniform4f(loc_fogPlane, 1, fogPlane);
+        }
+
+        /// <summary>
+        /// 범용 텍스처 바인딩 (확장용)
+        /// </summary>
+        public void LoadTexture(string uniformName, TextureUnit textureUnit, uint texture)
+        {
+            int location = GetUniformLocation(uniformName);
+            Gl.Uniform1i(location, 1, (int)(textureUnit - TextureUnit.Texture0));
+            Gl.ActiveTexture(textureUnit);
+            Gl.BindTexture(TextureTarget.Texture2d, texture);
         }
     }
 }

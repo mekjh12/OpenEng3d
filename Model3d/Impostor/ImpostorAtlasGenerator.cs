@@ -220,7 +220,7 @@ namespace Model3d
                         Gl.CullFace(CullFaceMode.Back);
                     }
 
-                    shader.LoadUniform(UnlitShader.UNIFORM_NAME.mvp, vp * entity.ModelMatrix);
+                    shader.LoadMVPMatrix(vp * entity.ModelMatrix);
 
                     // 모델을 그린다.
                     foreach (BaseModel3d rawModel in entity.Models.ToArray())
@@ -232,7 +232,7 @@ namespace Model3d
                             {
                                 if (modelTextured.Texture.TextureType.HasFlag(Texture.TextureMapType.Diffuse))
                                 {
-                                    shader.LoadTexture(UnlitShader.UNIFORM_NAME.modelTexture, TextureUnit.Texture0, modelTextured.Texture.DiffuseMapID);
+                                    shader.LoadModelTexture( TextureUnit.Texture0, modelTextured.Texture.DiffuseMapID);
                                 }
                                 Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.REPEAT);
                                 Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.REPEAT);
@@ -294,7 +294,7 @@ namespace Model3d
 
                 // 월드뷰투영 행렬 설정
                 Matrix4x4f mvp = proj * viewData.ViewMatrix;
-                shader.LoadUniform(UnlitShader.UNIFORM_NAME.mvp, mvp);
+                shader.LoadMVPMatrix(mvp);
 
                 // 모델을 그린다.
                 foreach (RawModel3d rawModel in texturedModels)
@@ -306,7 +306,7 @@ namespace Model3d
                         {
                             if (modelTextured.Texture.TextureType.HasFlag(Texture.TextureMapType.Diffuse))
                             {
-                                shader.LoadTexture(UnlitShader.UNIFORM_NAME.modelTexture, TextureUnit.Texture0, modelTextured.Texture.DiffuseMapID);
+                                shader.LoadModelTexture( TextureUnit.Texture0, modelTextured.Texture.DiffuseMapID);
                             }
                             Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.REPEAT);
                             Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.REPEAT);

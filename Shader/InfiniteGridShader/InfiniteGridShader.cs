@@ -6,58 +6,103 @@ using Common;
 namespace Shader
 {
     /// <summary>
-    /// 쉐이더를 사용하기 위해서는 실행 위치의 \Shader\Terrain\에 소스코드를 넣어주세요.
+    /// 무한 그리드 렌더링을 위한 셰이더 클래스입니다.
+    /// 3D 뷰포트에서 바닥면에 무한히 펼쳐지는 그리드를 렌더링합니다.
     /// </summary>
-    public class InfiniteGridShader : ShaderProgram<UnlitShader.UNIFORM_NAME>
+    public class InfiniteGridShader : ShaderProgramBase
     {
-        const string VERTEx_FILE = @"\Shader\InfiniteGridShader\grid.vert";
+        const string VERTEX_FILE = @"\Shader\InfiniteGridShader\grid.vert";
         const string FRAGMENT_FILE = @"\Shader\InfiniteGridShader\grid.frag";
+
+        // 유니폼 위치 (캐싱)
+        private int loc_gVP;
+        private int loc_gCameraFocusWorldPos;
+        private int loc_gCameraWorldPos;
+        private int loc_viewportSize;
+        private int loc_focalLength;
+        private int loc_aspectRatio;
+        private int loc_view;
 
         public InfiniteGridShader(string projectPath) : base()
         {
             _name = this.GetType().Name;
-            VertFileName = projectPath + VERTEx_FILE;
-            FragFilename = projectPath + FRAGMENT_FILE;
+            VertFileName = projectPath + VERTEX_FILE;
+            FragFileName = projectPath + FRAGMENT_FILE;
             InitCompileShader();
         }
 
         protected override void GetAllUniformLocations()
         {
-            UniformLocations("gVP", "gCameraFocusWorldPos", "gCameraWorldPos");
-            UniformLocations("viewport_size", "focal_length", "aspect_ratio", "view");
+            loc_gVP = GetUniformLocation("gVP");
+            loc_gCameraFocusWorldPos = GetUniformLocation("gCameraFocusWorldPos");
+            loc_gCameraWorldPos = GetUniformLocation("gCameraWorldPos");
+            loc_viewportSize = GetUniformLocation("viewport_size");
+            loc_focalLength = GetUniformLocation("focal_length");
+            loc_aspectRatio = GetUniformLocation("aspect_ratio");
+            loc_view = GetUniformLocation("view");
         }
 
         protected override void BindAttributes()
         {
-            //base.BindAttribute(0, "position");
+            // 무한 그리드는 풀스크린 쿼드로 렌더링되므로 별도 애트리뷰트 불필요
         }
 
-        public void LoadAspectRatio(float aspectRatio)
+        // === Load 메서드들 ===
+
+        /// <summary>
+        /// View-Projection 행렬 설정
+        /// </summary>
+        public void LoadVPMatrix(Matrix4x4f matrix)
         {
-            base.LoadFloat(_location["aspect_ratio"], aspectRatio);
+            Gl.UniformMatrix4f(loc_gVP, 1, false, matrix);
         }
 
-        public void LoadFocalLength(float focalLength)
-        {
-            base.LoadFloat(_location["focal_length"], focalLength);
-        }
-
-        public void LoadViewportSize(Vertex2f viewportSize)
-        {
-            base.LoadVector(_location["viewport_size"], viewportSize);
-        }
-
+        /// <summary>
+        /// 뷰 행렬 설정
+        /// </summary>
         public void LoadViewMatrix(Matrix4x4f matrix)
         {
-            base.LoadMatrix(_location["view"], matrix);
+            Gl.UniformMatrix4f(loc_view, 1, false, matrix);
         }
 
-        public void LoadOrbitCameraPosition(Vertex3f cameraPosition) => base.LoadVector(_location["gCameraWorldPos"], cameraPosition);
+        /// <summary>
+        /// 카메라 포커스 위치 설정 (카메라가 바라보는 지점)
+        /// </summary>
+        public void LoadCameraFocusPosition(Vertex3f position)
+        {
+            Gl.Uniform3f(loc_gCameraFocusWorldPos, 1, position);
+        }
 
+        /// <summary>
+        /// 카메라 월드 위치 설정
+        /// </summary>
+        public void LoadCameraWorldPosition(Vertex3f position)
+        {
+            Gl.Uniform3f(loc_gCameraWorldPos, 1, position);
+        }
 
-        public void LoadCameraPosition(Vertex3f cameraPosition) => base.LoadVector(_location["gCameraFocusWorldPos"], cameraPosition);
+        /// <summary>
+        /// 뷰포트 크기 설정 (픽셀 단위)
+        /// </summary>
+        public void LoadViewportSize(Vertex2f size)
+        {
+            Gl.Uniform2f(loc_viewportSize, 1, size);
+        }
 
-        public void LoadVPMatrix(Matrix4x4f gVP) => base.LoadMatrix(_location["gVP"], gVP);
+        /// <summary>
+        /// 카메라 초점 거리 설정
+        /// </summary>
+        public void LoadFocalLength(float focalLength)
+        {
+            Gl.Uniform1f(loc_focalLength, 1, focalLength);
+        }
 
+        /// <summary>
+        /// 화면 종횡비 설정
+        /// </summary>
+        public void LoadAspectRatio(float aspectRatio)
+        {
+            Gl.Uniform1f(loc_aspectRatio, 1, aspectRatio);
+        }
     }
 }

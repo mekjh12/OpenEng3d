@@ -1,5 +1,6 @@
 ﻿using OpenGL;
 using System.Runtime.InteropServices;
+using ZetaExt;
 
 namespace GPUDriven
 {
@@ -28,6 +29,8 @@ namespace GPUDriven
         public float SizeX => Max.x - Min.x;
         public float SizeY => Max.y - Min.y;
         public float SizeZ => Max.z - Min.z;
+
+        public float SphereRadius => MathF.Sqrt(SizeX * SizeX + SizeY * SizeY + SizeZ * SizeZ);
         // 크기: 32 bytes (GPU 정렬 맞춤)
     }
 

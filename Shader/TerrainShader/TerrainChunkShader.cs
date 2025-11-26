@@ -10,7 +10,7 @@ namespace Shader
     ///     높이맵 기반의 지형을 동적 LOD(Level of Detail)로 처리
     ///     테셀레이션을 통한 적응형 지형 세분화 구현
     /// </remarks>
-    public class TerrainChunkShader : ShaderProgram<UnlitShader.UNIFORM_NAME>
+    public class TerrainChunkShader : ShaderProgram<TerrainChunkShader.UNIFORM_NAME>
     {
         /// <summary>
         ///     셰이더의 유니폼 변수 식별자

@@ -34,8 +34,8 @@ namespace GlWindow
             _shader.Bind();
 
             _shader.LoadVPMatrix(camera.VPMatrix);
-            _shader.LoadCameraPosition(Vertex3f.Zero);
-            _shader.LoadOrbitCameraPosition(camera.Position);
+            _shader.LoadCameraWorldPosition(Vertex3f.Zero);
+            _shader.LoadCameraFocusPosition(camera.Position);
 
             _shader.LoadFocalLength(camera.FocalLength);
             _shader.LoadViewportSize(new Vertex2f(_width, _height));

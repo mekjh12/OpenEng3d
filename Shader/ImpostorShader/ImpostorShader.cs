@@ -8,63 +8,154 @@ namespace Shader
     /// <summary>
     /// 임포스터(게임에서 멀리 있는 오브젝트를 최적화하여 렌더링하는 기법) 쉐이더를 구현하는 클래스
     /// </summary>
-    public class ImpostorShader : ShaderProgram<ImpostorShader.UNIFORM_NAME>
+    public class ImpostorShader : ShaderProgramBase
     {
-        // 쉐이더 파일 경로 상수 정의 (Path.Combine 사용하여 크로스 플랫폼 호환성 확보)
-        private static readonly string VERTEx_FILE = "Shader/ImpostorShader/impostor.vert";
-        private static readonly string FRAGMENT_FILE = "Shader/ImpostorShader/impostor.frag";
-        private static readonly string GEOMETRY_FILE = "Shader/ImpostorShader/impostor.gem.glsl";
+        // 쉐이더 파일 경로 상수 정의
+        private const string VERTEX_FILE = @"\Shader\ImpostorShader\impostor.vert";
+        private const string FRAGMENT_FILE = @"\Shader\ImpostorShader\impostor.frag";
+        private const string GEOMETRY_FILE = @"\Shader\ImpostorShader\impostor.gem.glsl";
 
-        // Uniform 변수들을 용도별로 그룹화한 열거형
-        public enum UNIFORM_NAME
-        {
-            // 텍스처 아틀라스 관련
-            atlasOffset,    // 아틀라스 내 오프셋 위치
-            atlasSize,      // 아틀라스 전체 크기
-            impostorAtlas,  // 임포스터 텍스처 아틀라스
-            enableEdgeLine, // 테두리 렌더링 유무
+        // 유니폼 위치 (캐싱)
+        private int loc_atlasOffset;
+        private int loc_atlasSize;
+        private int loc_impostorAtlas;
+        private int loc_enableEdgeLine;
+        private int loc_model;
+        private int loc_vp;
+        private int loc_worldPosition;
+        private int loc_cameraPosition;
+        private int loc_individualSize;
+        private int loc_aabbSizeModel;
+        private int loc_aabbCenterEntity;
 
-            // 변환 행렬 관련
-            model,          // 모델 변환 행렬
-            vp,             // View-Projection 행렬
-
-            // 위치 관련
-            worldPosition,      // 월드 공간에서의 위치
-            cameraPosition,     // 카메라 위치
-
-            // 크기 관련
-            individualSize, // 개별 임포스터의 크기
-
-            // 경계 상자(AABB) 관련
-            aabbSizeModel,          // 모델의 최소 경계점
-            aabbCenterEntity,       // 물체 박스의 중심점
-
-            Count          // 전체 Uniform 개수
-        }
-
-        /// <summary>
-        /// ImpostorShader 생성자
-        /// </summary>
-        /// <param name="projectPath">프로젝트 루트 경로</param>
         public ImpostorShader(string projectPath) : base()
         {
-            _name = GetType().Name;
-
-            // Path.Combine을 사용하여 OS에 독립적인 경로 생성
-            VertFileName = Path.Combine(projectPath, VERTEx_FILE);
-            GeomFileName = Path.Combine(projectPath, GEOMETRY_FILE);
-            FragFilename = Path.Combine(projectPath, FRAGMENT_FILE);
-
+            _name = this.GetType().Name;
+            VertFileName = projectPath + VERTEX_FILE;
+            GeomFileName = projectPath + GEOMETRY_FILE;
+            FragFileName = projectPath + FRAGMENT_FILE;
             InitCompileShader();
         }
 
-        /// <summary>
-        /// 버텍스 쉐이더 속성 바인딩
-        /// </summary>
+        protected override void GetAllUniformLocations()
+        {
+            // 텍스처 아틀라스 관련
+            loc_atlasOffset = GetUniformLocation("atlasOffset");
+            loc_atlasSize = GetUniformLocation("atlasSize");
+            loc_impostorAtlas = GetUniformLocation("impostorAtlas");
+            loc_enableEdgeLine = GetUniformLocation("enableEdgeLine");
+
+            // 변환 행렬 관련
+            loc_model = GetUniformLocation("model");
+            loc_vp = GetUniformLocation("vp");
+
+            // 위치 관련
+            loc_worldPosition = GetUniformLocation("worldPosition");
+            loc_cameraPosition = GetUniformLocation("cameraPosition");
+
+            // 크기 관련
+            loc_individualSize = GetUniformLocation("individualSize");
+
+            // 경계 상자(AABB) 관련
+            loc_aabbSizeModel = GetUniformLocation("aabbSizeModel");
+            loc_aabbCenterEntity = GetUniformLocation("aabbCenterEntity");
+        }
+
         protected override void BindAttributes()
         {
-            // 현재는 위치만 바인딩. 필요시 UV나 노말 등 추가 가능
             base.BindAttribute(0, "position");
+        }
+
+        // === Load 메서드들 ===
+
+        /// <summary>
+        /// 텍스처 아틀라스 오프셋 설정
+        /// </summary>
+        public void LoadAtlasOffset(Vertex2f offset)
+        {
+            Gl.Uniform2f(loc_atlasOffset, 1, offset);
+        }
+
+        /// <summary>
+        /// 텍스처 아틀라스 크기 설정
+        /// </summary>
+        public void LoadAtlasSize(float size)
+        {
+            Gl.Uniform1(loc_atlasSize, size);
+        }
+
+        /// <summary>
+        /// 임포스터 텍스처 아틀라스 바인딩
+        /// </summary>
+        public void LoadImpostorAtlas(TextureUnit unit, uint textureId)
+        {
+            Gl.Uniform1(loc_impostorAtlas, (uint)unit);
+            Gl.ActiveTexture(TextureUnit.Texture0);
+            Gl.BindTexture(TextureTarget.Texture2d, textureId);
+        }
+
+        /// <summary>
+        /// 테두리 렌더링 활성화 여부
+        /// </summary>
+        public void LoadEnableEdgeLine(bool enable)
+        {
+            Gl.Uniform1i(loc_enableEdgeLine, 1, enable ? 1 : 0);
+        }
+
+        /// <summary>
+        /// 모델 변환 행렬 설정
+        /// </summary>
+        public void LoadModelMatrix(Matrix4x4f matrix)
+        {
+            Gl.UniformMatrix4f(loc_model, 1, false, matrix);
+        }
+
+        /// <summary>
+        /// View-Projection 행렬 설정
+        /// </summary>
+        public void LoadVPMatrix(Matrix4x4f matrix)
+        {
+            Gl.UniformMatrix4f(loc_vp, 1, false, matrix);
+        }
+
+        /// <summary>
+        /// 월드 공간 위치 설정
+        /// </summary>
+        public void LoadWorldPosition(Vertex3f position)
+        {
+            Gl.Uniform3f(loc_worldPosition, 1, position);
+        }
+
+        /// <summary>
+        /// 카메라 위치 설정
+        /// </summary>
+        public void LoadCameraPosition(Vertex3f position)
+        {
+            Gl.Uniform3f(loc_cameraPosition, 1, position);
+        }
+
+        /// <summary>
+        /// 개별 임포스터 크기 설정
+        /// </summary>
+        public void LoadIndividualSize(float size)
+        {
+            Gl.Uniform1f(loc_individualSize, 1, size);
+        }
+
+        /// <summary>
+        /// 모델 AABB 크기 설정
+        /// </summary>
+        public void LoadAABBSizeModel(float size)
+        {
+            Gl.Uniform1(loc_aabbSizeModel, size);
+        }
+
+        /// <summary>
+        /// 엔티티 AABB 중심점 설정
+        /// </summary>
+        public void LoadAABBCenterEntity(Vertex3f center)
+        {
+            Gl.Uniform3f(loc_aabbCenterEntity, 1, center);
         }
     }
 }

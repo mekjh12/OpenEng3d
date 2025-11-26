@@ -159,7 +159,7 @@ namespace GPUDriven
         private void GenerateInstancePositions()
         {
             int gridSize = 300; // 300x300 = 90000
-            float spacing = 10f;
+            float spacing = 15f;
             Random rand = new Random(42);
 
             for (int i = 0; i < MAX_INSTANCES; i++)
@@ -192,6 +192,8 @@ namespace GPUDriven
 
         public void Update(Camera camera, Polyhedron viewFrustum)
         {
+            camera.NEAR = 0.1f;
+
             // 1. Counter 초기화
             uint zero = 0;
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _counterSSBO);

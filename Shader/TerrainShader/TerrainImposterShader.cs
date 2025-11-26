@@ -8,7 +8,7 @@ namespace Shader
     /// 지형 렌더링을 위한 테셀레이션 셰이더입니다.
     /// 높이맵 기반의 지형을 동적 LOD로 처리합니다.
     /// </summary>
-    public class TerrainImposterShader : ShaderProgram<UnlitShader.UNIFORM_NAME>
+    public class TerrainImposterShader : ShaderProgram<TerrainImposterShader.UNIFORM_NAME>
     {
         /// <summary>
         /// 셰이더의 유니폼 변수 식별자입니다.

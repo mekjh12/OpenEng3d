@@ -136,13 +136,13 @@ namespace Model3d
             }
         }
 
-        public Vertex2f GetAtlasOffset(ImpostorSettings settings, Vertex3f cameraPosition, Entity entity)
+        public Vertex2f GetAtlasOffset(ImpostorSettings settings, Vertex3f cameraPosition, Matrix4x4f modelMatrix)
         {
             // 1. 카메라에서 모델로의 방향 벡터 계산 (월드 공간)
-            Vertex3f toCamera = (cameraPosition - entity.Position).Normalized;
+            Vertex3f position = modelMatrix.Column3.xyz();
+            Vertex3f toCamera = (cameraPosition - position).Normalized;
 
             // 2. 모델의 회전 행렬만 추출
-            Matrix4x4f modelMatrix = entity.ModelMatrix;
             Matrix4x4f rotationMatrix = modelMatrix.ToMatrix3x3f();
 
             // 3. 월드 공간의 카메라 방향을 모델의 로컬 공간으로 변환
@@ -186,10 +186,21 @@ namespace Model3d
             return _impostorModels.ContainsKey(modelname) ? _impostorModels[modelname] : 0;
         }
 
+        public uint AtlasTexture(string modelname)
+        {
+            return _impostorModels.ContainsKey(modelname) ? _impostorModels[modelname] : 0;
+        }
+
         public ImpostorSettings GetImpostorSettings(Entity entity)
         {
             string modelname = entity.ModelName;
             return _impostorSettings.ContainsKey(modelname) ? _impostorSettings[modelname] : ImpostorSettings.CreateDefault();
         }
+
+        public ImpostorSettings GetImpostorSettings(string modelname)
+        {
+            return _impostorSettings.ContainsKey(modelname) ? _impostorSettings[modelname] : ImpostorSettings.CreateDefault();
+        }
+
     }
 }

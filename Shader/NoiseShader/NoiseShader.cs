@@ -11,7 +11,7 @@ namespace Shader
     /// <summary>
     /// 
     /// </summary>
-    public class NoiseShader : ShaderProgram<UnlitShader.UNIFORM_NAME>
+    public class NoiseShader : ShaderProgram<NoiseShader.UNIFORM_NAME>
     {
         public enum UNIFORM_NAME
         {
