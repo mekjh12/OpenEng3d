@@ -125,8 +125,8 @@ namespace FormTools
             _glControl3.InitGridShader(PROJECT_PATH);
 
             _model3DManager = new Model3dManager(PROJECT_PATH, ExE_PATH + "\\nullTexture.jpg");
-            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\tree1.obj");
-            _treeModel = _model3DManager.GetModels("tree1");
+            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm6.obj");
+            _treeModel = _model3DManager.GetModels("Palm6");
 
             _gpuDriven = new GPUCullingRenderer();
             _gpuDriven.Initialize(_treeModel, PROJECT_PATH);

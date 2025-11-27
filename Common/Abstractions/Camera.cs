@@ -26,7 +26,7 @@ namespace Common.Abstractions
 
         protected float FOV_DEGREE = 60;               // 시야각 (도)
         protected float NEAR_PLANE = 0.1f;             // 근평면 거리
-        protected float FAR_PLANE = 10* 1000.0f;        // 원평면 거리(최대 10km)
+        protected float FAR_PLANE = 10 * 1000.0f;        // 원평면 거리(최대 10km)
 
         protected int _width;                          // 뷰포트 너비
         protected int _height;                         // 뷰포트 높이

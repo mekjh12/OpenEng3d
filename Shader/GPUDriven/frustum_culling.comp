@@ -64,6 +64,7 @@ void main()
     if (IsInsideFrustum(aabbs[index])) 
     {
         vec3 center = (aabbs[index].min + aabbs[index].max) * 0.5;
+
         float distance = length(uCameraPosition - center);
         
         // LOD 선택 (거리 기반)

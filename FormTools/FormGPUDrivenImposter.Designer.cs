@@ -1,6 +1,6 @@
 ﻿namespace FormTools
 {
-    partial class FormImpostor
+    partial class FormGPUDrivenImposter
     {
         /// <summary>
         /// Required designer variable.
@@ -30,7 +30,7 @@
         {
             this.SuspendLayout();
             // 
-            // FormImpostor
+            // FormGPUDrivenImposter
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -38,11 +38,11 @@
             this.Location = new System.Drawing.Point(100, 100);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.Name = "FormImpostor";
+            this.Name = "FormGPUDrivenImposter";
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
-            this.Text = "FormImpostor";
-            this.Load += new System.EventHandler(this.FormImpostor_Load);
-            this.Resize += new System.EventHandler(this.FormImpostor_Resize);
+            this.Text = "GPU Driven with Imposter";
+            this.Load += new System.EventHandler(this.FormGPUDrivenImposter_Load_1);
+            this.Resize += new System.EventHandler(this.FormGPUDrivenImposter_Resize);
             this.ResumeLayout(false);
 
         }

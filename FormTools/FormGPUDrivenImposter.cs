@@ -1,8 +1,5 @@
-﻿using Camera3d;
-using Common;
-using Common.Abstractions;
+﻿using Common.Abstractions;
 using FastMath;
-using FormTools.Properties;
 using Geometry;
 using GlWindow;
 using GPUDriven;
@@ -13,36 +10,26 @@ using Renderer;
 using Shader;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
 using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Ui3d;
 using ZetaExt;
 
 namespace FormTools
 {
-    /// <summary>
-    /// 3D 렌더링을 수행하는 Windows Form 클래스
-    /// OpenGL을 사용하여 3D 그래픽스를 처리하며 IRenderer 인터페이스를 구현하여 렌더링 기능 제공
-    /// </summary>
-    public partial class FormImpostor : Form, GlControlerable
+    public partial class FormGPUDrivenImposter : Form, GlControlerable
     {
         readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
         readonly string ExE_PATH = Application.StartupPath;
 
-        // 시뮬레이션 및 렌더링 설정을 위한 상수
-        private const int RANDOM_SEED = 500;    // 시뮬레이션의 일관성을 위한 랜덤 시드값
-        private const float FAR_PLANE = 20000f; // 원거리 시야 제한 평면 거리
-        private const float NEAR_PLANE = 1f;    // 근거리 시야 제한 평면 거리
-
-        // 렌더링 관련 핵심 컴포넌트
-        private GlControl3 _glControl3;         // 3D 그래픽스 처리를 위한 OpenGL 컨트롤
-        private ColorShader _colorShader;       // 단색 객체 렌더링용 쉐이더
-        private ImpostorShader _impostorShader; // 임포스터 렌더링용 쉐이더
-        private UnlitShader _unlitShader;       // 비발광 객체 렌더링용 쉐이더
-
-        // 최적화 시스템
-        OcclusionCullingSystem _ocs;            // 가시성 컬링 시스템
-        ImpostorLODSystem _impostor;            // LOD 기반 임포스터 시스템
+        private GlControl3 _glControl3;                     // OpenGL 컨트롤
+        private ColorShader _colorShader;                   // 컬러 셰이더
+        private bool _isLoaded = false;                     // 로드 여부
 
         // UI 2D 관련 변수들
         private TextNamePlate _textNamePlate;               // 텍스트 네임플레이트
@@ -51,20 +38,20 @@ namespace FormTools
         private Text2d _titleText;                          // 타이틀 텍스트
         private Text2d _descText;                           // 설명 텍스트
         private Text2d _camPosText;                         // 카메라 위치 텍스트   
-        private Text2d _culledText;                         // 컬링된 노드 텍스트  
+        private Text2d _culledText;                         // 컬링된 노드 텍스트   
 
         // 3D 관련 변수들
         Model3dManager _model3DManager;                     // 3D 모델 매니저
         TexturedModel[] _treeModel;                         // 나무 모델 배열
-        GPUDriven.AABB _aabb;
+        GPUCullingRenderer _gpuDriven;
 
-        // 폼 생성자
-        public FormImpostor()
+
+        public FormGPUDrivenImposter()
         {
             InitializeComponent();
 
             // GL 생성
-            _glControl3 = new GlControl3("임포스터", Application.StartupPath, @"\fonts\fontList.txt", @"\Res\")
+            _glControl3 = new GlControl3("occlusion", Application.StartupPath, @"\fonts\fontList.txt", @"\Res\")
             {
                 Location = new System.Drawing.Point(0, 0),
                 Dock = DockStyle.Fill,
@@ -96,7 +83,10 @@ namespace FormTools
 
             // 로그 프로파일 초기화
             LogProfile.Create(PROJECT_PATH + "\\log.txt");
+        }
 
+        private void FormGPUDrivenImposter_Load(object sender, EventArgs e)
+        {
         }
 
         public void Init(int width, int height)
@@ -107,12 +97,7 @@ namespace FormTools
 
             // 쉐이더 초기화 및 셰이더 매니저에 추가
             ShaderManager.Instance.AddShader(new ColorShader(PROJECT_PATH));
-            ShaderManager.Instance.AddShader(new ImpostorShader(PROJECT_PATH));
-            ShaderManager.Instance.AddShader(new UnlitShader(PROJECT_PATH));
-
             _colorShader = ShaderManager.Instance.GetShader<ColorShader>();
-            _impostorShader = ShaderManager.Instance.GetShader<ImpostorShader>();
-            _unlitShader = ShaderManager.Instance.GetShader<UnlitShader>();
 
             // 앱 시작 시 한 번만 초기화
             Ui3d.BillboardShader.Initialize();
@@ -124,11 +109,11 @@ namespace FormTools
                 Text2d.TextAlignment.Center, heightInPixels: 20);
             _fpsText.Color = Color.Yellow;
 
-            _titleText = new Text2d("임포스터", 10, 10, width, height,
+            _titleText = new Text2d("GPU Driven", 10, 10, width, height,
                 Text2d.TextAlignment.Left, heightInPixels: 15);
             _titleText.Color = Color.Red;
 
-            _descText = new Text2d("1번키: 원점이동", 10, height, width, height,
+            _descText = new Text2d("1번키: ", 10, height, width, height,
                 Text2d.TextAlignment.TopLeft, heightInPixels: 15);
             _descText.Color = Color.LightGray;
 
@@ -144,38 +129,12 @@ namespace FormTools
             // 그리드셰이더 초기화
             _glControl3.InitGridShader(PROJECT_PATH);
 
-            // 임포스터 LOD 시스템 초기화
-            _impostor = new ImpostorLODSystem(20.0f);
-
-            // 3D 모델 매니저 초기화 및 나무 모델 로드
             _model3DManager = new Model3dManager(PROJECT_PATH, ExE_PATH + "\\nullTexture.jpg");
-            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm1.obj");
-            _treeModel = _model3DManager.GetModels("Palm1");
-            _impostor.CreateImpostorModel("Palm1", ImpostorSettings.CreateSettings(256, 16, 8),
-                _unlitShader, _treeModel);
+            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm4.obj");
+            _treeModel = _model3DManager.GetModels("Palm4");
 
-            
-            _aabb = new GPUDriven.AABB(new Vertex3f(float.MaxValue), new Vertex3f(float.MinValue));
-            for (int i = 0; i < _treeModel.Length; i++)
-            {
-                Vertex3f min = new Vertex3f(float.MaxValue);
-                Vertex3f max = new Vertex3f(float.MinValue);
-                Vertex3f[] vertices = _treeModel[i].Vertices;
-
-                for (int j = 0; j < vertices.Length; j++)
-                {
-                    Vertex3f pos = vertices[j];
-                    min = Vertex3f.Min(min, pos);
-                    max = Vertex3f.Max(max, pos);
-                }
-                _aabb.Min = Vertex3f.Min(_aabb.Min, min);
-                _aabb.Max = Vertex3f.Max(_aabb.Max, max);
-            }
-
-            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm5.obj");
-            _treeModel = _model3DManager.GetModels("Palm5");
-            _impostor.CreateImpostorModel("Palm5", ImpostorSettings.CreateSettings(256, 16, 8),
-                _unlitShader, _treeModel);
+            _gpuDriven = new GPUCullingRenderer();
+            _gpuDriven.Initialize(_treeModel, PROJECT_PATH);
 
             // UI 3D 텍스트 네임플레이트 초기화
             _textNamePlate = new TextNamePlate(_glControl3.Camera, "FPS");
@@ -196,8 +155,11 @@ namespace FormTools
             // 뷰 프러스텀 업데이트
             _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
 
+            _gpuDriven.Update(camera, _viewFrustum);
+            uint visibleCount = _gpuDriven.GetVisibleCountDebug();
+
             // 네임플레이트 업데이트            
-            _textNamePlate.Text = $"가시객체";
+            _textNamePlate.Text = $"가시객체{visibleCount}";
             _textNamePlate.WorldPosition = camera.Position + camera.Forward * 1f - camera.Right * 0.2f;
             _textNamePlate.Update(deltaTime);
 
@@ -206,6 +168,7 @@ namespace FormTools
             _culledText.Text = $"컬링된 노드";
             _camPosText.Text = $"카메라 위치 ({camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1})";
         }
+
 
         public void RenderFrame(double deltaTime, Vertex4f backcolor, Camera camera)
         {
@@ -219,37 +182,7 @@ namespace FormTools
             Gl.Viewport(0, 0, w, h);
             Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
 
-            Gl.Disable(EnableCap.Blend);
-
-            _impostorShader.Bind();
-            _impostorShader.LoadEnableEdgeLine(true);
-            _impostorShader.LoadVPMatrix(camera.VPMatrix);
-            _impostorShader.LoadCameraPosition(camera.Position);
-
-            ImpostorSettings settings = _impostor.GetImpostorSettings("Palm1");
-            Vertex2f atlasOffset = _impostor.GetAtlasOffset(settings, camera.Position, Matrix4x4f.Identity);
-            uint textureId = _impostor.AtlasTexture("Palm1");
-
-            _impostorShader.LoadImpostorAtlas(TextureUnit.Texture0, textureId);
-            _impostorShader.LoadAtlasOffset(atlasOffset);
-            _impostorShader.LoadWorldPosition(Vertex3f.Zero);
-            _impostorShader.LoadModelMatrix(Matrix4x4f.Identity);
-            _impostorShader.LoadAtlasSize(settings.AtlasSize);
-            _impostorShader.LoadIndividualSize(settings.IndividualSize);
-            _impostorShader.LoadAABBSizeModel(_aabb.SphereRadius);
-            _impostorShader.LoadAABBCenterEntity( _aabb.Center);
-
-            Gl.BindVertexArray(Renderer3d.Point.VAO);
-            Gl.EnableVertexAttribArray(0);
-            Gl.DrawArrays(PrimitiveType.Points, 0, 1);
-            Gl.DisableVertexAttribArray(0);
-            Gl.BindVertexArray(0);
-
-            _impostorShader.Unbind();
-
-            Gl.Enable(EnableCap.Blend);
-
-
+            _gpuDriven.Render(camera);
 
             // 2D 렌더링을 위한 상태 설정
             Gl.Disable(EnableCap.DepthTest);
@@ -271,11 +204,6 @@ namespace FormTools
             Gl.Disable(EnableCap.Blend);
             Renderer3d.RenderPoint(_colorShader, camera.PivotPosition, camera, new Vertex4f(1, 1, 0, 1), 0.02f);
             Gl.Enable(EnableCap.DepthTest);
-        }
-
-        public void Form_Load(object sender, EventArgs e)
-        {
-
         }
 
         public void KeyDownEvent(object sender, KeyEventArgs e)
@@ -307,13 +235,24 @@ namespace FormTools
             }
         }
 
-        private void FormImpostor_Resize(object sender, EventArgs e)
+        private void FormGPUDriven_Resize(object sender, EventArgs e)
         {
             int width = _glControl3.Width;
             int height = _glControl3.Height;
+
         }
 
-        private void FormImpostor_Load(object sender, EventArgs e)
+        public void Form_Load(object sender, EventArgs e)
+        {
+            MemoryProfiler.StartFrameMonitoring();
+        }
+
+        private void FormGPUDrivenImposter_Resize(object sender, EventArgs e)
+        {
+
+        }
+
+        private void FormGPUDrivenImposter_Load_1(object sender, EventArgs e)
         {
 
         }

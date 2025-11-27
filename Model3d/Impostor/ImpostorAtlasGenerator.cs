@@ -75,7 +75,7 @@ namespace Model3d
             // 렌더링한다.
             RenderAtlas(settings, shader, texturedModels, bounds);
 
-            // 디버깅
+            // 디버깅(지울것)
             GetImpostorTexture(settings, drawBorders: true).Save(@"C:\Users\mekjh\OneDrive\바탕 화면\" + modelname + ".png");
             GetImpostorDepthTexture(settings, drawBorders: true).Save(@"C:\Users\mekjh\OneDrive\바탕 화면\" + modelname + "_depth.png");
 
@@ -314,11 +314,7 @@ namespace Model3d
                     }
 
                     Gl.BindVertexArray(rawModel.VAO);
-                    Gl.EnableVertexAttribArray(0);
-                    Gl.EnableVertexAttribArray(1);
                     Gl.DrawArrays(PrimitiveType.Triangles, 0, rawModel.VertexCount);
-                    Gl.DisableVertexAttribArray(1);
-                    Gl.DisableVertexAttribArray(0);
                     Gl.BindVertexArray(0);
                 }
 
