@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using Model3d;
+using OpenGL;
 using System.Runtime.InteropServices;
 using ZetaExt;
 
@@ -32,6 +33,7 @@ namespace GPUDriven
 
         public float SphereRadius => MathF.Sqrt(SizeX * SizeX + SizeY * SizeY + SizeZ * SizeZ);
         // 크기: 32 bytes (GPU 정렬 맞춤)
+            
     }
 
     // Indirect Draw 파라미터

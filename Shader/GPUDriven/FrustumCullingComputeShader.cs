@@ -50,7 +50,7 @@ namespace Shader
 
         public void LoadLODDistance(float distance)
         {
-            Gl.Uniform1f(loc_lodDistance, 0, distance);
+            Gl.Uniform1(loc_lodDistance, distance);
         }
 
         protected override void BindAttributes()

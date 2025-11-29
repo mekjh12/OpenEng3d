@@ -11,17 +11,16 @@ using Shader;
 using System;
 using System.Drawing;
 using System.Windows.Forms;
-using Terrain;
 using Ui3d;
 using ZetaExt;
 
 namespace FormTools
 {
-    public partial class FormGPUDriven : Form, GlControlerable
+    public partial class FormGPUImposterInstance : Form
     {
         readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
         readonly string ExE_PATH = Application.StartupPath;
-        
+
         private GlControl3 _glControl3;                     // OpenGL 컨트롤
         private ColorShader _colorShader;                   // 컬러 셰이더
         private bool _isLoaded = false;                     // 로드 여부
@@ -37,16 +36,14 @@ namespace FormTools
 
         // 3D 관련 변수들
         Model3dManager _model3DManager;                     // 3D 모델 매니저
-        TexturedModel[] _treeModel;                         // 나무 모델 배열
-        GPUCullingRenderer _gpuDriven;  
+        GPUCullingRenderer _gpuDriven;
 
-        public FormGPUDriven()
+        public FormGPUImposterInstance()
         {
-            // 폼 초기화
             InitializeComponent();
 
             // GL 생성
-            _glControl3 = new GlControl3("gpuDriven", Application.StartupPath, @"\fonts\fontList.txt", @"\Res\");
+            _glControl3 = new GlControl3("GPU Driven(임포스터1개 인스턴스 테스트)", Application.StartupPath, @"\fonts\fontList.txt", @"\Res\");
             _glControl3.Init += (w, h) => Init(w, h);
             _glControl3.Init3d += (w, h) => Init3d(w, h);
             _glControl3.Init2d += (w, h) => Init2d(w, h);
@@ -67,17 +64,11 @@ namespace FormTools
             LogProfile.Create(PROJECT_PATH + "\\log.txt");
         }
 
-        public void Form_Load(object sender, EventArgs e)
+        private void FormGPUImposterInstance_Load(object sender, EventArgs e)
         {
-            this.ClientSize = new Size(1008, 729);
-            this.Location = new Point(100, 100);
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
-            this.StartPosition = FormStartPosition.Manual;
-            this.Resize += new EventHandler(this.FormGPUDriven_Resize);
 
-            MemoryProfiler.StartFrameMonitoring();
         }
+
 
         public void Init(int width, int height)
         {
@@ -119,15 +110,12 @@ namespace FormTools
             // 그리드셰이더 초기화
             _glControl3.InitGridShader(PROJECT_PATH);
 
-            // 3D 모델 매니저 및 모델 로드
             _model3DManager = new Model3dManager(PROJECT_PATH, ExE_PATH + "\\nullTexture.jpg");
-            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm6.obj");
-            _treeModel = _model3DManager.GetModels("Palm6");
+            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Ancient_Houses.obj");
 
-            // GPU 드리븐 렌더러 초기화
             _gpuDriven = new GPUCullingRenderer(PROJECT_PATH);
-            _gpuDriven.Initialize("Palm6", _treeModel);
-                       
+            _gpuDriven.Initialize("Ancient_Houses", _model3DManager.GetModels("Ancient_Houses"));
+
             // UI 3D 텍스트 네임플레이트 초기화
             _textNamePlate = new TextNamePlate(_glControl3.Camera, "FPS");
             _textNamePlate.Height = 0.35f;
@@ -150,7 +138,7 @@ namespace FormTools
             _gpuDriven.Update(camera, _viewFrustum);
             uint visibleCount = _gpuDriven.GetVisibleCountDebug();
 
-            // 네임플레이트 업데이트            
+            // 네임플레이트 업데이트
             _textNamePlate.Text = $"가시객체{visibleCount}";
             _textNamePlate.WorldPosition = camera.Position + camera.Forward * 1f - camera.Right * 0.2f;
             _textNamePlate.Update(deltaTime);
@@ -227,11 +215,10 @@ namespace FormTools
             }
         }
 
-        private void FormGPUDriven_Resize(object sender, EventArgs e)
+        public void Form_Load(object sender, EventArgs e)
         {
-            int width = _glControl3.Width;
-            int height = _glControl3.Height;
-
+            MemoryProfiler.StartFrameMonitoring();
         }
+
     }
 }

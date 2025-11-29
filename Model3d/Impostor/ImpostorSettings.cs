@@ -80,7 +80,7 @@
                 IndividualSize = 64,        // 64x64 개별 뷰
                 HorizontalAngles = 8,       // 45도 간격으로 8방향
                 VerticalAngles = 4,         // 4개의 수직 각도
-                VerticalAngleMin = 0,       // 최하단 각도
+                VerticalAngleMin = -88,       // 최하단 각도
                 VerticalAngleMax = 88       // 최상단 각도
             };
         }
@@ -93,7 +93,7 @@
                 IndividualSize = individualSize,
                 HorizontalAngles = horizontalAngles,
                 VerticalAngles = verticalAngles,
-                VerticalAngleMin = -30,               // 최하단 각도
+                VerticalAngleMin = -88,               // 최하단 각도
                 VerticalAngleMax = 88               // 최상단 각도
             };
         }

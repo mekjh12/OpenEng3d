@@ -9,25 +9,11 @@ struct AABB {
 };
 
 // SSBO (binding 5 제거!)
-layout(std430, binding = 0) buffer AABBBuffer {
-    AABB aabbs[];
-};
-
-layout(std430, binding = 1) buffer VisibleIndicesBuffer_LOD0 {
-    int visibleIndices_LOD0[];
-};
-
-layout(std430, binding = 2) buffer CounterBuffer_LOD0 {
-    uint visibleCount_LOD0;
-};
-
-layout(std430, binding = 3) buffer VisibleIndicesBuffer_LOD1 {
-    int visibleIndices_LOD1[];
-};
-
-layout(std430, binding = 4) buffer CounterBuffer_LOD1 {
-    uint visibleCount_LOD1;
-};
+layout(std430, binding = 0) buffer AABBBuffer { AABB aabbs[];};
+layout(std430, binding = 1) buffer VisibleIndicesBuffer_LOD0 { int visibleIndices_LOD0[];};
+layout(std430, binding = 2) buffer CounterBuffer_LOD0 { uint visibleCount_LOD0;};
+layout(std430, binding = 3) buffer VisibleIndicesBuffer_LOD1 { int visibleIndices_LOD1[];};
+layout(std430, binding = 4) buffer CounterBuffer_LOD1 { uint visibleCount_LOD1;};
 
 // 유니폼
 uniform vec4 uFrustumPlanes[6];
@@ -68,7 +54,7 @@ void main()
         float distance = length(uCameraPosition - center);
         
         // LOD 선택 (거리 기반)
-        if (distance < 100)
+        if (distance < uLODDistance)
         {
             // LOD0: 전체 메시
             uint slot = atomicAdd(visibleCount_LOD0, 1);

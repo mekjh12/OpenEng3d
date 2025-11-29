@@ -110,6 +110,12 @@
     <Compile Include="FormGPUDrivenImposter.Designer.cs">
       <DependentUpon>FormGPUDrivenImposter.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormGPUImposterInstance.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormGPUImposterInstance.Designer.cs">
+      <DependentUpon>FormGPUImposterInstance.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormHZBuffer.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -208,6 +214,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormGPUDrivenImposter.resx">
       <DependentUpon>FormGPUDrivenImposter.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormGPUImposterInstance.resx">
+      <DependentUpon>FormGPUImposterInstance.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormHZBuffer.resx">
       <DependentUpon>FormHZBuffer.cs</DependentUpon>

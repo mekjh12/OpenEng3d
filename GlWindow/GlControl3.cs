@@ -21,7 +21,7 @@ namespace GlWindow
     public class GlControl3 : GlControl
     {
         private const string SHADER_UI2D_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\UIDesign2d\Shader\";
-        private string _name = "glcontrol";
+        private string _formName = "glcontrol";
 
         private uint _tick = 0;
 
@@ -74,7 +74,7 @@ namespace GlWindow
         private string _RootPath = "";
 
         private bool _isMouseVisible = true;
-        private bool _isVisibleGrid = false;
+        private bool _isVisibleGrid = true;
         private bool _isVisibleUi2d = true;
         private string _helpText = "<HELP><br>";
 
@@ -230,20 +230,26 @@ namespace GlWindow
         /// <param name="fontResourceFileName">실행파일에서의 폰트리소트 상대경로(파일리스트+폰트)</param>
         /// <param name="ui2dResourcePath">UI2d를 위한 리소스 상대경로</param>
         /// <param name="colorShader">ColorShader</param>
-        public GlControl3(string name, string rootPath, string fontResourceFileName, string ui2dResourcePath, bool mouseUsed = false)
+        public GlControl3(string name, string rootPath, string fontResourceFileName, string ui2dResourcePath, 
+            bool winMouseUsed = false, bool isEnableMouse = true)
         {
-            _name = name;
+            // GL컨트롤 기본설정
+            Location = new Point(0, 0);
+            Dock = DockStyle.Fill;
+
+            // 이름 설정
+            _formName = name;
 
             // 경로를 설정한다.
             _RootPath = rootPath;
             _FontResourceFileName = rootPath + fontResourceFileName;
             _Ui2dResourcePath = rootPath + ui2dResourcePath;
             IniFile.s_PATH_ROOT = rootPath;
-            IniFile.SetFileName($"setup_{_name}.ini");
+            IniFile.SetFileName($"setup_{_formName}.ini");
 
             // system-mouse setup
-            ShowCursor(mouseUsed);
-            UIEngine.EnableMouse = mouseUsed;
+            ShowCursor(winMouseUsed);
+            UIEngine.EnableMouse = isEnableMouse;
 
             // setup
             Animation = true;

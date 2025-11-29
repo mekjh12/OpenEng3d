@@ -9,13 +9,7 @@ using OpenGL;
 using Renderer;
 using Shader;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using Ui3d;
 using ZetaExt;
@@ -42,7 +36,6 @@ namespace FormTools
 
         // 3D 관련 변수들
         Model3dManager _model3DManager;                     // 3D 모델 매니저
-        TexturedModel[] _treeModel;                         // 나무 모델 배열
         GPUCullingRenderer _gpuDriven;
 
 
@@ -51,17 +44,7 @@ namespace FormTools
             InitializeComponent();
 
             // GL 생성
-            _glControl3 = new GlControl3("occlusion", Application.StartupPath, @"\fonts\fontList.txt", @"\Res\")
-            {
-                Location = new System.Drawing.Point(0, 0),
-                Dock = DockStyle.Fill,
-                IsVisibleGrid = true,
-                PolygonMode = PolygonMode.Fill,
-                BackClearColor = new Vertex3f(0, 0, 0),
-                IsVisibleUi2d = true,
-            };
-
-            // GL 이벤트 연결
+            _glControl3 = new GlControl3("GPU Driven(임포스트 인스턴스)", Application.StartupPath, @"\fonts\fontList.txt", @"\Res\");
             _glControl3.Init += (w, h) => Init(w, h);
             _glControl3.Init3d += (w, h) => Init3d(w, h);
             _glControl3.Init2d += (w, h) => Init2d(w, h);
@@ -72,10 +55,7 @@ namespace FormTools
             _glControl3.KeyDown += (s, e) => KeyDownEvent(s, e);
             _glControl3.KeyUp += (s, e) => KeyUpEvent(s, e);
             _glControl3.Load += (s, e) => Form_Load(s, e);
-
-            // GL 컨트롤 시작
             _glControl3.Start();
-            _glControl3.SetVisibleMouse(true);
             Controls.Add(_glControl3);
 
             // 파일 해시 매니저 초기화
@@ -83,10 +63,6 @@ namespace FormTools
 
             // 로그 프로파일 초기화
             LogProfile.Create(PROJECT_PATH + "\\log.txt");
-        }
-
-        private void FormGPUDrivenImposter_Load(object sender, EventArgs e)
-        {
         }
 
         public void Init(int width, int height)
@@ -131,10 +107,9 @@ namespace FormTools
 
             _model3DManager = new Model3dManager(PROJECT_PATH, ExE_PATH + "\\nullTexture.jpg");
             _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm4.obj");
-            _treeModel = _model3DManager.GetModels("Palm4");
 
-            _gpuDriven = new GPUCullingRenderer();
-            _gpuDriven.Initialize(_treeModel, PROJECT_PATH);
+            _gpuDriven = new GPUCullingRenderer(PROJECT_PATH);
+            _gpuDriven.Initialize("Palm4", _model3DManager.GetModels("Palm4"));
 
             // UI 3D 텍스트 네임플레이트 초기화
             _textNamePlate = new TextNamePlate(_glControl3.Camera, "FPS");
@@ -158,7 +133,7 @@ namespace FormTools
             _gpuDriven.Update(camera, _viewFrustum);
             uint visibleCount = _gpuDriven.GetVisibleCountDebug();
 
-            // 네임플레이트 업데이트            
+            // 네임플레이트 업데이트
             _textNamePlate.Text = $"가시객체{visibleCount}";
             _textNamePlate.WorldPosition = camera.Position + camera.Forward * 1f - camera.Right * 0.2f;
             _textNamePlate.Update(deltaTime);
@@ -252,7 +227,7 @@ namespace FormTools
 
         }
 
-        private void FormGPUDrivenImposter_Load_1(object sender, EventArgs e)
+        private void FormGPUDrivenImposter_Load(object sender, EventArgs e)
         {
 
         }

@@ -41,8 +41,7 @@
             this.Name = "FormGPUDrivenImposter";
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "GPU Driven with Imposter";
-            this.Load += new System.EventHandler(this.FormGPUDrivenImposter_Load_1);
-            this.Resize += new System.EventHandler(this.FormGPUDrivenImposter_Resize);
+            this.Load += new System.EventHandler(this.FormGPUDrivenImposter_Load);
             this.ResumeLayout(false);
 
         }

@@ -13,9 +13,10 @@ namespace FormTools
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            //Application.Run(new FormImpostor());                    // 작동됨
-            Application.Run(new FormGPUDriven());                 // 작동됨
-            //Application.Run(new FormGPUDrivenImposter());                 // 작동됨
+            //Application.Run(new FormImpostor());                  // 작동됨
+            //Application.Run(new FormGPUDriven());                 // 작동됨
+            Application.Run(new FormGPUDrivenImposter());           // 작동됨
+            //Application.Run(new FormGPUImposterInstance());           // 작동됨
             //Application.Run(new FormOcclusionOpt());              // 작동됨
             //Application.Run(new FormQuadTree());                  // 작동됨
             //Application.Run(new FormCulling());                   // 작동됨

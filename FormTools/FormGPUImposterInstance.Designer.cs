@@ -1,6 +1,6 @@
 ﻿namespace FormTools
 {
-    partial class FormGPUDriven
+    partial class FormGPUImposterInstance
     {
         /// <summary>
         /// Required designer variable.
@@ -30,12 +30,14 @@
         {
             this.SuspendLayout();
             // 
-            // FormGPUDriven
+            // FormGPUImposterInstance
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Name = "FormGPUDriven";
-            this.Text = "GPU Driven";
+            this.ClientSize = new System.Drawing.Size(798, 525);
+            this.Name = "FormGPUImposterInstance";
+            this.Text = "FormGPUImposterInstance";
+            this.Load += new System.EventHandler(this.FormGPUImposterInstance_Load);
             this.ResumeLayout(false);
 
         }

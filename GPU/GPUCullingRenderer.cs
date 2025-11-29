@@ -14,6 +14,9 @@ namespace GPUDriven
         private const int MAX_INSTANCES = 90000;
         private const float LOD_DISTANCE = 100f;
 
+        private string _projPath;
+        private string _modelName;
+
         // 빌보드 크기 (고정값으로 간단하게!)
         private float BILLBOARD_WIDTH = 8f;
         private float BILLBOARD_HEIGHT = 12f;
@@ -30,19 +33,13 @@ namespace GPUDriven
         private uint _aabbSSBO;
         private uint _visibleIndicesSSBO;
         private uint _counterSSBO;
-        private uint[] _indirectBuffers;  // LOD0 파트별
+        private uint[] _indirectBuffers;        // LOD0 파트별
+        private bool _isVisibleLod0 = true;     // LOD0 렌더링 여부
 
         // LOD1용 SSBO
         private uint _visibleIndicesSSBO_LOD1;
         private uint _counterSSBO_LOD1;
         private uint _indirectBuffer_LOD1;
-
-        // 빌보드 메시
-        private uint _billboardVAO;
-        private uint _billboardVBO;
-        private uint _billboardVertexCount;
-        private uint _billboardTextureID;
-        private bool _isBillboard = true;
 
         // 데이터
         private Matrix4x4f[] _transforms;
@@ -55,55 +52,44 @@ namespace GPUDriven
         private UnlitShader _unlitShader;
 
         // 임포스터 관련
-        private ImpostorShader _impostorShader;             // 임포스터 렌더링용 쉐이더
-        ImpostorLODSystem _impostor;                        // LOD 기반 임포스터 시스템
+        private ImpostorInstancedShader _impostorInstancedShader;
+        private ImpostorShader _impostorShader;     // 임포스터 렌더링용 쉐이더
+        private ImpostorLODSystem _impostor;        // LOD 기반 임포스터 시스템
+        public BaseModel3d _point = Loader3d.LoadPoint(0, 0, 0);
+        private AABB _modelAABB;
 
         // 성능 모니터링
         private int _frameCount = 0;
         private uint _lastVisibleCount = 0;
         private uint _lastVisibleLOD1 = 0;
+        private Stopwatch _computeTimer;
 
-        private Stopwatch _computeTimer = new Stopwatch();
-
-        AABB _modelUnionAABB;
-
-
-        public GPUCullingRenderer()
+        public GPUCullingRenderer(string projPath)
         {
             _transforms = new Matrix4x4f[MAX_INSTANCES];
             _aabbs = new AABB[MAX_INSTANCES];
+            _projPath = projPath;
+            _computeTimer = new Stopwatch();
         }
 
-        public void Initialize(TexturedModel[] treeModel, string projPath)
+        public void Initialize(string modelName, TexturedModel[] treeModel)
         {
+            _modelName = modelName;
             _treeModel = treeModel;
+
             SetupMeshVAO();
-            CreateBillboardMesh();
 
-            // 메시들의 합집합 AABB 계산(메시를 셋업한 후 실행해야 함)
-            _modelUnionAABB = new AABB(new Vertex3f(float.MaxValue), new Vertex3f(float.MinValue));
-            for (int i = 0; i < _treeModel.Length; i++)
-            {
-                AABB b = CalculateLocalAABB(_treeModel[i]);
-                _modelUnionAABB.Min = Vertex3f.Min(_modelUnionAABB.Min, b.Min);
-                _modelUnionAABB.Max = Vertex3f.Max(_modelUnionAABB.Max, b.Max);
-            }
-
-            BILLBOARD_SIZE = new Vertex2f(_modelUnionAABB.SizeX, _modelUnionAABB.SizeZ);
-
+            CalculateAABB(_treeModel, ref _modelAABB);
+            BILLBOARD_SIZE = new Vertex2f(_modelAABB.SizeX, _modelAABB.SizeZ);
 
             GenerateInstancePositions();
             CreateSSBOs();  // BillboardSize SSBO 제거!
-            LoadShaders(projPath);
+            LoadShaders(_projPath);
             UploadToGPU();
 
-            // 빌보드 텍스처
-            Texture texture = new Texture(projPath + @"\Res\T_beech_tree_billboard.png");
-            _billboardTextureID = texture.TextureID;
-
             // 임포스터 시스템 초기화
-            _impostor = new ImpostorLODSystem(200);
-            _impostor.CreateImpostorModel("Palm4", ImpostorSettings.CreateSettings(256, 16, 8), _unlitShader, _treeModel);
+            _impostor = new ImpostorLODSystem(LOD_DISTANCE);
+            _impostor.CreateImpostorModel(modelName, ImpostorSettings.CreateSettings(256, 16, 8), _unlitShader, _treeModel);
 
             Console.WriteLine("=== GPU Culling Renderer Initialized (Simplified) ===");
             Console.WriteLine($"Instances: {MAX_INSTANCES}");
@@ -111,43 +97,32 @@ namespace GPUDriven
             Console.WriteLine($"Vertices per instance: {_vertexCount}");
         }
 
-        private void CreateBillboardMesh()
+        private void CalculateAABB(TexturedModel[] models, ref AABB aabb)
         {
-            // 단순한 쿼드 메시 (2개 삼각형)
-            float[] vertices = new float[]
+            // 메시들의 합집합 AABB 계산(메시를 셋업한 후 실행해야 함)
+            aabb = new AABB(new Vertex3f(float.MaxValue), new Vertex3f(float.MinValue));
+            for (int i = 0; i < _treeModel.Length; i++)
             {
-                // Position (3) + TexCoord (2)
-                -0.5f, -0.0f, 0.0f,   0.0f, 1.0f,  // 좌하
-                 0.5f, -0.0f, 0.0f,   1.0f, 1.0f,  // 우하
-                 0.5f,  1.0f, 0.0f,   1.0f, 0.0f,  // 우상
-                -0.5f, -0.0f, 0.0f,   0.0f, 1.0f,  // 좌하
-                 0.5f,  1.0f, 0.0f,   1.0f, 0.0f,  // 우상
-                -0.5f,  1.0f, 0.0f,   0.0f, 0.0f,  // 좌상
-            };
+                AABB b = CalculateAABB(_treeModel[i]);
+                aabb.Min = Vertex3f.Min(aabb.Min, b.Min);
+                aabb.Max = Vertex3f.Max(aabb.Max, b.Max);
+            }
+        }
 
-            _billboardVertexCount = 6;
-            _billboardVAO = Gl.GenVertexArray();
-            Gl.BindVertexArray(_billboardVAO);
+        private AABB CalculateAABB(TexturedModel model)
+        {
+            Vertex3f min = new Vertex3f(float.MaxValue);
+            Vertex3f max = new Vertex3f(float.MinValue);
+            Vertex3f[] vertices = model.Vertices;
 
-            _billboardVBO = Gl.GenBuffer();
-            Gl.BindBuffer(BufferTarget.ArrayBuffer, _billboardVBO);
-            fixed (float* ptr = vertices)
+            for (int i = 0; i < vertices.Length; i++)
             {
-                Gl.BufferData(BufferTarget.ArrayBuffer,
-                    (uint)(vertices.Length * sizeof(float)),
-                    (IntPtr)ptr,
-                    BufferUsage.StaticDraw);
+                Vertex3f pos = vertices[i];
+                min = Vertex3f.Min(min, pos);
+                max = Vertex3f.Max(max, pos);
             }
 
-            // Position
-            Gl.EnableVertexAttribArray(0);
-            Gl.VertexAttribPointer(0, 3, VertexAttribType.Float, false, 5 * sizeof(float), (IntPtr)0);
-
-            // TexCoord
-            Gl.EnableVertexAttribArray(1);
-            Gl.VertexAttribPointer(1, 2, VertexAttribType.Float, false, 5 * sizeof(float), (IntPtr)(3 * sizeof(float)));
-
-            Gl.BindVertexArray(0);
+            return new AABB(min, max);
         }
 
         private void LoadShaders(string projPath)
@@ -157,6 +132,7 @@ namespace GPUDriven
             _billboardShader = new GPUBillboardShader(projPath);
             _impostorShader = new ImpostorShader(projPath);
             _unlitShader = new UnlitShader(projPath);
+            _impostorInstancedShader = new ImpostorInstancedShader(projPath);  // 새로 추가!
         }
 
         private void SetupMeshVAO()
@@ -174,7 +150,7 @@ namespace GPUDriven
         private void GenerateInstancePositions()
         {
             int gridSize = 300; // 300x300 = 90000
-            float spacing = 15f;
+            float spacing = 20f;
             Random rand = new Random(42);
 
             for (int i = 0; i < MAX_INSTANCES; i++)
@@ -191,7 +167,7 @@ namespace GPUDriven
                 float rotZ = (float)(rand.NextDouble() * Math.PI * 2);
 
                 // 스케일
-                float scale = 0.8f + (float)(rand.NextDouble() * 0.4);
+                float scale = 0.99f + (float)(rand.NextDouble() * 0.01f);
 
                 // 변환 행렬
                 _transforms[i] = Matrix4x4f.Translated(posX, posY, posZ) *
@@ -199,7 +175,7 @@ namespace GPUDriven
                                 Matrix4x4f.Scaled(scale, scale, scale);
 
                 // 월드 공간 AABB
-                _aabbs[i] = TransformAABB(_modelUnionAABB, _transforms[i]);
+                _aabbs[i] = TransformAABB(_modelAABB, _transforms[i]);
             }
 
             Console.WriteLine($"Generated {MAX_INSTANCES} tree instances");
@@ -240,12 +216,13 @@ namespace GPUDriven
 
             // 7. Indirect Buffers 업데이트
 
-            // Update
+            // 8. Update
             for (int i = 0; i < _treeModel.Length; i++)
             {
                 UpdateIndirectBuffer(_indirectBuffers[i], _counterSSBO, _vertexCount[i]);
             }
-            UpdateIndirectBuffer(_indirectBuffer_LOD1, _counterSSBO_LOD1, _billboardVertexCount);
+            
+            UpdateIndirectBuffer(_indirectBuffer_LOD1, _counterSSBO_LOD1, 6);
 
             _frameCount++;
         }
@@ -267,7 +244,7 @@ namespace GPUDriven
                 Console.Write($"{indices[i]}, ");
 
                 // 범위 체크
-                if (indices[i] < 0 || indices[i] >= 90000)
+                if (indices[i] < 0 || indices[i] >= MAX_INSTANCES)
                 {
                     Console.WriteLine($"\n⚠️ [{i}] = {indices[i]} ← 잘못된 인덱스!");
                 }
@@ -319,77 +296,82 @@ namespace GPUDriven
         public void Render(Camera camera)
         {
             // ===== 명시적으로 상태 초기화 =====
-            Gl.Disable(EnableCap.Blend);  // 블렌딩 끄고 시작!
+            Gl.Disable(EnableCap.Blend);
             Gl.Enable(EnableCap.DepthTest);
             Gl.DepthFunc(DepthFunction.Less);
             Gl.DepthMask(true);
-            Gl.Enable(EnableCap.CullFace);  // 컬링도 켜기
+            Gl.Enable(EnableCap.CullFace);
 
             // ===== 중요: Compute Shader 완료 대기 =====
             Gl.MemoryBarrier(MemoryBarrierMask.AllBarrierBits);
 
             // ===== LOD0: Tree Mesh =====
-            _instancedShader.Bind();
-            _instancedShader.LoadVPMatrix(camera.VPMatrix);
-            
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO);
-
-            // Render
-            for (int i = 0; i < _treeModel.Length; i++)
+            if (_isVisibleLod0)
             {
-                _instancedShader.LoadTexture(TextureUnit.Texture0, _treeModel[i].Texture.TextureID);
-                Gl.BindVertexArray(_vao[i]);
-                Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectBuffers[i]);
-                Gl.DrawArraysIndirect(PrimitiveType.Triangles, IntPtr.Zero);
-            }
-
-            if (_isBillboard)
-            {
-                // ===== LOD1: Billboard =====
-                Gl.DepthMask(true);  // Depth 쓰기 비활성화
-
-                _billboardShader.Bind();
-                _billboardShader.LoadVPMatrix(camera.VPMatrix);
-                _billboardShader.LoadBillboardSize(BILLBOARD_SIZE);
-                _billboardShader.LoadCameraVectors(camera.Position, camera.Right, camera.Up);
-                _billboardShader.LoadTexture(TextureUnit.Texture0, _billboardTextureID);
-
+                _instancedShader.Bind();
+                _instancedShader.LoadVPMatrix(camera.VPMatrix);
                 Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
-                Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD1);
+                Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO);
 
-                Gl.BindVertexArray(_billboardVAO);
-                Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectBuffer_LOD1);
-                Gl.DrawArraysIndirect(PrimitiveType.Triangles, IntPtr.Zero);
-
-                // ===== 해제 =====
-                Gl.Disable(EnableCap.PolygonOffsetFill);
-                Gl.DepthFunc(DepthFunction.Less);  // 원래대로
-                Gl.DepthMask(true);
-                Gl.Disable(EnableCap.Blend);
+                for (int i = 0; i < _treeModel.Length; i++)
+                {
+                    if (_treeModel[i].Texture!=null)
+                    {
+                        _instancedShader.LoadTexture(TextureUnit.Texture0, _treeModel[i].Texture.TextureID);
+                    }
+                    Gl.BindVertexArray(_vao[i]);
+                    Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectBuffers[i]);
+                    Gl.DrawArraysIndirect(PrimitiveType.Triangles, IntPtr.Zero);
+                }
+                _instancedShader.Unbind();
             }
+
+            // ===== LOD1: Impostor (Instanced) =====
+            Gl.Disable(EnableCap.Blend);
+            _impostorInstancedShader.Bind();
+            _impostorInstancedShader.LoadEnableEdgeLine(false);
+            _impostorInstancedShader.LoadVPMatrix(camera.VPMatrix);
+            _impostorInstancedShader.LoadCameraPosition(camera.Position);
+
+            ImpostorSettings settings = _impostor.GetImpostorSettings(_modelName);
+            uint textureId = _impostor.AtlasTexture(_modelName);
+
+            // ===== 여기가 핵심 수정 부분! =====
+            // Atlas offset 계산 제거 - Geometry Shader에서 자동 계산됨
+            // Vertex2f atlasOffset = _impostor.GetAtlasOffset(settings, camera.Position, Matrix4x4f.Identity);
+
+            _impostorInstancedShader.LoadImpostorAtlas(TextureUnit.Texture0, textureId);
+            _impostorInstancedShader.LoadAtlasSize(settings.AtlasSize);
+            _impostorInstancedShader.LoadIndividualSize(settings.IndividualSize);
+
+            // 프레임 수 전달 (수정됨: HorizontalAngles, VerticalAngles 사용)
+            _impostorInstancedShader.LoadHorizontalFrames(settings.HorizontalAngles);
+            _impostorInstancedShader.LoadVerticalFrames(settings.VerticalAngles);
+
+            _impostorInstancedShader.LoadAABBSizeModel(_modelAABB.SphereRadius);
+            _impostorInstancedShader.LoadAABBCenterEntity(_modelAABB.Center);
+
+            // SSBO 바인딩
+            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
+            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD1);
+
+            Gl.BindVertexArray(_point.VAO);
+            Gl.EnableVertexAttribArray(0);
+
+            // Indirect Drawing으로 인스턴싱
+            Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectBuffer_LOD1);
+            Gl.DrawArraysIndirect(PrimitiveType.Points, IntPtr.Zero);
+
+            Gl.DisableVertexAttribArray(0);
+            Gl.BindVertexArray(0);
+            _impostorInstancedShader.Unbind();
+
+            Gl.Enable(EnableCap.Blend);
 
             // ===== 상태 복원 =====
             Gl.DepthMask(true);
             Gl.Disable(EnableCap.Blend);
             Gl.BindVertexArray(0);
-
-        }
-
-        private AABB CalculateLocalAABB(TexturedModel model)
-        {
-            Vertex3f min = new Vertex3f(float.MaxValue);
-            Vertex3f max = new Vertex3f(float.MinValue);
-            Vertex3f[] vertices = model.Vertices;
-
-            for (int i = 0; i < vertices.Length; i++)
-            {
-                Vertex3f pos = vertices[i];
-                min = Vertex3f.Min(min, pos);
-                max = Vertex3f.Max(max, pos);
-            }
-
-            return new AABB(min, max);
         }
 
         private AABB TransformAABB(AABB local, Matrix4x4f transform)
@@ -499,8 +481,6 @@ namespace GPUDriven
             Gl.DeleteBuffers(_visibleIndicesSSBO_LOD1);
             Gl.DeleteBuffers(_counterSSBO_LOD1);
             Gl.DeleteBuffers(_indirectBuffer_LOD1);
-            Gl.DeleteBuffers(_billboardVBO);
-            Gl.DeleteVertexArrays(_billboardVAO);
 
             Console.WriteLine("GPU Culling Renderer disposed");
         }

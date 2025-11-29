@@ -144,7 +144,7 @@ namespace Model3d
                     };
 
                     // 구면 좌표계를 사용하여 카메라 위치 계산
-                    float theta = horizontalAngle.ToRadian(); // 방위각 (xY 평면에서의 각도)
+                    float theta = horizontalAngle.ToRadian(); // 방위각 (XY 평면에서의 각도)
                     float phi = (90 - verticalAngle).ToRadian(); // 극각 (Z축으로부터의 각도)
                     float r = radius * 4.0f; // 카메라 거리
 

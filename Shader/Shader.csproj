@@ -83,6 +83,7 @@
     <Compile Include="GPUDriven\FrustumCullingComputeShader.cs" />
     <Compile Include="GPUDriven\GPUBillboardShader.cs" />
     <Compile Include="GPUDriven\GPUInstancedShader.cs" />
+    <Compile Include="ImpostorShader\ImpostorInstancedShader.cs" />
     <Compile Include="InstancedShader\InstancedDepthShader.cs" />
     <Compile Include="InstancedShader\InstancedShader.cs" />
     <Compile Include="ShaderManager.cs" />
@@ -146,6 +147,9 @@
     <None Include="GPUDriven\instanced.frag" />
     <None Include="GPUDriven\instanced.vert" />
     <None Include="GPUDriven\frustum_culling.comp" />
+    <None Include="ImpostorShader\impostor_instanced.vert" />
+    <None Include="ImpostorShader\impostor_instanced.gem.glsl" />
+    <None Include="ImpostorShader\impostor_instanced.frag" />
     <None Include="includes\lib_terrain_normal.glsl" />
     <None Include="includes\lib_terrain_height_sampling.glsl" />
     <None Include="includes\lib_vegetation.glsl" />
