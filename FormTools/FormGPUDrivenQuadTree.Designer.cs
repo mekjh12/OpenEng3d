@@ -1,6 +1,6 @@
 ﻿namespace FormTools
 {
-    partial class FormGPUDriven
+    partial class FormGPUDrivenQuadTree
     {
         /// <summary>
         /// Required designer variable.
@@ -30,14 +30,14 @@
         {
             this.SuspendLayout();
             // 
-            // FormGPUDriven
+            // FormGPUDrivenQuadTree
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(574, 356);
-            this.Name = "FormGPUDriven";
-            this.Text = "GPU Driven";
-            this.Load += new System.EventHandler(this.FormGPUDriven_Load);
+            this.ClientSize = new System.Drawing.Size(538, 354);
+            this.Name = "FormGPUDrivenQuadTree";
+            this.Text = "FormGPUDrivenQuadTree";
+            this.Load += new System.EventHandler(this.FormGPUDrivenQuadTree_Load);
             this.ResumeLayout(false);
 
         }

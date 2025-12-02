@@ -75,6 +75,8 @@
     <Compile Include="BVH\Sphere.cs" />
     <Compile Include="QuadTree\QuadNode.cs" />
     <Compile Include="QuadTree\QuadTree3f.cs" />
+    <Compile Include="QuadTree\QuadTreeEx.cs" />
+    <Compile Include="QuadTree\QuadTreeGPUBuffers.cs" />
     <Compile Include="QuadTree\WorldObject.cs" />
     <Compile Include="TerrainOccluder3.cs" />
     <Compile Include="TreeBalanceInfo.cs" />

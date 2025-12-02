@@ -12,7 +12,7 @@ namespace GPUDriven
     public unsafe class GPUCullingRenderer : IDisposable
     {
         private const int MAX_INSTANCES = 90000;
-        private const float LOD_DISTANCE = 100f;
+        private const float LOD_DISTANCE = 300f;
 
         private string _projPath;
         private string _modelName;

@@ -17,14 +17,16 @@ using ZetaExt;
 
 namespace FormTools
 {
-    public partial class FormGPUDriven : Form, GlControlerable
+    public partial class FormGPUDriveHiZ : Form, GlControlerable
     {
         readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
-        readonly string ExE_PATH = Application.StartupPath;
-        
+        readonly string EXE_PATH = Application.StartupPath;
+
         private GlControl3 _glControl3;                     // OpenGL 컨트롤
         private ColorShader _colorShader;                   // 컬러 셰이더
+        private HzmDepthShader _hzmDepthShader;             // HZM 깊이 셰이더
         private bool _isLoaded = false;                     // 로드 여부
+        private bool _isStarted = false;                    // 시작 여부
 
         // UI 2D 관련 변수들
         private TextNamePlate _textNamePlate;               // 텍스트 네임플레이트
@@ -38,11 +40,16 @@ namespace FormTools
         // 3D 관련 변수들
         Model3dManager _model3DManager;                     // 3D 모델 매니저
         TexturedModel[] _treeModel;                         // 나무 모델 배열
-        GPUCullingRenderer _gpuDriven;  
+        GPUCullingRenderer _gpuDriven;
+        HierarchyZBuffer _hzbuffer;                         // 계층적 GPU Z 버퍼
+        TerrainRegion _terrainRegion;                       // 지형 영역
 
-        public FormGPUDriven()
+        // Z 버퍼 관련 변수들
+        int _level = 0;                                     // 현재 Z 버퍼 레벨
+        const int DOWN_LEVEL = 1;                           // 다운샘플링 레벨
+
+        public FormGPUDriveHiZ()
         {
-            // 폼 초기화
             InitializeComponent();
 
             // GL 생성
@@ -87,7 +94,9 @@ namespace FormTools
 
             // 쉐이더 초기화 및 셰이더 매니저에 추가
             ShaderManager.Instance.AddShader(new ColorShader(PROJECT_PATH));
+            ShaderManager.Instance.AddShader(new HzmDepthShader(PROJECT_PATH));
             _colorShader = ShaderManager.Instance.GetShader<ColorShader>();
+            _hzmDepthShader = ShaderManager.Instance.GetShader<HzmDepthShader>();
 
             // 앱 시작 시 한 번만 초기화
             Ui3d.BillboardShader.Initialize();
@@ -99,7 +108,7 @@ namespace FormTools
                 Text2d.TextAlignment.Center, heightInPixels: 20);
             _fpsText.Color = Color.Yellow;
 
-            _titleText = new Text2d("GPU Driven", 10, 10, width, height,
+            _titleText = new Text2d("GPU Driven (임포스터, HiZ버퍼)", 10, 10, width, height,
                 Text2d.TextAlignment.Left, heightInPixels: 15);
             _titleText.Color = Color.Red;
 
@@ -120,20 +129,33 @@ namespace FormTools
             _glControl3.InitGridShader(PROJECT_PATH);
 
             // 3D 모델 매니저 및 모델 로드
-            _model3DManager = new Model3dManager(PROJECT_PATH, ExE_PATH + "\\nullTexture.jpg");
+            _model3DManager = new Model3dManager(PROJECT_PATH, EXE_PATH + "\\nullTexture.jpg");
             _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm6.obj");
             _treeModel = _model3DManager.GetModels("Palm6");
 
             // GPU 드리븐 렌더러 초기화
             _gpuDriven = new GPUCullingRenderer(PROJECT_PATH);
             _gpuDriven.Initialize("Palm6", _treeModel);
-                       
+
+            // 지형 영역 초기화
+            RegionCoord regionCoord = new RegionCoord(0, 0);
+            _terrainRegion = new TerrainRegion(regionCoord, chunkSize: 100, n: 10, null);
+            _terrainRegion.LoadTerrainLowResMap(regionCoord, EXE_PATH + "\\Res\\Terrain\\low\\region0x0.png", 
+                completed: () =>
+                {
+                    _terrainRegion.LoadTerrainHighResMap(regionCoord, EXE_PATH + "\\Res\\Terrain\\region_0x0_tiles", null);
+                    _isLoaded = true;
+                });
+
             // UI 3D 텍스트 네임플레이트 초기화
             _textNamePlate = new TextNamePlate(_glControl3.Camera, "FPS");
             _textNamePlate.Height = 0.35f;
             _textNamePlate.Width = 0.35f;
             CharacterTextureAtlas.Initialize();
             TextBillboardShader.Initialize();
+
+            // 계층적깊이버퍼 생성
+            _hzbuffer = new HierarchyZBuffer(width >> DOWN_LEVEL, height >> DOWN_LEVEL, PROJECT_PATH);
 
             // 셰리더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
@@ -142,13 +164,28 @@ namespace FormTools
         public void UpdateFrame(int deltaTime, int width, int height, Camera camera)
         {
             float duration = deltaTime * 0.001f;
-            //if (!_isLoaded) return;
+            if (!_isLoaded) return;
+            if (!_isStarted)
+            {
+                _culledText.Text = "상세지형이 로딩이 완료됨";
+                _isStarted = true;
+            }
 
             // 뷰 프러스텀 업데이트
             _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
 
             _gpuDriven.Update(camera, _viewFrustum);
             uint visibleCount = _gpuDriven.GetVisibleCountDebug();
+
+            // ✅ HZB 업데이트
+            _hzbuffer.BindFramebuffer();
+            _hzbuffer.PrepareRenderSurface();
+            _hzbuffer.RenderSimpleTerrain(camera.ProjectiveMatrix, camera.ViewMatrix, TerrainConstants.DEFAULT_VERTICAL_SCALE,
+                _terrainRegion.TerrainEntity);
+            _hzbuffer.UnbindFramebuffer();
+
+            // ✅ 밉맵 생성
+            _hzbuffer.GenerateMipmapsUsingFragment();
 
             // 네임플레이트 업데이트            
             _textNamePlate.Text = $"가시객체{visibleCount}";
@@ -161,10 +198,9 @@ namespace FormTools
             _camPosText.Text = $"카메라 위치 ({camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1})";
         }
 
-
         public void RenderFrame(double deltaTime, Vertex4f backcolor, Camera camera)
         {
-            //if (!_isLoaded) return;
+            if (!_isLoaded) return;
 
             int w = _glControl3.Width;
             int h = _glControl3.Height;
@@ -175,6 +211,9 @@ namespace FormTools
             Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
 
             _gpuDriven.Render(camera);
+
+            // 계층적 Z-버퍼 렌더링
+            _hzbuffer.RenderDepthBuffer(_hzmDepthShader, camera, level: _level);
 
             // 2D 렌더링을 위한 상태 설정
             Gl.Disable(EnableCap.DepthTest);
@@ -231,11 +270,6 @@ namespace FormTools
         {
             int width = _glControl3.Width;
             int height = _glControl3.Height;
-
-        }
-
-        private void FormGPUDriven_Load(object sender, EventArgs e)
-        {
 
         }
     }

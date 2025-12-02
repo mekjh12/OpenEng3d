@@ -1,4 +1,5 @@
-﻿using Common.Abstractions;
+﻿using Common;
+using Common.Abstractions;
 using FastMath;
 using Geometry;
 using GlWindow;
@@ -17,11 +18,13 @@ using ZetaExt;
 
 namespace FormTools
 {
-    public partial class FormGPUDriven : Form, GlControlerable
+    public partial class FormGPUDrivenQuadTree : Form, GlControlerable
     {
         readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
         readonly string ExE_PATH = Application.StartupPath;
-        
+        private const int FRAME_COUNT_DEBUG = 10;
+        private int _frameCount = 0;
+
         private GlControl3 _glControl3;                     // OpenGL 컨트롤
         private ColorShader _colorShader;                   // 컬러 셰이더
         private bool _isLoaded = false;                     // 로드 여부
@@ -37,16 +40,14 @@ namespace FormTools
 
         // 3D 관련 변수들
         Model3dManager _model3DManager;                     // 3D 모델 매니저
-        TexturedModel[] _treeModel;                         // 나무 모델 배열
-        GPUCullingRenderer _gpuDriven;  
+        QuadTreeGPURenderer _renderer;
 
-        public FormGPUDriven()
+        public FormGPUDrivenQuadTree()
         {
-            // 폼 초기화
             InitializeComponent();
 
             // GL 생성
-            _glControl3 = new GlControl3("gpuDriven", Application.StartupPath, @"\fonts\fontList.txt", @"\Res\");
+            _glControl3 = new GlControl3("GPU Driven(임포스트 인스턴스)", Application.StartupPath, @"\fonts\fontList.txt", @"\Res\");
             _glControl3.Init += (w, h) => Init(w, h);
             _glControl3.Init3d += (w, h) => Init3d(w, h);
             _glControl3.Init2d += (w, h) => Init2d(w, h);
@@ -67,16 +68,12 @@ namespace FormTools
             LogProfile.Create(PROJECT_PATH + "\\log.txt");
         }
 
-        public void Form_Load(object sender, EventArgs e)
+        private void FormGPUDrivenQuadTree_Load(object sender, EventArgs e)
         {
-            this.ClientSize = new Size(1008, 729);
-            this.Location = new Point(100, 100);
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
+            this.Width = 1024;
+            this.Height = 768;
             this.StartPosition = FormStartPosition.Manual;
-            this.Resize += new EventHandler(this.FormGPUDriven_Resize);
-
-            MemoryProfiler.StartFrameMonitoring();
+            this.Location = new Point(100, 100);
         }
 
         public void Init(int width, int height)
@@ -99,11 +96,11 @@ namespace FormTools
                 Text2d.TextAlignment.Center, heightInPixels: 20);
             _fpsText.Color = Color.Yellow;
 
-            _titleText = new Text2d("GPU Driven", 10, 10, width, height,
+            _titleText = new Text2d("GPU Driven(CPU쿼드트리테스트 + GPU모든객체로딩 + GPU인스턴스렌더링)", 10, 10, width, height,
                 Text2d.TextAlignment.Left, heightInPixels: 15);
             _titleText.Color = Color.Red;
 
-            _descText = new Text2d("1번키: 원점으로", 10, height, width, height,
+            _descText = new Text2d("1번키: 원점이동", 10, height, width, height,
                 Text2d.TextAlignment.TopLeft, heightInPixels: 15);
             _descText.Color = Color.LightGray;
 
@@ -119,17 +116,18 @@ namespace FormTools
             // 그리드셰이더 초기화
             _glControl3.InitGridShader(PROJECT_PATH);
 
-            // 3D 모델 매니저 및 모델 로드
+            // 3D 모델 로드
             _model3DManager = new Model3dManager(PROJECT_PATH, ExE_PATH + "\\nullTexture.jpg");
-            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm6.obj");
-            _treeModel = _model3DManager.GetModels("Palm6");
+            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm4.obj");
 
-            // GPU 드리븐 렌더러 초기화
-            _gpuDriven = new GPUCullingRenderer(PROJECT_PATH);
-            _gpuDriven.Initialize("Palm6", _treeModel);
-                       
+            TexturedModel[] treeModel = _model3DManager.GetModels("Palm4");
+
+            // QuadTree GPU Renderer 초기화
+            _renderer = new QuadTreeGPURenderer(PROJECT_PATH);
+            _renderer.Initialize("Palm4", treeModel);
+
             // UI 3D 텍스트 네임플레이트 초기화
-            _textNamePlate = new TextNamePlate(_glControl3.Camera, "FPS");
+            _textNamePlate = new TextNamePlate(_glControl3.Camera, "QuadTree");
             _textNamePlate.Height = 0.35f;
             _textNamePlate.Width = 0.35f;
             CharacterTextureAtlas.Initialize();
@@ -137,6 +135,8 @@ namespace FormTools
 
             // 셰리더 해시정보는 파일로 저장
             FileHashManager.SaveHashes();
+
+            _isLoaded = true;
         }
 
         public void UpdateFrame(int deltaTime, int width, int height, Camera camera)
@@ -147,24 +147,28 @@ namespace FormTools
             // 뷰 프러스텀 업데이트
             _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
 
-            _gpuDriven.Update(camera, _viewFrustum);
-            uint visibleCount = _gpuDriven.GetVisibleCountDebug();
+            // QuadTree GPU Renderer 업데이트
+            _renderer.Update(camera, _viewFrustum, _culledText);
 
-            // 네임플레이트 업데이트            
-            _textNamePlate.Text = $"가시객체{visibleCount}";
-            _textNamePlate.WorldPosition = camera.Position + camera.Forward * 1f - camera.Right * 0.2f;
-            _textNamePlate.Update(deltaTime);
+            // 네임플레이트 업데이트
+            if (_frameCount % FRAME_COUNT_DEBUG == 0)
+            {
+                //_textNamePlate.Text = $"90K Trees";
+                //_textNamePlate.WorldPosition = camera.Position + camera.Forward * 1f - camera.Right * 0.2f;
+                //_textNamePlate.Update(deltaTime);
 
-            // 렌더링 루프에서
-            _fpsText.Text = $"FPS: {FramePerSecond.FPS:F1}";
-            _culledText.Text = $"컬링된 노드";
-            _camPosText.Text = $"카메라 위치 ({camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1})";
+                // UI 텍스트 업데이트
+                _fpsText.Text = $"FPS: {FramePerSecond.FPS:F1}";
+                _camPosText.Text = $"카메라 위치 ({camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1})";
+            }
+
+            _frameCount++;
         }
 
 
         public void RenderFrame(double deltaTime, Vertex4f backcolor, Camera camera)
         {
-            //if (!_isLoaded) return;
+            if (!_isLoaded) return;
 
             int w = _glControl3.Width;
             int h = _glControl3.Height;
@@ -174,16 +178,21 @@ namespace FormTools
             Gl.Viewport(0, 0, w, h);
             Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
 
-            _gpuDriven.Render(camera);
+            // 3D 렌더링 (QuadTree GPU Renderer)
+            _renderer.Render(camera);
+
+            // 카메라 중심점 렌더링
+            Gl.Disable(EnableCap.Blend);
+            Renderer3d.RenderPoint(_colorShader, camera.PivotPosition, camera, new Vertex4f(1, 1, 0, 1), 0.02f);
+            Gl.Enable(EnableCap.DepthTest);
 
             // 2D 렌더링을 위한 상태 설정
             Gl.Disable(EnableCap.DepthTest);
-            Gl.Enable(EnableCap.Blend);  // ← 여기서 켜기
+            Gl.Enable(EnableCap.Blend);
             Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             Gl.Disable(EnableCap.CullFace);
-            Gl.Viewport(0, 0, w, h);
 
-            // FPS 렌더링
+            // UI 렌더링
             Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
             _textNamePlate.Render();
             _fpsText.Render();
@@ -191,11 +200,6 @@ namespace FormTools
             _descText.Render();
             _camPosText.Render();
             _culledText.Render();
-
-            // 카메라 중심점 렌더링
-            Gl.Disable(EnableCap.Blend);
-            Renderer3d.RenderPoint(_colorShader, camera.PivotPosition, camera, new Vertex4f(1, 1, 0, 1), 0.02f);
-            Gl.Enable(EnableCap.DepthTest);
         }
 
         public void KeyDownEvent(object sender, KeyEventArgs e)
@@ -227,16 +231,9 @@ namespace FormTools
             }
         }
 
-        private void FormGPUDriven_Resize(object sender, EventArgs e)
+        public void Form_Load(object sender, EventArgs e)
         {
-            int width = _glControl3.Width;
-            int height = _glControl3.Height;
-
-        }
-
-        private void FormGPUDriven_Load(object sender, EventArgs e)
-        {
-
+            MemoryProfiler.StartFrameMonitoring();
         }
     }
 }

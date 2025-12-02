@@ -1,6 +1,6 @@
 ﻿namespace FormTools
 {
-    partial class FormGPUDriven
+    partial class FormGPUDriveHiZ
     {
         /// <summary>
         /// Required designer variable.
@@ -30,14 +30,13 @@
         {
             this.SuspendLayout();
             // 
-            // FormGPUDriven
+            // FormGPUDriveHiZ
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(574, 356);
-            this.Name = "FormGPUDriven";
-            this.Text = "GPU Driven";
-            this.Load += new System.EventHandler(this.FormGPUDriven_Load);
+            this.ClientSize = new System.Drawing.Size(481, 308);
+            this.Name = "FormGPUDriveHiZ";
+            this.Text = "FormGPUDriveHiZ";
             this.ResumeLayout(false);
 
         }

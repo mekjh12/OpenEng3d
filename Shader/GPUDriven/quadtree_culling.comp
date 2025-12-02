@@ -1,0 +1,87 @@
+﻿#version 430 core
+layout(local_size_x = 256) in;
+
+// SSBO 바인딩
+layout(std430, binding = 1) readonly buffer AABBs { 
+    vec4 aabbMin[]; 
+    vec4 aabbMax[]; 
+};
+
+layout(std430, binding = 2) writeonly buffer VisibleIndices { 
+    int visibleIndices[]; 
+};
+
+layout(std430, binding = 3) buffer Counter { 
+    uint counter; 
+};
+
+layout(std430, binding = 4) readonly buffer LeafObjectIDs { 
+    uint leafObjectIDs[]; 
+};
+
+layout(std430, binding = 5) readonly buffer LeafStartIndices { 
+    uint leafInfoStartIndex[]; 
+};
+
+layout(std430, binding = 6) readonly buffer LeafCounts { 
+    uint leafInfoCount[]; 
+};
+
+layout(std430, binding = 7) readonly buffer VisibleLeafIDs { 
+    uint visibleLeafIDs[]; 
+};
+
+// 수정: vec4로 변경하여 정렬 문제 해결
+layout(std430, binding = 8) readonly buffer Params {
+    uint visibleLeafCount;      // 0-3
+    float lodDistance;          // 4-7
+    vec4 cameraPosition;        // 8-23 (16바이트 정렬)
+    // .x = 8-11, .y = 12-15, .z = 16-19, .w = 20-23 (padding)
+};
+
+void main()
+{
+    uint leafIndex = gl_GlobalInvocationID.x;
+    
+    if (leafIndex >= visibleLeafCount)
+        return;
+    
+    if (leafIndex >= visibleLeafIDs.length())
+        return;
+    
+    uint leafID = visibleLeafIDs[leafIndex];
+    
+    if (leafID >= leafInfoStartIndex.length() || leafID >= leafInfoCount.length())
+        return;
+    
+    uint startIdx = leafInfoStartIndex[leafID];
+    uint count = leafInfoCount[leafID];
+    
+    for (uint i = 0u; i < count; i++)
+    {
+        uint arrayIndex = startIdx + i;
+        
+        if (arrayIndex >= leafObjectIDs.length())
+            break;
+        
+        uint objectID = leafObjectIDs[arrayIndex];
+        
+        if (objectID >= aabbMin.length() || objectID >= aabbMax.length())
+            continue;
+        
+        // 거리 계산
+        vec3 center = (aabbMin[objectID].xyz + aabbMax[objectID].xyz) * 0.5;
+        float distance = length(cameraPosition.xyz - center);
+        
+        // 거리 필터링
+        if (distance < 30)
+        {
+            uint slot = atomicAdd(counter, 1u);
+            
+            if (slot < visibleIndices.length())
+            {
+                visibleIndices[slot] = int(objectID);
+            }
+        }
+    }
+}
