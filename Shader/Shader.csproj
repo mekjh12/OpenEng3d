@@ -82,7 +82,9 @@
     <Compile Include="GlobalUniformBuffers.cs" />
     <Compile Include="GPUDriven\FrustumCullingComputeShader.cs" />
     <Compile Include="GPUDriven\GPUBillboardShader.cs" />
+    <Compile Include="GPUDriven\DepthDebugInstancedShader.cs" />
     <Compile Include="GPUDriven\GPUInstancedShader.cs" />
+    <Compile Include="GPUDriven\HiZOcclusionComputeShader.cs" />
     <Compile Include="GPUDriven\QuadTreeCullingComputeShader.cs" />
     <Compile Include="ImpostorShader\ImpostorInstancedShader.cs" />
     <Compile Include="InstancedShader\InstancedDepthShader.cs" />
@@ -145,6 +147,9 @@
     <None Include="AABBShader\aabb.vert" />
     <None Include="GPUDriven\billboard.vert" />
     <None Include="GPUDriven\billboard.frag" />
+    <None Include="GPUDriven\depth_debug_instanced.frag" />
+    <None Include="GPUDriven\hiz_occlusion.comp" />
+    <None Include="GPUDriven\depth_debug_instanced.vert" />
     <None Include="GPUDriven\quadtree_culling.comp" />
     <None Include="GPUDriven\instanced.frag" />
     <None Include="GPUDriven\instanced.vert" />

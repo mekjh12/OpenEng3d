@@ -25,8 +25,11 @@ namespace FormTools
         private GlControl3 _glControl3;                     // OpenGL 컨트롤
         private ColorShader _colorShader;                   // 컬러 셰이더
         private HzmDepthShader _hzmDepthShader;             // HZM 깊이 셰이더
+        private TerrainTessellationShader _terrainShader;   // 지형 테셀레이션 셰이더
+
         private bool _isLoaded = false;                     // 로드 여부
         private bool _isStarted = false;                    // 시작 여부
+        private Vertex3f _prevCameraPosition;               // 이전 카메라 위치
 
         // UI 2D 관련 변수들
         private TextNamePlate _textNamePlate;               // 텍스트 네임플레이트
@@ -42,11 +45,17 @@ namespace FormTools
         TexturedModel[] _treeModel;                         // 나무 모델 배열
         GPUCullingRenderer _gpuDriven;
         HierarchyZBuffer _hzbuffer;                         // 계층적 GPU Z 버퍼
+
+        // 지형 관련 변수들
         TerrainRegion _terrainRegion;                       // 지형 영역
+        Texture[] _levelTextureMap = null;                  // 지형 레벨 텍스쳐
+        Texture _detailTextureMap = null;                   // 지형 디테일 텍스쳐
 
         // Z 버퍼 관련 변수들
         int _level = 0;                                     // 현재 Z 버퍼 레벨
         const int DOWN_LEVEL = 1;                           // 다운샘플링 레벨
+        bool _isVisibleDepthBuffer = false;                 // 깊이 버퍼 가시화 여부
+        uint _visibleCount = 0;                             // 가시 객체 수
 
         public FormGPUDriveHiZ()
         {
@@ -95,8 +104,10 @@ namespace FormTools
             // 쉐이더 초기화 및 셰이더 매니저에 추가
             ShaderManager.Instance.AddShader(new ColorShader(PROJECT_PATH));
             ShaderManager.Instance.AddShader(new HzmDepthShader(PROJECT_PATH));
+            ShaderManager.Instance.AddShader(new TerrainTessellationShader(PROJECT_PATH));
             _colorShader = ShaderManager.Instance.GetShader<ColorShader>();
             _hzmDepthShader = ShaderManager.Instance.GetShader<HzmDepthShader>();
+            _terrainShader = ShaderManager.Instance.GetShader<TerrainTessellationShader>();
 
             // 앱 시작 시 한 번만 초기화
             Ui3d.BillboardShader.Initialize();
@@ -121,6 +132,7 @@ namespace FormTools
 
             _culledText = new Text2d("컬링된 노드 0개", width - 10, 10, width, height,
                 Text2d.TextAlignment.Right, heightInPixels: 15);
+            _culledText.Color = Color.YellowGreen;
         }
 
         public void Init3d(int width, int height)
@@ -130,12 +142,8 @@ namespace FormTools
 
             // 3D 모델 매니저 및 모델 로드
             _model3DManager = new Model3dManager(PROJECT_PATH, EXE_PATH + "\\nullTexture.jpg");
-            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm6.obj");
-            _treeModel = _model3DManager.GetModels("Palm6");
-
-            // GPU 드리븐 렌더러 초기화
-            _gpuDriven = new GPUCullingRenderer(PROJECT_PATH);
-            _gpuDriven.Initialize("Palm6", _treeModel);
+            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm4.obj");
+            _treeModel = _model3DManager.GetModels("Palm4");
 
             // 지형 영역 초기화
             RegionCoord regionCoord = new RegionCoord(0, 0);
@@ -143,9 +151,30 @@ namespace FormTools
             _terrainRegion.LoadTerrainLowResMap(regionCoord, EXE_PATH + "\\Res\\Terrain\\low\\region0x0.png", 
                 completed: () =>
                 {
-                    _terrainRegion.LoadTerrainHighResMap(regionCoord, EXE_PATH + "\\Res\\Terrain\\region_0x0_tiles", null);
-                    _isLoaded = true;
+                    _terrainRegion.LoadTerrainHighResMap(regionCoord, EXE_PATH + "\\Res\\Terrain\\",
+                        completed: () => 
+                        {
+                            //_culledText.Text = "상세지형 로딩 완료됨";
+                            _isLoaded = true;
+                        });
                 });
+
+            // 
+            // 지형 레벨 텍스쳐 로딩
+            string heightMap = PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\";
+            string[] levelTextureMap = new string[5];
+            levelTextureMap[0] = EXE_PATH + @"\Res\Terrain\blend\water1.png";
+            levelTextureMap[1] = EXE_PATH + @"\Res\Terrain\blend\grass_1.png";
+            levelTextureMap[2] = EXE_PATH + @"\Res\Terrain\blend\lowestTile.png";
+            levelTextureMap[3] = EXE_PATH + @"\Res\Terrain\blend\HighTile.png";
+            levelTextureMap[4] = EXE_PATH + @"\Res\Terrain\blend\highestTile.png";
+            string detailMap = EXE_PATH + @"\Res\Terrain\blend\detailMap.png";
+            _levelTextureMap = new Texture[levelTextureMap.Length];
+            _detailTextureMap = new Texture(detailMap);
+            for (int i = 0; i < _levelTextureMap.Length; i++)
+            {
+                _levelTextureMap[i] = new Texture(levelTextureMap[i]);
+            }
 
             // UI 3D 텍스트 네임플레이트 초기화
             _textNamePlate = new TextNamePlate(_glControl3.Camera, "FPS");
@@ -167,35 +196,49 @@ namespace FormTools
             if (!_isLoaded) return;
             if (!_isStarted)
             {
+                // GPU 드리븐 렌더러 초기화
+                _gpuDriven = new GPUCullingRenderer(PROJECT_PATH);
+                _gpuDriven.Initialize("Palm6", _treeModel, _terrainRegion);
                 _culledText.Text = "상세지형이 로딩이 완료됨";
                 _isStarted = true;
             }
 
-            // 뷰 프러스텀 업데이트
-            _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
+            if (_prevCameraPosition != camera.Position)
+            {
+                // 뷰 프러스텀 업데이트
+                _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
 
-            _gpuDriven.Update(camera, _viewFrustum);
+                // ✅ HZB 업데이트
+                _hzbuffer.BindFramebuffer();
+                _hzbuffer.PrepareRenderSurface();
+                _hzbuffer.RenderSimpleTerrain(camera.ProjectiveMatrix, camera.ViewMatrix, TerrainConstants.DEFAULT_VERTICAL_SCALE,
+                    _terrainRegion.TerrainEntity);
+                _hzbuffer.UnbindFramebuffer();
+
+                // ✅ 밉맵 생성
+                _hzbuffer.GenerateMipmapsUsingFragment();
+
+                _gpuDriven?.Update(camera, _viewFrustum, _hzbuffer);
+
+                _camPosText.Text = $"카메라 위치 ({camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1})";
+
+                _prevCameraPosition = camera.Position;
+            }
+
             uint visibleCount = _gpuDriven.GetVisibleCountDebug();
 
-            // ✅ HZB 업데이트
-            _hzbuffer.BindFramebuffer();
-            _hzbuffer.PrepareRenderSurface();
-            _hzbuffer.RenderSimpleTerrain(camera.ProjectiveMatrix, camera.ViewMatrix, TerrainConstants.DEFAULT_VERTICAL_SCALE,
-                _terrainRegion.TerrainEntity);
-            _hzbuffer.UnbindFramebuffer();
-
-            // ✅ 밉맵 생성
-            _hzbuffer.GenerateMipmapsUsingFragment();
-
-            // 네임플레이트 업데이트            
-            _textNamePlate.Text = $"가시객체{visibleCount}";
-            _textNamePlate.WorldPosition = camera.Position + camera.Forward * 1f - camera.Right * 0.2f;
-            _textNamePlate.Update(deltaTime);
+            if (_visibleCount != visibleCount)
+            {
+                // 네임플레이트 업데이트            
+                _textNamePlate.Text = $"가시객체{visibleCount}";
+                _textNamePlate.WorldPosition = camera.Position + camera.Forward * 1f - camera.Right * 0.2f;
+                _textNamePlate.Update(deltaTime);
+                _visibleCount = visibleCount;
+                _culledText.Text = $"가시 객체 {_visibleCount}개, HZB Level: {_level}";
+            }
 
             // 렌더링 루프에서
             _fpsText.Text = $"FPS: {FramePerSecond.FPS:F1}";
-            _culledText.Text = $"컬링된 노드";
-            _camPosText.Text = $"카메라 위치 ({camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1})";
         }
 
         public void RenderFrame(double deltaTime, Vertex4f backcolor, Camera camera)
@@ -210,10 +253,23 @@ namespace FormTools
             Gl.Viewport(0, 0, w, h);
             Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
 
-            _gpuDriven.Render(camera);
-
             // 계층적 Z-버퍼 렌더링
-            _hzbuffer.RenderDepthBuffer(_hzmDepthShader, camera, level: _level);
+            if (_isVisibleDepthBuffer)
+            {
+                _hzbuffer.RenderDepthBuffer(_hzmDepthShader, camera, level: _level);
+            }
+            else
+            {
+                // 일반 렌더링 화면
+                Renderer3d.RenderByTerrainTessellationShader(_terrainShader, _terrainRegion.TerrainEntity, camera, _levelTextureMap, _detailTextureMap,
+                    isDetailMap: true,
+                    lightDirection: Vertex3f.UnitZ,
+                    vegetationMap: 0,
+                    heightScale: TerrainConstants.DEFAULT_VERTICAL_SCALE
+                    );
+
+                _gpuDriven?.Render(camera);
+            }
 
             // 2D 렌더링을 위한 상태 설정
             Gl.Disable(EnableCap.DepthTest);
@@ -244,9 +300,31 @@ namespace FormTools
 
         public void KeyUpEvent(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.D1)
+            if (e.KeyCode == Keys.D0)
             {
                 _glControl3.Camera.PivotPosition = new Vertex3f(0, 0, 1.0f);
+            }
+            else if (e.KeyCode == Keys.F5)
+            {
+                _gpuDriven.DebugDepthMode = !_gpuDriven.DebugDepthMode;
+            }
+            else if (e.KeyCode == Keys.D2)
+            {
+                _isVisibleDepthBuffer = !_isVisibleDepthBuffer;
+            }
+            else if (e.KeyCode == Keys.D3)
+            {
+               _level = (_level + 1) % _hzbuffer.Levels;
+                _culledText.Text = $"HZB Level: {_level}";
+            }
+            else if (e.KeyCode == Keys.D4)
+            {
+                _level = (_level - 1 + _hzbuffer.Levels) % _hzbuffer.Levels;
+                _culledText.Text = $"HZB Level: {_level}";
+            }
+            else if (e.KeyCode == Keys.Enter)
+            {
+               
             }
         }
 
@@ -270,6 +348,11 @@ namespace FormTools
         {
             int width = _glControl3.Width;
             int height = _glControl3.Height;
+
+        }
+
+        private void FormGPUDriveHiZ_Load(object sender, EventArgs e)
+        {
 
         }
     }

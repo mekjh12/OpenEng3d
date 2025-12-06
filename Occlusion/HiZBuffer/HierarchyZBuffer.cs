@@ -57,6 +57,7 @@ namespace Occlusion
 
         public uint Framebuffer => _fbo;
         public uint DepthTexture => _depthTexture;
+        public uint HiZTexture => _hzbTextures[0];
         public int Levels => _levels;
         public int Width => _width;
         public int Height => _height;
@@ -259,7 +260,7 @@ namespace Occlusion
         /// Fragment 셰이더를 사용하여 밉맵을 생성합니다.
         /// </summary>
         /// <param name="maxLevel">생성할 최대 레벨</param>
-        public void GenerateMipmapsUsingFragment(int maxLevel = -1)
+        public void GenerateMipmapsUsingFragment(int maxLevel = -1, bool isTransferToCpu = false)
         {
             if (maxLevel < 0)
                 maxLevel = _levels - 1;
@@ -271,7 +272,7 @@ namespace Occlusion
             // CPU 전송
             if (_zbuffer != null)
             {
-                TransferDepthDataToCPU(maxLevel);
+                if (isTransferToCpu) TransferDepthDataToCPU(maxLevel);
             }
         }
 
@@ -317,7 +318,7 @@ namespace Occlusion
         /// GPU에서 CPU로 모든 레벨의 깊이 맵 데이터를 읽어옵니다.
         /// </summary>
         /// <param name="maxDepth">생성할 최대 레벨 깊이. 0부터 시작하여 maxDepth-1 레벨까지 생성됩니다.</param>
-        protected void TransferDepthDataToCPU(int maxDepth = -1)
+        public void TransferDepthDataToCPU(int maxDepth = -1)
         {
             // 최대 레벨까지 생성한다.
             if (maxDepth == -1) maxDepth = _levels - 1;
@@ -559,7 +560,7 @@ namespace Occlusion
             shader.LoadCameraFar(camera.FAR);
             shader.LoadCameraNear(camera.NEAR);
             shader.LoadIsPerspective(false);
-            shader.LoadLOD(level);
+            shader.LoadLOD(0);
 
             // ✅ 텍스처 바인딩 전 활성화
             Gl.ActiveTexture(TextureUnit.Texture0);

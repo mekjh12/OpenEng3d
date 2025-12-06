@@ -8,17 +8,12 @@ struct AABB {
     float padding2;
 };
 
-// SSBO (binding 5 제거!)
 layout(std430, binding = 0) buffer AABBBuffer { AABB aabbs[];};
-layout(std430, binding = 1) buffer VisibleIndicesBuffer_LOD0 { int visibleIndices_LOD0[];};
-layout(std430, binding = 2) buffer CounterBuffer_LOD0 { uint visibleCount_LOD0;};
-layout(std430, binding = 3) buffer VisibleIndicesBuffer_LOD1 { int visibleIndices_LOD1[];};
-layout(std430, binding = 4) buffer CounterBuffer_LOD1 { uint visibleCount_LOD1;};
+layout(std430, binding = 1) buffer FrustumPassedBuffer { int frustumPassedIndices[];};// ✅ Frustum 통과한 모든 객체 (LOD 구분 없음)
+layout(std430, binding = 2) buffer FrustumCounterBuffer { uint frustumPassedCount;};
 
 // 유니폼
 uniform vec4 uFrustumPlanes[6];
-uniform vec3 uCameraPosition;
-uniform float uLODDistance;
 
 bool ContactTestAABBPlane(AABB aabb, vec4 plane) 
 {
@@ -29,15 +24,14 @@ bool ContactTestAABBPlane(AABB aabb, vec4 plane)
     return (dist + radius) >= 0.0;
 }
 
-// 프러스텀 평면과 AABB의 충돌 검사
 bool IsInsideFrustum(AABB aabb) 
 {
-    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[4])) return false; // 근거리 평면
-    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[5])) return false; // 원거리 평면
-    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[0])) return false; // 오른쪽 평면
-    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[2])) return false; // 왼쪽 평면
-    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[1])) return false; // 하단 평면
-    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[3])) return false; // 상단 평면
+    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[4])) return false; // Near
+    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[5])) return false; // Far
+    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[0])) return false; // Right
+    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[2])) return false; // Left
+    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[1])) return false; // Bottom
+    if (!ContactTestAABBPlane(aabb, uFrustumPlanes[3])) return false; // Top
     return true;
 }
 
@@ -45,26 +39,13 @@ void main()
 {
     uint index = gl_GlobalInvocationID.x;
     if (index >= 90000) return;
-
-    // Frustum 테스트
+    
+    // ✅ Frustum 테스트만 수행 (LOD 구분 없음)
     if (IsInsideFrustum(aabbs[index])) 
     {
-        vec3 center = (aabbs[index].min + aabbs[index].max) * 0.5;
-
-        float distance = length(uCameraPosition - center);
-        
-        // LOD 선택 (거리 기반)
-        if (distance < uLODDistance)
-        {
-            // LOD0: 전체 메시
-            uint slot = atomicAdd(visibleCount_LOD0, 1);
-            visibleIndices_LOD0[slot] = int(index);
-        } 
-        else 
-        {
-            // LOD1: 빌보드
-            uint slot = atomicAdd(visibleCount_LOD1, 1);
-            visibleIndices_LOD1[slot] = int(index);
+        uint slot = atomicAdd(frustumPassedCount, 1);
+        if (slot < 90000) {
+            frustumPassedIndices[slot] = int(index);
         }
     }
 }

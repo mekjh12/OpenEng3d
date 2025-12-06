@@ -130,7 +130,7 @@ namespace Terrain
                 for (int x = 0; x < 8; x++)
                 {
                     string highResFileName = basePath +
-                        $"region_{coord.X}x{coord.Y}_tiles\\tile_{x}_{y}.png";
+                        $"\\region_{coord.X}x{coord.Y}_tiles\\tile_{x}_{y}.png";
 
                     if (File.Exists(highResFileName))
                     {
@@ -377,6 +377,9 @@ namespace Terrain
             // 고해상도 맵이 로드되어 있다면 고해상도 높이 계산
             if (_isHighResLoaded && blendFactor > 0.0f)
             {
+                _heightmapWidth = _regionOriginalSize;
+                _heightmapHeight = _regionOriginalSize;
+                _regionHalfSize = _regionOriginalSize * 0.5f;
                 float ratioHigh = 1.0f; // 고해상도는 비율이 1:1
                 float px = positionInRegionSpace.x * ratioHigh;
                 float py = positionInRegionSpace.y * ratioHigh;
@@ -399,6 +402,7 @@ namespace Terrain
             if (_isLowResLoaded && _isHighResLoaded)
             {
                 finalHeight = (1.0f - blendFactor) * heightLow + blendFactor * heightHigh;
+
             }
             // 고해상도 맵만 로드된 경우
             else if (_isHighResLoaded)

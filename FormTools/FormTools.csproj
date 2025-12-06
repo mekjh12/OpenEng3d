@@ -296,6 +296,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <None Include="setup_GlControl.ini" />
+    <None Include="setup_gpuDriven.ini" />
     <None Include="setup_hzb occlusion.ini" />
     <None Include="setup_real-time-cloud-rendering.ini" />
   </ItemGroup>

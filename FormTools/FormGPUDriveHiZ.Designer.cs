@@ -37,6 +37,7 @@
             this.ClientSize = new System.Drawing.Size(481, 308);
             this.Name = "FormGPUDriveHiZ";
             this.Text = "FormGPUDriveHiZ";
+            this.Load += new System.EventHandler(this.FormGPUDriveHiZ_Load);
             this.ResumeLayout(false);
 
         }
