@@ -6,8 +6,8 @@ namespace Shader
 {
     public class GPUBillboardShader : ShaderProgramBase
     {
-        const string VERTEX_FILE = @"\Shader\GPUDriven\billboard.vert";
-        const string FRAGMENT_FILE = @"\Shader\GPUDriven\billboard.frag";
+        const string VERTEX_FILE = @"\Shader\GPUDriven\glsl\billboard.vert";
+        const string FRAGMENT_FILE = @"\Shader\GPUDriven\glsl\billboard.frag";
 
         // 유니폼 위치
         private int loc_vp;

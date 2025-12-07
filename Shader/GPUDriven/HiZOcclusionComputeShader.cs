@@ -1,13 +1,11 @@
 ﻿using Common;
-using Common.Abstractions;
 using OpenGL;
-using System;
 
 namespace Shader
 {
     public class HiZOcclusionComputeShader : ShaderProgramBase
     {
-        const string COMPUTE_FILE = @"\Shader\GPUDriven\hiz_occlusion.comp";
+        const string COMPUTE_FILE = @"\Shader\GPUDriven\comp\hiz_occlusion.comp";
 
         private int[] loc_hizTextures;  // 각 mip level별 텍스처 location
         private int loc_viewProjMatrix;

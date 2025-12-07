@@ -10,7 +10,7 @@ namespace Shader
     /// </summary>
     public class QuadTreeCullingComputeShader : ShaderProgramBase
     {
-        const string COMPUTE_FILE = @"\Shader\GPUDriven\quadtree_culling.comp";
+        const string COMPUTE_FILE = @"\Shader\GPUDriven\comp\quadtree_culling.comp";
 
         public QuadTreeCullingComputeShader(string projectPath) : base()
         {

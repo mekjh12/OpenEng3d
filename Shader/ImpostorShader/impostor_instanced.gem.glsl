@@ -1,5 +1,4 @@
 ﻿#version 430
-
 layout (points) in;
 layout (triangle_strip, max_vertices = 4) out;
 
@@ -19,18 +18,28 @@ uniform float aabbSizeModel;
 uniform vec3 aabbCenterEntity;
 uniform float atlasSize;
 uniform float individualSize;
-uniform int horizontalFrames;  // HorizontalAngles 값
-uniform int verticalFrames;    // VerticalAngles 값
+uniform int horizontalFrames;
+uniform int verticalFrames;
 
 const float PI = 3.14159265359;
 
-// 모델 행렬에서 forward 벡터 추출 (-Y축)
+// 모델 행렬에서 스케일 추출
+vec3 extractScale(mat4 modelMatrix)
+{
+    vec3 scaleX = vec3(modelMatrix[0][0], modelMatrix[0][1], modelMatrix[0][2]);
+    vec3 scaleY = vec3(modelMatrix[1][0], modelMatrix[1][1], modelMatrix[1][2]);
+    vec3 scaleZ = vec3(modelMatrix[2][0], modelMatrix[2][1], modelMatrix[2][2]);
+    
+    return vec3(length(scaleX), length(scaleY), length(scaleZ));
+}
+
+// 모델 행렬에서 forward 벡터 추출 (-Y축, 정규화)
 vec3 getModelForward(mat4 modelMatrix)
 {
     return normalize(-vec3(modelMatrix[1][0], modelMatrix[1][1], modelMatrix[1][2]));
 }
 
-// 모델 행렬에서 right 벡터 추출 (-X축)
+// 모델 행렬에서 right 벡터 추출 (-X축, 정규화)
 vec3 getModelRight(mat4 modelMatrix)
 {
     return normalize(-vec3(modelMatrix[0][0], modelMatrix[0][1], modelMatrix[0][2]));
@@ -39,12 +48,10 @@ vec3 getModelRight(mat4 modelMatrix)
 // 회전을 고려한 상대 카메라 방향 계산
 vec3 getLocalViewDirection(mat4 modelMatrix, vec3 toCamera)
 {
-    // 모델의 로컬 축 추출
     vec3 modelRight = getModelRight(modelMatrix);
     vec3 modelForward = getModelForward(modelMatrix);
-    vec3 modelUp = vec3(0.0, 0.0, 1.0);  // Z축은 항상 위
+    vec3 modelUp = vec3(0.0, 0.0, 1.0);
     
-    // 카메라 방향을 모델의 로컬 공간으로 변환
     vec3 localView;
     localView.x = dot(toCamera, modelRight);
     localView.y = dot(toCamera, modelForward);
@@ -56,21 +63,15 @@ vec3 getLocalViewDirection(mat4 modelMatrix, vec3 toCamera)
 // Atlas offset 계산
 vec2 calculateAtlasOffset(vec3 localViewDir)
 {
-    // 1. 수평 각도 계산 (XY 평면)
     float horizontalAngle = atan(localViewDir.y, localViewDir.x);
-    
-    // 2. 수직 각도 계산
     float verticalAngle = asin(clamp(localViewDir.z, -1.0, 1.0));
     
-    // 3. 각도를 0~1 범위로 정규화
     float normalizedH = (horizontalAngle + PI) / (2.0 * PI);
     float normalizedV = (verticalAngle + PI * 0.5) / PI;
     
-    // 4. 프레임 인덱스 계산
     int frameX = int(normalizedH * float(horizontalFrames)) % horizontalFrames;
     int frameY = int(normalizedV * float(verticalFrames)) % verticalFrames;
     
-    // 5. Atlas UV offset 계산
     float frameSize = individualSize / atlasSize;
     return vec2(float(frameX) * frameSize, float(frameY) * frameSize);
 }
@@ -79,6 +80,9 @@ void main()
 {
     vec3 worldPosition = gs_in[0].worldPosition;
     mat4 modelMatrix = gs_in[0].modelMatrix;
+    
+    // 모델 행렬에서 스케일 추출
+    vec3 modelScale = extractScale(modelMatrix);
     
     // 카메라 방향 계산
     vec3 toCamera = normalize(cameraPosition - worldPosition);
@@ -99,10 +103,15 @@ void main()
         rightLength = length(tempRight);
     }
     
-    vec3 right = (tempRight / rightLength) * aabbSizeModel * 0.5f;
-    vec3 up = normalize(cross(toCamera, right)) * aabbSizeModel * 0.5f;
+    // 스케일을 적용한 빌보드 크기 계산
+    // XY 스케일의 평균을 사용 (또는 max, min 등 원하는 방식)
+    float averageScale = (modelScale.x + modelScale.y) * 0.5;
     
-    vec3 center = worldPosition + aabbCenterEntity;
+    vec3 right = (tempRight / rightLength) * aabbSizeModel * 0.5 * averageScale;
+    vec3 up = normalize(cross(toCamera, right)) * aabbSizeModel * 0.5 * averageScale;
+    
+    // AABB 중심 오프셋을 모델 행렬로 변환하여 스케일/회전 적용
+    vec3 center = worldPosition + vec3(modelMatrix * vec4(aabbCenterEntity, 0.0));
     
     // 빌보드 네 모서리 위치
     vec3 positions[4];

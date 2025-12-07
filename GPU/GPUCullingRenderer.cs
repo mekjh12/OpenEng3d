@@ -76,9 +76,9 @@ namespace GPUDriven
         private bool _enableHiZCulling = true;
 
         // 드로우 커맨드
-        float[] debugInit = new float[MAX_INSTANCES];
-        uint[] count = new uint[1];
-        DrawArraysIndirectCommand cmd;
+        float[] _debugInit = new float[MAX_INSTANCES];
+        uint[] _count = new uint[1];
+        DrawArraysIndirectCommand _cmd;
 
         // 성능 모니터링
         private int _frameCount = 0;
@@ -286,10 +286,10 @@ namespace GPUDriven
             {
                 // 디버그 버퍼 초기화 (음수로 초기화하여 미처리 인스턴스 구별)
                 for (int i = 0; i < MAX_INSTANCES; i++)
-                    debugInit[i] = -1.0f;
+                    _debugInit[i] = -1.0f;
 
                 Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _debugDepthSSBO);
-                fixed (float* ptr = debugInit)
+                fixed (float* ptr = _debugInit)
                 {
                     Gl.BufferSubData(BufferTarget.ShaderStorageBuffer,
                         IntPtr.Zero, (uint)(MAX_INSTANCES * 4), (IntPtr)ptr);
@@ -342,9 +342,9 @@ namespace GPUDriven
         {
             // HiZ 비활성화 시: Frustum 통과한 모든 객체를 LOD0로 처리
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _frustumCounterSSBO);
-            Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, 4, count);
+            Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, 4, _count);
 
-            if (count[0] > 0)
+            if (_count[0] > 0)
             {
                 // LOD1 카운터는 0으로
                 uint zero = 0;
@@ -360,7 +360,7 @@ namespace GPUDriven
                 Gl.BindBuffer(BufferTarget.CopyReadBuffer, _frustumPassedSSBO);
                 Gl.BindBuffer(BufferTarget.CopyWriteBuffer, _visibleIndicesSSBO);
                 Gl.CopyBufferSubData(BufferTarget.CopyReadBuffer, BufferTarget.CopyWriteBuffer,
-                    IntPtr.Zero, IntPtr.Zero, count[0] * 4);
+                    IntPtr.Zero, IntPtr.Zero, _count[0] * 4);
             }
         }
 
@@ -473,6 +473,7 @@ namespace GPUDriven
                 _impostorInstancedShader.LoadVerticalFrames(settings.VerticalAngles);
                 _impostorInstancedShader.LoadAABBSizeModel(_modelAABB.SphereRadius);
                 _impostorInstancedShader.LoadAABBCenterEntity(_modelAABB.Center);
+                _impostorInstancedShader.LoadEnableEdgeLine(false);
 
                 Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
                 Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD1);
@@ -497,7 +498,7 @@ namespace GPUDriven
         {
             Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, indirectBuffer);
 
-            cmd = new DrawArraysIndirectCommand
+            _cmd = new DrawArraysIndirectCommand
             {
                 VertexCount = vertexCount,
                 InstanceCount = 0,
@@ -505,7 +506,7 @@ namespace GPUDriven
                 BaseInstance = 0
             };
 
-            Gl.BufferSubData(BufferTarget.DrawIndirectBuffer, IntPtr.Zero, 16, cmd);
+            Gl.BufferSubData(BufferTarget.DrawIndirectBuffer, IntPtr.Zero, 16, _cmd);
 
             Gl.BindBuffer(BufferTarget.CopyReadBuffer, counterBuffer);
             Gl.BindBuffer(BufferTarget.CopyWriteBuffer, indirectBuffer);

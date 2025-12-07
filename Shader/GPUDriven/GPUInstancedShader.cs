@@ -11,8 +11,8 @@ namespace Shader
     /// </summary>
     public class GPUInstancedShader : ShaderProgramBase
     {
-        const string VERTEX_FILE = @"\Shader\GPUDriven\instanced.vert";
-        const string FRAGMENT_FILE = @"\Shader\GPUDriven\instanced.frag";
+        const string VERTEX_FILE = @"\Shader\GPUDriven\glsl\instanced.vert";
+        const string FRAGMENT_FILE = @"\Shader\GPUDriven\glsl\instanced.frag";
 
         // SSBO 바인딩 포인트
         private const int TRANSFORM_BUFFER_BINDING = 0;

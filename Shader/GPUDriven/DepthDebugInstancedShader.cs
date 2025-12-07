@@ -5,8 +5,8 @@ namespace Shader
 {
     public class DepthDebugInstancedShader : ShaderProgramBase
     {
-        const string VERTEX_FILE = @"\Shader\GPUDriven\depth_debug_instanced.vert";
-        const string FRAGMENT_FILE = @"\Shader\GPUDriven\depth_debug_instanced.frag";
+        const string VERTEX_FILE = @"\Shader\GPUDriven\glsl\depth_debug_instanced.vert";
+        const string FRAGMENT_FILE = @"\Shader\GPUDriven\glsl\depth_debug_instanced.frag";
 
         private int loc_vpMatrix;
         private int loc_nearPlane;  // ✅ 추가

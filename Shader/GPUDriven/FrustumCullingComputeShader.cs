@@ -6,7 +6,7 @@ namespace Shader
 {
     public class FrustumCullingComputeShader : ShaderProgramBase
     {
-        const string COMPUTE_FILE = @"\Shader\GPUDriven\frustum_culling.comp";
+        const string COMPUTE_FILE = @"\Shader\GPUDriven\comp\frustum_culling.comp";
 
         private int[] loc_frustumPlanes = new int[6];
 
