@@ -19,7 +19,19 @@ layout(std430, binding = 6) buffer VisibleLOD1Buffer {int visibleIndices_LOD1[];
 layout(std430, binding = 7) buffer CounterLOD1Buffer {uint visibleCount_LOD1;};
 layout(std430, binding = 8) buffer DepthDebugBuffer {float debugDepths[];};
 
-uniform sampler2D u_hizTexture;
+// 각 mip level별 개별 텍스처
+uniform sampler2D u_hizTexture0;
+uniform sampler2D u_hizTexture1;
+uniform sampler2D u_hizTexture2;
+uniform sampler2D u_hizTexture3;
+uniform sampler2D u_hizTexture4;
+uniform sampler2D u_hizTexture5;
+uniform sampler2D u_hizTexture6;
+uniform sampler2D u_hizTexture7;
+uniform sampler2D u_hizTexture8;
+uniform sampler2D u_hizTexture9;
+uniform sampler2D u_hizTexture10;
+
 uniform mat4 vp;
 uniform mat4 view;
 uniform int u_maxMipLevel;
@@ -29,9 +41,26 @@ uniform vec2 u_screenSize;
 uniform int u_maxInstanceCount;
 uniform float u_cameraNear;
 uniform float u_cameraFar;
+uniform bool u_isDebugMode;
 
-const float MAX_DEPTH_METERS = 10000.0;
-const float DEPTH_EPSILON = 0.0001;
+const float MAX_DEPTH_METERS = 10000.0;     // 최대 깊이 (미터 단위)
+const float DEPTH_EPSILON = 0.005;          // 깊이 비교 시 허용 오차(미터 단위) 50m가 안정적임
+
+// mip level에 따라 적절한 텍스처에서 샘플링
+float sampleHiZTexture(int mipLevel, vec2 uv)
+{
+    if (mipLevel == 0) return texture(u_hizTexture0, uv).r;
+    if (mipLevel == 1) return texture(u_hizTexture1, uv).r;
+    if (mipLevel == 2) return texture(u_hizTexture2, uv).r;
+    if (mipLevel == 3) return texture(u_hizTexture3, uv).r;
+    if (mipLevel == 4) return texture(u_hizTexture4, uv).r;
+    if (mipLevel == 5) return texture(u_hizTexture5, uv).r;
+    if (mipLevel == 6) return texture(u_hizTexture6, uv).r;
+    if (mipLevel == 7) return texture(u_hizTexture7, uv).r;
+    if (mipLevel == 8) return texture(u_hizTexture8, uv).r;
+    if (mipLevel == 9) return texture(u_hizTexture9, uv).r;
+    return texture(u_hizTexture10, uv).r;
+}
 
 bool projectAABB(AABB worldAABB, out vec2 minScreen, out vec2 maxScreen, out float minDepth, out vec3 worldCenter)
 {
@@ -82,6 +111,45 @@ bool projectAABB(AABB worldAABB, out vec2 minScreen, out vec2 maxScreen, out flo
     return true;
 }
 
+bool hierarchicalOcclusionTest(vec2 minScreen, vec2 maxScreen, float minDepth)
+{
+    vec2 sizeUV = maxScreen - minScreen;
+    vec2 sizePixels = sizeUV * u_screenSize;
+    float maxSize = max(sizePixels.x, sizePixels.y);
+    
+    // 1픽셀보다 작으면 바로 통과
+    if (maxSize < 1.0) return true;
+    
+    // 시작 mip level 계산 (가장 낮은 해상도)
+    float targetMipLevel = clamp(ceil(log2(maxSize)), 0.0, float(u_maxMipLevel));
+    int startMipLevel = int(targetMipLevel);
+    
+    vec2 center = (minScreen + maxScreen) * 0.5;
+    vec2 halfSize = (maxScreen - minScreen) * 0.5;
+    
+    // 낮은 해상도(높은 mip level)부터 시작해서 점진적으로 높은 해상도로
+    for (int mip = startMipLevel; mip >= 0; mip--)
+    {
+        // 현재 mip level에서 4개 코너 샘플링
+        float hizDepth0 = sampleHiZTexture(mip, center + vec2(-halfSize.x, -halfSize.y));
+        float hizDepth1 = sampleHiZTexture(mip, center + vec2(+halfSize.x, -halfSize.y));
+        float hizDepth2 = sampleHiZTexture(mip, center + vec2(-halfSize.x, +halfSize.y));
+        float hizDepth3 = sampleHiZTexture(mip, center + vec2(+halfSize.x, +halfSize.y));
+        
+        float maxHZBDepth = max(max(hizDepth0, hizDepth1), max(hizDepth2, hizDepth3));
+        
+        // 현재 레벨에서 확실히 가려졌으면 즉시 false 반환
+        if (minDepth > maxHZBDepth + DEPTH_EPSILON) {
+            return false;
+        }
+        
+        // 현재 레벨에서 통과했으면 다음 (더 높은 해상도) 레벨로 계속
+    }
+    
+    // 모든 레벨을 통과하면 가시
+    return true;
+}
+
 void main()
 {
     uint gid = gl_GlobalInvocationID.x;
@@ -97,50 +165,30 @@ void main()
     float minDepth;
     vec3 worldCenter;
     
+    // AABB를 화면에 투영
     if (!projectAABB(worldAABB, minScreen, maxScreen, minDepth, worldCenter)) {
-        debugDepths[instanceIdx] = -0.5;  // 투영 실패
-        return;
-    }
-
-    // ✅✅✅ 모든 프러스텀 통과 객체의 깊이 저장
-    debugDepths[instanceIdx] = minDepth;
-    
-    vec2 sizeUV = maxScreen - minScreen;
-    vec2 sizePixels = sizeUV * u_screenSize;
-    float maxSize = max(sizePixels.x, sizePixels.y);
-    
-    bool passedHiZ = false;
-
-    if (maxSize < 1.0) 
-    {
-        passedHiZ = true;
-    }
-    else
-    {
-        float mipLevel = clamp(ceil(log2(maxSize)), 0.0, float(u_maxMipLevel));
-
-        vec2 center = (minScreen + maxScreen) * 0.5;
-        vec2 halfSize = (maxScreen - minScreen) * 0.5;
-        
-        float hizDepth0 = textureLod(u_hizTexture, center + vec2(-halfSize.x, -halfSize.y), mipLevel).r;
-        float hizDepth1 = textureLod(u_hizTexture, center + vec2(+halfSize.x, -halfSize.y), mipLevel).r;
-        float hizDepth2 = textureLod(u_hizTexture, center + vec2(-halfSize.x, +halfSize.y), mipLevel).r;
-        float hizDepth3 = textureLod(u_hizTexture, center + vec2(+halfSize.x, +halfSize.y), mipLevel).r;
-        
-        float maxHZBDepth = max(max(hizDepth0, hizDepth1), max(hizDepth2, hizDepth3));
-        
-        if (minDepth <= maxHZBDepth + DEPTH_EPSILON)
-        {
-            passedHiZ = true;
+        if (u_isDebugMode) {
+            debugDepths[instanceIdx] = -0.5;  // 투영 실패
         }
-    }
-    
-    if (!passedHiZ) { 
         return;
     }
 
-    float distance = length(u_cameraPosition - worldCenter);    
+    // 디버그 모드: 모든 프러스텀 통과 객체의 깊이 저장
+    if (u_isDebugMode) {
+        debugDepths[instanceIdx] = minDepth;
+    }
     
+    // 계층적 HiZ 테스트
+    bool passedHiZ = false;
+    
+    if (!passedHiZ) {
+        passedHiZ = hierarchicalOcclusionTest(minScreen, maxScreen, minDepth);
+    }
+    
+    if (!passedHiZ) return;
+    
+    // LOD 분류 및 가시 인스턴스 목록에 추가
+    float distance = length(u_cameraPosition - worldCenter);    
     if (distance < u_lodDistance)
     {
         uint slot = atomicAdd(visibleCount_LOD0, 1);

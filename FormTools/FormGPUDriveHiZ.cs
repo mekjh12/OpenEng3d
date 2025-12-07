@@ -198,7 +198,7 @@ namespace FormTools
             {
                 // GPU 드리븐 렌더러 초기화
                 _gpuDriven = new GPUCullingRenderer(PROJECT_PATH);
-                _gpuDriven.Initialize("Palm6", _treeModel, _terrainRegion);
+                _gpuDriven.Initialize("Palm6", _treeModel, _hzbuffer.Levels, _terrainRegion);
                 _culledText.Text = "상세지형이 로딩이 완료됨";
                 _isStarted = true;
             }
@@ -216,7 +216,7 @@ namespace FormTools
                 _hzbuffer.UnbindFramebuffer();
 
                 // ✅ 밉맵 생성
-                _hzbuffer.GenerateMipmapsUsingFragment();
+                _hzbuffer.GenerateMipmapsUsingFragment(maxLevel: -1);
 
                 _gpuDriven?.Update(camera, _viewFrustum, _hzbuffer);
 
@@ -225,6 +225,7 @@ namespace FormTools
                 _prevCameraPosition = camera.Position;
             }
 
+            /*
             uint visibleCount = _gpuDriven.GetVisibleCountDebug();
 
             if (_visibleCount != visibleCount)
@@ -236,6 +237,7 @@ namespace FormTools
                 _visibleCount = visibleCount;
                 _culledText.Text = $"가시 객체 {_visibleCount}개, HZB Level: {_level}";
             }
+            */
 
             // 렌더링 루프에서
             _fpsText.Text = $"FPS: {FramePerSecond.FPS:F1}";
@@ -256,7 +258,9 @@ namespace FormTools
             // 계층적 Z-버퍼 렌더링
             if (_isVisibleDepthBuffer)
             {
+                Gl.PolygonMode(MaterialFace.FrontAndBack,  PolygonMode.Fill);
                 _hzbuffer.RenderDepthBuffer(_hzmDepthShader, camera, level: _level);
+                Gl.PolygonMode(MaterialFace.FrontAndBack, _glControl3.PolygonMode);
             }
             else
             {

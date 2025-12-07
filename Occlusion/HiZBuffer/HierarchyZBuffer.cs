@@ -23,7 +23,7 @@ namespace Occlusion
         // ===================================================================
 
         protected const int POSITION_ATTRIB = 0;    // 위치 속성 위치
-        protected const int TExCOORD_ATTRIB = 1;    // 텍스처 좌표 속성 위치
+        protected const int TEXCOORD_ATTRIB = 1;    // 텍스처 좌표 속성 위치
         protected const int PATCH_VERTICES = 4;     // 패치 정점 수
 
 
@@ -57,7 +57,7 @@ namespace Occlusion
 
         public uint Framebuffer => _fbo;
         public uint DepthTexture => _depthTexture;
-        public uint HiZTexture => _hzbTextures[0];
+        public uint[] HiZTexture => _hzbTextures;
         public int Levels => _levels;
         public int Width => _width;
         public int Height => _height;
@@ -237,14 +237,14 @@ namespace Occlusion
             {
                 Gl.BindVertexArray(terrainModel.VAO);
                 Gl.EnableVertexAttribArray(POSITION_ATTRIB);
-                Gl.EnableVertexAttribArray(TExCOORD_ATTRIB);
+                Gl.EnableVertexAttribArray(TEXCOORD_ATTRIB);
                 Gl.BindBuffer(BufferTarget.ElementArrayBuffer, terrainModel.IBO);
                 Gl.PatchParameter(PatchParameterName.PatchVertices, PATCH_VERTICES);
                 Gl.DrawElements(PrimitiveType.Patches, terrainModel.VertexCount, DrawElementsType.UnsignedInt, IntPtr.Zero);
             }
             finally
             {
-                Gl.DisableVertexAttribArray(TExCOORD_ATTRIB);
+                Gl.DisableVertexAttribArray(TEXCOORD_ATTRIB);
                 Gl.DisableVertexAttribArray(POSITION_ATTRIB);
                 Gl.BindVertexArray(0);
                 shader.Unbind();
@@ -259,7 +259,7 @@ namespace Occlusion
         /// <summary>
         /// Fragment 셰이더를 사용하여 밉맵을 생성합니다.
         /// </summary>
-        /// <param name="maxLevel">생성할 최대 레벨</param>
+        /// <param name="maxLevel">생성할 최대 레벨 (음수이면 최대 레벨)</param>
         public void GenerateMipmapsUsingFragment(int maxLevel = -1, bool isTransferToCpu = false)
         {
             if (maxLevel < 0)

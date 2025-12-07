@@ -75,6 +75,11 @@ namespace GPUDriven
         // HiZ 컨트롤
         private bool _enableHiZCulling = true;
 
+        // 드로우 커맨드
+        float[] debugInit = new float[MAX_INSTANCES];
+        uint[] count = new uint[1];
+        DrawArraysIndirectCommand cmd;
+
         // 성능 모니터링
         private int _frameCount = 0;
         private uint _lastVisibleCount = 0;
@@ -90,10 +95,15 @@ namespace GPUDriven
             _computeTimer = new Stopwatch();
         }
 
-        public void Initialize(string modelName, TexturedModel[] treeModel, TerrainRegion terrainRegion = null)
+        public void Initialize(string modelName, TexturedModel[] treeModel, int maxMipLevels = 0, TerrainRegion terrainRegion = null)
         {
             _modelName = modelName;
             _treeModel = treeModel;
+
+            if (maxMipLevels > 10)
+            {
+                throw new ArgumentException("Max mip levels exceed limit (10)");
+            }
 
             SetupMeshVAO();
             CalculateAABB(_treeModel, ref _modelAABB);
@@ -101,7 +111,7 @@ namespace GPUDriven
 
             GenerateInstancePositions(terrainRegion);
             CreateSSBOs();
-            LoadShaders(_projPath);
+            LoadShaders(_projPath, maxMipLevels);
             UploadToGPU();
 
             // 임포스터 시스템 초기화
@@ -143,10 +153,10 @@ namespace GPUDriven
             return new AABB(min, max);
         }
 
-        private void LoadShaders(string projPath)
+        private void LoadShaders(string projPath, int maxMipLevels)
         {
             _cullingCompute = new FrustumCullingComputeShader(projPath);
-            _hizCullingCompute = new HiZOcclusionComputeShader(projPath);
+            _hizCullingCompute = new HiZOcclusionComputeShader(projPath, maxMipLevels);
             _instancedShader = new GPUInstancedShader(projPath);
             _billboardShader = new GPUBillboardShader(projPath);
             _impostorShader = new ImpostorShader(projPath);
@@ -176,7 +186,9 @@ namespace GPUDriven
         private void GenerateInstancePositions(TerrainRegion terrainRegion)
         {
             int gridSize = 300;
-            float spacing = 20f;
+            float spacing = 15f;
+            float halfSpacing = spacing / 2f;
+            float quaterSpacing = spacing / 4f;
             Random rand = new Random(42);
             Vertex3f position = Vertex3f.Zero;
 
@@ -185,8 +197,8 @@ namespace GPUDriven
                 int x = i % gridSize;
                 int y = i / gridSize;
 
-                float posX = (x - gridSize / 2) * spacing;// + (float)(rand.NextDouble() * 2 - 1);
-                float posY = (y - gridSize / 2) * spacing;// + (float)(rand.NextDouble() * 2 - 1);
+                float posX = (x - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
+                float posY = (y - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
                 position.x = posX;
                 position.y = posY;
 
@@ -194,7 +206,7 @@ namespace GPUDriven
                     TerrainConstants.DEFAULT_VERTICAL_SCALE);
 
                 float rotZ = (float)(rand.NextDouble() * Math.PI * 2);
-                float scale = 0.99f + (float)(rand.NextDouble() * 0.01f);
+                float scale = 0.5f + (float)(rand.NextDouble() * 1.0f);
 
                 _transforms[i] = Matrix4x4f.Translated(posX, posY, posZ) *
                                 Matrix4x4f.RotatedZ(rotZ.ToDegree()) *
@@ -228,6 +240,7 @@ namespace GPUDriven
             {
                 UpdateIndirectBuffer(_indirectBuffers[i], _counterSSBO, _vertexCount[i]);
             }
+
             UpdateIndirectBuffer(_indirectBuffer_LOD1, _counterSSBO_LOD1, 6);
 
             _frameCount++;
@@ -259,6 +272,7 @@ namespace GPUDriven
             _cullingCompute.Unbind();
         }
 
+
         private void PerformHiZCulling(Camera camera, HierarchyZBuffer hzBuffer)
         {
             // 최종 카운터 초기화
@@ -268,42 +282,46 @@ namespace GPUDriven
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _counterSSBO_LOD1);
             Gl.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, 4, zero);
 
-            // ✅ 디버그 버퍼 초기화 (음수로 초기화하여 미처리 인스턴스 구별)
-            float[] debugInit = new float[MAX_INSTANCES];
-            for (int i = 0; i < MAX_INSTANCES; i++)
-                debugInit[i] = -1.0f;
-
-            Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _debugDepthSSBO);
-            fixed (float* ptr = debugInit)
+            if (_debugDepthMode)
             {
-                Gl.BufferSubData(BufferTarget.ShaderStorageBuffer,
-                    IntPtr.Zero, (uint)(MAX_INSTANCES * 4), (IntPtr)ptr);
+                // 디버그 버퍼 초기화 (음수로 초기화하여 미처리 인스턴스 구별)
+                for (int i = 0; i < MAX_INSTANCES; i++)
+                    debugInit[i] = -1.0f;
+
+                Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _debugDepthSSBO);
+                fixed (float* ptr = debugInit)
+                {
+                    Gl.BufferSubData(BufferTarget.ShaderStorageBuffer,
+                        IntPtr.Zero, (uint)(MAX_INSTANCES * 4), (IntPtr)ptr);
+                }
             }
 
             _hizCullingCompute.Bind();
 
-            // ✅ SSBO 바인딩 (AABB는 binding=3으로 동일)
+            // SSBO 바인딩
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);         // transforms[]
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _frustumPassedSSBO);     // frustumPassedIndices[]
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 2, _frustumCounterSSBO);    // frustumPassedCount
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 3, _aabbSSBO);              // ✅ worldAABBs[] (이미 월드 공간)
+            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 3, _aabbSSBO);              // worldAABBs[] (이미 월드 공간)
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 4, _visibleIndicesSSBO);    // visibleIndices_LOD0[]
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 5, _counterSSBO);           // visibleCount_LOD0
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 6, _visibleIndicesSSBO_LOD1); // visibleIndices_LOD1[]
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 7, _counterSSBO_LOD1);      // visibleCount_LOD1
-                                                                                            // SSBO 바인딩에 디버그 버퍼 추가
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 8, _debugDepthSSBO);  // ✅ 디버그 버퍼
+
+            if (_debugDepthMode)
+                Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 8, _debugDepthSSBO);        // 디버그 버퍼
 
             // 유니폼 설정
-            _hizCullingCompute.LoadHiZTexture(TextureUnit.Texture0, hzBuffer.HiZTexture);
-            _hizCullingCompute.LoadVPMatrix(camera.VPMatrix);
+            _hizCullingCompute.LoadHiZTextures(hzBuffer.HiZTexture);
             _hizCullingCompute.LoadMaxMipLevel(hzBuffer.Levels - 1);
+            _hizCullingCompute.LoadVPMatrix(camera.VPMatrix);
             _hizCullingCompute.LoadCameraPosition(camera.Position);
             _hizCullingCompute.LoadLODDistance(LOD_DISTANCE);
             _hizCullingCompute.LoadScreenSize(hzBuffer.Width, hzBuffer.Height);
             _hizCullingCompute.LoadMaxInstanceCount(MAX_INSTANCES);
             _hizCullingCompute.LoadCameraNearFar(camera.NEAR, camera.FAR);
             _hizCullingCompute.LoadViewMatrix(camera.ViewMatrix);
+            _hizCullingCompute.LoadIsDebugMode(_debugDepthMode);
 
             // Frustum 통과한 개수만큼만 처리
             uint[] frustumCount = new uint[1];
@@ -323,7 +341,6 @@ namespace GPUDriven
         private void CopyFrustumResultToFinal()
         {
             // HiZ 비활성화 시: Frustum 통과한 모든 객체를 LOD0로 처리
-            uint[] count = new uint[1];
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _frustumCounterSSBO);
             Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, 4, count);
 
@@ -480,7 +497,7 @@ namespace GPUDriven
         {
             Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, indirectBuffer);
 
-            DrawArraysIndirectCommand cmd = new DrawArraysIndirectCommand
+            cmd = new DrawArraysIndirectCommand
             {
                 VertexCount = vertexCount,
                 InstanceCount = 0,
