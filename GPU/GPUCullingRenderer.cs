@@ -49,7 +49,7 @@ namespace GPUDriven
         private bool _isDebugPrint = true;
         private uint _debugDepthSSBO;
         private DepthDebugInstancedShader _depthDebugShader;
-        private bool _debugDepthMode = true;
+        private bool _debugDepthMode = false;
         private bool _enableEdgeLine = true;
         public bool DebugDepthMode { get => _debugDepthMode; set => _debugDepthMode = value; }
         public bool EnableEdgeLine { get => _enableEdgeLine; set => _enableEdgeLine = value; }
@@ -74,6 +74,17 @@ namespace GPUDriven
         private uint[] _lastVisibleCount_LOD1;
         private uint _lastFrustumPassed = 0;
         private Stopwatch _computeTimer;
+
+        // DrawArraysIndirectCommand 구조체도 필요하면 추가
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct DrawArraysIndirectCommand
+        {
+            public uint VertexCount;
+            public uint InstanceCount;
+            public uint First;
+            public uint BaseInstance;
+        }
+
 
         public GPUCullingRenderer(string projPath)
         {
@@ -147,7 +158,7 @@ namespace GPUDriven
 
         private void CreateSSBOs()
         {
-            // ===== 공통 인스턴스 데이터 버퍼 =====
+            // ===== 공통 인스턴스 데이터 버퍼 ===== (동일)
             _transformSSBO = Gl.GenBuffer();
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _transformSSBO);
             Gl.BufferData(BufferTarget.ShaderStorageBuffer,
@@ -166,7 +177,7 @@ namespace GPUDriven
                 (uint)(MAX_INSTANCES * 4), IntPtr.Zero, BufferUsage.StaticDraw);
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 9, _batchIDSSBO);
 
-            // ===== Frustum 중간 버퍼 =====
+            // ===== Frustum 중간 버퍼 ===== (동일)
             _frustumPassedSSBO = Gl.GenBuffer();
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _frustumPassedSSBO);
             Gl.BufferData(BufferTarget.ShaderStorageBuffer,
@@ -178,7 +189,7 @@ namespace GPUDriven
             Gl.BufferData(BufferTarget.ShaderStorageBuffer, 4, IntPtr.Zero, BufferUsage.DynamicDraw);
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 2, _frustumCounterSSBO);
 
-            // ===== LOD0 통합 버퍼 (Offset 기반) =====
+            // ===== LOD 통합 버퍼 ===== (동일)
             _visibleIndicesSSBO_LOD0 = Gl.GenBuffer();
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleIndicesSSBO_LOD0);
             Gl.BufferData(BufferTarget.ShaderStorageBuffer,
@@ -191,7 +202,6 @@ namespace GPUDriven
                 (uint)(MAX_BATCHES * 4), IntPtr.Zero, BufferUsage.DynamicDraw);
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 5, _visibleCountsSSBO_LOD0);
 
-            // ===== LOD1 통합 버퍼 (Offset 기반) =====
             _visibleIndicesSSBO_LOD1 = Gl.GenBuffer();
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleIndicesSSBO_LOD1);
             Gl.BufferData(BufferTarget.ShaderStorageBuffer,
@@ -204,37 +214,56 @@ namespace GPUDriven
                 (uint)(MAX_BATCHES * 4), IntPtr.Zero, BufferUsage.DynamicDraw);
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 7, _visibleCountsSSBO_LOD1);
 
-            // 디버그 버퍼
             _debugDepthSSBO = Gl.GenBuffer();
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _debugDepthSSBO);
             Gl.BufferData(BufferTarget.ShaderStorageBuffer,
                 (uint)(MAX_INSTANCES * 4), IntPtr.Zero, BufferUsage.DynamicDraw);
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 8, _debugDepthSSBO);
 
-            // ===== Indirect Buffers (Batch별) =====
+            // ===== ⭐ Indirect Buffers (핵심 수정) =====
             _indirectBuffers_LOD0 = new uint[MAX_BATCHES][];
             _indirectBuffer_LOD1 = new uint[MAX_BATCHES];
 
             for (int b = 0; b < MAX_BATCHES; b++)
             {
-                // Batch가 실제로 사용되는 경우만 생성
                 if (b < _batchManager.ActualBatchCount)
                 {
                     var batch = _batchManager.GetBatch((uint)b);
 
-                    // LOD0: 메시별 Indirect Buffer
+                    // ===== LOD0: 메시별 Indirect Buffer =====
                     _indirectBuffers_LOD0[b] = new uint[batch.Models.Length];
+
                     for (int m = 0; m < batch.Models.Length; m++)
                     {
                         _indirectBuffers_LOD0[b][m] = Gl.GenBuffer();
                         Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectBuffers_LOD0[b][m]);
-                        Gl.BufferData(BufferTarget.DrawIndirectBuffer, 16, IntPtr.Zero, BufferUsage.DynamicDraw);
+
+                        // ⭐ 정적 필드 초기화 (VertexCount, First, BaseInstance)
+                        DrawArraysIndirectCommand cmd = new DrawArraysIndirectCommand
+                        {
+                            VertexCount = batch.VertexCounts[m],  // 메시의 정점 수
+                            InstanceCount = 0,                     // GPU가 채울 필드
+                            First = 0,
+                            BaseInstance = 0
+                        };
+
+                        Gl.BufferData(BufferTarget.DrawIndirectBuffer, 16, cmd, BufferUsage.DynamicDraw);
                     }
 
-                    // LOD1: Batch별 하나
+                    // ===== LOD1: Impostor Buffer =====
                     _indirectBuffer_LOD1[b] = Gl.GenBuffer();
                     Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectBuffer_LOD1[b]);
-                    Gl.BufferData(BufferTarget.DrawIndirectBuffer, 16, IntPtr.Zero, BufferUsage.DynamicDraw);
+
+                    // ⭐ Impostor는 항상 6개 정점 (2 triangles)
+                    DrawArraysIndirectCommand cmdLOD1 = new DrawArraysIndirectCommand
+                    {
+                        VertexCount = 6,       // 쿼드 = 2개 삼각형
+                        InstanceCount = 0,     // GPU가 채울 필드
+                        First = 0,
+                        BaseInstance = 0
+                    };
+
+                    Gl.BufferData(BufferTarget.DrawIndirectBuffer, 16, cmdLOD1, BufferUsage.DynamicDraw);
                 }
             }
         }
@@ -290,7 +319,11 @@ namespace GPUDriven
             // ===== 3단계: Indirect Buffer 업데이트 =====
             UpdateIndirectBuffers();
 
-            DebugPrintGPUState(camera);
+            // ⭐ 디버그 출력은 렌더링 전에 (필요시)
+            if (_frameCount % 100 == 0)  // 매 100프레임마다
+            {
+                //DebugPrintGPUState(camera);
+            }
 
             _frameCount++;
         }
@@ -395,6 +428,14 @@ namespace GPUDriven
             _hizCullingCompute.LoadBatchStarts(batchStarts);
             _hizCullingCompute.LoadBatchCounts(batchCounts);
 
+            DebugPrint(camera);
+
+            _hizCullingCompute.Unbind();
+
+        }
+
+        private void DebugPrint(Camera camera)
+        {
             uint[] frustumCount = new uint[1];
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _frustumCounterSSBO);
             Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, 4, frustumCount);
@@ -404,29 +445,6 @@ namespace GPUDriven
             Gl.MemoryBarrier(MemoryBarrierMask.ShaderStorageBarrierBit);
 
             _hizCullingCompute.Unbind();
-
-            // PerformHiZCulling 마지막에
-            if (_debugDepthMode && _frameCount == 0)
-            {
-                float[] debugData = new float[40];  // 10개 * 4
-                Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _debugDepthSSBO);
-                fixed (float* ptr = debugData)
-                {
-                    Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, 160, (IntPtr)ptr);
-                }
-
-                Console.WriteLine("\n=== Shader Debug Data (first 10 threads) ===");
-                for (int i = 0; i < 10; i++)
-                {
-                    int instanceIdx = (int)debugData[i * 4 + 0];
-                    int batchStart = (int)debugData[i * 4 + 1];
-                    int relativeSlot = (int)debugData[i * 4 + 2];
-                    int absoluteSlot = (int)debugData[i * 4 + 3];
-
-                    Console.WriteLine($"Thread {i}: instanceIdx={instanceIdx}, " +
-                        $"batchStart={batchStart}, relativeSlot={relativeSlot}, absoluteSlot={absoluteSlot}");
-                }
-            }
 
             // Frustum 통과 개수
             if (_isDebugPrint)
@@ -445,7 +463,7 @@ namespace GPUDriven
                             (uint)(sampleIndices.Length * 4), (IntPtr)ptr);
                     }
 
-                    Console.WriteLine("\nFrustum Passed Samples (first 10):");
+                    Console.WriteLine("\n[1] Frustum Passed Samples (first 10):");
                     for (int i = 0; i < sampleIndices.Length; i++)
                     {
                         Console.WriteLine($"  [{i}] = {sampleIndices[i]}");
@@ -453,7 +471,7 @@ namespace GPUDriven
 
                     // ===== BatchID 확인 =====
                     var batchIDs = _batchManager.GetBatchIDs();
-                    Console.WriteLine("\nBatchID for these samples:");
+                    Console.WriteLine("\n[2] BatchID for these samples:");
                     for (int i = 0; i < sampleIndices.Length; i++)
                     {
                         int idx = sampleIndices[i];
@@ -465,7 +483,7 @@ namespace GPUDriven
 
                     // ===== Transform 위치 확인 =====
                     var transforms = _batchManager.GetTransforms();
-                    Console.WriteLine("\nWorld positions for these samples:");
+                    Console.WriteLine("\n[3] World positions for these samples:");
                     for (int i = 0; i < Math.Min(3, sampleIndices.Length); i++)
                     {
                         int idx = sampleIndices[i];
@@ -501,6 +519,31 @@ namespace GPUDriven
                 {
                     Console.WriteLine($"  Batch {b}: LOD0={countsLOD0[b]}, LOD1={countsLOD1[b]}");
                 }
+
+
+                Console.WriteLine($"[6] visible indices lod0");
+                var batchStarts = _batchManager.GetBatchStarts();
+                var batchLengths = _batchManager.GetBatchCounts();
+
+                uint[] indices = new uint[MAX_INSTANCES];
+                Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleIndicesSSBO_LOD0);
+                fixed (uint* ptr = indices)
+                {
+                    Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero,
+                        (uint)(MAX_INSTANCES * 4), (IntPtr)ptr);
+                }
+
+                for (int b = 0; b < 3; b++)
+                {
+                    int start = (int)batchStarts[b];
+                    for (int i = 0; i < countsLOD0[b]; i++)
+                    {
+                        int index = start + i;
+                        Console.WriteLine($"batch={b}, [{index}] {indices[index]}");
+                    }
+                    Console.WriteLine("-------------");
+                }
+
             }
         }
 
@@ -527,61 +570,42 @@ namespace GPUDriven
 
         private void UpdateIndirectBuffers()
         {
-            // 전역 카운터 읽기
-            uint[] globalCountLOD0 = new uint[1];
-            uint[] globalCountLOD1 = new uint[1];
-
-            Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleCountsSSBO_LOD0);
-            Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, 4, globalCountLOD0);
-
-            Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleCountsSSBO_LOD1);
-            Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, 4, globalCountLOD1);
-
-            if (_frameCount % 100 == 0)
-            {
-                Console.WriteLine($"\n[UpdateIndirectBuffers] Global Counts:");
-                Console.WriteLine($"  LOD0[0] = {globalCountLOD0[0]}");
-                Console.WriteLine($"  LOD1[0] = {globalCountLOD1[0]}");
-            }
-
+            // ===== 배치별 처리 =====
             for (uint b = 0; b < _batchManager.ActualBatchCount; b++)
             {
-                var batch = _batchManager.GetBatch(b);
+                BatchDescriptor batch = _batchManager.GetBatch(b);
 
-                // LOD0 Indirect Buffers (모든 배치가 같은 버퍼 공유)
+                uint srcOffsetLOD0 = b * 4;  // visibleCountsSSBO_LOD0[b]
+                uint srcOffsetLOD1 = b * 4;  // visibleCountsSSBO_LOD1[b]
+                uint dstOffset = 4;          // cmd.InstanceCount 위치
+
+                // ===== LOD0: 소스 버퍼 1회 바인딩 =====
+                Gl.BindBuffer(BufferTarget.CopyReadBuffer, _visibleCountsSSBO_LOD0);
+
                 for (int m = 0; m < batch.Models.Length; m++)
                 {
-                    Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectBuffers_LOD0[b][m]);
-
-                    DrawArraysIndirectCommand cmd = new DrawArraysIndirectCommand
-                    {
-                        VertexCount = batch.VertexCounts[m],
-                        InstanceCount = globalCountLOD0[0],  // 전역 카운트
-                        First = 0,
-                        BaseInstance = 0
-                    };
-
-                    Gl.BufferSubData(BufferTarget.DrawIndirectBuffer, IntPtr.Zero, 16, cmd);
-
-                    if (_frameCount % 100 == 0 && m == 0)
-                    {
-                        Console.WriteLine($"  Batch {b} Mesh[0]: VertexCount={cmd.VertexCount}, InstanceCount={cmd.InstanceCount}");
-                    }
+                    Gl.BindBuffer(BufferTarget.CopyWriteBuffer, _indirectBuffers_LOD0[b][m]);
+                    Gl.CopyBufferSubData(
+                        BufferTarget.CopyReadBuffer,
+                        BufferTarget.CopyWriteBuffer,
+                        (IntPtr)srcOffsetLOD0,
+                        (IntPtr)dstOffset,
+                        4);
                 }
 
-                // LOD1 Indirect Buffer
-                Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectBuffer_LOD1[b]);
-
-                DrawArraysIndirectCommand cmdLOD1 = new DrawArraysIndirectCommand
-                {
-                    VertexCount = 6,
-                    InstanceCount = globalCountLOD1[0],  // 전역 카운트
-                    First = 0,
-                    BaseInstance = 0
-                };
-
-                Gl.BufferSubData(BufferTarget.DrawIndirectBuffer, IntPtr.Zero, 16, cmdLOD1);
+                // ===== LOD1: Impostor =====
+                Gl.BindBuffer(BufferTarget.CopyReadBuffer, _visibleCountsSSBO_LOD1);
+                Gl.BindBuffer(BufferTarget.CopyWriteBuffer, _indirectBuffer_LOD1[b]);
+                Gl.CopyBufferSubData(
+                    BufferTarget.CopyReadBuffer,
+                    BufferTarget.CopyWriteBuffer,
+                    (IntPtr)srcOffsetLOD1,
+                    (IntPtr)dstOffset,
+                    4);
             }
+
+            // ★ GPU 명령 순서 보장
+            Gl.MemoryBarrier(MemoryBarrierMask.CommandBarrierBit);
         }
 
         private void UpdateIndirectBuffer(uint indirectBuffer, uint counterBuffer, uint batchIndex, uint vertexCount)
@@ -613,225 +637,6 @@ namespace GPUDriven
                 4);
         }
 
-        // GPUCullingRenderer 클래스에 추가
-
-        /// <summary>
-        /// GPU 상태를 읽어서 상세하게 출력하는 디버그 함수
-        /// </summary>
-        public void DebugPrintGPUState(Camera camera)
-        {
-            Console.WriteLine("\n" + new string('=', 80));
-            Console.WriteLine("GPU CULLING STATE DEBUG");
-            Console.WriteLine(new string('=', 80));
-
-            // ===== 1. Frustum Culling 결과 =====
-            uint[] frustumCount = new uint[1];
-            Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _frustumCounterSSBO);
-            Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, 4, frustumCount);
-
-            Console.WriteLine($"\n[1] Frustum Culling:");
-            Console.WriteLine($"  Passed: {frustumCount[0]} / {MAX_INSTANCES}");
-
-            // ===== 2. Frustum 통과 인덱스 샘플 =====
-            if (frustumCount[0] > 0)
-            {
-                int sampleCount = Math.Min(10, (int)frustumCount[0]);
-                int[] frustumSamples = new int[sampleCount];
-
-                Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _frustumPassedSSBO);
-                fixed (int* ptr = frustumSamples)
-                {
-                    Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero,
-                        (uint)(sampleCount * 4), (IntPtr)ptr);
-                }
-
-                Console.WriteLine($"\n[2] Frustum Passed Samples (first {sampleCount}):");
-                var batchIDs = _batchManager.GetBatchIDs();
-                var transforms = _batchManager.GetTransforms();
-
-                for (int i = 0; i < sampleCount; i++)
-                {
-                    int idx = frustumSamples[i];
-                    if (idx >= 0 && idx < batchIDs.Length)
-                    {
-                        uint batchID = batchIDs[idx];
-                        var pos = new Vertex3f(
-                            transforms[idx][3, 0],
-                            transforms[idx][3, 1],
-                            transforms[idx][3, 2]);
-                        float dist = (pos - camera.Position).Length();
-
-                        Console.WriteLine($"  [{i}] Instance {idx:D5} → Batch {batchID}, " +
-                            $"Pos={pos.x:F1},{pos.y:F1},{pos.z:F1}, Dist={dist:F1}m");
-                    }
-                }
-            }
-
-            // ===== 3. Batch별 LOD 카운트 =====
-            uint[] countsLOD0 = new uint[MAX_BATCHES];
-            uint[] countsLOD1 = new uint[MAX_BATCHES];
-
-            Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleCountsSSBO_LOD0);
-            fixed (uint* ptr = countsLOD0)
-            {
-                Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero,
-                    (uint)(MAX_BATCHES * 4), (IntPtr)ptr);
-            }
-
-            Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleCountsSSBO_LOD1);
-            fixed (uint* ptr = countsLOD1)
-            {
-                Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero,
-                    (uint)(MAX_BATCHES * 4), (IntPtr)ptr);
-            }
-
-            Console.WriteLine($"\n[3] Visible Counts per Batch:");
-            Console.WriteLine($"  {"Batch",-8} {"Model",-20} {"LOD Dist",-10} {"LOD0",-10} {"LOD1",-10} {"Total",-10}");
-            Console.WriteLine($"  {new string('-', 78)}");
-
-            uint totalLOD0 = 0;
-            uint totalLOD1 = 0;
-
-            for (uint b = 0; b < _batchManager.ActualBatchCount; b++)
-            {
-                var batch = _batchManager.GetBatch(b);
-                totalLOD0 += countsLOD0[b];
-                totalLOD1 += countsLOD1[b];
-
-                Console.WriteLine($"  {b,-8} {batch.ModelName,-20} {batch.LODDistance,-10:F1} " +
-                    $"{countsLOD0[b],-10} {countsLOD1[b],-10} {countsLOD0[b] + countsLOD1[b],-10}");
-            }
-
-            Console.WriteLine($"  {new string('-', 78)}");
-            Console.WriteLine($"  {"TOTAL",-39} {totalLOD0,-10} {totalLOD1,-10} {totalLOD0 + totalLOD1,-10}");
-
-            // ===== 4. LOD0 인덱스 샘플 =====
-            if (totalLOD0 > 0)
-            {
-                int sampleCount = Math.Min(5, (int)totalLOD0);
-                int[] lod0Samples = new int[sampleCount];
-
-                Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleIndicesSSBO_LOD0);
-                fixed (int* ptr = lod0Samples)
-                {
-                    Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero,
-                        (uint)(sampleCount * 4), (IntPtr)ptr);
-                }
-
-                Console.WriteLine($"\n[4] LOD0 Visible Samples (first {sampleCount}):");
-                var batchIDs = _batchManager.GetBatchIDs();
-                var transforms = _batchManager.GetTransforms();
-                var aabbs = _batchManager.GetAABBs();
-
-                for (int i = 0; i < sampleCount; i++)
-                {
-                    int idx = lod0Samples[i];
-                    if (idx >= 0 && idx < batchIDs.Length)
-                    {
-                        uint batchID = batchIDs[idx];
-                        var batch = _batchManager.GetBatch(batchID);
-                        var pos = new Vertex3f(
-                            transforms[idx][3, 0],
-                            transforms[idx][3, 1],
-                            transforms[idx][3, 2]);
-                        float dist = (pos - camera.Position).Length();
-                        var center = (aabbs[idx].Min + aabbs[idx].Max) * 0.5f;
-
-                        Console.WriteLine($"  [{i}] Instance {idx:D5} → Batch {batchID} ({batch.ModelName})");
-                        Console.WriteLine($"      Pos={pos.x:F1},{pos.y:F1},{pos.z:F1}, " +
-                            $"Dist={dist:F1}m (LOD threshold: {batch.LODDistance:F1}m)");
-                        Console.WriteLine($"      AABB Center={center.x:F1},{center.y:F1},{center.z:F1}");
-                    }
-                }
-            }
-
-            // ===== 5. LOD1 인덱스 샘플 =====
-            if (totalLOD1 > 0)
-            {
-                int sampleCount = Math.Min(5, (int)totalLOD1);
-                int[] lod1Samples = new int[sampleCount];
-
-                Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleIndicesSSBO_LOD1);
-                fixed (int* ptr = lod1Samples)
-                {
-                    Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero,
-                        (uint)(sampleCount * 4), (IntPtr)ptr);
-                }
-
-                Console.WriteLine($"\n[5] LOD1 Visible Samples (first {sampleCount}):");
-                var batchIDs = _batchManager.GetBatchIDs();
-                var transforms = _batchManager.GetTransforms();
-                var aabbs = _batchManager.GetAABBs();
-
-                for (int i = 0; i < sampleCount; i++)
-                {
-                    int idx = lod1Samples[i];
-                    if (idx >= 0 && idx < batchIDs.Length)
-                    {
-                        uint batchID = batchIDs[idx];
-                        var batch = _batchManager.GetBatch(batchID);
-                        var pos = new Vertex3f(
-                            transforms[idx][3, 0],
-                            transforms[idx][3, 1],
-                            transforms[idx][3, 2]);
-                        float dist = (pos - camera.Position).Length();
-                        var center = (aabbs[idx].Min + aabbs[idx].Max) * 0.5f;
-
-                        Console.WriteLine($"  [{i}] Instance {idx:D5} → Batch {batchID} ({batch.ModelName})");
-                        Console.WriteLine($"      Pos={pos.x:F1},{pos.y:F1},{pos.z:F1}, " +
-                            $"Dist={dist:F1}m (LOD threshold: {batch.LODDistance:F1}m)");
-                        Console.WriteLine($"      AABB Center={center.x:F1},{center.y:F1},{center.z:F1}");
-                    }
-                }
-            }
-
-            // ===== 6. Indirect Buffer 상태 =====
-            Console.WriteLine($"\n[6] Indirect Buffer Status:");
-
-            for (uint b = 0; b < _batchManager.ActualBatchCount; b++)
-            {
-                var batch = _batchManager.GetBatch(b);
-                Console.WriteLine($"  Batch {b} ({batch.ModelName}):");
-
-                // LOD0 (메시별)
-                for (int m = 0; m < batch.Models.Length; m++)
-                {
-                    DrawArraysIndirectCommand cmd = new DrawArraysIndirectCommand();
-                    Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectBuffers_LOD0[b][m]);
-                    Gl.GetBufferSubData(BufferTarget.DrawIndirectBuffer, IntPtr.Zero, 16, cmd);
-
-                    Console.WriteLine($"    LOD0 Mesh[{m}]: VertexCount={cmd.VertexCount}, " +
-                        $"InstanceCount={cmd.InstanceCount}, First={cmd.First}, BaseInstance={cmd.BaseInstance}");
-                }
-
-                // LOD1
-                DrawArraysIndirectCommand cmdLOD1 = new DrawArraysIndirectCommand();
-                Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectBuffer_LOD1[b]);
-                Gl.GetBufferSubData(BufferTarget.DrawIndirectBuffer, IntPtr.Zero, 16, cmdLOD1);
-
-                Console.WriteLine($"    LOD1 Impostor: VertexCount={cmdLOD1.VertexCount}, " +
-                    $"InstanceCount={cmdLOD1.InstanceCount}, First={cmdLOD1.First}, BaseInstance={cmdLOD1.BaseInstance}");
-            }
-
-            // ===== 7. 카메라 정보 =====
-            Console.WriteLine($"\n[7] Camera State:");
-            Console.WriteLine($"  Position: {camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1}");
-            Console.WriteLine($"  Near/Far: {camera.NEAR:F1} / {camera.FAR:F1}");
-            Console.WriteLine($"  Direction: {camera.Forward.x:F2}, {camera.Forward.y:F2}, {camera.Forward.z:F2}");
-
-            Console.WriteLine(new string('=', 80) + "\n");
-        }
-
-        // DrawArraysIndirectCommand 구조체도 필요하면 추가
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct DrawArraysIndirectCommand
-        {
-            public uint VertexCount;
-            public uint InstanceCount;
-            public uint First;
-            public uint BaseInstance;
-        }
-
         public void Render(Camera camera)
         {
             Gl.Disable(EnableCap.Blend);
@@ -859,10 +664,11 @@ namespace GPUDriven
             // ===== LOD0: Mesh 렌더링 =====
             _instancedShader.Bind();
             _instancedShader.LoadVPMatrix(camera.VPMatrix);
-            _instancedShader.LoadBatchStartOffset(0);  // 전역 버퍼 사용
+            _instancedShader.LoadBatchStartOffset(batch.StartIndex);  // 배치의 시작 오프셋
 
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD0);
+            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 9, _batchIDSSBO);
 
             for (int m = 0; m < batch.Models.Length; m++)
             {
@@ -879,26 +685,20 @@ namespace GPUDriven
 
             _instancedShader.Unbind();
 
+            return;
+
             // ===== LOD1: Impostor 렌더링 =====
             _impostorInstancedShader.Bind();
             _impostorInstancedShader.LoadVPMatrix(camera.VPMatrix);
             _impostorInstancedShader.LoadCameraPosition(camera.Position);
-            _impostorInstancedShader.LoadBatchStartOffset(0);  // 전역 버퍼 사용
+            _impostorInstancedShader.LoadBatchStartOffset(batch.StartIndex);  // 배치의 시작 오프셋
+            //_impostorInstancedShader.LoadCurrentBatchID(batchID);
 
-            ImpostorSettings settings = _impostor.GetImpostorSettings(batch.ModelName);
-            uint textureId = _impostor.AtlasTexture(batch.ModelName);
-
-            _impostorInstancedShader.LoadImpostorAtlas(TextureUnit.Texture0, textureId);
-            _impostorInstancedShader.LoadAtlasSize(settings.AtlasSize);
-            _impostorInstancedShader.LoadIndividualSize(settings.IndividualSize);
-            _impostorInstancedShader.LoadHorizontalFrames(settings.HorizontalAngles);
-            _impostorInstancedShader.LoadVerticalFrames(settings.VerticalAngles);
-            _impostorInstancedShader.LoadAABBSizeModel(batch.ReferenceAABB.SphereRadius);
-            _impostorInstancedShader.LoadAABBCenterEntity(batch.ReferenceAABB.Center);
-            _impostorInstancedShader.LoadEnableEdgeLine(_enableEdgeLine);
+            // ... 나머지 impostor 설정 ...
 
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD1);
+            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 9, _batchIDSSBO);
 
             Gl.BindVertexArray(_point.VAO);
             Gl.EnableVertexAttribArray(0);

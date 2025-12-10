@@ -76,8 +76,8 @@ namespace Model3d
             RenderAtlas(settings, shader, texturedModels, bounds);
 
             // 디버깅(지울것)
-            GetImpostorTexture(settings, drawBorders: true).Save(@"C:\Users\mekjh\OneDrive\바탕 화면\" + modelname + ".png");
-            GetImpostorDepthTexture(settings, drawBorders: true).Save(@"C:\Users\mekjh\OneDrive\바탕 화면\" + modelname + "_depth.png");
+            //GetImpostorTexture(settings, drawBorders: true).Save(@"C:\Users\mekjh\OneDrive\바탕 화면\" + modelname + ".png");
+            //GetImpostorDepthTexture(settings, drawBorders: true).Save(@"C:\Users\mekjh\OneDrive\바탕 화면\" + modelname + "_depth.png");
 
             return _atlasRenderTarget.TextureHandle;
         }

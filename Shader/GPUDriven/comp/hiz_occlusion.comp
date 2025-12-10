@@ -2,56 +2,211 @@
 layout(local_size_x = 64) in;
 
 #define MAX_BATCHES 64
+const float MAX_DEPTH_METERS = 10000.0;
+const float DEPTH_EPSILON = 0.005;
 
 struct AABB {vec3 min; float padding1; vec3 max; float padding2;};
 
-// ===== 버퍼 =====
+// ===== 입력 버퍼 =====
 layout(std430, binding = 0) readonly buffer TransformBuffer {mat4 transforms[];};
 layout(std430, binding = 1) readonly buffer FrustumPassedBuffer {int frustumPassedIndices[];};
 layout(std430, binding = 2) readonly buffer FrustumCounterBuffer {uint frustumPassedCount;};
 layout(std430, binding = 3) readonly buffer WorldAABBBuffer {AABB worldAABBs[];};
+layout(std430, binding = 8) buffer DepthDebugBuffer {float debugDepths[];};
 layout(std430, binding = 9) readonly buffer BatchIDBuffer {uint batchIDs[];};
 
+// ===== 출력 버퍼 =====
 layout(std430, binding = 4) buffer VisibleIndicesLOD0Buffer {int visibleIndices_LOD0[];};
 layout(std430, binding = 5) buffer VisibleCountsLOD0Buffer {uint visibleCounts_LOD0[];};
 layout(std430, binding = 6) buffer VisibleIndicesLOD1Buffer {int visibleIndices_LOD1[];};
 layout(std430, binding = 7) buffer VisibleCountsLOD1Buffer {uint visibleCounts_LOD1[];};
 
-// ===== Uniform =====
-uniform float batchLODs[64];
+// ===== HiZ 텍스처 =====
+uniform sampler2D u_hizTexture0;
+uniform sampler2D u_hizTexture1;
+uniform sampler2D u_hizTexture2;
+uniform sampler2D u_hizTexture3;
+uniform sampler2D u_hizTexture4;
+uniform sampler2D u_hizTexture5;
+uniform sampler2D u_hizTexture6;
+uniform sampler2D u_hizTexture7;
+uniform sampler2D u_hizTexture8;
+uniform sampler2D u_hizTexture9;
+uniform sampler2D u_hizTexture10;
+
+// ===== Uniform 변수 =====
+uniform mat4 vp;
+uniform mat4 view;
+uniform int u_maxMipLevel;
 uniform vec3 u_cameraPosition;
+uniform vec2 u_screenSize;
 uniform int u_maxInstanceCount;
+uniform float u_cameraNear;
+uniform float u_cameraFar;
+
+// ===== Batch 관련 Uniform =====
+uniform float batchLODs[64];        // 각 Batch의 LOD 거리
+uniform uint batchStarts[64];       // 각 Batch의 시작 인덱스
+uniform uint batchCounts[64];       // 각 Batch의 최대 개수
+
+
+// mip level에 따라 적절한 텍스처에서 샘플링
+float sampleHiZTexture(int mipLevel, vec2 uv)
+{
+    if (mipLevel == 0) return texture(u_hizTexture0, uv).r;
+    if (mipLevel == 1) return texture(u_hizTexture1, uv).r;
+    if (mipLevel == 2) return texture(u_hizTexture2, uv).r;
+    if (mipLevel == 3) return texture(u_hizTexture3, uv).r;
+    if (mipLevel == 4) return texture(u_hizTexture4, uv).r;
+    if (mipLevel == 5) return texture(u_hizTexture5, uv).r;
+    if (mipLevel == 6) return texture(u_hizTexture6, uv).r;
+    if (mipLevel == 7) return texture(u_hizTexture7, uv).r;
+    if (mipLevel == 8) return texture(u_hizTexture8, uv).r;
+    if (mipLevel == 9) return texture(u_hizTexture9, uv).r;
+    return texture(u_hizTexture10, uv).r;
+}
+
+
+// AABB를 화면에 투영
+bool projectAABB(AABB worldAABB, out vec2 minScreen, out vec2 maxScreen, out float minDepth, out vec3 worldCenter)
+{
+    vec3 corners[8];
+    corners[0] = vec3(worldAABB.min.x, worldAABB.min.y, worldAABB.min.z);
+    corners[1] = vec3(worldAABB.max.x, worldAABB.min.y, worldAABB.min.z);
+    corners[2] = vec3(worldAABB.min.x, worldAABB.max.y, worldAABB.min.z);
+    corners[3] = vec3(worldAABB.max.x, worldAABB.max.y, worldAABB.min.z);
+    corners[4] = vec3(worldAABB.min.x, worldAABB.min.y, worldAABB.max.z);
+    corners[5] = vec3(worldAABB.max.x, worldAABB.min.y, worldAABB.max.z);
+    corners[6] = vec3(worldAABB.min.x, worldAABB.max.y, worldAABB.max.z);
+    corners[7] = vec3(worldAABB.max.x, worldAABB.max.y, worldAABB.max.z);
+
+    worldCenter = (worldAABB.min + worldAABB.max) * 0.5;
+
+    minScreen = vec2(10.0);
+    maxScreen = vec2(-10.0);
+    minDepth = 1e10;
+    int validCount = 0;
+
+    for (int i = 0; i < 8; i++)
+    {
+        vec4 viewPos = view * vec4(corners[i], 1.0);
+        vec4 clipPos = vp * vec4(corners[i], 1.0);
+        
+        if (clipPos.w <= 0.01) continue;
+        
+        vec3 ndc = clipPos.xyz / clipPos.w;
+        
+        if (abs(ndc.x) > 1.2 || abs(ndc.y) > 1.2) 
+            continue;
+        
+        float linearDepth = clamp(viewPos.z / MAX_DEPTH_METERS, 0.0, 1.0);
+        
+        vec2 uv = ndc.xy * 0.5 + 0.5;
+        
+        minScreen = min(minScreen, uv);
+        maxScreen = max(maxScreen, uv);
+        minDepth = min(minDepth, linearDepth);
+        validCount++;
+    }
+
+    if (validCount == 0) return false;
+    
+    minScreen = clamp(minScreen, 0.0, 1.0);
+    maxScreen = clamp(maxScreen, 0.0, 1.0);
+    
+    return true;
+}
+
+// HiZ 기반 계층적 오클루전 테스트
+bool hierarchicalOcclusionTest(vec2 minScreen, vec2 maxScreen, float minDepth)
+{
+    vec2 sizeUV = maxScreen - minScreen;
+    vec2 sizePixels = sizeUV * u_screenSize;
+    float maxSize = max(sizePixels.x, sizePixels.y);
+    
+    if (maxSize < 1.0) return false;
+    
+    float targetMipLevel = clamp(ceil(log2(maxSize)), 0.0, float(u_maxMipLevel));
+    int startMipLevel = int(targetMipLevel);
+    
+    vec2 center = (minScreen + maxScreen) * 0.5;
+    vec2 halfSize = (maxScreen - minScreen) * 0.5;
+    
+    for (int mip = startMipLevel; mip >= 0; mip--)
+    {
+        float hizDepth0 = sampleHiZTexture(mip, center + vec2(-halfSize.x, -halfSize.y));
+        float hizDepth1 = sampleHiZTexture(mip, center + vec2(+halfSize.x, -halfSize.y));
+        float hizDepth2 = sampleHiZTexture(mip, center + vec2(-halfSize.x, +halfSize.y));
+        float hizDepth3 = sampleHiZTexture(mip, center + vec2(+halfSize.x, +halfSize.y));
+        
+        float maxHZBDepth = max(max(hizDepth0, hizDepth1), max(hizDepth2, hizDepth3));
+        
+        if (minDepth > maxHZBDepth + DEPTH_EPSILON) {
+            return false;
+        }
+    }
+    
+    return true;
+}
 
 void main()
 {
+    // 글로벌 ID 계산(100,000개)
     uint gid = gl_GlobalInvocationID.x;
     if (gid >= frustumPassedCount) return;
     
+    // 프러스텀 테스트 통과한 인스턴스 인덱스
     int instanceIdx = frustumPassedIndices[gid];
     if (instanceIdx < 0 || instanceIdx >= u_maxInstanceCount) return;
     
-    uint batchID = batchIDs[instanceIdx];
+    // 배치(모델) 정보 가져오기
+    uint batchID = batchIDs[instanceIdx];    
     if (batchID >= MAX_BATCHES) return;
-    
-    // ===== LOD 거리 계산 =====
+
+    // 배치별 LOD 거리 및 슬롯 정보
     float lodDistance = batchLODs[batchID];
+    uint batchStart = batchStarts[batchID];      // 이 배치의 시작 슬롯
+    uint batchMaxCount = batchCounts[batchID];   // 이 배치의 최대 개수
     
+    // ===== AABB 투영 =====
     AABB worldAABB = worldAABBs[instanceIdx];
-    vec3 worldCenter = (worldAABB.min + worldAABB.max) * 0.5;
+    vec2 minScreen, maxScreen;
+    float minDepth;
+    vec3 worldCenter;
     
+    // AABB를 화면에 투영
+    if (!projectAABB(worldAABB, minScreen, maxScreen, minDepth, worldCenter)) return; // 투영 실패 (카메라 뒤, 화면 밖 등)
+    
+    // LOD0는 HiZ 테스트 수행
+    if (!hierarchicalOcclusionTest(minScreen, maxScreen, minDepth)) return; // 가려짐
+
+    // ===== LOD 거리 계산 =====
     float distance = length(u_cameraPosition - worldCenter);
     bool isLOD0 = (distance < lodDistance);
     
-    // ===== 저장 (전역 카운터) =====
-    if (isLOD0) {
-        uint slot = atomicAdd(visibleCounts_LOD0[0], 1);
-        if (slot < uint(u_maxInstanceCount)) {
-            visibleIndices_LOD0[slot] = instanceIdx;
+    // ===== HiZ 오클루전 테스트 (LOD0만) =====
+    if (isLOD0) 
+    {        
+        // 통과: 배치별 구역에 저장
+        uint relativeSlot = atomicAdd(visibleCounts_LOD0[batchID], 1);
+        
+        // Overflow 체크
+        if (relativeSlot < batchMaxCount) 
+        {
+            // 절대 위치 = 배치 시작점 + 상대 슬롯
+            uint absoluteSlot = batchStart + relativeSlot;
+            visibleIndices_LOD0[absoluteSlot] = instanceIdx;
         }
-    } else {
-        uint slot = atomicAdd(visibleCounts_LOD1[0], 1);
-        if (slot < uint(u_maxInstanceCount)) {
-            visibleIndices_LOD1[slot] = instanceIdx;
+    } 
+    else 
+    {
+        // LOD1은 HiZ 테스트 없이 바로 저장
+        uint relativeSlot = atomicAdd(visibleCounts_LOD1[batchID], 1);
+        
+        if (relativeSlot < batchMaxCount) 
+        {
+            uint absoluteSlot = batchStart + relativeSlot;
+            visibleIndices_LOD1[absoluteSlot] = instanceIdx;
         }
     }
 }

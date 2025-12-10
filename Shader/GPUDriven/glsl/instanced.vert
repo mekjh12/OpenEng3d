@@ -6,14 +6,10 @@ layout(location = 1) in vec2 aTexCoord;
 layout(location = 2) in vec3 aNormal;
 
 // SSBO: 모든 변환 행렬 (100000개)
-layout(std430, binding = 0) buffer TransformBuffer {
-    mat4 allTransforms[];
-};
+layout(std430, binding = 0) buffer TransformBuffer { mat4 allTransforms[];};
 
 // SSBO: 가시 인덱스 (컬링 후, Batch별로 구역 분할)
-layout(std430, binding = 1) buffer VisibleIndicesBuffer {
-    int visibleIndices[];
-};
+layout(std430, binding = 1) buffer VisibleIndicesBuffer {int visibleIndices[];};
 
 // 유니폼
 uniform mat4 vp;

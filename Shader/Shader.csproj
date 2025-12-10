@@ -145,6 +145,7 @@
     <None Include="AxisShader\axis.vert" />
     <None Include="AABBShader\aabb.frag" />
     <None Include="AABBShader\aabb.vert" />
+    <None Include="GPUDriven\comp\hiCulling.glsl" />
     <None Include="GPUDriven\glsl\billboard.vert" />
     <None Include="GPUDriven\glsl\billboard.frag" />
     <None Include="GPUDriven\glsl\depth_debug_instanced.frag" />

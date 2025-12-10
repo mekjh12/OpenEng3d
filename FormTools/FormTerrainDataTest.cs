@@ -151,8 +151,8 @@ namespace FormTools
             // 3D 모델 매니저 및 모델 로드
             _model3DManager = new Model3dManager(PROJECT_PATH, EXE_PATH + "\\nullTexture.jpg");
             _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\tree1.obj");
-            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm1.obj");
-            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm2.obj");
+            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm4.obj");
+            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm5.obj");
             _treeModel = _model3DManager.GetModels("tree1");
 
             // 지형 영역 초기화
@@ -165,8 +165,8 @@ namespace FormTools
                     // 대량 인스턴스 배치
                     _modelBatchManager = new ModelBatchManager();
                     uint treeID = _modelBatchManager.AddModel("tree1", 100, _model3DManager.GetModels("tree1"));
-                    uint palm1ID = _modelBatchManager.AddModel("Palm1", 100, _model3DManager.GetModels("Palm1"));
-                    uint palm2ID = _modelBatchManager.AddModel("Palm2", 100, _model3DManager.GetModels("Palm2"));
+                    uint palm1ID = _modelBatchManager.AddModel("Palm4", 100, _model3DManager.GetModels("Palm4"));
+                    uint palm2ID = _modelBatchManager.AddModel("Palm5", 100, _model3DManager.GetModels("Palm5"));
                     Console.WriteLine($"Registered Models: Tree={treeID}, Palm1={palm1ID}, Palm2={palm2ID}");
 
                     int gridSize = 300;

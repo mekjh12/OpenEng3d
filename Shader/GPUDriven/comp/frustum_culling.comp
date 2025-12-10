@@ -38,13 +38,13 @@ bool IsInsideFrustum(AABB aabb)
 void main() 
 {
     uint index = gl_GlobalInvocationID.x;
-    if (index >= 90000) return;
+    if (index >= 100000) return;
     
     // ✅ Frustum 테스트만 수행 (LOD 구분 없음)
     if (IsInsideFrustum(aabbs[index])) 
     {
         uint slot = atomicAdd(frustumPassedCount, 1);
-        if (slot < 90000) {
+        if (slot < 100000) {
             frustumPassedIndices[slot] = int(index);
         }
     }

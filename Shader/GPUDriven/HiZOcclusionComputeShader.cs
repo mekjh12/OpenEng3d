@@ -176,14 +176,7 @@ namespace Shader
                 return;
             }
 
-            // uint[] -> int[] 변환
-            int[] intStarts = new int[batchStarts.Length];
-            for (int i = 0; i < batchStarts.Length; i++)
-            {
-                intStarts[i] = (int)batchStarts[i];
-            }
-
-            Gl.Uniform1(loc_batchStarts, intStarts);
+            Gl.Uniform1(loc_batchStarts, batchStarts);
         }
 
         /// <summary>
@@ -209,14 +202,7 @@ namespace Shader
                 return;
             }
 
-            // uint[] -> int[] 변환
-            int[] intCounts = new int[batchCounts.Length];
-            for (int i = 0; i < batchCounts.Length; i++)
-            {
-                intCounts[i] = (int)batchCounts[i];
-            }
-
-            Gl.Uniform1(loc_batchCounts, intCounts);
+            Gl.Uniform1(loc_batchCounts, batchCounts);
         }
 
     }
