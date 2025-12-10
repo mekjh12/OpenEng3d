@@ -109,7 +109,7 @@ namespace FormTools
             _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm4.obj");
 
             _gpuDriven = new GPUCullingRenderer(PROJECT_PATH);
-            _gpuDriven.Initialize("Palm4", _model3DManager.GetModels("Palm4"));
+            //_gpuDriven.Initialize("Palm4", _model3DManager.GetModels("Palm4"));
 
             // UI 3D 텍스트 네임플레이트 초기화
             _textNamePlate = new TextNamePlate(_glControl3.Camera, "FPS");
@@ -131,10 +131,10 @@ namespace FormTools
             _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
 
             _gpuDriven.Update(camera, _viewFrustum);
-            uint visibleCount = _gpuDriven.GetVisibleCountDebug();
+            //uint visibleCount = _gpuDriven.GetVisibleCountDebug();
 
             // 네임플레이트 업데이트
-            _textNamePlate.Text = $"가시객체{visibleCount}";
+            //_textNamePlate.Text = $"가시객체{visibleCount}";
             _textNamePlate.WorldPosition = camera.Position + camera.Forward * 1f - camera.Right * 0.2f;
             _textNamePlate.Update(deltaTime);
 

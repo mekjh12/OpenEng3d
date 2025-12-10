@@ -46,5 +46,9 @@ namespace Model3d
                 _textureType = texture.TextureType;
         }
 
+        public void SetTexture(Texture texture)
+        {
+            _texture = texture;
+        }
     }
 }

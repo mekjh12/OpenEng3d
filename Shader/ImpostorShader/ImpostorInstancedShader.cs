@@ -30,6 +30,7 @@ namespace Shader
         private int loc_verticalFrames;     // 추가
         private int loc_verticalAngleMin;
         private int loc_verticalAngleMax;
+        private int loc_batchStartOffset;  // ← 추가
 
         public ImpostorInstancedShader(string projectPath) : base()
         {
@@ -64,6 +65,9 @@ namespace Shader
             // 경계 상자(AABB) 관련
             loc_aabbSizeModel = GetUniformLocation("aabbSizeModel");
             loc_aabbCenterEntity = GetUniformLocation("aabbCenterEntity");
+
+            // 배치 시작 오프셋
+            loc_batchStartOffset = GetUniformLocation("batchStartOffset");
         }
 
         protected override void BindAttributes()
@@ -163,6 +167,11 @@ namespace Shader
         public void LoadAABBCenterEntity(Vertex3f center)
         {
             Gl.Uniform3(loc_aabbCenterEntity, center.x, center.y, center.z);
+        }
+
+        public void LoadBatchStartOffset(uint offset)
+        {
+            Gl.Uniform1(loc_batchStartOffset, (int)offset);
         }
     }
 }

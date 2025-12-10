@@ -11,6 +11,7 @@ namespace Shader
         private int loc_vpMatrix;
         private int loc_nearPlane;  // ✅ 추가
         private int loc_farPlane;   // ✅ 추가
+        private int loc_batchStartOffset;  // ← 추가
 
         public DepthDebugInstancedShader(string projectPath) : base()
         {
@@ -25,6 +26,7 @@ namespace Shader
             loc_vpMatrix = GetUniformLocation("vpMatrix");
             loc_nearPlane = GetUniformLocation("nearPlane");  // ✅
             loc_farPlane = GetUniformLocation("farPlane");    // ✅
+            loc_batchStartOffset = GetUniformLocation("batchStartOffset");  // ← 추가
         }
 
         protected override void BindAttributes()
@@ -43,6 +45,11 @@ namespace Shader
         {
             LoadUniform1f(loc_nearPlane, near);
             LoadUniform1f(loc_farPlane, far);
+        }
+
+        public void LoadBatchStartOffset(uint offset)
+        {
+            Gl.Uniform1(loc_batchStartOffset, (int)offset);
         }
     }
 }

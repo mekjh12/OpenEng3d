@@ -104,7 +104,7 @@ namespace Physics
         {
             // We don't integrate things with zero mass.
             if (_inverseMass <= 0.0f) return;
-            BoolF.Assert(duration > 0.0f);
+            Assert.Check(duration > 0.0f);
 
             // Update linear position.
             _position += _velocity * duration;

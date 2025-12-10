@@ -17,7 +17,7 @@ using ZetaExt;
 
 namespace FormTools
 {
-    public partial class FormGPUDriveHiZ : Form, GlControlerable
+    public partial class FormTerrainDataTest : Form, GlControlerable
     {
         readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
         readonly string EXE_PATH = Application.StartupPath;
@@ -61,13 +61,16 @@ namespace FormTools
         uint _lastVisibleCount = 0;                         // 이전 가시 객체 수
         uint _lastFrustumPassCount = 0;                     // 이전 프러스텀 패스 수
 
+        ModelBatchManager _modelBatchManager;
+        private const int MAX_INSTANCES = 100000;
 
-        public FormGPUDriveHiZ()
+
+        public FormTerrainDataTest()
         {
             InitializeComponent();
 
             // GL 생성
-            _glControl3 = new GlControl3("gpuDriven", Application.StartupPath, @"\fonts\fontList.txt", @"\Res\");
+            _glControl3 = new GlControl3("terrainDataTest", Application.StartupPath, @"\fonts\fontList.txt", @"\Res\");
             _glControl3.Init += (w, h) => Init(w, h);
             _glControl3.Init3d += (w, h) => Init3d(w, h);
             _glControl3.Init2d += (w, h) => Init2d(w, h);
@@ -90,12 +93,12 @@ namespace FormTools
 
         public void Form_Load(object sender, EventArgs e)
         {
-            this.ClientSize = new Size(1008, 729);
-            this.Location = new Point(100, 100);
+            this.ClientSize = new Size(1280, 800);
+            this.Location = new Point(500, 100);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.StartPosition = FormStartPosition.Manual;
-            this.Resize += new EventHandler(this.FormGPUDriven_Resize);
+            this.Resize += new EventHandler(this.Form_Resize);
 
             MemoryProfiler.StartFrameMonitoring();
         }
@@ -124,7 +127,7 @@ namespace FormTools
                 Text2d.TextAlignment.Center, heightInPixels: 20);
             _fpsText.Color = Color.Yellow;
 
-            _titleText = new Text2d("GPU Driven (임포스터, HiZ버퍼)", 10, 10, width, height,
+            _titleText = new Text2d("지형 높이 테스트", 10, 10, width, height,
                 Text2d.TextAlignment.Left, heightInPixels: 15);
             _titleText.Color = Color.Red;
 
@@ -147,19 +150,62 @@ namespace FormTools
 
             // 3D 모델 매니저 및 모델 로드
             _model3DManager = new Model3dManager(PROJECT_PATH, EXE_PATH + "\\nullTexture.jpg");
-            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm4.obj");
-            _treeModel = _model3DManager.GetModels("Palm4");
+            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\tree1.obj");
+            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm1.obj");
+            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm2.obj");
+            _treeModel = _model3DManager.GetModels("tree1");
 
             // 지형 영역 초기화
             RegionCoord regionCoord = new RegionCoord(0, 0);
             _terrainRegion = new TerrainRegion(regionCoord, chunkSize: 100, n: 10, null);
-            _terrainRegion.LoadTerrainLowResMap(regionCoord, EXE_PATH + "\\Res\\Terrain\\low\\region0x0.png", 
+            _terrainRegion.LoadTerrainLowResMap(regionCoord, EXE_PATH + "\\Res\\Terrain\\region0x0.png",
                 completed: () =>
                 {
+
+                    // 대량 인스턴스 배치
+                    _modelBatchManager = new ModelBatchManager();
+                    uint treeID = _modelBatchManager.AddModel("tree1", 100, _model3DManager.GetModels("tree1"));
+                    uint palm1ID = _modelBatchManager.AddModel("Palm1", 100, _model3DManager.GetModels("Palm1"));
+                    uint palm2ID = _modelBatchManager.AddModel("Palm2", 100, _model3DManager.GetModels("Palm2"));
+                    Console.WriteLine($"Registered Models: Tree={treeID}, Palm1={palm1ID}, Palm2={palm2ID}");
+
+                    int gridSize = 300;
+                    float spacing = 15f;
+                    float halfSpacing = spacing / 2f;
+                    float quaterSpacing = spacing / 4f;
+                    Random rand = new Random(42);
+                    Vertex3f position = Vertex3f.Zero;
+
+                    for (int i = 0; i < MAX_INSTANCES; i++)
+                    {
+                        int x = i % gridSize;
+                        int y = i / gridSize;
+
+                        float posX = (x - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
+                        float posY = (y - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
+                        position.x = posX;
+                        position.y = posY;
+
+                        float posZ = _terrainRegion.TerrainData.GetTerrainHeight(ref position,
+                            TerrainConstants.DEFAULT_VERTICAL_SCALE);
+
+                        float rotZ = (float)(rand.NextDouble() * Math.PI * 2);
+                        float scale = 0.5f + (float)(rand.NextDouble() * 1.0f);
+
+                        Matrix4x4f transform = Matrix4x4f.Translated(posX, posY, posZ) *
+                                        Matrix4x4f.RotatedZ(rotZ.ToDegree()) *
+                                        Matrix4x4f.Scaled(scale, scale, scale);
+
+                        //_modelBatchManager.AddInstance((uint)Rand.NextInt(0, 2), transform);
+                        _modelBatchManager.AddInstance((uint)(x % 3), transform);
+                    }
+
+                    Console.WriteLine($"Generated {MAX_INSTANCES} tree instances");
+                    _modelBatchManager.Finalized();
+
                     _isLoaded = true;
                 });
 
-            // 
             // 지형 레벨 텍스쳐 로딩
             string heightMap = PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\";
             string[] levelTextureMap = new string[5];
@@ -198,10 +244,15 @@ namespace FormTools
             {
                 // GPU 드리븐 렌더러 초기화
                 _gpuDriven = new GPUCullingRenderer(PROJECT_PATH);
-                //_gpuDriven.Initialize("Palm6", _treeModel, _hzbuffer.Levels, _terrainRegion);
+                _gpuDriven.Initialize(_modelBatchManager);
                 _culledText.Text = "상세지형이 로딩이 완료됨";
                 _isStarted = true;
             }
+
+            // 시야 절두체 생성
+            Polyhedron viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera); 
+            
+            _terrainRegion.Update(camera, viewFrustum, duration, null);
 
             if (_prevCameraPosition != camera.Position)
             {
@@ -257,7 +308,7 @@ namespace FormTools
             // 계층적 Z-버퍼 렌더링
             if (_isVisibleDepthBuffer)
             {
-                Gl.PolygonMode(MaterialFace.FrontAndBack,  PolygonMode.Fill);
+                Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
                 _hzbuffer.RenderDepthBuffer(_hzmDepthShader, camera, level: _level);
                 Gl.PolygonMode(MaterialFace.FrontAndBack, _glControl3.PolygonMode);
             }
@@ -317,7 +368,7 @@ namespace FormTools
             }
             else if (e.KeyCode == Keys.D3)
             {
-               _level = (_level + 1) % _hzbuffer.Levels;
+                _level = (_level + 1) % _hzbuffer.Levels;
                 _culledText.Text = $"HZB Level: {_level}";
             }
             else if (e.KeyCode == Keys.D4)
@@ -327,7 +378,7 @@ namespace FormTools
             }
             else if (e.KeyCode == Keys.Enter)
             {
-               
+
             }
         }
 
@@ -347,14 +398,14 @@ namespace FormTools
             }
         }
 
-        private void FormGPUDriven_Resize(object sender, EventArgs e)
+        private void Form_Resize(object sender, EventArgs e)
         {
             int width = _glControl3.Width;
             int height = _glControl3.Height;
 
         }
 
-        private void FormGPUDriveHiZ_Load(object sender, EventArgs e)
+        private void FormTerrainDataTest_Load(object sender, EventArgs e)
         {
 
         }

@@ -176,6 +176,12 @@
     <Compile Include="FormTerrain.Designer.cs">
       <DependentUpon>FormTerrain.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormTerrainDataTest.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormTerrainDataTest.Designer.cs">
+      <DependentUpon>FormTerrainDataTest.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormTerrainImposter.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -259,6 +265,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormTerrain.resx">
       <DependentUpon>FormTerrain.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormTerrainDataTest.resx">
+      <DependentUpon>FormTerrainDataTest.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormTerrainImposter.resx">
       <DependentUpon>FormTerrainImposter.cs</DependentUpon>

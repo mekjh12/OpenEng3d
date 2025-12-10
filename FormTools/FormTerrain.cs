@@ -249,7 +249,7 @@ namespace FormTools
 
             // 지형 청크로부터 뷰프러스텀 컬링 업데이트
             RegionManager.DEBUG_STRING = "";
-            _regionManager.Update(camera, viewFrustum, _hzbuffer, duration);
+            _regionManager.Update(camera, viewFrustum, duration);
 
             // 임포스터 및 일반 객체 분류
             _unlitEntity.Clear();

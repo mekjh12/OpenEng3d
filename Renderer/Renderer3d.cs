@@ -648,6 +648,7 @@ namespace Renderer
 
                 shader.SetInt("gHeightMap", 0);
                 Gl.ActiveTexture(TextureUnit.Texture0);
+
                 Gl.BindTexture(TextureTarget.Texture2d, modelTextured.Texture.TextureID);
                 Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, Gl.LINEAR);
                 Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, Gl.LINEAR);

@@ -384,7 +384,7 @@ namespace Terrain
         /// <param name="camera"></param>
         /// <param name="viewFrustum"></param>
         /// <param name="zbuffer"></param>
-        public void Update(Camera camera, Polyhedron viewFrustum, HierarchicalZBuffer zbuffer, float duration)
+        public void Update(Camera camera, Polyhedron viewFrustum, float duration)
         {
             // 현재 활성화된 리전들 업데이트
             foreach (TerrainRegion terrainRegion in _visibleRegionsCache)
@@ -394,7 +394,7 @@ namespace Terrain
                 if (Math.Abs(diffRegionCoord.X) <= 1 && Math.Abs(diffRegionCoord.Y) <= 1)
                 {
                     // 현재 위치에서 인접한 리전은 세부적으로 업데이트한다.
-                    terrainRegion.Update(camera, viewFrustum, zbuffer, duration, _terrainChunkShader);
+                    terrainRegion.Update(camera, viewFrustum, duration, _terrainChunkShader);
                 }
                 else
                 {
@@ -495,7 +495,7 @@ namespace Terrain
             region.LoadTerrainLowResMap(coord, heightmapLowResFileName, async () =>
             {
                 // (b) 고해상도 맵 로딩 시작(저해상도 맵 로딩이 완료되면)
-                await region.LoadTerrainHighResMap(coord, _heightmapBasePath, () =>
+                await region.LoadTerrainHighResMap(coord, _heightmapBasePath, (obj) =>
                 {
 
                 });

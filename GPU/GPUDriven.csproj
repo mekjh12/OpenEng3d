@@ -58,6 +58,7 @@
   <ItemGroup>
     <Compile Include="AABB.cs" />
     <Compile Include="GPUCullingRenderer.cs" />
+    <Compile Include="ModelBatchManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QuadTreeGPURenderer.cs" />
   </ItemGroup>

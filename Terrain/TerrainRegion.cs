@@ -110,7 +110,7 @@ namespace Terrain
         /// <param name="coord"></param>
         /// <param name="heightmapBasePath"></param>
         /// <returns></returns>
-        public async Task LoadTerrainHighResMap(RegionCoord coord, string heightmapBasePath, Action completed)
+        public async Task LoadTerrainHighResMap(RegionCoord coord, string heightmapBasePath, Action<TerrainRegion> completed)
         {
             _terrainData.InitializeHighResLoading(coord, heightmapBasePath);
 
@@ -124,10 +124,10 @@ namespace Terrain
             _terrainData.IsHighResLoaded = true;
 
             // 큐가 비어 완료되면 완료 함수를 콜백
-            completed?.Invoke();
+            completed?.Invoke(this);
 
-            // 모든 고해상도 타일 로딩이 완료되면 블렌딩 시작
-            StartHighResTextureBlending();
+            // 지형 엔티티의 텍스처를 고해상도 맵으로 교체
+            SwapMapTextureBuffer();
         }
 
         /// <summary>
@@ -273,7 +273,7 @@ namespace Terrain
         /// </summary>
         public void SwapMapTextureBuffer()
         {
-            _terrainData.SwapMapTextureBuffer();
+            _terrainData.SwapMapTextureBuffer();           
         }
 
         /// <summary>
@@ -303,8 +303,7 @@ namespace Terrain
         /// <summary>
         /// 렌더링 시스템의 상태를 업데이트합니다.
         /// </summary>
-        public void Update(Camera camera, Polyhedron viewFrustum, HierarchicalZBuffer zbuffer,
-            float duration, TerrainChunkShader terrainChunkShader)
+        public void Update(Camera camera, Polyhedron viewFrustum, float duration, TerrainChunkShader terrainChunkShader)
         {
             // ---------------------------------------------------------
             // 컬링 업데이트
@@ -321,13 +320,13 @@ namespace Terrain
             //RegionManager.DEBUG_STRING += $"{_regionCoord}({travCount}) ";
 
             // 뷰프러스텀 기반 1차 컬링
-            _terrainCulling.CullingTestByViewFrustum(viewFrustum);
+            //_terrainCulling.CullingTestByViewFrustum(viewFrustum);
 
             // 계층적 Z버퍼 기반 2차 컬링
-            _terrainCulling.CullingTestByHierarchicalZBuffer(zbuffer, vp, view);
+            //_terrainCulling.CullingTestByHierarchicalZBuffer(zbuffer, vp, view);
 
             // 최종 가시 패치 목록 구성
-            _terrainCulling.PrepareEntities();
+            //_terrainCulling.PrepareEntities();
 
             if (!_chunkCreator.IsComplete)
             {
@@ -339,60 +338,8 @@ namespace Terrain
             // 저해상도에서 고해상도의 전환 업데이트
             // ---------------------------------------------------------
 
-            // 저해상도에서 고해상도로의 블렌딩 상태 업데이트 (전환 감지하여)
-            UpdateBlending(duration, terrainChunkShader);
-
             // 저해상도에서 고해상도로의 텍스처 업데이트 처리 (전환 감지하여)
             _terrainData.UpdateTexturesOnMainThread((int)_regionSize);
-        }
-
-        /// <summary>
-        /// 텍스처 블렌딩 상태를 업데이트합니다.
-        /// </summary>
-        private void UpdateBlending(float duration, TerrainChunkShader terrainChunkShader)
-        {
-            if (_isBlending)
-            {
-                _blendTimer += duration;
-                _blendFactor = Math.Min(_blendTimer / _blendDuration, 1.0f);
-
-                // 셰이더에 블렌딩 계수 전달
-                terrainChunkShader.LoadUniform(TerrainChunkShader.UNIFORM_NAME.blendFactor, _blendFactor);
-
-                // 블렌딩 완료 체크
-                if (_blendFactor >= 1.0f)
-                {
-                    _isBlending = false;
-
-                    // 블렌딩 완료 후 저해상도 텍스처 해제도 가능
-                    // _terrainData.ReleaseLowResTexture();
-                    SwapMapTextureBuffer();
-                }
-            }
-        }
-
-        /// <summary>
-        /// 고해상도 텍스처가 로드되면 블렌딩 효과를 시작합니다.
-        /// </summary>
-        public void StartHighResTextureBlending()
-        {
-            if (_terrainData.IsHighResLoaded == true && _isBlending == false)
-            {
-                _isBlending = true;
-                _blendTimer = 0.0f;
-                _blendFactor = 0.0f;
-
-                // 셰이더에 두 텍스처 모두 바인딩 및 블렌드 인자 초기화
-                UpdateShaderTextureBindings();
-            }
-        }
-
-        /// <summary>
-        /// 셰이더에 저해상도와 고해상도 텍스처를 모두 바인딩합니다.
-        /// </summary>
-        private void UpdateShaderTextureBindings()
-        {
-            
         }
 
         /// <summary>

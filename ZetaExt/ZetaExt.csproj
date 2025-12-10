@@ -62,6 +62,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assert.cs" />
     <Compile Include="EulerConverter.cs" />
     <Compile Include="Matrix4x4fExtensions.cs" />
     <Compile Include="Matrix4x4NoGC.cs" />

@@ -359,40 +359,56 @@ namespace Terrain
             if (_isLowResLoaded && (blendFactor < 1.0f || !_isHighResLoaded))
             {
                 // 해상도에 따른 픽셀 조회 비율을 계산한다.
-                float ratioLow = (float)_heightmapWidth / _regionOriginalSize;
-                float px = positionInRegionSpace.x * ratioLow;
-                float py = positionInRegionSpace.y * ratioLow;
-                int ix = (int)Math.Floor(px + _regionHalfSize);
-                int iy = (int)Math.Floor(py + _regionHalfSize);
-                float s = px + _regionHalfSize - ix;
-                float t = py + _regionHalfSize - iy;
+                float ratio = (float)_heightmapWidth / _regionOriginalSize;
 
-                // 경계 체크
-                if (ix < 1 || iy < 1 || iy >= _heightmapWidth - 1 || ix >= _heightmapHeight - 1)
+                // OpenGL 텍스처 좌표 계산 (정규화)
+                float texCoordX = (positionInRegionSpace.x * ratio + _regionHalfSize) / _heightmapWidth;
+                float texCoordY = (positionInRegionSpace.y * ratio + _regionHalfSize) / _heightmapWidth;
+
+                // 텍셀 좌표로 변환 (OpenGL 규칙: 텍셀 중심이 0.5)
+                float texelX = texCoordX * _heightmapWidth - 0.5f;
+                float texelY = texCoordY * _heightmapWidth - 0.5f;
+
+                int ix = (int)Math.Floor(texelX);
+                int iy = (int)Math.Floor(texelY);
+                float s = texelX - ix;
+                float t = texelY - iy;
+
+                // 경계 체크 (2x2 그리드 필요)
+                if (ix < 0 || iy < 0 || ix >= _heightmapWidth - 1 || iy >= _heightmapWidth - 1)
                     heightLow = 0.0f;
                 else
-                    heightLow = InterpolateHeight(_heightmapLowRes, ix, iy, s, t, _heightmapWidth);
+                    heightLow = InterpolateHeightOpenGLStyle(_heightmapLowRes, ix, iy, s, t, _heightmapWidth);
             }
 
             // 고해상도 맵이 로드되어 있다면 고해상도 높이 계산
             if (_isHighResLoaded && blendFactor > 0.0f)
             {
-                _heightmapWidth = _regionOriginalSize;
-                _heightmapHeight = _regionOriginalSize;
-                _regionHalfSize = _regionOriginalSize * 0.5f;
-                float ratioHigh = 1.0f; // 고해상도는 비율이 1:1
-                float px = positionInRegionSpace.x * ratioHigh;
-                float py = positionInRegionSpace.y * ratioHigh;
-                int ix = (int)Math.Floor(px + _regionHalfSize);
-                int iy = (int)Math.Floor(py + _regionHalfSize);
-                float s = px + _regionHalfSize - ix;
-                float t = py + _regionHalfSize - iy;
+                // 고해상도 맵의 크기 설정
+                int highResWidth = _regionOriginalSize;
+                int highResHeight = _regionOriginalSize;
+                float highResHalfSize = _regionOriginalSize * 0.5f;
 
-                // 경계 체크
-                if (ix < 1 || iy < 1 || iy >= _heightmapWidth - 1 || ix >= _heightmapHeight - 1)
+                float ratioHigh = 1.0f; // 고해상도는 비율이 1:1
+
+                // OpenGL 텍스처 좌표 계산 (정규화)
+                float texCoordX = (positionInRegionSpace.x * ratioHigh + highResHalfSize) / highResWidth;
+                float texCoordY = (positionInRegionSpace.y * ratioHigh + highResHalfSize) / highResHeight;
+
+                // 텍셀 좌표로 변환 (OpenGL 규칙: 텍셀 중심이 0.5)
+                float texelX = texCoordX * highResWidth - 0.5f;
+                float texelY = texCoordY * highResHeight - 0.5f;
+
+                int ix = (int)Math.Floor(texelX);
+                int iy = (int)Math.Floor(texelY);
+                float s = texelX - ix;
+                float t = texelY - iy;
+
+                // 경계 체크 (2x2 그리드 필요)
+                if (ix < 0 || iy < 0 || ix >= highResWidth - 1 || iy >= highResHeight - 1)
                     heightHigh = 0.0f;
                 else
-                    heightHigh = InterpolateHeight(_heightmapHighRes, ix, iy, s, t, _heightmapWidth);
+                    heightHigh = InterpolateHeightOpenGLStyle(_heightmapHighRes, ix, iy, s, t, highResWidth);
             }
 
             // 최종 높이 계산
@@ -402,7 +418,6 @@ namespace Terrain
             if (_isLowResLoaded && _isHighResLoaded)
             {
                 finalHeight = (1.0f - blendFactor) * heightLow + blendFactor * heightHigh;
-
             }
             // 고해상도 맵만 로드된 경우
             else if (_isHighResLoaded)
@@ -416,6 +431,30 @@ namespace Terrain
             }
 
             return verticalScale * finalHeight;
+        }
+
+        private float InterpolateHeightOpenGLStyle(float[] heightmap, int ix, int iy, float s, float t, int width)
+        {
+            if (heightmap == null) return 0.0f;
+
+            // OpenGL 텍셀 중심 규칙: 0.5 픽셀 오프셋
+            // 이미 ix, iy는 floor 연산 후이므로 그대로 사용
+
+            // 경계 체크 (2x2 그리드 필요)
+            if (ix < 0 || iy < 0 || ix >= width - 1 || iy >= width - 1)
+                return 0.0f;
+
+            // 표준 2x2 bilinear interpolation (OpenGL 방식)
+            float h00 = heightmap[iy * width + ix];
+            float h10 = heightmap[iy * width + (ix + 1)];
+            float h01 = heightmap[(iy + 1) * width + ix];
+            float h11 = heightmap[(iy + 1) * width + (ix + 1)];
+
+            // 양방향 선형 보간
+            float h0 = h00 * (1.0f - s) + h10 * s;
+            float h1 = h01 * (1.0f - s) + h11 * s;
+
+            return h0 * (1.0f - t) + h1 * t;
         }
 
         /// <summary>
