@@ -358,7 +358,7 @@ namespace FormTools
             {
                 _glControl3.Camera.PivotPosition = new Vertex3f(0, 0, 1.0f);
             }
-            else if (e.KeyCode == Keys.F5)
+            else if (e.KeyCode == Keys.F1)
             {
                 _gpuDriven.DebugDepthMode = !_gpuDriven.DebugDepthMode;
             }
@@ -375,10 +375,6 @@ namespace FormTools
             {
                 _level = (_level - 1 + _hzbuffer.Levels) % _hzbuffer.Levels;
                 _culledText.Text = $"HZB Level: {_level}";
-            }
-            else if (e.KeyCode == Keys.Enter)
-            {
-
             }
         }
 

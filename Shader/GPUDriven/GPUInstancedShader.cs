@@ -22,6 +22,8 @@ namespace Shader
         private int loc_vp;
         private int loc_texture;
         private int loc_batchStartOffset;
+        private int loc_currentBatchID;
+
 
         public GPUInstancedShader(string projectPath) : base()
         {
@@ -37,6 +39,7 @@ namespace Shader
             loc_vp = GetUniformLocation("vp");
             loc_texture = GetUniformLocation("uTexture");
             loc_batchStartOffset = GetUniformLocation("batchStartOffset");
+            loc_currentBatchID = GetUniformLocation("currentBatchID");
         }
 
         protected override void BindAttributes()
@@ -44,6 +47,11 @@ namespace Shader
             BindAttribute(0, "aPosition");
             BindAttribute(1, "aTexCoord");
             BindAttribute(2, "aNormal");
+        }
+
+        public void LoadCurrentBatchID(uint batchID)
+        {
+            Gl.Uniform1(loc_currentBatchID, (int)batchID);
         }
 
         public void LoadBatchStartOffset(uint offset)

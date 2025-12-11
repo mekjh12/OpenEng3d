@@ -1,32 +1,24 @@
 ﻿#version 450 core
 
-// 버텍스 애트리뷰트
 layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec2 aTexCoord;
 layout(location = 2) in vec3 aNormal;
 
-// SSBO: 모든 변환 행렬 (100000개)
-layout(std430, binding = 0) buffer TransformBuffer { mat4 allTransforms[];};
+layout(std430, binding = 0) buffer TransformBuffer { mat4 allTransforms[]; };
+layout(std430, binding = 1) buffer VisibleIndicesBuffer { int visibleIndices[]; };
+layout(std430, binding = 9) readonly buffer BatchIDs { uint batchIDs[]; };
 
-// SSBO: 가시 인덱스 (컬링 후, Batch별로 구역 분할)
-layout(std430, binding = 1) buffer VisibleIndicesBuffer {int visibleIndices[];};
-
-// 유니폼
 uniform mat4 vp;
-uniform uint batchStartOffset;  // 현재 Batch의 시작 인덱스
+uniform int batchStartOffset;
+uniform int currentBatchID;  // ⭐ 추가: 현재 렌더링 중인 배치 ID
 
-// 프래그먼트 셰이더로 전달
 out vec3 vNormal;
 out vec2 vTexCoord;
 out vec3 vWorldPos;
 
 void main() 
 {
-    // gl_InstanceID: Indirect Draw에서 제공 (0 ~ visibleCount-1)
-    // Batch 시작점을 더해서 실제 버퍼 위치 계산
     uint localSlot = batchStartOffset + uint(gl_InstanceID);
-    
-    // 실제 인스턴스 인덱스 가져오기
     int instanceIndex = visibleIndices[localSlot];
     
     if (instanceIndex < 0 || instanceIndex >= 100000) 
@@ -35,20 +27,21 @@ void main()
         return;
     }
     
-    // 해당 인스턴스의 변환 행렬
-    mat4 model = allTransforms[instanceIndex];
+    // ⭐ 배치 ID 검증
+    uint instanceBatchID = batchIDs[instanceIndex];
+    if (instanceBatchID != currentBatchID)
+    {
+        // 다른 배치의 인스턴스면 무시
+        gl_Position = vec4(0, 0, 0, 0);
+        return;
+    }
     
-    // 월드 공간 위치
+    mat4 model = allTransforms[instanceIndex];
     vec4 worldPos = model * vec4(aPosition, 1.0);
     vWorldPos = worldPos.xyz;
-    
-    // 클립 공간 변환
     gl_Position = vp * worldPos;
     
-    // 노멀 변환 (회전만 적용)
     mat3 normalMatrix = mat3(transpose(inverse(model)));
     vNormal = normalize(normalMatrix * aNormal);
-    
-    // 텍스처 좌표
     vTexCoord = aTexCoord;
 }
