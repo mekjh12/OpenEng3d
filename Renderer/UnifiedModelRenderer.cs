@@ -8,235 +8,145 @@ using System.Drawing.Imaging;
 
 namespace Renderer
 {
-    /// <summary>
-    /// 통합 모델 렌더러
-    /// </summary>
     public class UnifiedModelRenderer
     {
         private UnifiedModel _model;
-        private uint _shaderProgram;
+        private const int MAX_TEXTURES = 32;
 
-        public UnifiedModelRenderer(UnifiedModel model, uint shaderProgram)
+        public UnifiedModelRenderer(UnifiedModel model)
         {
             _model = model;
-            _shaderProgram = shaderProgram;
-
-            // Texture2DArray 생성
-            CreateTextureArray();
+            CreateTextures();
         }
 
         /// <summary>
-        /// 2의 제곱수로 올림
+        /// 개별 텍스처 생성 (원본 크기 유지)
         /// </summary>
-        private int RoundUpToPowerOfTwo(int value)
-        {
-            if (value <= 0) return 1;
-
-            value--;
-            value |= value >> 1;
-            value |= value >> 2;
-            value |= value >> 4;
-            value |= value >> 8;
-            value |= value >> 16;
-            value++;
-
-            return value;
-        }
-
-        /// <summary>
-        /// 모든 텍스처를 Texture2DArray로 생성
-        /// </summary>
-        private void CreateTextureArray()
+        private void CreateTextures()
         {
             if (_model.Textures.Count == 0)
             {
-                Console.WriteLine("텍스처가 없습니다.");
+                Console.WriteLine("❌ 텍스처가 없습니다.");
                 return;
             }
 
-            // 1단계: 모든 텍스처 크기 확인 및 통일할 크기 결정
-            int maxWidth = 0;
-            int maxHeight = 0;
-
-            foreach (var tex in _model.Textures)
+            if (_model.Textures.Count > MAX_TEXTURES)
             {
-                try
-                {
-                    using (Bitmap bmp = new Bitmap(tex.FileName))
-                    {
-                        if (bmp.Width > maxWidth) maxWidth = bmp.Width;
-                        if (bmp.Height > maxHeight) maxHeight = bmp.Height;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"텍스처 크기 확인 실패 {tex.FileName}: {ex.Message}");
-                }
+                Console.WriteLine($"⚠ 텍스처 개수 제한: {MAX_TEXTURES}개 (현재: {_model.Textures.Count})");
+                Console.WriteLine($"처음 {MAX_TEXTURES}개만 사용됩니다.");
             }
 
-            // 2의 제곱수로 올림 (OpenGL 효율성)
-            int targetWidth = RoundUpToPowerOfTwo(maxWidth);
-            int targetHeight = RoundUpToPowerOfTwo(maxHeight);
+            Console.WriteLine($"✅ 텍스처 생성 시작: {Math.Min(_model.Textures.Count, MAX_TEXTURES)}개");
 
-            // 최대 크기 제한 (선택사항)
-            targetWidth = Math.Min(targetWidth, 2048);
-            targetHeight = Math.Min(targetHeight, 2048);
+            int loadCount = Math.Min(_model.Textures.Count, MAX_TEXTURES);
 
-            Console.WriteLine($"Texture2DArray 생성: {_model.Textures.Count}개 레이어, 크기={targetWidth}x{targetHeight}");
-
-            // 2단계: Texture2DArray 생성
-            uint textureArrayID = Gl.GenTexture();
-            Gl.BindTexture(TextureTarget.Texture2dArray, textureArrayID);
-
-            // 텍스처 스토리지 할당
-            Gl.TexStorage3D(
-                TextureTarget.Texture2dArray,
-                1,                              // mipmap levels
-                InternalFormat.Rgba8,
-                targetWidth,
-                targetHeight,
-                _model.Textures.Count           // 레이어 수
-            );
-
-            // 3단계: 각 텍스처를 레이어에 업로드
-            for (int i = 0; i < _model.Textures.Count; i++)
+            for (int i = 0; i < loadCount; i++)
             {
                 Texture tex = _model.Textures[i];
 
-                // 텍스처 이미지 로드 (리사이즈)
-                byte[] imageData = LoadAndResizeTexture(tex.FileName, targetWidth, targetHeight);
+                Console.WriteLine($"  [{i}] 로딩: {tex.FileName}");
+                uint textureID = LoadTexture(tex.FileName);
 
-                if (imageData != null)
-                {
-                    // 특정 레이어에 텍스처 업로드
-                    Gl.TexSubImage3D(
-                        TextureTarget.Texture2dArray,
-                        0,                      // mipmap level
-                        0, 0, i,               // x, y, z offset (z = 레이어 인덱스)
-                        targetWidth,
-                        targetHeight,
-                        1,                      // depth (레이어 1개)
-                         OpenGL.PixelFormat.Rgba,
-                        PixelType.UnsignedByte,
-                        imageData
-                    );
-
-                    Console.WriteLine($"텍스처 업로드: 레이어 {i} - {tex.FileName}");
-                }
+                _model.TextureIDs.Add(textureID);
+                Console.WriteLine($"      TextureID: {textureID}");
             }
 
-            // 텍스처 파라미터 설정
-            Gl.TexParameter(TextureTarget.Texture2dArray, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-            Gl.TexParameter(TextureTarget.Texture2dArray, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-            Gl.TexParameter(TextureTarget.Texture2dArray, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
-            Gl.TexParameter(TextureTarget.Texture2dArray, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
-
-            Gl.BindTexture(TextureTarget.Texture2dArray, 0);
-
-            _model.TextureArrayID = textureArrayID;
-
-            Console.WriteLine($"Texture2DArray 생성 완료: ID={textureArrayID}");
+            Console.WriteLine($"✅ 텍스처 생성 완료!\n");
         }
 
         /// <summary>
-        /// 텍스처 파일 로드 및 리사이즈
+        /// 개별 텍스처 로드 (원본 크기 유지)
         /// </summary>
-        private byte[] LoadAndResizeTexture(string filepath, int targetWidth, int targetHeight)
+        private uint LoadTexture(string filepath)
         {
             try
             {
-                using (Bitmap original = new Bitmap(filepath))
+                using (Bitmap bmp = new Bitmap(filepath))
                 {
-                    // 리사이즈
-                    using (Bitmap resized = new Bitmap(targetWidth, targetHeight))
+                    BitmapData data = bmp.LockBits(
+                        new Rectangle(0, 0, bmp.Width, bmp.Height),
+                        ImageLockMode.ReadOnly,
+                        System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+                    byte[] pixels = new byte[bmp.Width * bmp.Height * 4];
+                    System.Runtime.InteropServices.Marshal.Copy(data.Scan0, pixels, 0, pixels.Length);
+                    bmp.UnlockBits(data);
+
+                    // BGRA → RGBA
+                    for (int i = 0; i < pixels.Length; i += 4)
                     {
-                        using (Graphics g = Graphics.FromImage(resized))
-                        {
-                            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                            g.DrawImage(original, 0, 0, targetWidth, targetHeight);
-                        }
-
-                        // RGBA 바이트 배열로 변환
-                        BitmapData data = resized.LockBits(
-                            new Rectangle(0, 0, targetWidth, targetHeight),
-                            ImageLockMode.ReadOnly,
-                            System.Drawing.Imaging.PixelFormat.Format32bppArgb
-                        );
-
-                        byte[] imageData = new byte[targetWidth * targetHeight * 4];
-                        System.Runtime.InteropServices.Marshal.Copy(data.Scan0, imageData, 0, imageData.Length);
-
-                        resized.UnlockBits(data);
-
-                        // BGRA -> RGBA 변환
-                        for (int i = 0; i < imageData.Length; i += 4)
-                        {
-                            byte temp = imageData[i];
-                            imageData[i] = imageData[i + 2];
-                            imageData[i + 2] = temp;
-                        }
-
-                        return imageData;
+                        byte temp = pixels[i];
+                        pixels[i] = pixels[i + 2];
+                        pixels[i + 2] = temp;
                     }
+
+                    uint texID = Gl.GenTexture();
+                    Gl.BindTexture(TextureTarget.Texture2d, texID);
+
+                    Gl.TexImage2D(
+                        TextureTarget.Texture2d,
+                        0,
+                        InternalFormat.Rgba8,
+                        bmp.Width,
+                        bmp.Height,
+                        0,
+                        OpenGL.PixelFormat.Rgba,
+                        PixelType.UnsignedByte,
+                        pixels);
+
+                    Gl.GenerateMipmap(TextureTarget.Texture2d);
+
+                    Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.LinearMipmapLinear);
+                    Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+                    Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
+                    Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+
+                    Gl.BindTexture(TextureTarget.Texture2d, 0);
+
+                    Console.WriteLine($"      크기: {bmp.Width}x{bmp.Height}");
+                    return texID;
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"텍스처 로드 실패 {filepath}: {ex.Message}");
-                return null;
+                Console.WriteLine($"❌ 텍스처 로드 실패: {ex.Message}");
+                throw;
             }
         }
 
         /// <summary>
-        /// 모델 렌더링
+        /// 렌더링
         /// </summary>
         public void Render(UnlitShader shader, Camera camera)
         {
-            // 셰이더 활성화
-            Gl.UseProgram(shader.ProgramID);
+            shader.Bind();
 
-            // Texture2DArray 바인딩
-            Gl.ActiveTexture(TextureUnit.Texture0);
-            Gl.BindTexture(TextureTarget.Texture2dArray, _model.TextureArrayID);
-
-            // 셰이더에 텍스처 유니폼 설정
-            int texLocation = Gl.GetUniformLocation(_shaderProgram, "texArray");
-            Gl.Uniform1(texLocation, 0);  // Texture unit 0
+            // ✅ 텍스처 배열 바인딩 (한 번만!)
+            shader.LoadTextureArray(_model.TextureIDs.ToArray());
 
             shader.LoadMVPMatrix(camera.VPMatrix);
 
-            // VAO 바인딩
             Gl.BindVertexArray(_model.VaoID);
 
-            // 한 번의 드로우콜로 전체 렌더링
             Gl.DrawElements(
                 PrimitiveType.Triangles,
                 _model.IndexCount,
                 DrawElementsType.UnsignedInt,
-                IntPtr.Zero
-            );
+                IntPtr.Zero);
 
-            // 언바인딩
             Gl.BindVertexArray(0);
-            Gl.BindTexture(TextureTarget.Texture2dArray, 0);
-            Gl.UseProgram(0);
+            shader.Unbind();
         }
 
-        /// <summary>
-        /// 리소스 정리
-        /// </summary>
         public void Dispose()
         {
-            if (_model.TextureArrayID != 0)
+            foreach (uint texID in _model.TextureIDs)
             {
-                Gl.DeleteTextures(_model.TextureArrayID);
+                Gl.DeleteTextures(texID);
             }
 
             if (_model.VaoID != 0)
-            {
                 Gl.DeleteVertexArrays(_model.VaoID);
-            }
         }
     }
-
 }

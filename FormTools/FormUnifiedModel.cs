@@ -113,8 +113,8 @@ namespace FormTools
             _glControl3.InitGridShader(PROJECT_PATH);
 
             // 3D 모델 매니저 및 모델 로드
-            _unifiedModel = ObjLoaderEx.LoadObjUnified(PROJECT_PATH + @"FormTools\bin\Debug\Res\Palm4.obj");
-            _unifiedModelRenderer = new UnifiedModelRenderer(_unifiedModel, _unlitShader.ProgramID);
+            _unifiedModel = ObjLoaderEx.LoadObjUnified(PROJECT_PATH + @"FormTools\bin\Debug\Res\tree1.obj");
+            _unifiedModelRenderer = new UnifiedModelRenderer(_unifiedModel);
 
             CharacterTextureAtlas.Initialize();
             TextBillboardShader.Initialize();
@@ -129,6 +129,9 @@ namespace FormTools
 
             // 시야 절두체 생성
             Polyhedron viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
+
+
+
 
             if (_prevCameraPosition != camera.Position)
             {
@@ -179,7 +182,7 @@ namespace FormTools
 
         public void KeyUpEvent(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.D0)
+            if (e.KeyCode == Keys.D1)
             {
                 _glControl3.Camera.PivotPosition = new Vertex3f(0, 0, 1.0f);
             }

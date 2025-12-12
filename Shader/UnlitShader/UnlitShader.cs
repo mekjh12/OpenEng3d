@@ -1,7 +1,5 @@
-﻿using OpenGL;
-using System.IO;
-using Common;
-using Common.Abstractions;
+﻿using Common;
+using OpenGL;
 
 namespace Shader
 {
@@ -18,6 +16,9 @@ namespace Shader
         private int loc_mvp;
         private int loc_vp;
         private int loc_modelTexture;
+        private int loc_textureCount;
+        private int[] loc_textures;  // ✅ 배열 위치
+        private const int MAX_TEXTURES = 32;
 
         /// <summary>
         /// UnlitShader의 생성자입니다.
@@ -35,7 +36,14 @@ namespace Shader
         {
             loc_mvp = GetUniformLocation("mvp");
             loc_vp = GetUniformLocation("vp");
-            loc_modelTexture = GetUniformLocation("modelTexture");
+            loc_textureCount = GetUniformLocation("textureCount");
+
+            // ✅ 배열 위치 가져오기
+            loc_textures = new int[MAX_TEXTURES];
+            for (int i = 0; i < MAX_TEXTURES; i++)
+            {
+                loc_textures[i] = GetUniformLocation($"textures[{i}]");
+            }
         }
 
         /// <summary>
@@ -47,6 +55,7 @@ namespace Shader
         {
             base.BindAttribute(0, "position");
             base.BindAttribute(1, "textureCoords");
+            base.BindAttribute(3, "materialID");
         }
 
         // === Load 메서드들 ===
@@ -57,6 +66,24 @@ namespace Shader
         public void LoadMVPMatrix(Matrix4x4f matrix)
         {
             Gl.UniformMatrix4f(loc_mvp, 1, false, matrix);
+        }
+
+
+        /// <summary>
+        /// ✅ 텍스처 배열 바인딩 (초기화 시 한 번만 호출)
+        /// </summary>
+        public void LoadTextureArray(uint[] textureIDs)
+        {
+            int count = System.Math.Min(textureIDs.Length, MAX_TEXTURES);
+
+            Gl.Uniform1(loc_textureCount, count);
+
+            for (int i = 0; i < count; i++)
+            {
+                Gl.ActiveTexture(TextureUnit.Texture0 + i);
+                Gl.BindTexture(TextureTarget.Texture2d, textureIDs[i]);
+                Gl.Uniform1(loc_textures[i], i);  // sampler에 텍스처 유닛 번호 전달
+            }
         }
 
         /// <summary>
