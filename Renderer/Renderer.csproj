@@ -60,6 +60,7 @@
     <Compile Include="Renderer3d.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SkyRenderer.cs" />
+    <Compile Include="UnifiedModelRenderer.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Camera3d\Camera3d.csproj">

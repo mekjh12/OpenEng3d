@@ -80,6 +80,7 @@
     <Compile Include="AxisShader\AxisShader.cs" />
     <Compile Include="AABBShader\AABBBoxShader .cs" />
     <Compile Include="GlobalUniformBuffers.cs" />
+    <Compile Include="GPUDriven\DrawArraysIndirectCommand.cs" />
     <Compile Include="GPUDriven\FrustumCullingComputeShader.cs" />
     <Compile Include="GPUDriven\GPUBillboardShader.cs" />
     <Compile Include="GPUDriven\DepthDebugInstancedShader.cs" />

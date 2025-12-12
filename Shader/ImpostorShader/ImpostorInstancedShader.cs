@@ -31,6 +31,7 @@ namespace Shader
         private int loc_verticalAngleMin;
         private int loc_verticalAngleMax;
         private int loc_batchStartOffset;  // ← 추가
+        private int loc_currentBatchID;
 
         public ImpostorInstancedShader(string projectPath) : base()
         {
@@ -68,6 +69,8 @@ namespace Shader
 
             // 배치 시작 오프셋
             loc_batchStartOffset = GetUniformLocation("batchStartOffset");
+            loc_currentBatchID = GetUniformLocation("currentBatchID");
+
         }
 
         protected override void BindAttributes()
@@ -91,6 +94,11 @@ namespace Shader
         public void LoadVerticalFrames(int frames)
         {
             Gl.Uniform1(loc_verticalFrames, frames);
+        }
+
+        public void LoadCurrentBatchID(uint batchID)
+        {
+            Gl.Uniform1(loc_currentBatchID, batchID);
         }
 
         /// <summary>

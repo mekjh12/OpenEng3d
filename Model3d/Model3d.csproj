@@ -94,6 +94,7 @@
     <Compile Include="Impostor\RenderTarget2D.cs" />
     <Compile Include="MeshLODGenerator.cs" />
     <Compile Include="Model3dManager.cs" />
+    <Compile Include="ObjLoaderEx.cs" />
     <Compile Include="TexturedModel.cs" />
     <Compile Include="ObjLoader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -101,6 +102,7 @@
     <Compile Include="TangentSpace.cs" />
     <Compile Include="TextureStorage.cs" />
     <Compile Include="TransformComponent.cs" />
+    <Compile Include="UnifiedModel.cs" />
     <Compile Include="WorldCoordinate.cs" />
   </ItemGroup>
   <ItemGroup>

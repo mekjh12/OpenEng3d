@@ -13,11 +13,6 @@ namespace Shader
     {
         const string COMPUTE_FILE = @"\Shader\GPUDriven\comp\UpdateIndirectCommands.comp";
 
-        // SSBO 바인딩 포인트
-        private const int INDIRECT_COMMANDS_BINDING = 10;
-        private const int VISIBLE_COUNTS_LOD0_BINDING = 11;
-        private const int VISIBLE_COUNTS_LOD1_BINDING = 12;
-
         // 유니폼 위치
         private int loc_numBatches;
         private int loc_batchCommandStartIndices;
