@@ -425,15 +425,17 @@ namespace Renderer
             shader.Unbind();
         }
 
-        public static void RenderAABB(ColorShader shader, AABB aabb, Vertex4f color, Camera camera)
+        public static void RenderAABB(ColorShader shader, AABB3f aabb, Camera camera, Vertex4f color = default)
         {
+            if (color == default) color = new Vertex4f(0, 1, 0, 0.3f);
+
             Gl.Enable(EnableCap.Blend);
             Gl.BlendEquation(BlendEquationMode.FuncAdd);
             Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
             shader.Bind();
             shader.LoadUniform(ColorShader.UNIFORM_NAME.color, color);
-            shader.LoadUniform(ColorShader.UNIFORM_NAME.mvp, camera.ProjectiveMatrix * camera.ViewMatrix * aabb.ModelMatrix);
+            shader.LoadUniform(ColorShader.UNIFORM_NAME.mvp, camera.VPMatrix * aabb.ModelMatrix);
             Gl.BindVertexArray(Cube.VAO);
             Gl.EnableVertexAttribArray(0);
             Gl.DrawArrays(PrimitiveType.Triangles, 0, Cube.VertexCount);

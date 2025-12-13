@@ -157,7 +157,7 @@ namespace FormTools
             _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm4.obj");
             _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm5.obj");
             _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm6.obj");
-            _treeModel = _model3DManager.GetModels("tree1");
+            //_treeModel = _model3DManager.GetModels("tree1");
 
             // 지형 영역 초기화
             RegionCoord regionCoord = new RegionCoord(0, 0);
@@ -167,6 +167,7 @@ namespace FormTools
                 {
 
                     // 대량 인스턴스 배치
+                    /*
                     _modelBatchManager = new ModelBatchManager();
                     uint treeID = _modelBatchManager.AddModel("tree1", 100, _model3DManager.GetModels("tree1"));
                     uint palm1ID = _modelBatchManager.AddModel("Palm4", 100, _model3DManager.GetModels("Palm4"));
@@ -176,7 +177,7 @@ namespace FormTools
                     _modelBatchManager.AddModel("Palm3", 100, _model3DManager.GetModels("Palm3"));
                     _modelBatchManager.AddModel("Palm6", 100, _model3DManager.GetModels("Palm6"));
                     Console.WriteLine($"Registered Models: Tree={treeID}, Palm1={palm1ID}, Palm2={palm2ID}");
-
+                    */
                     int gridSize = 300;
                     float spacing = 15f;
                     float halfSpacing = spacing / 2f;

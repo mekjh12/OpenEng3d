@@ -122,7 +122,7 @@ namespace FormTools
             // 3D 모델 매니저 및 모델 로드
             _model3DManager = new Model3dManager(PROJECT_PATH, ExE_PATH + "\\nullTexture.jpg");
             _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm6.obj");
-            _treeModel = _model3DManager.GetModels("Palm6");
+            //_treeModel = _model3DManager.GetModels("Palm6");
 
             // GPU 드리븐 렌더러 초기화
             _gpuDriven = new GPUCullingRenderer(PROJECT_PATH);

@@ -8,7 +8,7 @@ namespace ZetaExt
 {
     public static class Assert
     {
-        public static void Check(bool condition, string message)
+        public static void Notify(bool condition, string message)
         {
             if (!condition)
             {
@@ -17,7 +17,7 @@ namespace ZetaExt
         }
 
 
-        public static void Check(bool condition)
+        public static void Notify(bool condition)
         {
             if (!condition)
             {

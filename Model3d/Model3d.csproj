@@ -102,7 +102,7 @@
     <Compile Include="TangentSpace.cs" />
     <Compile Include="TextureStorage.cs" />
     <Compile Include="TransformComponent.cs" />
-    <Compile Include="UnifiedModel.cs" />
+    <Compile Include="UnifiedTexturedModel.cs" />
     <Compile Include="WorldCoordinate.cs" />
   </ItemGroup>
   <ItemGroup>

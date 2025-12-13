@@ -1,5 +1,4 @@
-﻿using Common.Abstractions;
-using FastMath;
+﻿using FastMath;
 using OpenGL;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -155,7 +154,7 @@ namespace Common
             
             _center = (Min + Max) * 0.5f;
             _size = Max - Min;
-            _radius = MathFast.Sqrt(_size.x * _size.x + _size.y * _size.y + _size.z * _size.z) * 0.5f;
+            _radius = MathF.Sqrt(_size.x * _size.x + _size.y * _size.y + _size.z * _size.z) * 0.5f;
 
             float x = MathFast.Abs(_size.x);
             float y = MathFast.Abs(_size.y);
@@ -163,9 +162,9 @@ namespace Common
             _area = 2.0f * (x * y + y * z + z * x);
 
             _model = new Matrix4x4f(
-                _size.x, 0, 0, 0,
-                0, _size.y, 0, 0,
-                0, 0, _size.z, 0,
+                _size.x * 0.5f, 0, 0, 0,
+                0, _size.y * 0.5f, 0, 0,
+                0, 0, _size.z * 0.5f, 0,
                 _center.x, _center.y, _center.z, 1
             );
 

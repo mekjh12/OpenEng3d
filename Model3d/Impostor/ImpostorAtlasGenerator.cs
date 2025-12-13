@@ -1,6 +1,8 @@
-﻿using Common.Abstractions;
+﻿using Common;
+using Common.Abstractions;
 using Geometry;
 using OpenGL;
+using Renderer;
 using Shader;
 using System;
 using System.Collections.Generic;
@@ -13,6 +15,47 @@ namespace Model3d
     /// 3D 모델의 임포스터 아틀라스를 생성하는 클래스.
     /// 임포스터는 3D 모델을 다양한 각도에서 2D 이미지로 렌더링한 것으로,
     /// 원거리에서 3D 모델 대신 사용하여 렌더링 성능을 향상시킬 수 있다.
+    /// <code>
+    /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    /// 📖 읽기 가이드
+    /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    /// 
+    /// [진입점]
+    ///   GenerateAtlas()
+    /// 
+    /// [초기화 흐름]
+    ///   GenerateAtlas()
+    ///   ├─► InitializeRenderTarget()  : _atlasRenderTarget 생성
+    ///   ├─► CalculateModelBounds()    : 모델 경계 계산
+    ///   ├─► CalculateViewMatrices()   : _viewDataList 채움 (각도별 뷰 생성)
+    ///   └─► RenderAtlas()             : 실제 렌더링 수행
+    /// 
+    /// [핵심 멤버 변수]
+    ///   _viewDataList        : 렌더링할 각도 정보 (HorizontalAngles × VerticalAngles 개)
+    ///   _atlasRenderTarget   : 최종 아틀라스가 저장되는 렌더 타겟 (GPU)
+    ///   _unifiedModelRenderer: 3D 모델 렌더링 담당
+    /// 
+    /// [데이터 흐름]
+    ///   모델 AABB → 카메라 거리 계산 → 각 각도별 뷰 매트릭스 생성
+    ///   → 격자 형태로 렌더링 → GPU 텍스처 (_atlasRenderTarget)
+    /// 
+    /// [결과 추출]
+    ///   GetImpostorTexture()      : 컬러 아틀라스를 Bitmap으로 변환
+    ///   GetImpostorDepthTexture() : 깊이 아틀라스를 Bitmap으로 변환
+    /// 
+    /// [동작 원리]
+    ///   • 모델을 중심에 두고 구 형태로 카메라를 배치
+    ///   • 각 카메라 위치에서 직교 투영으로 렌더링
+    ///   • 결과를 아틀라스의 각 셀(IndividualSize)에 저장
+    ///   • 최종 아틀라스는 HorizontalAngles × VerticalAngles 크기의 격자
+    /// 
+    /// [사용 예시]
+    ///   var generator = new ImpostorAtlasGenerator();
+    ///   uint textureHandle = generator.GenerateAtlas(shader, settings, model, camera);
+    ///   // textureHandle을 사용하여 원거리 렌더링
+    /// 
+    /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    /// </code>
     /// </summary>
     public class ImpostorAtlasGenerator: IDisposable
     {
@@ -27,8 +70,9 @@ namespace Model3d
             public float VerticalAngle;     // 수직 각도 (도 단위)
         }
 
-        private List<ViewData> _viewDataList;
-        private RenderTarget2D _atlasRenderTarget;  // 렌더링 결과를 저장할 렌더 타겟
+        private List<ViewData> _viewDataList;           // 렌더링할 뷰 데이터 리스트
+        private RenderTarget2D _atlasRenderTarget;      // 렌더링 결과를 저장할 렌더 타겟
+        UnifiedModelRenderer _unifiedModelRenderer;     // 통합 모s델 렌더러
 
         /// <summary>
         /// 임포스터 아틀라스 생성기 초기화
@@ -61,49 +105,44 @@ namespace Model3d
         /// <param name="shader">렌더링에 사용할 쉐이더</param>
         /// <param name="texturedModels">임포스터를 생성할 3D 모델들의 배열</param>
         /// <returns>생성된 임포스터 아틀라스의 텍스처 핸들</returns>
-        public uint GenerateAtlas(UnlitShader shader, ImpostorSettings settings, string modelname, TexturedModel[] texturedModels)
+        public uint GenerateAtlas(UnlitShader shader, ImpostorSettings settings, string modelname, UnifiedTexturedModel unifiedTexturedModel, Camera camera)
         {
+            // 통합 모델 렌더러 생성
+            _unifiedModelRenderer = new UnifiedModelRenderer(unifiedTexturedModel);
+
             // 버퍼를 준비한다.
             InitializeRenderTarget(settings);
 
             // 모델의 바운딩박스를 계산한다.
-            AABB bounds = CalculateModelBounds(texturedModels);
+            AABB3f bound = CalculateModelBounds(unifiedTexturedModel.AABB);
 
             // yaw, pitch에 따른 뷰행렬리스트를 만든다.
-            CalculateViewMatrices(settings, bounds);
+            CalculateViewMatrices(settings, bound);
 
             // 렌더링한다.
-            RenderAtlas(settings, shader, texturedModels, bounds);
+            RenderAtlas(settings, shader, unifiedTexturedModel, bound, camera);
 
             // 디버깅(지울것)
-            //GetImpostorTexture(settings, drawBorders: true).Save(@"C:\Users\mekjh\OneDrive\바탕 화면\" + modelname + ".png");
-            //GetImpostorDepthTexture(settings, drawBorders: true).Save(@"C:\Users\mekjh\OneDrive\바탕 화면\" + modelname + "_depth.png");
+            GetImpostorTexture(settings, drawBorders: true).Save(@"C:\Users\mekjh\OneDrive\바탕 화면\" + modelname + ".png");
+            GetImpostorDepthTexture(settings, drawBorders: true).Save(@"C:\Users\mekjh\OneDrive\바탕 화면\" + modelname + "_depth.png");
 
             return _atlasRenderTarget.TextureHandle;
         }
 
         /// <summary>
-        /// 모델의 바운딩 박스 계산
-        /// 모든 모델을 포함하는 최소 크기의 축 정렬 바운딩 박스(AABB)를 계산한다.
+        /// 모델의 바운딩 박스 재계산(약간의 패딩을 추가한다.)
         /// </summary>
-        /// <param name="texturedModels">바운딩 박스를 계산할 3D 모델들의 배열</param>
+        /// <param name="modelAABB">바운딩 박스</param>
         /// <returns>모든 모델을 포함하는 AABB</returns>
-        private AABB CalculateModelBounds(TexturedModel[] texturedModels)
+        private AABB3f CalculateModelBounds(AABB3f modelAABB, float padding = 0.01f)
         {
-            // 모든 모델을 포함하는 AABB 계산
-            AABB finalAABB = AABB.ZeroSizeAABB;
-            foreach (var model in texturedModels)
-            {
-                finalAABB = (AABB)finalAABB.Union(model.AABB);
-            }
-
             // 약간의 패딩 추가 (모델이 AABB 경계에 너무 딱 맞지 않도록)
             // AABB 계산 시 약간의 패딩을 추가하여 모델이 경계에 너무 딱 맞지 않도록 함
-            const float PADDING_FACTOR = 1.01f;  // 1% 패딩
-            Vertex3f center = finalAABB.Center;
-            Vertex3f extents = finalAABB.Size * (PADDING_FACTOR * 0.5f);
+            float PADDING_FACTOR = 1f + padding;  // 1% 패딩
+            Vertex3f center = modelAABB.Center;
+            Vertex3f extents = modelAABB.Size * (PADDING_FACTOR * 0.5f);
 
-            return new AABB(
+            return new AABB3f(
                 center - extents,  // min
                 center + extents   // max
             );
@@ -114,13 +153,15 @@ namespace Model3d
         /// 설정된 수평 및 수직 각도에 따라 다양한 시점에서의 뷰 매트릭스를 생성한다.
         /// </summary>
         /// <param name="bounds">모델의 바운딩 박스</param>
-        private void CalculateViewMatrices(ImpostorSettings settings, AABB bounds)
+        private void CalculateViewMatrices(ImpostorSettings settings, AABB3f bounds)
         {
+            // TODO: 텍스처 저장 효율을 위하여 불필요한 세로뷰는 생성하지 않도록 개선 가능
+
             _viewDataList.Clear();
 
             // AABB의 중심점과 반지름 계산
             Vertex3f center = bounds.Center;
-            float radius = bounds.SphereRadius;
+            float radius = bounds.Radius;
             
             // 각 수평/수직 각도에 대해 뷰 매트릭스 생성
             for (int h = 0; h < settings.HorizontalAngles; h++)
@@ -258,11 +299,10 @@ namespace Model3d
         /// <param name="shader">렌더링에 사용할 쉐이더</param>
         /// <param name="texturedModels">렌더링할 3D 모델들의 배열</param>
         /// <param name="bounds">모델의 바운딩 박스</param>
-        private void RenderAtlas(ImpostorSettings settings, UnlitShader shader, TexturedModel[] texturedModels, AABB bounds)
+        private void RenderAtlas(ImpostorSettings settings, UnlitShader shader, UnifiedTexturedModel texturedModels, AABB3f bounds, Camera camera)
         {
             // 직교 투영 행렬 설정 - 모델의 실제 크기 유지
-            Vertex3f size = bounds.Size;
-            float orthoSize = bounds.SphereRadius;
+            float orthoSize = bounds.Radius;
 
             Matrix4x4f proj = Matrix4x4f.Ortho(
                 -orthoSize, orthoSize,
@@ -294,29 +334,7 @@ namespace Model3d
 
                 // 월드뷰투영 행렬 설정
                 Matrix4x4f mvp = proj * viewData.ViewMatrix;
-                shader.LoadMVPMatrix(mvp);
-
-                // 모델을 그린다.
-                foreach (RawModel3d rawModel in texturedModels)
-                {
-                    if (rawModel is TexturedModel)
-                    {
-                        TexturedModel modelTextured = rawModel as TexturedModel;
-                        if (modelTextured.Texture != null)
-                        {
-                            if (modelTextured.Texture.TextureType.HasFlag(Texture.TextureMapType.Diffuse))
-                            {
-                                shader.LoadModelTexture( TextureUnit.Texture0, modelTextured.Texture.DiffuseMapID);
-                            }
-                            Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.REPEAT);
-                            Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.REPEAT);
-                        }
-                    }
-
-                    Gl.BindVertexArray(rawModel.VAO);
-                    Gl.DrawArrays(PrimitiveType.Triangles, 0, rawModel.VertexCount);
-                    Gl.BindVertexArray(0);
-                }
+                _unifiedModelRenderer.Render(shader, mvp);
 
                 shader.Unbind();
             }

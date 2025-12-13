@@ -120,11 +120,11 @@ namespace FormTools
             _model3DManager = new Model3dManager(PROJECT_PATH, ExE_PATH + "\\nullTexture.jpg");
             _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm4.obj");
 
-            TexturedModel[] treeModel = _model3DManager.GetModels("Palm4");
+            //TexturedModel[] treeModel = _model3DManager.GetModels("Palm4");
 
             // QuadTree GPU Renderer 초기화
             _renderer = new QuadTreeGPURenderer(PROJECT_PATH);
-            _renderer.Initialize("Palm4", treeModel);
+            //_renderer.Initialize("Palm4", treeModel);
 
             // UI 3D 텍스트 네임플레이트 초기화
             _textNamePlate = new TextNamePlate(_glControl3.Camera, "QuadTree");

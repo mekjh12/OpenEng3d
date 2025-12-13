@@ -1,62 +1,132 @@
 ﻿#version 430
-
-// 입력 프리미티브 타입 지정 (점)
 layout (points) in;
-// 출력 프리미티브 타입 지정 (삼각형 스트립, 최대 4개의 정점 출력)
 layout (triangle_strip, max_vertices = 4) out;
 
-// 지오메트리 쉐이더 출력 구조체 (프래그먼트 쉐이더로 전달)
+in VS_OUT {
+    vec3 worldPosition;
+    mat4 modelMatrix;
+} gs_in[];
+
 out GS_OUT {
-   vec2 texCoord;   // UV 텍스처 좌표
+    vec2 texCoord;
+    vec2 atlasOffset;
 } gs_out;
 
-// Uniform 변수들
-uniform mat4 vp;                        // View-Projection 행렬
-uniform vec3 cameraPosition;            // 카메라 위치
-uniform vec3 worldPosition;             // 객체의 월드 위치
-uniform float aabbSizeModel;             // Model-AABB(Axis-Aligned Bounding Box)의 크기
-uniform vec3 aabbCenterEntity;          // AABB의 중심점
+uniform mat4 vp;
+uniform vec3 cameraPosition;
+uniform float aabbSphereRadius;
+uniform vec3 aabbCenterPosition;
+uniform float atlasSize;
+uniform float individualSize;
+uniform int horizontalFrames;
+uniform int verticalFrames;
+
+const float PI = 3.14159265359;
+
+// 모델 행렬에서 스케일 추출
+vec3 extractScale(mat4 modelMatrix)
+{
+    vec3 scaleX = vec3(modelMatrix[0][0], modelMatrix[0][1], modelMatrix[0][2]);
+    vec3 scaleY = vec3(modelMatrix[1][0], modelMatrix[1][1], modelMatrix[1][2]);
+    vec3 scaleZ = vec3(modelMatrix[2][0], modelMatrix[2][1], modelMatrix[2][2]);
+    
+    return vec3(length(scaleX), length(scaleY), length(scaleZ));
+}
+
+// 모델 행렬에서 forward 벡터 추출 (-Y축, 정규화)
+vec3 getModelForward(mat4 modelMatrix)
+{
+    return normalize(-vec3(modelMatrix[1][0], modelMatrix[1][1], modelMatrix[1][2]));
+}
+
+// 모델 행렬에서 right 벡터 추출 (-X축, 정규화)
+vec3 getModelRight(mat4 modelMatrix)
+{
+    return normalize(-vec3(modelMatrix[0][0], modelMatrix[0][1], modelMatrix[0][2]));
+}
+
+// 회전을 고려한 상대 카메라 방향 계산
+vec3 getLocalViewDirection(mat4 modelMatrix, vec3 toCamera)
+{
+    vec3 modelRight = getModelRight(modelMatrix);
+    vec3 modelForward = getModelForward(modelMatrix);
+    vec3 modelUp = vec3(0.0, 0.0, 1.0);
+    
+    vec3 localView;
+    localView.x = dot(toCamera, modelRight);
+    localView.y = dot(toCamera, modelForward);
+    localView.z = dot(toCamera, modelUp);
+    
+    return normalize(localView);
+}
+
+// Atlas offset 계산
+vec2 calculateAtlasOffset(vec3 localViewDir)
+{
+    float horizontalAngle = atan(localViewDir.y, localViewDir.x);
+    float verticalAngle = asin(clamp(localViewDir.z, -1.0, 1.0));
+    
+    float normalizedH = (horizontalAngle + PI) / (2.0 * PI);
+    float normalizedV = (verticalAngle + PI * 0.5) / PI;
+    
+    int frameX = int(normalizedH * float(horizontalFrames)) % horizontalFrames;
+    int frameY = int(normalizedV * float(verticalFrames)) % verticalFrames;
+    
+    float frameSize = individualSize / atlasSize;
+    return vec2(float(frameX) * frameSize, float(frameY) * frameSize);
+}
 
 void main()
 {
-    // AABB의 크기 계산, 최대점에서 최소점을 빼서 바운딩 박스의 실제 크기를 구함
-    //vec3 aabbDimensions = aabbSizeModel;
-    //float maxDist = max(max(aabbDimensions.x, aabbDimensions.y),aabbDimensions.z);
-
-    // 빌보드 방향 계산
-    // 1. 카메라 방향 벡터 계산 (정규화된 카메라까지의 방향)
+    vec3 worldPosition = gs_in[0].worldPosition;
+    mat4 modelMatrix = gs_in[0].modelMatrix;
+    
+    // 모델 행렬에서 스케일 추출
+    vec3 modelScale = extractScale(modelMatrix);
+    
+    // 카메라 방향 계산
     vec3 toCamera = normalize(cameraPosition - worldPosition);
-    // 2. 빌보드의 오른쪽 벡터 계산 (z축과 카메라 방향의 외적)
-    vec3 right = normalize(cross(vec3(0.0, 0.0, 1.0), toCamera)) * aabbSizeModel;
-    // 3. 빌보드의 위쪽 벡터 계산 (카메라 방향과 오른쪽 벡터의 외적)
-    vec3 up = normalize(cross(toCamera, right)) * aabbSizeModel;
-   
-    // 빌보드의 네 모서리 위치 계산
+    
+    // 모델의 회전을 고려한 로컬 뷰 방향 계산
+    vec3 localViewDir = getLocalViewDirection(modelMatrix, toCamera);
+    
+    // 인스턴스별 atlas offset 계산
+    vec2 instanceAtlasOffset = calculateAtlasOffset(localViewDir);
+    
+    // 빌보드 방향 벡터 계산
+    vec3 worldUp = vec3(0.0, 0.0, 1.0);
+    vec3 tempRight = cross(worldUp, toCamera);
+    float rightLength = length(tempRight);
+    
+    if (rightLength < 0.001) {
+        tempRight = cross(vec3(1.0, 0.0, 0.0), toCamera);
+        rightLength = length(tempRight);
+    }
+    
+    vec3 right = (tempRight / rightLength) * aabbSphereRadius;
+    vec3 up = normalize(cross(toCamera, right)) * aabbSphereRadius;
+    
+    // 빌보드 네 모서리 위치
     vec3 positions[4];
-    positions[0] = aabbCenterEntity + (-right - up);          // 좌하단
-    positions[1] = aabbCenterEntity + (right - up);           // 우하단
-    positions[2] = aabbCenterEntity + (-right + up);          // 좌상단
-    positions[3] = aabbCenterEntity + (right + up);           // 우상단
-   
-    // UV 텍스처 좌표 설정
+    positions[0] = aabbCenterPosition - right - up;
+    positions[1] = aabbCenterPosition + right - up;
+    positions[2] = aabbCenterPosition - right + up;
+    positions[3] = aabbCenterPosition + right + up;
+    
     const vec2 texCoords[4] = vec2[4](
-        vec2(0.0, 0.0),    // 좌하단
-        vec2(1.0, 0.0),    // 우하단
-        vec2(0.0, 1.0),    // 좌상단
-        vec2(1.0, 1.0)     // 우상단
+        vec2(0.0, 0.0),
+        vec2(1.0, 0.0),
+        vec2(0.0, 1.0),
+        vec2(1.0, 1.0)
     );
-   
-    // 정점 생성 및 출력
+    
     for (int i = 0; i < 4; i++) 
     {
-        // MVP 행렬을 적용하여 클립 공간으로 변환
         gl_Position = vp * vec4(positions[i], 1.0);
-        // 텍스처 좌표 전달
         gs_out.texCoord = texCoords[i];
-        // 정점 출력
+        gs_out.atlasOffset = instanceAtlasOffset;
         EmitVertex();
     }
-   
-    // 프리미티브 완성
+    
     EndPrimitive();
 }

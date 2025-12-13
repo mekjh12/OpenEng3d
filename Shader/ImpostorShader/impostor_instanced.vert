@@ -8,6 +8,7 @@ layout(std430, binding = 0) buffer TransformBuffer {
     mat4 transforms[];
 };
 
+
 layout(std430, binding = 1) buffer VisibleIndicesBuffer {
     int visibleIndices[];
 };
@@ -44,7 +45,7 @@ void main()
     //     return;
     // }
     
-    // 변환 행렬 가져오기
+    // 변환 행렬 가져오기(월드AABB)
     mat4 transform = transforms[instanceIndex];
     
     // 변환 행렬에서 월드 위치 추출 (행렬의 4번째 열)

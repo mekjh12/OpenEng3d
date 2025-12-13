@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using Common.Abstractions;
+using OpenGL;
 using Shader;
 using System;
 using System.Collections.Generic;
@@ -121,12 +122,13 @@ namespace Model3d
             }
         }
 
-        public void CreateImpostorModel(string modelname, ImpostorSettings settings, UnlitShader shader, TexturedModel[] texturedModels)
+        public void CreateImpostorModel(string modelname, ImpostorSettings settings, UnlitShader shader, UnifiedTexturedModel texturedModels, Camera camera)
         {
             // 해당 모델의 임포스터가 아직 생성되지 않은 경우에만 생성
             if (!_impostorModels.ContainsKey(modelname))
             {
-                _impostorModels.Add(modelname, _atlasGenerator.GenerateAtlas(shader, settings, modelname, texturedModels));
+                uint atlasIndex = _atlasGenerator.GenerateAtlas(shader, settings, modelname, texturedModels, camera);
+                _impostorModels.Add(modelname, atlasIndex);
             }
 
             // 해당 셋팅의 임포스터가 아직 생성되지 않은 경우에만 생성

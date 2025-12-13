@@ -1,4 +1,5 @@
 ﻿using Assimp;
+using Common;
 using Common.Abstractions;
 using OpenGL;
 using System;
@@ -14,7 +15,7 @@ namespace Model3d
         /// <summary>
         /// OBJ 파일을 하나의 통합 메시로 로드
         /// </summary>
-        public static UnifiedModel LoadObjUnified(string filename)
+        public static UnifiedTexturedModel LoadObjUnified(string filename)
         {
             if (!File.Exists(filename))
             {
@@ -61,8 +62,30 @@ namespace Model3d
                 }
             }
 
+            // 3단계: AABB 계산
+            Vertex3f min = new Vertex3f(float.MaxValue, float.MaxValue, float.MaxValue);
+            Vertex3f max = new Vertex3f(float.MinValue, float.MinValue, float.MinValue);
+            foreach (var meshData in meshDataList)
+            {
+                for (int i = 0; i < meshData.Positions.Length / 3; i++)
+                {
+                    float x = meshData.Positions[3 * i + 0];
+                    float y = meshData.Positions[3 * i + 1];
+                    float z = meshData.Positions[3 * i + 2];
+
+                    if (x < min.x) min.x = x;
+                    if (y < min.y) min.y = y;
+                    if (z < min.z) min.z = z;
+
+                    if (x > max.x) max.x = x;
+                    if (y > max.y) max.y = y;
+                    if (z > max.z) max.z = z;
+                }
+            }
+
             // 3단계: 하나의 메시로 통합
-            UnifiedModel model = MergeIntoSingleMesh(meshDataList, textureFiles);
+            UnifiedTexturedModel model = MergeIntoSingleMesh(meshDataList, textureFiles);
+            model.AABB = new AABB3f(min, max);
 
             Console.WriteLine($"통합 완료: {model.VertexCount}개 정점, " +
                              $"{model.IndexCount}개 인덱스, {model.Textures.Count}개 텍스처");
@@ -178,7 +201,7 @@ namespace Model3d
         /// <summary>
         /// 여러 메시를 하나로 병합
         /// </summary>
-        private static UnifiedModel MergeIntoSingleMesh(List<MeshData> meshDataList, List<string> textureFiles)
+        private static UnifiedTexturedModel MergeIntoSingleMesh(List<MeshData> meshDataList, List<string> textureFiles)
         {
             // 전체 크기 계산
             int totalVertexCount = 0;
@@ -243,7 +266,7 @@ namespace Model3d
                 textures.Add(new Texture(texFile, Texture.TextureMapType.Diffuse));
             }
 
-            UnifiedModel model = new UnifiedModel
+            UnifiedTexturedModel model = new UnifiedTexturedModel
             {
                 VaoID = vaoID,
                 VertexCount = totalVertexCount,

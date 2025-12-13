@@ -10,10 +10,10 @@ namespace Renderer
 {
     public class UnifiedModelRenderer
     {
-        private UnifiedModel _model;
+        private UnifiedTexturedModel _model;
         private const int MAX_TEXTURES = 32;
 
-        public UnifiedModelRenderer(UnifiedModel model)
+        public UnifiedModelRenderer(UnifiedTexturedModel model)
         {
             _model = model;
             CreateTextures();
@@ -117,14 +117,24 @@ namespace Renderer
         /// <summary>
         /// 렌더링
         /// </summary>
-        public void Render(UnlitShader shader, Camera camera)
+        public void Render(UnlitShader shader, Matrix4x4f mvp)
         {
+            if (_model.EnableCullFace)
+            {
+                Gl.Enable(EnableCap.CullFace);
+                Gl.CullFace(_model.CullFaceMode);
+            }
+            else
+            {
+                Gl.Disable(EnableCap.CullFace);
+            }
+
             shader.Bind();
 
             // ✅ 텍스처 배열 바인딩 (한 번만!)
             shader.LoadTextureArray(_model.TextureIDs.ToArray());
 
-            shader.LoadMVPMatrix(camera.VPMatrix);
+            shader.LoadMVPMatrix(mvp);
 
             Gl.BindVertexArray(_model.VaoID);
 
@@ -136,6 +146,8 @@ namespace Renderer
 
             Gl.BindVertexArray(0);
             shader.Unbind();
+
+            Gl.Disable(EnableCap.CullFace);
         }
 
         public void Dispose()

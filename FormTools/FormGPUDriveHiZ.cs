@@ -148,7 +148,7 @@ namespace FormTools
             // 3D 모델 매니저 및 모델 로드
             _model3DManager = new Model3dManager(PROJECT_PATH, EXE_PATH + "\\nullTexture.jpg");
             _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm4.obj");
-            _treeModel = _model3DManager.GetModels("Palm4");
+            //_treeModel = _model3DManager.GetModels("Palm4");
 
             // 지형 영역 초기화
             RegionCoord regionCoord = new RegionCoord(0, 0);

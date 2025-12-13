@@ -93,8 +93,8 @@
                 IndividualSize = individualSize,
                 HorizontalAngles = horizontalAngles,
                 VerticalAngles = verticalAngles,
-                VerticalAngleMin = -88,               // 최하단 각도
-                VerticalAngleMax = 88               // 최상단 각도
+                VerticalAngleMin = -90f,      // 최하단 각도
+                VerticalAngleMax = 90f        // 최상단 각도
             };
         }
 

@@ -5,33 +5,47 @@ namespace Model3d
 {
     /// <summary>
     /// OpenGL 렌더 타겟용 2D 텍스처 클래스
+    /// <code>
+    /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    /// 📖 읽기 가이드
+    /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    /// 
+    /// [진입점]
+    ///   RenderTarget2D() 생성자
+    /// 
+    /// [초기화 흐름]
+    ///   RenderTarget2D()
+    ///   └─► CreateRenderTarget()
+    ///       ├─► 1. FBO 생성              (_frameBuffer)
+    ///       ├─► 2. 컬러 텍스처 생성      (_textureHandle)
+    ///       ├─► 3. 텍스처를 FBO에 연결   (ColorAttachment0)
+    ///       ├─► 4. 깊이 버퍼 생성        (_depthHandle, 옵션)
+    ///       ├─► 5. 깊이 버퍼를 FBO에 연결 (DepthAttachment)
+    ///       └─► 6. 완성도 검증
+    /// 
+    /// [핵심 멤버 변수]
+    ///   _frameBuffer   : 렌더링 대상 FBO (GPU)
+    ///   _textureHandle : 렌더 결과가 저장되는 컬러 텍스처 (GPU)
+    ///   _depthHandle   : 깊이 테스트용 깊이 버퍼 (GPU, 옵션)
+    /// 
+    /// [사용 패턴]
+    ///   1) 생성    : new RenderTarget2D(width, height, ...)
+    ///   2) 바인딩  : Gl.BindFramebuffer(..., rt.FrameBuffer)
+    ///   3) 렌더링  : 원하는 그리기 작업
+    ///   4) 해제    : Gl.BindFramebuffer(..., 0)
+    ///   5) 사용    : Gl.BindTexture(..., rt.TextureHandle)
+    ///   6) 정리    : rt.Dispose()
+    /// 
+    /// [동작 원리]
+    ///   • FBO를 생성하여 화면이 아닌 GPU 메모리에 렌더링
+    ///   • 컬러 텍스처를 FBO의 ColorAttachment0에 연결
+    ///   • (옵션) 깊이 버퍼를 FBO의 DepthAttachment에 연결
+    ///   • 렌더링 결과는 TextureHandle 텍스처에 저장
+    ///   • 이 텍스처를 다른 렌더링에 재사용 가능
+    /// 
+    /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    /// </code>
     /// </summary>
-    /// <remarks>
-    /// 이 클래스는 OpenGL에서 오프스크린 렌더링을 위한 렌더 타겟을 생성하고 관리합니다.
-    /// 
-    /// 사용법:
-    /// 1. 인스턴스 생성:
-    ///    RenderTarget2D renderTarget = new RenderTarget2D(width, height, generateMips, format, depthFormat);
-    /// 
-    /// 2. 렌더 타겟에 렌더링:
-    ///    Gl.BindFramebuffer(FramebufferTarget.Framebuffer, renderTarget.FrameBuffer);
-    ///    // 여기서 원하는 렌더링 작업 수행
-    ///    Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-    /// 
-    /// 3. 렌더 타겟의 텍스처 사용:
-    ///    Gl.BindTexture(TextureTarget.Texture2d, renderTarget.TextureHandle);
-    ///    // 텍스처를 사용하는 렌더링 작업 수행
-    /// 
-    /// 4. 렌더 타겟의 데이터 읽기:
-    ///    byte[] pixelData = new byte[width * height * 4];
-    ///    renderTarget.GetData(pixelData);
-    /// 
-    /// 5. 리소스 해제:
-    ///    renderTarget.Dispose();
-    /// 
-    /// 주의: 이 클래스는 IDisposable을 구현하므로, using 문을 사용하거나 
-    /// 명시적으로 Dispose()를 호출하여 리소스를 해제해야 합니다.
-    /// </remarks>
     public class RenderTarget2D : IDisposable
     {
         private uint _frameBuffer;      // 프레임버퍼 객체(FBO)

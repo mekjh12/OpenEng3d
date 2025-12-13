@@ -155,7 +155,7 @@ namespace FormTools
 
             _model3DManager = new Model3dManager(PROJECT_PATH, ExE_PATH + "\\nullTexture.jpg");
             _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\tree1.obj");
-            _treeModel = _model3DManager.GetModels("tree1");
+            //_treeModel = _model3DManager.GetModels("tree1");
             _entity = new Entity("tree1_entity", "tree1", _treeModel);
 
             AABB3f worldBound = new AABB3f(new Vertex3f(-3000, -3000, 0), new Vertex3f(3000, 3000, 10));

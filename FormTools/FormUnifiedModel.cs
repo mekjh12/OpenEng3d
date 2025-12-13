@@ -32,7 +32,7 @@ namespace FormTools
 
         // 3D 관련 변수들
         Vertex3f _prevCameraPosition;                       // 이전 카메라 위치
-        UnifiedModel _unifiedModel;                         // 통합 모델
+        UnifiedTexturedModel _unifiedModel;                 // 통합 모델
         UnifiedModelRenderer _unifiedModelRenderer;         // 통합 모델 렌더러
 
         public FormUnifiedModel()
@@ -113,7 +113,7 @@ namespace FormTools
             _glControl3.InitGridShader(PROJECT_PATH);
 
             // 3D 모델 매니저 및 모델 로드
-            _unifiedModel = ObjLoaderEx.LoadObjUnified(PROJECT_PATH + @"FormTools\bin\Debug\Res\tree1.obj");
+            _unifiedModel = ObjLoaderEx.LoadObjUnified(PROJECT_PATH + @"FormTools\bin\Debug\Res\Palm5.obj");
             _unifiedModelRenderer = new UnifiedModelRenderer(_unifiedModel);
 
             CharacterTextureAtlas.Initialize();
@@ -153,7 +153,8 @@ namespace FormTools
             Gl.Viewport(0, 0, w, h);
             Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
 
-            _unifiedModelRenderer.Render(_unlitShader, camera);
+            _unifiedModelRenderer.Render(_unlitShader, camera.MVPMatrix);
+            //Renderer3d.RenderAABB(_colorShader, _unifiedModel.AABB, camera);
 
             // 2D 렌더링을 위한 상태 설정
             Gl.Disable(EnableCap.DepthTest);

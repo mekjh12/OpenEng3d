@@ -176,7 +176,7 @@ namespace FormTools
 
             _model3DManager = new Model3dManager(PROJECT_PATH, ExE_PATH + "\\nullTexture.jpg");
             _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\tree1.obj");
-            _treeModel = _model3DManager.GetModels("tree1");
+            //_treeModel = _model3DManager.GetModels("tree1");
 
             _instancedRenderer = new InstancedRenderer(_treeModel);
 

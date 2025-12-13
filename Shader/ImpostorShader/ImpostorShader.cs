@@ -25,8 +25,10 @@ namespace Shader
         private int loc_worldPosition;
         private int loc_cameraPosition;
         private int loc_individualSize;
-        private int loc_aabbSizeModel;
-        private int loc_aabbCenterEntity;
+        private int loc_aabbSphereRadius;
+        private int loc_aabbCenterPosition;
+        private int loc_horizontalFrames;   // 추가
+        private int loc_verticalFrames;     // 추가
 
         public ImpostorShader(string projectPath) : base()
         {
@@ -49,16 +51,19 @@ namespace Shader
             loc_model = GetUniformLocation("model");
             loc_vp = GetUniformLocation("vp");
 
+            // 아틀라스 프레임 정보 (추가)
+            loc_horizontalFrames = GetUniformLocation("horizontalFrames");
+            loc_verticalFrames = GetUniformLocation("verticalFrames");
+
             // 위치 관련
-            loc_worldPosition = GetUniformLocation("worldPosition");
             loc_cameraPosition = GetUniformLocation("cameraPosition");
 
             // 크기 관련
             loc_individualSize = GetUniformLocation("individualSize");
 
             // 경계 상자(AABB) 관련
-            loc_aabbSizeModel = GetUniformLocation("aabbSizeModel");
-            loc_aabbCenterEntity = GetUniformLocation("aabbCenterEntity");
+            loc_aabbSphereRadius = GetUniformLocation("aabbSphereRadius");
+            loc_aabbCenterPosition = GetUniformLocation("aabbCenterPosition");
         }
 
         protected override void BindAttributes()
@@ -74,6 +79,22 @@ namespace Shader
         public void LoadAtlasOffset(Vertex2f offset)
         {
             Gl.Uniform2f(loc_atlasOffset, 1, offset);
+        }
+
+        /// <summary>
+        /// 아틀라스의 가로 프레임 수 설정
+        /// </summary>
+        public void LoadHorizontalFrames(int frames)
+        {
+            Gl.Uniform1(loc_horizontalFrames, frames);
+        }
+
+        /// <summary>
+        /// 아틀라스의 세로 프레임 수 설정
+        /// </summary>
+        public void LoadVerticalFrames(int frames)
+        {
+            Gl.Uniform1(loc_verticalFrames, frames);
         }
 
         /// <summary>
@@ -97,9 +118,10 @@ namespace Shader
         /// <summary>
         /// 테두리 렌더링 활성화 여부
         /// </summary>
-        public void LoadEnableEdgeLine(bool enable)
+        public void LoadEnableEdgeLine(bool enable, float lineWidth = 1.0f)
         {
             Gl.Uniform1i(loc_enableEdgeLine, 1, enable ? 1 : 0);
+            Gl.LineWidth(lineWidth);
         }
 
         /// <summary>
@@ -145,17 +167,17 @@ namespace Shader
         /// <summary>
         /// 모델 AABB 크기 설정
         /// </summary>
-        public void LoadAABBSizeModel(float size)
+        public void LoadAABBSphereRadius(float size)
         {
-            Gl.Uniform1(loc_aabbSizeModel, size);
+            Gl.Uniform1(loc_aabbSphereRadius, size);
         }
 
         /// <summary>
         /// 엔티티 AABB 중심점 설정
         /// </summary>
-        public void LoadAABBCenterEntity(Vertex3f center)
+        public void LoadAABBCenterPosition(Vertex3f center)
         {
-            Gl.Uniform3f(loc_aabbCenterEntity, 1, center);
+            Gl.Uniform3f(loc_aabbCenterPosition, 1, center);
         }
     }
 }

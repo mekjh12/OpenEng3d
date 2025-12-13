@@ -178,6 +178,8 @@ namespace GPUDriven
             {
                 var batch = _batchManager.GetBatch(i);
 
+                throw new Exception("수정할 곳");
+                /*
                 _impostor.CreateImpostorModel(
                     batch.ModelName,
                     ImpostorSettings.CreateSettings(256, 16, 8),
@@ -185,6 +187,7 @@ namespace GPUDriven
                     batch.Models);
 
                 Console.WriteLine($"Created impostor for: {batch.ModelName}");
+                */
             }
         }
 

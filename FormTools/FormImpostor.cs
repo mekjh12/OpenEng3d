@@ -55,8 +55,11 @@ namespace FormTools
 
         // 3D 관련 변수들
         Model3dManager _model3DManager;                     // 3D 모델 매니저
-        TexturedModel[] _treeModel;                         // 나무 모델 배열
-        GPUDriven.AABB _aabb;
+        UnifiedTexturedModel _treeModel;                    // 나무 모델 배열
+        UnifiedTexturedModel _unifiedModel;                 // 통합 모델
+        UnifiedModelRenderer _unifiedModelRenderer;         // 통합 모델 렌더러
+        bool _isImposterRender = true;                      // 임포스터 렌더링 여부
+        string _imposterName = "tree1";                     // 임포스터 이름
 
         // 폼 생성자
         public FormImpostor()
@@ -149,33 +152,11 @@ namespace FormTools
 
             // 3D 모델 매니저 초기화 및 나무 모델 로드
             _model3DManager = new Model3dManager(PROJECT_PATH, ExE_PATH + "\\nullTexture.jpg");
-            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm1.obj");
-            _treeModel = _model3DManager.GetModels("Palm1");
-            _impostor.CreateImpostorModel("Palm1", ImpostorSettings.CreateSettings(256, 16, 8),
-                _unlitShader, _treeModel);
+            _unifiedModel =_model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\"+ _imposterName + ".obj");
+            _impostor.CreateImpostorModel(_imposterName, ImpostorSettings.CreateSettings(256, 16, 9),
+                _unlitShader, _unifiedModel, _glControl3.Camera);
 
-            
-            _aabb = new GPUDriven.AABB(new Vertex3f(float.MaxValue), new Vertex3f(float.MinValue));
-            for (int i = 0; i < _treeModel.Length; i++)
-            {
-                Vertex3f min = new Vertex3f(float.MaxValue);
-                Vertex3f max = new Vertex3f(float.MinValue);
-                Vertex3f[] vertices = _treeModel[i].Vertices;
-
-                for (int j = 0; j < vertices.Length; j++)
-                {
-                    Vertex3f pos = vertices[j];
-                    min = Vertex3f.Min(min, pos);
-                    max = Vertex3f.Max(max, pos);
-                }
-                _aabb.Min = Vertex3f.Min(_aabb.Min, min);
-                _aabb.Max = Vertex3f.Max(_aabb.Max, max);
-            }
-
-            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm5.obj");
-            _treeModel = _model3DManager.GetModels("Palm5");
-            _impostor.CreateImpostorModel("Palm5", ImpostorSettings.CreateSettings(256, 16, 8),
-                _unlitShader, _treeModel);
+            _unifiedModelRenderer = new UnifiedModelRenderer(_unifiedModel);
 
             // UI 3D 텍스트 네임플레이트 초기화
             _textNamePlate = new TextNamePlate(_glControl3.Camera, "FPS");
@@ -221,35 +202,41 @@ namespace FormTools
 
             Gl.Disable(EnableCap.Blend);
 
-            _impostorShader.Bind();
-            _impostorShader.LoadEnableEdgeLine(true);
-            _impostorShader.LoadVPMatrix(camera.VPMatrix);
-            _impostorShader.LoadCameraPosition(camera.Position);
+            if (_isImposterRender)
+            {
+                _impostorShader.Bind();
+                _impostorShader.LoadEnableEdgeLine(true, 3.0f);
+                _impostorShader.LoadVPMatrix(camera.VPMatrix);
+                _impostorShader.LoadCameraPosition(camera.Position);
 
-            ImpostorSettings settings = _impostor.GetImpostorSettings("Palm1");
-            Vertex2f atlasOffset = _impostor.GetAtlasOffset(settings, camera.Position, Matrix4x4f.Identity);
-            uint textureId = _impostor.AtlasTexture("Palm1");
+                ImpostorSettings settings = _impostor.GetImpostorSettings(_imposterName);
+                Vertex2f atlasOffset = _impostor.GetAtlasOffset(settings, camera.Position, Matrix4x4f.Identity);
+                uint textureId = _impostor.AtlasTexture(_imposterName);
 
-            _impostorShader.LoadImpostorAtlas(TextureUnit.Texture0, textureId);
-            _impostorShader.LoadAtlasOffset(atlasOffset);
-            _impostorShader.LoadWorldPosition(Vertex3f.Zero);
-            _impostorShader.LoadModelMatrix(Matrix4x4f.Identity);
-            _impostorShader.LoadAtlasSize(settings.AtlasSize);
-            _impostorShader.LoadIndividualSize(settings.IndividualSize);
-            _impostorShader.LoadAABBSizeModel(_aabb.SphereRadius);
-            _impostorShader.LoadAABBCenterEntity( _aabb.Center);
+                _impostorShader.LoadAABBSphereRadius(_unifiedModel.AABB.Radius);
+                _impostorShader.LoadAABBCenterPosition(_unifiedModel.AABB.Center);
+                _impostorShader.LoadAtlasOffset(atlasOffset);
+                _impostorShader.LoadAtlasSize(settings.AtlasSize);
+                _impostorShader.LoadImpostorAtlas(TextureUnit.Texture0, textureId);
+                _impostorShader.LoadModelMatrix(_unifiedModel.AABB.ModelMatrix);
+                _impostorShader.LoadIndividualSize(settings.IndividualSize);
+                _impostorShader.LoadHorizontalFrames(settings.HorizontalAngles);
+                _impostorShader.LoadVerticalFrames(settings.VerticalAngles);
 
-            Gl.BindVertexArray(Renderer3d.Point.VAO);
-            Gl.EnableVertexAttribArray(0);
-            Gl.DrawArrays(PrimitiveType.Points, 0, 1);
-            Gl.DisableVertexAttribArray(0);
-            Gl.BindVertexArray(0);
+                Gl.BindVertexArray(Renderer3d.Point.VAO);
+                Gl.EnableVertexAttribArray(0);
+                Gl.DrawArrays(PrimitiveType.Points, 0, 1);
+                Gl.DisableVertexAttribArray(0);
+                Gl.BindVertexArray(0);
 
-            _impostorShader.Unbind();
+                _impostorShader.Unbind();
+            }
+            else
+            {
+                _unifiedModelRenderer.Render(_unlitShader, camera.VPMatrix);
+            }
 
             Gl.Enable(EnableCap.Blend);
-
-
 
             // 2D 렌더링을 위한 상태 설정
             Gl.Disable(EnableCap.DepthTest);
@@ -275,7 +262,11 @@ namespace FormTools
 
         public void Form_Load(object sender, EventArgs e)
         {
-
+            this.ClientSize = new Size(1280, 800);
+            this.Location = new Point(500, 100);
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+            this.StartPosition = FormStartPosition.Manual;
         }
 
         public void KeyDownEvent(object sender, KeyEventArgs e)
@@ -288,6 +279,10 @@ namespace FormTools
             if (e.KeyCode == Keys.D1)
             {
                 _glControl3.Camera.PivotPosition = new Vertex3f(0, 0, 1.0f);
+            }
+            else if (e.KeyCode == Keys.D2)
+            {
+                _isImposterRender = !_isImposterRender;
             }
         }
 
