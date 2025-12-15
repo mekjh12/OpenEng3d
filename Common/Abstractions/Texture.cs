@@ -79,6 +79,13 @@ namespace Common.Abstractions
             _height = height;
         }
 
+        public Texture(uint handle, int width, int height)
+        {
+            _textureID = handle;
+            _width = width;
+            _height = height;
+        }
+
         public Texture(Bitmap bitmap)
         {
             _textureType = TextureMapType.Diffuse;

@@ -72,6 +72,7 @@
     <Compile Include="AnimateShader\BoneMatrixUBO.cs" />
     <Compile Include="AtmosphericScatteringLUT\AtmosphericScatteringLUT.cs" />
     <Compile Include="AxisShader\AxisGeometry.cs" />
+    <Compile Include="BillboardCloudShader\BillboardCloudShader.cs" />
     <Compile Include="CloudShader\CloudShadowMapShader.cs" />
     <Compile Include="CloudShader\CloudTestRenderShader.cs" />
     <Compile Include="CloudShader\CloudComputeShader.cs" />
@@ -134,6 +135,9 @@
     <None Include="AnimateShader\ani.frag" />
     <None Include="AnimateShader\ani.vert" />
     <None Include="AtmosphericScatteringLUT\scattering.comp" />
+    <None Include="BillboardCloudShader\billboardcloud.gem.glsl" />
+    <None Include="BillboardCloudShader\billboardcloud.vert" />
+    <None Include="BillboardCloudShader\billboardcloud.frag" />
     <None Include="CloudShader\noise3d.comp" />
     <None Include="CloudShader\volumeRaycasting.frag" />
     <None Include="CloudShader\cloudRenderTest.frag" />

@@ -2,7 +2,7 @@
 using OpenGL;
 using System.Collections.Generic;
 
-namespace Model3d
+namespace BillBoard
 {
     /// <summary>
     /// 임포스터 렌더링에 필요한 데이터를 담는 클래스

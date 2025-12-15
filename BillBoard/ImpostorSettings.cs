@@ -1,4 +1,4 @@
-﻿namespace Model3d
+﻿namespace BillBoard
 {
     /// <summary>
     /// 임포스터 생성 및 렌더링에 필요한 공통 설정값들

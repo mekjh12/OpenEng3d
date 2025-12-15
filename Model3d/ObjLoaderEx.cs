@@ -266,12 +266,19 @@ namespace Model3d
                 textures.Add(new Texture(texFile, Texture.TextureMapType.Diffuse));
             }
 
+            List<uint> textureIds = new List<uint>();
+            for (int i = 0; i < textures.Count; i++)
+            {
+                textureIds.Add(textures[i].TextureID);
+            }
+
             UnifiedTexturedModel model = new UnifiedTexturedModel
             {
                 VaoID = vaoID,
                 VertexCount = totalVertexCount,
                 IndexCount = totalIndexCount,
-                Textures = textures
+                Textures = textures,
+                TextureIDs = textureIds
             };
 
             return model;

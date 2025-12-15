@@ -17,7 +17,8 @@ namespace FormTools
             //Application.Run(new FormTerrainDataTest());           // 작동됨
             //Application.Run(new FormGPUDriveHiZ());               // 작동됨
             //Application.Run(new FormGPUDriven());                 // 작동됨
-            Application.Run(new FormImpostor());                  // 작동됨
+            Application.Run(new FormBillboardCloud());         // 작동됨
+            //Application.Run(new FormImpostor());                  // 작동됨
             //Application.Run(new FormGPUDrivenImposter());         // 작동됨
             //Application.Run(new FormGPUImposterInstance());       // 작동됨
             //Application.Run(new FormOcclusionOpt());              // 작동됨

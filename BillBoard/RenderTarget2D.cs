@@ -1,7 +1,7 @@
 ﻿using OpenGL;
 using System;
 
-namespace Model3d
+namespace BillBoard
 {
     /// <summary>
     /// OpenGL 렌더 타겟용 2D 텍스처 클래스

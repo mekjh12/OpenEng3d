@@ -3,16 +3,12 @@ using Common;
 using Common.Abstractions;
 using Geometry;
 using Model3d;
-using Occlusion;
 using OpenGL;
 using Shader;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.Runtime.InteropServices;
 using ZetaExt;
-using static OpenGL.Gl;
+
 
 namespace Renderer
 {
@@ -385,11 +381,11 @@ namespace Renderer
                 Gl.Enable(EnableCap.DepthTest);
         }        
 
-        public static void RenderTerrainOcc(ColorShader shader, TerrainOccluder3 occluder, Vertex4f color, Camera camera)
+        public static void RenderTerrainOcc(ColorShader shader, Matrix4x4f occluderModelMatrix, Vertex4f color, Camera camera)
         {
             shader.Bind();
             shader.LoadUniform(ColorShader.UNIFORM_NAME.color, color);
-            shader.LoadUniform(ColorShader.UNIFORM_NAME.mvp, camera.ProjectiveMatrix * camera.ViewMatrix * occluder.ModelMatrix);
+            shader.LoadUniform(ColorShader.UNIFORM_NAME.mvp, camera.ProjectiveMatrix * camera.ViewMatrix * occluderModelMatrix);
             Gl.BindVertexArray(Renderer3d.Rect.VAO);
             Gl.EnableVertexAttribArray(0);
             Gl.DrawArrays(PrimitiveType.Triangles, 0, Renderer3d.Rect.VertexCount);
@@ -523,6 +519,7 @@ namespace Renderer
 
         public static void Render(StaticShader shader, ColorShader cShader, Entity entity, Camera camera, Vertex3f fogColor, Vertex4f fogPlane, float fogDensity)
         {
+            /*
             PhysicalRenderEntity occlusionEntity = (entity is PhysicalRenderEntity) ? entity as PhysicalRenderEntity : null;
 
             OrbitCamera orbitCamera = camera as OrbitCamera;
@@ -624,6 +621,7 @@ namespace Renderer
                 Gl.BindVertexArray(0);
                 cShader.Unbind();
             }
+            */
         }
 
         public static void RenderByTerrainTessellationShader(TerrainTessellationShader shader, Entity entity, Camera camera, Texture[] ground,

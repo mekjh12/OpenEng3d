@@ -82,24 +82,19 @@
     <Compile Include="GPUBuffer.cs" />
     <Compile Include="GpuLoader.cs" />
     <Compile Include="ILodable.cs" />
-    <Compile Include="Impostor\ImpostorAtlasGenerator.cs" />
-    <Compile Include="Impostor\ImpostorData.cs" />
-    <Compile Include="Impostor\ImpostorLODSystem.cs" />
-    <Compile Include="Impostor\ImpostorSettings.cs" />
     <Compile Include="Loader.cs" />
     <Compile Include="Loader3d.cs" />
     <Compile Include="LODComponent.cs" />
     <Compile Include="LodEntity.cs" />
     <Compile Include="Material.cs" />
-    <Compile Include="Impostor\RenderTarget2D.cs" />
     <Compile Include="MeshLODGenerator.cs" />
     <Compile Include="Model3dManager.cs" />
     <Compile Include="ObjLoaderEx.cs" />
-    <Compile Include="TexturedModel.cs" />
     <Compile Include="ObjLoader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RawModel3d.cs" />
     <Compile Include="TangentSpace.cs" />
+    <Compile Include="TexturedModel.cs" />
     <Compile Include="TextureStorage.cs" />
     <Compile Include="TransformComponent.cs" />
     <Compile Include="UnifiedTexturedModel.cs" />
@@ -125,6 +120,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="RawModel3d.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\AssimpNet.4.1.0\build\AssimpNet.targets" Condition="Exists('..\packages\AssimpNet.4.1.0\build\AssimpNet.targets')" />

@@ -1,6 +1,7 @@
 ﻿using Common;
 using Common.Abstractions;
 using Geometry;
+using Model3d;
 using OpenGL;
 using Renderer;
 using Shader;
@@ -9,7 +10,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using ZetaExt;
 
-namespace Model3d
+namespace BillBoard
 {
     /// <summary>
     /// 3D 모델의 임포스터 아틀라스를 생성하는 클래스.

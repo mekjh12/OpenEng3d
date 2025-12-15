@@ -165,10 +165,6 @@
       <Project>{7a699d36-8869-4b18-a70f-2231a948d828}</Project>
       <Name>Model3d</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Occlusion\Occlusion.csproj">
-      <Project>{00582202-d29d-472e-ac4a-02152800b298}</Project>
-      <Name>Occlusion</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Renderer\Renderer.csproj">
       <Project>{e5f8184d-2b9b-4e0a-a11f-523394f67292}</Project>
       <Name>Renderer</Name>
