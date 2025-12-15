@@ -1,4 +1,5 @@
-﻿using Common.Abstractions;
+﻿using BillBoard;
+using Common.Abstractions;
 using Geometry;
 using Model3d;
 using Occlusion;
@@ -89,7 +90,7 @@ namespace GPUDriven
         /// <summary>
         /// ModelBatchManager로 초기화
         /// </summary>
-        public void Initialize(ModelBatchManager batchManager, int maxMipLevels = 0)
+        public void Initialize(ModelBatchManager batchManager, Camera camera, int maxMipLevels = 0)
         {
             if (!batchManager.IsFinalized)
             {
@@ -115,7 +116,7 @@ namespace GPUDriven
             CreateSSBOs();
             LoadShaders(_projPath, maxMipLevels);
             UploadToGPU();
-            InitializeImpostors();
+            InitializeImpostors(camera);
 
             // 배치별 커맨드 인덱스 계산
             _startIndices = new uint[_batchManager.ActualBatchCount];
@@ -140,6 +141,8 @@ namespace GPUDriven
 
         private void UpdateIndirectCommandsGPU()
         {
+            if (_updateCommandsCompute == null) return;
+
             _updateCommandsCompute.Bind();
 
             // SSBO 바인딩
@@ -151,7 +154,7 @@ namespace GPUDriven
             for (uint b = 0; b < _batchManager.ActualBatchCount; b++)
             {
                 _startIndices[b] = (uint)_batchCommandStartIndices[b];
-                _modelCounts[b] = (uint)_batchManager.GetBatch(b).Models.Length;
+                _modelCounts[b] = 1;// (uint)_batchManager.GetBatch(b).Model.Length;
             }
 
             // Uniform 전달
@@ -170,7 +173,7 @@ namespace GPUDriven
         }
 
 
-        private void InitializeImpostors()
+        private void InitializeImpostors(Camera camera)
         {
             _impostor = new ImpostorLODSystem(0);
 
@@ -178,16 +181,13 @@ namespace GPUDriven
             {
                 var batch = _batchManager.GetBatch(i);
 
-                throw new Exception("수정할 곳");
-                /*
                 _impostor.CreateImpostorModel(
                     batch.ModelName,
                     ImpostorSettings.CreateSettings(256, 16, 8),
                     _unlitShader,
-                    batch.Models);
+                    batch.Model, camera);
 
                 Console.WriteLine($"Created impostor for: {batch.ModelName}");
-                */
             }
         }
 
@@ -202,12 +202,6 @@ namespace GPUDriven
 
                 // 이 배치의 시작 인덱스 저장
                 _batchCommandStartIndices[b] = _totalDrawCommands;
-
-                // LOD0 models
-                for (int m = 0; m < batch.Models.Length; m++)
-                {
-                    _totalDrawCommands++;
-                }
 
                 // LOD1 impostor
                 _totalDrawCommands++;
@@ -303,22 +297,19 @@ namespace GPUDriven
             {
                 BatchDescriptor batch = _batchManager.GetBatch(b);
                 // ===== LOD0 Commands =====
-                for (int m = 0; m < batch.Models.Length; m++)
+                DrawArraysIndirectCommand cmd = new DrawArraysIndirectCommand
                 {
-                    DrawArraysIndirectCommand cmd = new DrawArraysIndirectCommand
-                    {
-                        VertexCount = batch.VertexCounts[m],  // 모델의 정점 개수
-                        InstanceCount = 0,                     // GPU가 채울 필드
-                        First = 0,
-                        BaseInstance = 0
-                    };
+                    VertexCount = batch.VertexCount,        // 모델의 정점 개수
+                    InstanceCount = 0,                      // GPU가 채울 필드
+                    First = 0,
+                    BaseInstance = 0
+                };
 
-                    int offset = commandIndex * COMMAND_SIZE;
-                    Gl.BufferSubData(BufferTarget.DrawIndirectBuffer,
-                                   (IntPtr)offset, COMMAND_SIZE, cmd);
+                int offset = commandIndex * COMMAND_SIZE;
+                Gl.BufferSubData(BufferTarget.DrawIndirectBuffer,
+                               (IntPtr)offset, COMMAND_SIZE, cmd);
 
-                    commandIndex++;
-                }
+                commandIndex++;
 
                 // ===== LOD1 Command (Impostor) =====
                 DrawArraysIndirectCommand impostorCmd = new DrawArraysIndirectCommand
@@ -393,6 +384,8 @@ namespace GPUDriven
 
         private void PerformFrustumCulling(Camera camera, Polyhedron viewFrustum)
         {
+            if (_cullingCompute == null) return;
+
             uint zero = 0;
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _frustumCounterSSBO);
             Gl.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, 4, zero);
@@ -523,32 +516,6 @@ namespace GPUDriven
             }
         }
 
-
-        // 이 함수를 추가하고 한 번 실행해보세요
-        private void AnalyzeCurrentStructure()
-        {
-            Console.WriteLine("===== Current Indirect Buffer Structure =====");
-            Console.WriteLine($"Total Batches: {_batchManager.ActualBatchCount}");
-
-            int totalCommands = 0;
-            for (uint b = 0; b < _batchManager.ActualBatchCount; b++)
-            {
-                BatchDescriptor batch = _batchManager.GetBatch(b);
-                int batchCommands = batch.Models.Length + 1;  // LOD0 models + LOD1 impostor
-                totalCommands += batchCommands;
-
-                Console.WriteLine($"Batch {b}:");
-                Console.WriteLine($"  Models: {batch.Models.Length}");
-                Console.WriteLine($"  Start Index: {batch.StartIndex}");
-                Console.WriteLine($"  Commands: {batchCommands} (LOD0: {batch.Models.Length}, LOD1: 1)");
-            }
-
-            Console.WriteLine($"Total Commands Needed: {totalCommands}");
-            Console.WriteLine($"Buffer Size: {totalCommands * 16} bytes");
-            Console.WriteLine("=============================================");
-        }
-
-
         public void Render(Camera camera)
         {
             Gl.Disable(EnableCap.Blend);
@@ -561,6 +528,7 @@ namespace GPUDriven
                              MemoryBarrierMask.CommandBarrierBit);
 
             // 각 Batch 렌더링
+            if (_batchManager == null) return;
             for (uint b = 0; b < _batchManager.ActualBatchCount; b++)
             {
                 RenderBatch(b, camera);
@@ -585,21 +553,18 @@ namespace GPUDriven
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD0);
 
-            for (int m = 0; m < batch.Models.Length; m++)
+            if (batch.Model.Textures != null)
             {
-                if (batch.Models[m].Texture != null)
-                {
-                    _instancedShader.LoadTexture(TextureUnit.Texture0,
-                        batch.Models[m].Texture.TextureID);
-                }
-
-                Gl.BindVertexArray(batch.VAOs[m]);
-
-                int cmdOffset = currentCmdIndex * COMMAND_SIZE;
-                Gl.DrawArraysIndirect(PrimitiveType.Triangles, (IntPtr)cmdOffset);
-
-                currentCmdIndex++;
+                _instancedShader.LoadTexture(TextureUnit.Texture0,
+                    batch.Model.TextureIDs[0]);
             }
+
+            Gl.BindVertexArray(batch.VAO);
+
+            int cmdOffset = currentCmdIndex * COMMAND_SIZE;
+            Gl.DrawArraysIndirect(PrimitiveType.Triangles, (IntPtr)cmdOffset);
+
+            currentCmdIndex++;
 
             _instancedShader.Unbind();
 

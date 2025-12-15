@@ -3,6 +3,7 @@ using OpenGL;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using ZetaExt;
 
 namespace GPUDriven
@@ -31,9 +32,9 @@ namespace GPUDriven
         public string ModelName { get; set; }          // 모델 이름
         public float LODDistance { get; set; }         // LOD 전환 거리
         public AABB ReferenceAABB { get; set; }        // 로컬 공간 AABB
-        public TexturedModel[] Models { get; set; }    // 메시 배열
-        public uint[] VAOs { get; set; }               // VAO 배열
-        public uint[] VertexCounts { get; set; }       // 정점 수 배열
+        public UnifiedTexturedModel Model { get; set; }    // 메시 배열
+        public uint VAO { get; set; }               // VAO 배열
+        public uint VertexCount { get; set; }       // 정점 수 배열
 
         public ModelInfo()
         {
@@ -41,9 +42,9 @@ namespace GPUDriven
             ModelName = string.Empty;
             LODDistance = 60f;
             ReferenceAABB = new AABB();
-            Models = Array.Empty<TexturedModel>();
-            VAOs = Array.Empty<uint>();
-            VertexCounts = Array.Empty<uint>();
+            Model = null;
+            VAO = 0;
+            VertexCount = 0;
         }
     }
 
@@ -58,9 +59,9 @@ namespace GPUDriven
         public uint Count { get; set; }                // 인스턴스 개수
         public float LODDistance { get; set; }         // LOD 거리
         public AABB ReferenceAABB { get; set; }        // 기준 AABB
-        public TexturedModel[] Models { get; set; }    // 메시 배열
-        public uint[] VAOs { get; set; }               // VAO 배열
-        public uint[] VertexCounts { get; set; }       // 정점 수 배열
+        public UnifiedTexturedModel Model { get; set; }    // 메시 배열
+        public uint VAO { get; set; }               // VAO 배열
+        public uint VertexCount { get; set; }       // 정점 수 배열
 
         // Indirect Buffer (나중에 설정)
         public uint[] IndirectBuffers_LOD0 { get; set; }
@@ -74,9 +75,9 @@ namespace GPUDriven
             Count = 0;
             LODDistance = 60f;
             ReferenceAABB = new AABB();
-            Models = Array.Empty<TexturedModel>();
-            VAOs = Array.Empty<uint>();
-            VertexCounts = Array.Empty<uint>();
+            Model = null;
+            VAO = 0;
+            VertexCount = 0;
         }
     }
 
@@ -133,7 +134,7 @@ namespace GPUDriven
         public uint AddModel(
             string modelName,
             float lodDistance,
-            TexturedModel[] models)
+            UnifiedTexturedModel model)
         {
             if (_isFinalized)
             {
@@ -156,20 +157,17 @@ namespace GPUDriven
                 ModelID = modelID,
                 ModelName = modelName,
                 LODDistance = lodDistance,
-                Models = models
+                Model = model
             };
 
             // VAO 및 정점 수 추출
-            modelInfo.VAOs = new uint[models.Length];
-            modelInfo.VertexCounts = new uint[models.Length];
-            for (int i = 0; i < models.Length; i++)
-            {
-                modelInfo.VAOs[i] = models[i].VAO;
-                modelInfo.VertexCounts[i] = (uint)models[i].VertexCount;
-            }
+            modelInfo.VAO = 0;
+            modelInfo.VertexCount = 0;
+            modelInfo.VAO = model.VaoID;
+            modelInfo.VertexCount = (uint)model.VertexCount;
 
             // 기준 AABB 계산
-            modelInfo.ReferenceAABB = CalculateModelAABB(models);
+            modelInfo.ReferenceAABB = CalculateModelAABB(model);
 
             // 모델 등록
             _models.Add(modelInfo);
@@ -456,28 +454,17 @@ namespace GPUDriven
                 Count = count,
                 LODDistance = modelInfo.LODDistance,
                 ReferenceAABB = modelInfo.ReferenceAABB,
-                Models = modelInfo.Models,
-                VAOs = modelInfo.VAOs,
-                VertexCounts = modelInfo.VertexCounts
+                Model = modelInfo.Model,
+                VAO = modelInfo.VAO,
+                VertexCount = modelInfo.VertexCount
             };
 
             usedModelIDs.Add(modelID);
         }
 
-        private AABB CalculateModelAABB(TexturedModel[] models)
+        private AABB CalculateModelAABB(UnifiedTexturedModel model)
         {
-            AABB result = new AABB(
-                new Vertex3f(float.MaxValue),
-                new Vertex3f(float.MinValue));
-
-            foreach (var model in models)
-            {
-                AABB modelAABB = CalculateSingleModelAABB(model);
-                result.Min = Vertex3f.Min(result.Min, modelAABB.Min);
-                result.Max = Vertex3f.Max(result.Max, modelAABB.Max);
-            }
-
-            return result;
+            return new AABB(model.AABB.Min, model.AABB.Max);
         }
 
         private AABB CalculateSingleModelAABB(TexturedModel model)

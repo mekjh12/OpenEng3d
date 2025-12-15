@@ -83,6 +83,10 @@
       <Project>{7a699d36-8869-4b18-a70f-2231a948d828}</Project>
       <Name>Model3d</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Renderer\Renderer.csproj">
+      <Project>{e5f8184d-2b9b-4e0a-a11f-523394f67292}</Project>
+      <Name>Renderer</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Shader\Shader.csproj">
       <Project>{3b2ecaa9-57bd-4b21-bfb8-b5de46c80d4b}</Project>
       <Name>Shader</Name>

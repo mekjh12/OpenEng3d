@@ -1,4 +1,6 @@
-﻿namespace BillBoard
+﻿using OpenGL;
+
+namespace BillBoard
 {
     /// <summary>
     /// 4x2 레이아웃으로 Atlas 영역 계산

@@ -2,7 +2,6 @@
 using Common.Abstractions;
 using Model3d;
 using OpenGL;
-using Renderer;
 using Shader;
 using System;
 using System.Collections.Generic;
@@ -59,7 +58,7 @@ namespace BillBoard
 
         private List<PlaneData> _planeDataList;
         private RenderTarget2D _atlasRenderTarget;
-        private UnifiedModelRenderer _unifiedModelRenderer;
+        //private UnifiedModelRenderer _unifiedModelRenderer;
 
         public BillboardCloudAtlasGenerator()
         {
@@ -87,7 +86,7 @@ namespace BillBoard
             UnifiedTexturedModel model, float[] heightRatios)
         {
             // 통합 모델 렌더러 생성
-            _unifiedModelRenderer = new UnifiedModelRenderer(model);
+            //_unifiedModelRenderer = new UnifiedModelRenderer(model);
 
             // 렌더 타겟 준비
             InitializeRenderTarget();
@@ -265,7 +264,7 @@ namespace BillBoard
                 Matrix4x4f mvp = plane.ProjectionMatrix * plane.ViewMatrix;
 
                 // 렌더링
-                _unifiedModelRenderer.Render(shader, mvp);
+                //_unifiedModelRenderer.Render(shader, mvp);
 
                 shader.Unbind();
             }

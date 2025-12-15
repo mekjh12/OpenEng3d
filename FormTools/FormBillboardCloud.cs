@@ -1,4 +1,5 @@
-﻿using Common.Abstractions;
+﻿using BillBoard;
+using Common.Abstractions;
 using FastMath;
 using Geometry;
 using GlWindow;

@@ -196,7 +196,7 @@ namespace Animate
                             {
                                 if (input.Name == "input")
                                 {
-                                    if (input.Attributes["semantic"].Value == "VERTEx")
+                                    if (input.Attributes["semantic"].Value == "VERTEX")
                                     {
                                         vertexName = input.Attributes["source"].Value;
                                         vertexOffset = int.Parse(input.Attributes["offset"].Value);
@@ -206,7 +206,7 @@ namespace Animate
                                         normalName = input.Attributes["source"].Value;
                                         normalOffset = int.Parse(input.Attributes["offset"].Value);
                                     }
-                                    if (input.Attributes["semantic"].Value == "TExCOORD")
+                                    if (input.Attributes["semantic"].Value == "TEXCOORD")
                                     {
                                         texcoordName = input.Attributes["source"].Value;
                                         texcoordOffset = int.Parse(input.Attributes["offset"].Value);

@@ -264,14 +264,13 @@ namespace Renderer
             shader.Unbind();
         }
 
-
+        /*
         public static void Render(ImpostorLODSystem impostor, ImpostorShader shader, List<Entity> impostorEntity, Camera camera)
         {
             Gl.Disable(EnableCap.Blend);
 
             OrbitCamera orbitCamera = camera as OrbitCamera;
             shader.Bind();
-            /*
             shader.LoadUniform(ImpostorShader.UNIFORM_NAME.enableEdgeLine, true);
             shader.LoadUniform(ImpostorShader.UNIFORM_NAME.vp, orbitCamera.VPMatrix);
             shader.LoadUniform(ImpostorShader.UNIFORM_NAME.cameraPosition, orbitCamera.Position);
@@ -298,10 +297,10 @@ namespace Renderer
                 Gl.BindVertexArray(0);
             }
             shader.Unbind();
-            */
 
             Gl.Enable(EnableCap.Blend);
         }
+        */
 
         static EulerAngle _eulerEngle = new EulerAngle();
 

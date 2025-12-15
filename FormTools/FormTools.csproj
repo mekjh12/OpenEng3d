@@ -339,6 +339,10 @@
       <Project>{c1793684-1bdd-4a67-99e5-5dbea6b321f5}</Project>
       <Name>Animate</Name>
     </ProjectReference>
+    <ProjectReference Include="..\BillBoard\BillBoard.csproj">
+      <Project>{d4779068-a853-49e5-8b5b-80ea6e4562a1}</Project>
+      <Name>BillBoard</Name>
+    </ProjectReference>
     <ProjectReference Include="..\BSP\BSP.csproj">
       <Project>{9fe8744c-00c2-4a02-ac86-38489525b4c9}</Project>
       <Name>BSP</Name>

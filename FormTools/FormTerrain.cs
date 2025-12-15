@@ -1,4 +1,5 @@
-﻿using Common.Abstractions;
+﻿using BillBoard;
+using Common.Abstractions;
 using FastMath;
 using Geometry;
 using GlWindow;
@@ -338,7 +339,7 @@ namespace FormTools
 
             if (_visibleImposter)
             {
-                Renderer3d.Render(_impostorLODSystem, _impostorShader, _impostorEntity, camera);
+                //Renderer3d.Render(_impostorLODSystem, _impostorShader, _impostorEntity, camera);
             }
 
             // UI 정보 업데이트

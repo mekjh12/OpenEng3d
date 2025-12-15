@@ -109,7 +109,7 @@ namespace FormTools
         private void Init2d(int w, int h)
         {
             // 화면 구성요소 초기화
-            _glControl3.Ctrl("centerFps").IsVisible = false;
+            //_glControl3.Ctrl("centerFps").IsVisible = false;
             _glControl3.AddLabel("cam", "camera position, yaw, pitch", align: Ui2d.Control.CONTROL_ALIGN.ROOT_BL, foreColor: new Vertex3f(1, 1, 0));
             _glControl3.AddLabel("ocs", "ocs", align: Ui2d.Control.CONTROL_ALIGN.ADJOINT_TOP, foreColor: new Vertex3f(1, 1, 0));
             _glControl3.AddLabel("resolution", $"resolution={w >> 2}x{h >> 2}", align: Ui2d.Control.CONTROL_ALIGN.ADJOINT_TOP, foreColor: new Vertex3f(1, 0, 0));

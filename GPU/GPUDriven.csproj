@@ -66,6 +66,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\BillBoard\BillBoard.csproj">
+      <Project>{d4779068-a853-49e5-8b5b-80ea6e4562a1}</Project>
+      <Name>BillBoard</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Common\Common.csproj">
       <Project>{a88a06c4-c819-47a1-828f-db054c066bee}</Project>
       <Name>Common</Name>

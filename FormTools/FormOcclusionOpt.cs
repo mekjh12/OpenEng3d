@@ -65,7 +65,7 @@ namespace FormTools
         Texture _detailTextureMap = null;           // 지형 디테일 텍스쳐
 
         RawModel3d _treeRawModel;                   // 나무 로우 모델
-        TexturedModel[] _treeModel;                 // 나무 모델
+        UnifiedTexturedModel _treeModel;            // 나무 모델
         Model3dManager _model3DManager;             // 3D 모델 매니저
         InstancedRenderer _instancedRenderer;       // 인스턴스 렌더러
 
@@ -176,9 +176,9 @@ namespace FormTools
 
             _model3DManager = new Model3dManager(PROJECT_PATH, ExE_PATH + "\\nullTexture.jpg");
             _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\tree1.obj");
-            //_treeModel = _model3DManager.GetModels("tree1");
+            _treeModel = _model3DManager.GetModels("tree1");
 
-            _instancedRenderer = new InstancedRenderer(_treeModel);
+            //_instancedRenderer = new InstancedRenderer(_treeModel);
 
             AABB3f worldBound = new AABB3f(new Vertex3f(-3000, -3000, 0), new Vertex3f(3000, 3000, 10));
             _quadTree = new QuadTree3f(worldBound);

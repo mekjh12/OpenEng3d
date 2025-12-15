@@ -14,7 +14,6 @@ namespace Shader
 
         // 유니폼 위치 (캐싱)
         private int loc_mvp;
-        private int loc_vp;
         private int loc_modelTexture;
         private int loc_textureCount;
         private int[] loc_textures;  // ✅ 배열 위치
@@ -35,7 +34,6 @@ namespace Shader
         protected override void GetAllUniformLocations()
         {
             loc_mvp = GetUniformLocation("mvp");
-            loc_vp = GetUniformLocation("vp");
             loc_textureCount = GetUniformLocation("textureCount");
 
             // ✅ 배열 위치 가져오기
@@ -68,7 +66,6 @@ namespace Shader
             Gl.UniformMatrix4f(loc_mvp, 1, false, matrix);
         }
 
-
         /// <summary>
         /// ✅ 텍스처 배열 바인딩 (초기화 시 한 번만 호출)
         /// </summary>
@@ -84,14 +81,6 @@ namespace Shader
                 Gl.BindTexture(TextureTarget.Texture2d, textureIDs[i]);
                 Gl.Uniform1(loc_textures[i], i);  // sampler에 텍스처 유닛 번호 전달
             }
-        }
-
-        /// <summary>
-        /// View-Projection 행렬 설정
-        /// </summary>
-        public void LoadVPMatrix(Matrix4x4f matrix)
-        {
-            Gl.UniformMatrix4f(loc_vp, 1, false, matrix);
         }
 
         /// <summary>

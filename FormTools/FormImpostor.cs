@@ -1,4 +1,5 @@
-﻿using Camera3d;
+﻿using BillBoard;
+using Camera3d;
 using Common;
 using Common.Abstractions;
 using FastMath;
@@ -212,12 +213,12 @@ namespace FormTools
                 ImpostorSettings settings = _impostor.GetImpostorSettings(_imposterName);
                 Vertex2f atlasOffset = _impostor.GetAtlasOffset(settings, camera.Position, Matrix4x4f.Identity);
                 uint textureId = _impostor.AtlasTexture(_imposterName);
+                _impostorShader.LoadImpostorAtlas(TextureUnit.Texture0, textureId);
 
                 _impostorShader.LoadAABBSphereRadius(_unifiedModel.AABB.Radius);
                 _impostorShader.LoadAABBCenterPosition(_unifiedModel.AABB.Center);
                 _impostorShader.LoadAtlasOffset(atlasOffset);
                 _impostorShader.LoadAtlasSize(settings.AtlasSize);
-                _impostorShader.LoadImpostorAtlas(TextureUnit.Texture0, textureId);
                 _impostorShader.LoadModelMatrix(_unifiedModel.AABB.ModelMatrix);
                 _impostorShader.LoadIndividualSize(settings.IndividualSize);
                 _impostorShader.LoadHorizontalFrames(settings.HorizontalAngles);

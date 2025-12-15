@@ -167,7 +167,6 @@ namespace FormTools
                 {
 
                     // 대량 인스턴스 배치
-                    /*
                     _modelBatchManager = new ModelBatchManager();
                     uint treeID = _modelBatchManager.AddModel("tree1", 100, _model3DManager.GetModels("tree1"));
                     uint palm1ID = _modelBatchManager.AddModel("Palm4", 100, _model3DManager.GetModels("Palm4"));
@@ -177,7 +176,7 @@ namespace FormTools
                     _modelBatchManager.AddModel("Palm3", 100, _model3DManager.GetModels("Palm3"));
                     _modelBatchManager.AddModel("Palm6", 100, _model3DManager.GetModels("Palm6"));
                     Console.WriteLine($"Registered Models: Tree={treeID}, Palm1={palm1ID}, Palm2={palm2ID}");
-                    */
+
                     int gridSize = 300;
                     float spacing = 15f;
                     float halfSpacing = spacing / 2f;
@@ -253,7 +252,7 @@ namespace FormTools
             {
                 // GPU 드리븐 렌더러 초기화
                 _gpuDriven = new GPUCullingRenderer(PROJECT_PATH);
-                _gpuDriven.Initialize(_modelBatchManager);
+                _gpuDriven.Initialize(_modelBatchManager, camera);
                 _culledText.Text = "상세지형이 로딩이 완료됨";
                 _isStarted = true;
             }

@@ -22,7 +22,6 @@ namespace Shader
         private int loc_enableEdgeLine;
         private int loc_model;
         private int loc_vp;
-        private int loc_worldPosition;
         private int loc_cameraPosition;
         private int loc_individualSize;
         private int loc_aabbSphereRadius;
@@ -110,9 +109,9 @@ namespace Shader
         /// </summary>
         public void LoadImpostorAtlas(TextureUnit unit, uint textureId)
         {
-            Gl.Uniform1(loc_impostorAtlas, (uint)unit);
             Gl.ActiveTexture(TextureUnit.Texture0);
             Gl.BindTexture(TextureTarget.Texture2d, textureId);
+            Gl.Uniform1(loc_impostorAtlas, 0);
         }
 
         /// <summary>
@@ -138,14 +137,6 @@ namespace Shader
         public void LoadVPMatrix(Matrix4x4f matrix)
         {
             Gl.UniformMatrix4f(loc_vp, 1, false, matrix);
-        }
-
-        /// <summary>
-        /// 월드 공간 위치 설정
-        /// </summary>
-        public void LoadWorldPosition(Vertex3f position)
-        {
-            Gl.Uniform3f(loc_worldPosition, 1, position);
         }
 
         /// <summary>
