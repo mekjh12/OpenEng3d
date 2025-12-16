@@ -7,6 +7,7 @@ namespace Model3d
 {
     public class UnifiedTexturedModel
     {
+        public string Name { get; set; }
         public uint VaoID { get; set; }
         public int VertexCount { get; set; }
         public int IndexCount { get; set; }
@@ -19,10 +20,11 @@ namespace Model3d
 
         public AABB3f AABB { get; set; }
 
-        public UnifiedTexturedModel()
+        public UnifiedTexturedModel(string name)
         {
             Textures = new List<Texture>();
             TextureIDs = new List<uint>();
+            Name = name;
         }
     }
 }

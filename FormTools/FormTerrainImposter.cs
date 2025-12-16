@@ -122,7 +122,7 @@ namespace FormTools
             //_ocs.AddRawModel(@"FormTools\bin\Debug\Res\Palm1.obj");
 
             // 임포스터 LOD 시스템 초기화
-            _impostorLODSystem = new ImpostorLODSystem(100.0f);
+            _impostorLODSystem = new ImpostorLODSystem(_unlitShader, _glControl3.Camera);
             //_impostorLODSystem.CreateImpostorModel("tree1", ImpostorSettings.CreateSettings(128, 16), _unlitShader, _ocs.GetModels("tree1"));
             //_impostorLODSystem.CreateImpostorModel("Palm1", ImpostorSettings.CreateSettings(128, 16), _unlitShader, _ocs.GetModels("Palm1"));
 

@@ -109,7 +109,7 @@ namespace BillBoard
         public uint GenerateAtlas(UnlitShader shader, ImpostorSettings settings, string modelname, UnifiedTexturedModel unifiedTexturedModel, Camera camera)
         {
             // 통합 모델 렌더러 생성
-            _unifiedModelRenderer = new UnifiedModelRenderer(unifiedTexturedModel);
+            _unifiedModelRenderer = new UnifiedModelRenderer(unifiedTexturedModel, shader);
 
             // 버퍼를 준비한다.
             InitializeRenderTarget(settings);
@@ -335,7 +335,7 @@ namespace BillBoard
 
                 // 월드뷰투영 행렬 설정
                 Matrix4x4f mvp = proj * viewData.ViewMatrix;
-                _unifiedModelRenderer.Render(shader, mvp);
+                _unifiedModelRenderer.Render(mvp);
 
                 shader.Unbind();
             }

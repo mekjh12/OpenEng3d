@@ -84,7 +84,8 @@ namespace Model3d
             }
 
             // 3단계: 하나의 메시로 통합
-            UnifiedTexturedModel model = MergeIntoSingleMesh(meshDataList, textureFiles);
+            string modelName = Path.GetFileNameWithoutExtension(filename);
+            UnifiedTexturedModel model = MergeIntoSingleMesh(modelName, meshDataList, textureFiles);
             model.AABB = new AABB3f(min, max);
 
             Console.WriteLine($"통합 완료: {model.VertexCount}개 정점, " +
@@ -201,7 +202,7 @@ namespace Model3d
         /// <summary>
         /// 여러 메시를 하나로 병합
         /// </summary>
-        private static UnifiedTexturedModel MergeIntoSingleMesh(List<MeshData> meshDataList, List<string> textureFiles)
+        private static UnifiedTexturedModel MergeIntoSingleMesh(string modelName, List<MeshData> meshDataList, List<string> textureFiles)
         {
             // 전체 크기 계산
             int totalVertexCount = 0;
@@ -272,7 +273,7 @@ namespace Model3d
                 textureIds.Add(textures[i].TextureID);
             }
 
-            UnifiedTexturedModel model = new UnifiedTexturedModel
+            UnifiedTexturedModel model = new UnifiedTexturedModel(modelName)
             {
                 VaoID = vaoID,
                 VertexCount = totalVertexCount,

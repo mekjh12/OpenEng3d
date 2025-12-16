@@ -114,7 +114,7 @@ namespace FormTools
 
             // 3D 모델 매니저 및 모델 로드
             _unifiedModel = ObjLoaderEx.LoadObjUnified(PROJECT_PATH + @"FormTools\bin\Debug\Res\Palm5.obj");
-            _unifiedModelRenderer = new UnifiedModelRenderer(_unifiedModel);
+            _unifiedModelRenderer = new UnifiedModelRenderer(_unifiedModel, _unlitShader);
 
             CharacterTextureAtlas.Initialize();
             TextBillboardShader.Initialize();
@@ -153,7 +153,7 @@ namespace FormTools
             Gl.Viewport(0, 0, w, h);
             Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
 
-            _unifiedModelRenderer.Render(_unlitShader, camera.VPMatrix);
+            _unifiedModelRenderer.Render(camera.VPMatrix);
             //Renderer3d.RenderAABB(_colorShader, _unifiedModel.AABB, camera);
 
             // 2D 렌더링을 위한 상태 설정

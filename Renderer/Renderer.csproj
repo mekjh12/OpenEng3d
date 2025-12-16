@@ -56,6 +56,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AABBRenderer.cs" />
+    <Compile Include="ImposterRenderer.cs" />
     <Compile Include="SimpFrameBuffer.cs" />
     <Compile Include="Renderer3d.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

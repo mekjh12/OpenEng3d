@@ -1,19 +1,14 @@
 ﻿using BillBoard;
-using Camera3d;
-using Common;
 using Common.Abstractions;
 using FastMath;
-using FormTools.Properties;
 using Geometry;
 using GlWindow;
-using GPUDriven;
 using Model3d;
 using Occlusion;
 using OpenGL;
 using Renderer;
 using Shader;
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using Ui3d;
@@ -24,6 +19,9 @@ namespace FormTools
     /// <summary>
     /// 3D 렌더링을 수행하는 Windows Form 클래스
     /// OpenGL을 사용하여 3D 그래픽스를 처리하며 IRenderer 인터페이스를 구현하여 렌더링 기능 제공
+    /// 
+    /// TODO:: 임포스터 렌더러 구조화 필요 전달 매개변수 정리
+    /// 
     /// </summary>
     public partial class FormImpostor : Form, GlControlerable
     {
@@ -43,7 +41,6 @@ namespace FormTools
 
         // 최적화 시스템
         OcclusionCullingSystem _ocs;            // 가시성 컬링 시스템
-        ImpostorLODSystem _impostor;            // LOD 기반 임포스터 시스템
 
         // UI 2D 관련 변수들
         private TextNamePlate _textNamePlate;               // 텍스트 네임플레이트
@@ -56,11 +53,16 @@ namespace FormTools
 
         // 3D 관련 변수들
         Model3dManager _model3DManager;                     // 3D 모델 매니저
-        UnifiedTexturedModel _treeModel;                    // 나무 모델 배열
         UnifiedTexturedModel _unifiedModel;                 // 통합 모델
+        UnifiedTexturedModel _unifiedModel2;                // 보조 통합 모델
         UnifiedModelRenderer _unifiedModelRenderer;         // 통합 모델 렌더러
+
+        ImpostorLODSystem _impostor;                        // LOD 기반 임포스터 시스템
+        ImposterRenderer _imposterRenderer;                 // 임포스터 렌더러
+        AABBRenderer _aabbRenderer;                         // AABB 렌더러
+
         bool _isImposterRender = true;                      // 임포스터 렌더링 여부
-        string _imposterName = "tree1";                     // 임포스터 이름
+        bool _isSecondaryModel = false;                     // 보조 모델 사용 여부
 
         // 폼 생성자
         public FormImpostor()
@@ -132,7 +134,13 @@ namespace FormTools
                 Text2d.TextAlignment.Left, heightInPixels: 15);
             _titleText.Color = Color.Red;
 
-            _descText = new Text2d("1번키: 원점이동", 10, height, width, height,
+            _descText = new Text2d("" +
+                "1번키: 원점이동, " +
+                "2번키: 임포스터ON/OFF, " +
+                "4번키: 엣지라인ON, " +
+                "5번키: 엣지라인OFF" +
+                "Enter: 모델변경"
+                , 10, height, width, height,
                 Text2d.TextAlignment.TopLeft, heightInPixels: 15);
             _descText.Color = Color.LightGray;
 
@@ -148,16 +156,26 @@ namespace FormTools
             // 그리드셰이더 초기화
             _glControl3.InitGridShader(PROJECT_PATH);
 
-            // 임포스터 LOD 시스템 초기화
-            _impostor = new ImpostorLODSystem(20.0f);
+            // 카메라 가져오기
+            Camera camera = _glControl3.Camera;
 
             // 3D 모델 매니저 초기화 및 나무 모델 로드
             _model3DManager = new Model3dManager(PROJECT_PATH, ExE_PATH + "\\nullTexture.jpg");
-            _unifiedModel =_model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\"+ _imposterName + ".obj");
-            _impostor.CreateImpostorModel(_imposterName, ImpostorSettings.CreateSettings(256, 16, 9),
-                _unlitShader, _unifiedModel, _glControl3.Camera);
+            _unifiedModel =_model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\tree1.obj");
+            _unifiedModel2 = _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm1.obj");
 
-            _unifiedModelRenderer = new UnifiedModelRenderer(_unifiedModel);
+            // 통합 모델 렌더러 및 임포스터 렌더러 초기화
+            _unifiedModelRenderer = new UnifiedModelRenderer(_unifiedModel, _unlitShader);
+
+            // 임포스터 LOD 시스템 초기화
+            _impostor = new ImpostorLODSystem(_unlitShader, _glControl3.Camera);
+            _impostor.CreateImpostorModel(ImpostorSettings.CreateSettings("tree1", 256, 16, 9), _unifiedModel);
+            _impostor.CreateImpostorModel(ImpostorSettings.CreateSettings("Palm1", 256, 16, 9), _unifiedModel2);
+
+            // 4. 렌더러 생성
+            var renderData = _impostor.ToRenderData("tree1", _unifiedModel);
+            _imposterRenderer = new ImposterRenderer(_impostorShader, renderData);
+            _aabbRenderer = new AABBRenderer(_colorShader, camera);
 
             // UI 3D 텍스트 네임플레이트 초기화
             _textNamePlate = new TextNamePlate(_glControl3.Camera, "FPS");
@@ -205,36 +223,13 @@ namespace FormTools
 
             if (_isImposterRender)
             {
-                _impostorShader.Bind();
-                _impostorShader.LoadEnableEdgeLine(true, 3.0f);
-                _impostorShader.LoadVPMatrix(camera.VPMatrix);
-                _impostorShader.LoadCameraPosition(camera.Position);
-
-                ImpostorSettings settings = _impostor.GetImpostorSettings(_imposterName);
-                Vertex2f atlasOffset = _impostor.GetAtlasOffset(settings, camera.Position, Matrix4x4f.Identity);
-                uint textureId = _impostor.AtlasTexture(_imposterName);
-                _impostorShader.LoadImpostorAtlas(TextureUnit.Texture0, textureId);
-
-                _impostorShader.LoadAABBSphereRadius(_unifiedModel.AABB.Radius);
-                _impostorShader.LoadAABBCenterPosition(_unifiedModel.AABB.Center);
-                _impostorShader.LoadAtlasOffset(atlasOffset);
-                _impostorShader.LoadAtlasSize(settings.AtlasSize);
-                _impostorShader.LoadModelMatrix(_unifiedModel.AABB.ModelMatrix);
-                _impostorShader.LoadIndividualSize(settings.IndividualSize);
-                _impostorShader.LoadHorizontalFrames(settings.HorizontalAngles);
-                _impostorShader.LoadVerticalFrames(settings.VerticalAngles);
-
-                Gl.BindVertexArray(Renderer3d.Point.VAO);
-                Gl.EnableVertexAttribArray(0);
-                Gl.DrawArrays(PrimitiveType.Points, 0, 1);
-                Gl.DisableVertexAttribArray(0);
-                Gl.BindVertexArray(0);
-
-                _impostorShader.Unbind();
+                Vertex2f atlasOffset = _impostor.GetAtlasOffset(camera.Position, Matrix4x4f.Identity);
+                _imposterRenderer.Render(atlasOffset, camera.VPMatrix, camera.Position);
             }
             else
             {
-                _unifiedModelRenderer.Render(_unlitShader, camera.VPMatrix);
+                _unifiedModelRenderer.Render(camera.VPMatrix);
+                //_aabbRenderer.RenderAABB(_unifiedModel.AABB);
             }
 
             Gl.Enable(EnableCap.Blend);
@@ -284,6 +279,21 @@ namespace FormTools
             else if (e.KeyCode == Keys.D2)
             {
                 _isImposterRender = !_isImposterRender;
+            }
+            else if (e.KeyCode == Keys.Enter)
+            {
+                _isSecondaryModel = !_isSecondaryModel;
+                _impostor.SetImposter(_isSecondaryModel ? _unifiedModel2 : _unifiedModel);
+                _imposterRenderer.UpdateRenderData(_impostor.ImpostorRenderData);
+                _unifiedModelRenderer.SetModel(_isSecondaryModel ? _unifiedModel2 : _unifiedModel);
+            }
+            else if (e.KeyCode == Keys.D4)
+            {
+                _imposterRenderer.SetEdgeLineEnabled(true);
+            }
+            else if (e.KeyCode == Keys.D5)
+            {
+                _imposterRenderer.SetEdgeLineEnabled(false);
             }
         }
 

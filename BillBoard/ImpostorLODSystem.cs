@@ -1,6 +1,7 @@
 ﻿using Common.Abstractions;
 using Model3d;
 using OpenGL;
+using Renderer;
 using Shader;
 using System;
 using System.Collections.Generic;
@@ -62,22 +63,30 @@ namespace BillBoard
     /// </summary>
     public class ImpostorLODSystem
     {
-        float _impostorDistance;                      // 임포스터로 전환할 거리 임계값
         ImpostorAtlasGenerator _atlasGenerator;       // 임포스터 텍스처 아틀라스 생성기
         Dictionary<string, uint> _impostorModels;     // 엔티티별 임포스터 모델 캐시 (Key: 모델명, Value: 텍스처 ID)
         Dictionary<string, ImpostorSettings> _impostorSettings;
+        UnlitShader _shader;
+        Camera _camera;
+        string _currentModelName = "";
+        ImpostorRenderData _impostorRenderData;             // 임포스터 렌더링에 필요한 데이터
+        Dictionary<string, UnifiedTexturedModel> _models;   // 모델 캐시
+
+        public ImpostorRenderData ImpostorRenderData => _impostorRenderData;
 
         /// <summary>
         /// ImpostorLODSystem 생성자
         /// </summary>
         /// <param name="impostorDistance">임포스터로 전환할 거리 임계값</param>
         /// <param name="settings">임포스터 생성 설정</param>
-        public ImpostorLODSystem(float impostorDistance = 200.0f)
+        public ImpostorLODSystem(UnlitShader shader, Camera camera)
         {
-            _impostorDistance = impostorDistance;
+            _shader = shader;
+            _camera = camera;
             _atlasGenerator = new ImpostorAtlasGenerator();
             _impostorModels = new Dictionary<string, uint>();
             _impostorSettings = new Dictionary<string, ImpostorSettings>();
+            _models = new Dictionary<string, UnifiedTexturedModel>();
         }
 
         /// <summary>
@@ -123,24 +132,35 @@ namespace BillBoard
             }
         }
 
-        public void CreateImpostorModel(string modelname, ImpostorSettings settings, UnlitShader shader, UnifiedTexturedModel texturedModels, Camera camera)
+        public void CreateImpostorModel(ImpostorSettings settings, UnifiedTexturedModel texturedModels)
         {
             // 해당 모델의 임포스터가 아직 생성되지 않은 경우에만 생성
-            if (!_impostorModels.ContainsKey(modelname))
+            if (!_impostorModels.ContainsKey(settings.Name))
             {
-                uint atlasIndex = _atlasGenerator.GenerateAtlas(shader, settings, modelname, texturedModels, camera);
-                _impostorModels.Add(modelname, atlasIndex);
+                uint atlasIndex = _atlasGenerator.GenerateAtlas(_shader, settings, settings.Name,
+                    texturedModels, _camera);
+                _impostorModels.Add(settings.Name, atlasIndex);
             }
 
             // 해당 셋팅의 임포스터가 아직 생성되지 않은 경우에만 생성
-            if (!_impostorSettings.ContainsKey(modelname))
+            if (!_impostorSettings.ContainsKey(settings.Name))
             {
-                _impostorSettings.Add(modelname, settings);
+                _impostorSettings.Add(settings.Name, settings);
+                _currentModelName = settings.Name;
             }
         }
 
-        public Vertex2f GetAtlasOffset(ImpostorSettings settings, Vertex3f cameraPosition, Matrix4x4f modelMatrix)
+        public Vertex2f GetAtlasOffset(Vertex3f cameraPosition, Matrix4x4f modelMatrix)
         {
+            // 현재 모델에 대한 임포스터 설정이 없는 경우 기본값 반환
+            if (!_impostorSettings.ContainsKey(_currentModelName))
+            {
+                return new Vertex2f(0.0f, 0.0f);
+            }
+
+            // 현재 임포스터 설정 가져오기
+            ImpostorSettings settings = _impostorSettings[_currentModelName];
+
             // 1. 카메라에서 모델로의 방향 벡터 계산 (월드 공간)
             Vertex3f position = modelMatrix.Column3.xyz();
             Vertex3f toCamera = (cameraPosition - position).Normalized;
@@ -178,26 +198,9 @@ namespace BillBoard
             );
         }
 
-        /// <summary>
-        /// 주어진 엔티티의 임포스터 텍스처 ID 반환
-        /// </summary>
-        /// <param name="entity">엔티티</param>
-        /// <returns>텍스처 ID (없는 경우 0)</returns>
-        public uint AtlasTexture(Entity entity)
+        public uint AtlasTexture(string modelName)
         {
-            string modelname = entity.ModelName;
-            return _impostorModels.ContainsKey(modelname) ? _impostorModels[modelname] : 0;
-        }
-
-        public uint AtlasTexture(string modelname)
-        {
-            return _impostorModels.ContainsKey(modelname) ? _impostorModels[modelname] : 0;
-        }
-
-        public ImpostorSettings GetImpostorSettings(Entity entity)
-        {
-            string modelname = entity.ModelName;
-            return _impostorSettings.ContainsKey(modelname) ? _impostorSettings[modelname] : ImpostorSettings.CreateDefault();
+            return _impostorModels.ContainsKey(modelName) ? _impostorModels[modelName] : 0;
         }
 
         public ImpostorSettings GetImpostorSettings(string modelname)
@@ -205,5 +208,23 @@ namespace BillBoard
             return _impostorSettings.ContainsKey(modelname) ? _impostorSettings[modelname] : ImpostorSettings.CreateDefault();
         }
 
+        public ImpostorSettings GetImpostorSettings()
+        {
+            return _impostorSettings.ContainsKey(_currentModelName) ? 
+                _impostorSettings[_currentModelName] : ImpostorSettings.CreateDefault();
+        }
+
+        public void SetImposter(UnifiedTexturedModel model)
+        {
+            _currentModelName = model.Name;
+            if (_models.ContainsKey(model.Name) == false)
+            {
+                _models.Add(model.Name, model);
+            }
+
+            uint textureId = AtlasTexture(_currentModelName);
+            _impostorRenderData = ImpostorRenderDataFactory.ToRenderData(GetImpostorSettings(), 
+                _models[_currentModelName], textureId);
+        }
     }
 }

@@ -40,6 +40,11 @@
     public struct ImpostorSettings
     {
         /// <summary>
+        /// 임포스터 설정 이름
+        /// </summary>
+        public string Name { get; set; }
+
+        /// <summary>
         /// 전체 아틀라스 텍스처의 해상도
         /// </summary>
         public int AtlasSize { get; set; }
@@ -76,6 +81,7 @@
         {
             return new ImpostorSettings
             {
+                Name = "default",           // 모델 이름
                 AtlasSize = 512,            // 512x512 아틀라스
                 IndividualSize = 64,        // 64x64 개별 뷰
                 HorizontalAngles = 8,       // 45도 간격으로 8방향
@@ -85,10 +91,11 @@
             };
         }
 
-        public static ImpostorSettings CreateSettings(int individualSize = 128, int horizontalAngles = 8, int verticalAngles = 6)
+        public static ImpostorSettings CreateSettings(string modelName, int individualSize = 128, int horizontalAngles = 8, int verticalAngles = 6)
         {
             return new ImpostorSettings
             {
+                Name = modelName,
                 AtlasSize = individualSize * horizontalAngles,
                 IndividualSize = individualSize,
                 HorizontalAngles = horizontalAngles,
@@ -103,6 +110,9 @@
         /// </summary>
         public bool Validate()
         {
+            // 이름이 비어있지 않아야 함
+            if (Name == "" || Name == null) return false;
+
             // 아틀라스 크기는 개별 크기의 배수여야 함
             if (AtlasSize % IndividualSize != 0) return false;
 
