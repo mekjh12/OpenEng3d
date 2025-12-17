@@ -58,7 +58,7 @@ namespace GPUDriven
         private UpdateIndirectCommandsComputeShader _updateCommandsCompute;
 
         // 임포스터 관련
-        private ImpostorLODSystem _impostor;
+        private ImpostorAssets _impostor;
         public BaseModel3d _point = Loader3d.LoadPoint(0, 0, 0);
 
         // HiZ 컨트롤
@@ -175,7 +175,7 @@ namespace GPUDriven
 
         private void InitializeImpostors(Camera camera)
         {
-            _impostor = new ImpostorLODSystem(_unlitShader, camera);
+            _impostor = new ImpostorAssets(_unlitShader, camera);
 
             for (uint i = 0; i < _batchManager.ActualBatchCount; i++)
             {

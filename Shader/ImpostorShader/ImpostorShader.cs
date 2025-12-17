@@ -16,7 +16,6 @@ namespace Shader
         private const string GEOMETRY_FILE = @"\Shader\ImpostorShader\impostor.gem.glsl";
 
         // 유니폼 위치 (캐싱)
-        private int loc_atlasOffset;
         private int loc_atlasSize;
         private int loc_impostorAtlas;
         private int loc_enableEdgeLine;
@@ -26,8 +25,8 @@ namespace Shader
         private int loc_individualSize;
         private int loc_aabbSphereRadius;
         private int loc_aabbCenterPosition;
-        private int loc_horizontalFrames;   // 추가
-        private int loc_verticalFrames;     // 추가
+        private int loc_horizontalFrames;
+        private int loc_verticalFrames;
 
         public ImpostorShader(string projectPath) : base()
         {
@@ -41,7 +40,6 @@ namespace Shader
         protected override void GetAllUniformLocations()
         {
             // 텍스처 아틀라스 관련
-            loc_atlasOffset = GetUniformLocation("atlasOffset");
             loc_atlasSize = GetUniformLocation("atlasSize");
             loc_impostorAtlas = GetUniformLocation("impostorAtlas");
             loc_enableEdgeLine = GetUniformLocation("enableEdgeLine");
@@ -71,14 +69,6 @@ namespace Shader
         }
 
         // === Load 메서드들 ===
-
-        /// <summary>
-        /// 텍스처 아틀라스 오프셋 설정
-        /// </summary>
-        public void LoadAtlasOffset(Vertex2f offset)
-        {
-            Gl.Uniform2f(loc_atlasOffset, 1, offset);
-        }
 
         /// <summary>
         /// 아틀라스의 가로 프레임 수 설정

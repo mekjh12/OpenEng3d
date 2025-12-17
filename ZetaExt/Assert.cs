@@ -10,7 +10,7 @@ namespace ZetaExt
     {
         public static void Notify(bool condition, string message)
         {
-            if (!condition)
+            if (condition)
             {
                 throw new Exception($"Assertion failed: {message}");
             }

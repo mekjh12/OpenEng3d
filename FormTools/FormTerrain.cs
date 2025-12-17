@@ -25,7 +25,7 @@ namespace FormTools
 
         private GlControl3 _glControl3;
 
-        ImpostorLODSystem _impostorLODSystem;   // LOD 기반 임포스터 시스템        
+        ImpostorAssets impostorAssets;   // LOD 기반 임포스터 시스템        
         RegionManager _regionManager;           // 리전관리자
         HierarchicalZBuffer _hzbuffer;          // 계층깊이버퍼        
 
@@ -264,8 +264,8 @@ namespace FormTools
                 {
                     if (entity is LodEntity)
                     {
-                        bool shouldUseImpostor = _impostorLODSystem.ShouldUseImpostor(entity as LodEntity, camera.Position, vp);
-                        (shouldUseImpostor ? _impostorEntity : _unlitEntity).Add(entity);
+                        //bool shouldUseImpostor = _impostorLODSystem.ShouldUseImpostor(entity as LodEntity, camera.Position, vp);
+                        //(shouldUseImpostor ? _impostorEntity : _unlitEntity).Add(entity);
                     }
                     else
                     {

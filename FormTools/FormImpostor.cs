@@ -26,7 +26,7 @@ namespace FormTools
     public partial class FormImpostor : Form, GlControlerable
     {
         readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
-        readonly string ExE_PATH = Application.StartupPath;
+        readonly string EXE_PATH = Application.StartupPath;
 
         // 시뮬레이션 및 렌더링 설정을 위한 상수
         private const int RANDOM_SEED = 500;    // 시뮬레이션의 일관성을 위한 랜덤 시드값
@@ -57,7 +57,7 @@ namespace FormTools
         UnifiedTexturedModel _unifiedModel2;                // 보조 통합 모델
         UnifiedModelRenderer _unifiedModelRenderer;         // 통합 모델 렌더러
 
-        ImpostorLODSystem _impostor;                        // LOD 기반 임포스터 시스템
+        ImpostorAssets _impostor;                        // LOD 기반 임포스터 시스템
         ImposterRenderer _imposterRenderer;                 // 임포스터 렌더러
         AABBRenderer _aabbRenderer;                         // AABB 렌더러
 
@@ -102,7 +102,6 @@ namespace FormTools
 
             // 로그 프로파일 초기화
             LogProfile.Create(PROJECT_PATH + "\\log.txt");
-
         }
 
         public void Init(int width, int height)
@@ -160,7 +159,7 @@ namespace FormTools
             Camera camera = _glControl3.Camera;
 
             // 3D 모델 매니저 초기화 및 나무 모델 로드
-            _model3DManager = new Model3dManager(PROJECT_PATH, ExE_PATH + "\\nullTexture.jpg");
+            _model3DManager = new Model3dManager(PROJECT_PATH, EXE_PATH + "\\nullTexture.jpg");
             _unifiedModel =_model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\tree1.obj");
             _unifiedModel2 = _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm1.obj");
 
@@ -168,13 +167,17 @@ namespace FormTools
             _unifiedModelRenderer = new UnifiedModelRenderer(_unifiedModel, _unlitShader);
 
             // 임포스터 LOD 시스템 초기화
-            _impostor = new ImpostorLODSystem(_unlitShader, _glControl3.Camera);
+            _impostor = new ImpostorAssets(_unlitShader, _glControl3.Camera);
             _impostor.CreateImpostorModel(ImpostorSettings.CreateSettings("tree1", 256, 16, 9), _unifiedModel);
             _impostor.CreateImpostorModel(ImpostorSettings.CreateSettings("Palm1", 256, 16, 9), _unifiedModel2);
 
-            // 4. 렌더러 생성
-            var renderData = _impostor.ToRenderData("tree1", _unifiedModel);
+            // 임포스터 렌더러 초기화
+            var renderData = _impostor.GetImpostorRenderData("tree1");
             _imposterRenderer = new ImposterRenderer(_impostorShader, renderData);
+            _imposterRenderer.UpdateCenterAndRadius(_unifiedModel.AABB.Center, _unifiedModel.AABB.Radius);
+            _imposterRenderer.UpdateModelMatrix(_unifiedModel.AABB.ModelMatrix);
+
+            // AABB 렌더러 초기화
             _aabbRenderer = new AABBRenderer(_colorShader, camera);
 
             // UI 3D 텍스트 네임플레이트 초기화
@@ -223,8 +226,7 @@ namespace FormTools
 
             if (_isImposterRender)
             {
-                Vertex2f atlasOffset = _impostor.GetAtlasOffset(camera.Position, Matrix4x4f.Identity);
-                _imposterRenderer.Render(atlasOffset, camera.VPMatrix, camera.Position);
+                _imposterRenderer.Render(camera.VPMatrix, camera.Position);
             }
             else
             {
@@ -283,9 +285,15 @@ namespace FormTools
             else if (e.KeyCode == Keys.Enter)
             {
                 _isSecondaryModel = !_isSecondaryModel;
-                _impostor.SetImposter(_isSecondaryModel ? _unifiedModel2 : _unifiedModel);
-                _imposterRenderer.UpdateRenderData(_impostor.ImpostorRenderData);
-                _unifiedModelRenderer.SetModel(_isSecondaryModel ? _unifiedModel2 : _unifiedModel);
+                UnifiedTexturedModel texturedModel = _isSecondaryModel ? _unifiedModel2 : _unifiedModel;
+
+                _impostor.SetImposter(texturedModel.Name);
+
+                _imposterRenderer.UpdateRenderData(_impostor.GetImpostorRenderData(texturedModel.Name));
+                _imposterRenderer.UpdateCenterAndRadius(texturedModel.AABB.Center, texturedModel.AABB.Radius);
+                _imposterRenderer.UpdateModelMatrix(texturedModel.AABB.ModelMatrix);
+
+                _unifiedModelRenderer.SetModel(texturedModel);
             }
             else if (e.KeyCode == Keys.D4)
             {
