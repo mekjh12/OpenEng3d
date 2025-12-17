@@ -90,13 +90,12 @@ namespace FormTools
 
         public void Form_Load(object sender, EventArgs e)
         {
-            this.ClientSize = new Size(1008, 729);
-            this.Location = new Point(100, 100);
+            this.ClientSize = new Size(1280, 800);
+            this.Location = new Point(500, 100);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.StartPosition = FormStartPosition.Manual;
             this.Resize += new EventHandler(this.FormGPUDriven_Resize);
-
             MemoryProfiler.StartFrameMonitoring();
         }
 

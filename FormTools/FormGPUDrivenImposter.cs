@@ -11,6 +11,7 @@ using Shader;
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using Terrain;
 using Ui3d;
 using ZetaExt;
 
@@ -19,7 +20,7 @@ namespace FormTools
     public partial class FormGPUDrivenImposter : Form, GlControlerable
     {
         readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
-        readonly string ExE_PATH = Application.StartupPath;
+        readonly string EXE_PATH = Application.StartupPath;
 
         private GlControl3 _glControl3;                     // OpenGL 컨트롤
         private ColorShader _colorShader;                   // 컬러 셰이더
@@ -36,7 +37,9 @@ namespace FormTools
 
         // 3D 관련 변수들
         Model3dManager _model3DManager;                     // 3D 모델 매니저
+        ModelBatchManager _modelBatchManager;
         GPUCullingRenderer _gpuDriven;
+        private const int MAX_INSTANCES = 100000;
 
 
         public FormGPUDrivenImposter()
@@ -85,11 +88,11 @@ namespace FormTools
                 Text2d.TextAlignment.Center, heightInPixels: 20);
             _fpsText.Color = Color.Yellow;
 
-            _titleText = new Text2d("GPU Driven", 10, 10, width, height,
-                Text2d.TextAlignment.Left, heightInPixels: 15);
-            _titleText.Color = Color.Red;
+            _titleText = new Text2d("GPU Driven = 임포스터인스턴싱", 10, 10, width, height,
+                Text2d.TextAlignment.Left, heightInPixels: 24);
+            _titleText.Color = Color.Yellow;
 
-            _descText = new Text2d("1번키: ", 10, height, width, height,
+            _descText = new Text2d("1번키: 원점으로", 10, height, width, height,
                 Text2d.TextAlignment.TopLeft, heightInPixels: 15);
             _descText.Color = Color.LightGray;
 
@@ -105,11 +108,51 @@ namespace FormTools
             // 그리드셰이더 초기화
             _glControl3.InitGridShader(PROJECT_PATH);
 
-            _model3DManager = new Model3dManager(PROJECT_PATH, ExE_PATH + "\\nullTexture.jpg");
-            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm4.obj");
+            // 3D 모델 매니저 초기화 및 모델 로드
+            _model3DManager = new Model3dManager(PROJECT_PATH, EXE_PATH + "\\nullTexture.jpg");
+            UnifiedTexturedModel model1 = _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm4.obj");
+            UnifiedTexturedModel model2 = _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm5.obj");
 
+            // 모델 배치 매니저 초기화
+            _modelBatchManager = new ModelBatchManager();
+            _modelBatchManager.AddModel(model1.Name, 100,  model1);
+            _modelBatchManager.AddModel(model2.Name, 100,  model2);
+
+            // 인스턴스 변환 행렬 생성 및 추가
+            int gridSize = 300;
+            float spacing = 15f;
+            float halfSpacing = spacing / 2f;
+            float quaterSpacing = spacing / 4f;
+            Random rand = new Random(42);
+            Vertex3f position = Vertex3f.Zero;
+
+            for (int i = 0; i < MAX_INSTANCES; i++)
+            {
+                int x = i % gridSize;
+                int y = i / gridSize;
+
+                float posX = (x - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
+                float posY = (y - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
+                position.x = posX;
+                position.y = posY;
+                float posZ = 0;
+
+                float rotZ = (float)(rand.NextDouble() * Math.PI * 2);
+                float scale = 0.5f + (float)(rand.NextDouble() * 1.0f);
+
+                Matrix4x4f transform = Matrix4x4f.Translated(posX, posY, posZ) *
+                                Matrix4x4f.RotatedZ(rotZ.ToDegree()) *
+                                Matrix4x4f.Scaled(scale, scale, scale);
+                _modelBatchManager.AddInstance((uint)(x % 2), transform);
+            }
+
+            Console.WriteLine($"Generated {MAX_INSTANCES} tree instances");
+            _modelBatchManager.Finalized();
+            _isLoaded = true;
+
+            // GPU 드리븐 렌더러 초기화
             _gpuDriven = new GPUCullingRenderer(PROJECT_PATH);
-            //_gpuDriven.Initialize("Palm4", _model3DManager.GetModels("Palm4"));
+            _gpuDriven.Initialize(_modelBatchManager, _glControl3.Camera);
 
             // UI 3D 텍스트 네임플레이트 초기화
             _textNamePlate = new TextNamePlate(_glControl3.Camera, "FPS");
@@ -125,7 +168,7 @@ namespace FormTools
         public void UpdateFrame(int deltaTime, int width, int height, Camera camera)
         {
             float duration = deltaTime * 0.001f;
-            //if (!_isLoaded) return;
+            if (!_isLoaded) return;
 
             // 뷰 프러스텀 업데이트
             _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
@@ -147,7 +190,7 @@ namespace FormTools
 
         public void RenderFrame(double deltaTime, Vertex4f backcolor, Camera camera)
         {
-            //if (!_isLoaded) return;
+            if (!_isLoaded) return;
 
             int w = _glControl3.Width;
             int h = _glControl3.Height;
@@ -219,6 +262,12 @@ namespace FormTools
 
         public void Form_Load(object sender, EventArgs e)
         {
+            this.ClientSize = new Size(1280, 800);
+            this.Location = new Point(500, 100);
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+            this.StartPosition = FormStartPosition.Manual;
+            this.Resize += new EventHandler(this.FormGPUDriven_Resize);
             MemoryProfiler.StartFrameMonitoring();
         }
 

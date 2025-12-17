@@ -20,7 +20,7 @@ namespace FormTools
     public partial class FormGPUDriven : Form, GlControlerable
     {
         readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
-        readonly string ExE_PATH = Application.StartupPath;
+        readonly string EXE_PATH = Application.StartupPath;
         
         private GlControl3 _glControl3;                     // OpenGL 컨트롤
         private ColorShader _colorShader;                   // 컬러 셰이더
@@ -37,9 +37,9 @@ namespace FormTools
 
         // 3D 관련 변수들
         Model3dManager _model3DManager;                     // 3D 모델 매니저
-        TexturedModel[] _treeModel;                         // 나무 모델 배열
-        GPUCullingRenderer _gpuDriven;  
-
+        UnifiedTexturedModel _treeModel;                    // 나무 모델 배열
+        GPUCullingRenderer _gpuDriven;                      // GPU 드리븐 렌더러
+            
         public FormGPUDriven()
         {
             // 폼 초기화
@@ -69,13 +69,12 @@ namespace FormTools
 
         public void Form_Load(object sender, EventArgs e)
         {
-            this.ClientSize = new Size(1008, 729);
-            this.Location = new Point(100, 100);
+            this.ClientSize = new Size(1280, 800);
+            this.Location = new Point(500, 100);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.StartPosition = FormStartPosition.Manual;
             this.Resize += new EventHandler(this.FormGPUDriven_Resize);
-
             MemoryProfiler.StartFrameMonitoring();
         }
 
@@ -100,8 +99,8 @@ namespace FormTools
             _fpsText.Color = Color.Yellow;
 
             _titleText = new Text2d("GPU Driven", 10, 10, width, height,
-                Text2d.TextAlignment.Left, heightInPixels: 15);
-            _titleText.Color = Color.Red;
+                Text2d.TextAlignment.Left, heightInPixels: 24);
+            _titleText.Color = Color.Yellow;
 
             _descText = new Text2d("1번키: 원점으로", 10, height, width, height,
                 Text2d.TextAlignment.TopLeft, heightInPixels: 15);
@@ -120,18 +119,20 @@ namespace FormTools
             _glControl3.InitGridShader(PROJECT_PATH);
 
             // 3D 모델 매니저 및 모델 로드
-            _model3DManager = new Model3dManager(PROJECT_PATH, ExE_PATH + "\\nullTexture.jpg");
-            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm6.obj");
-            //_treeModel = _model3DManager.GetModels("Palm6");
+            _model3DManager = new Model3dManager(PROJECT_PATH, EXE_PATH + "\\nullTexture.jpg");
+            _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm4.obj");
+            _treeModel = _model3DManager.GetModels("Palm4");
 
             // GPU 드리븐 렌더러 초기화
             _gpuDriven = new GPUCullingRenderer(PROJECT_PATH);
-            //_gpuDriven.Initialize("Palm6", _treeModel);
+            //_gpuDriven.Initialize()
                        
             // UI 3D 텍스트 네임플레이트 초기화
             _textNamePlate = new TextNamePlate(_glControl3.Camera, "FPS");
             _textNamePlate.Height = 0.35f;
             _textNamePlate.Width = 0.35f;
+
+            // 문자 텍스처 아틀라스 및 텍스트 빌보드 셰이더 초기화
             CharacterTextureAtlas.Initialize();
             TextBillboardShader.Initialize();
 
