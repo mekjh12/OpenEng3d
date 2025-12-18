@@ -3,7 +3,6 @@ using OpenGL;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using ZetaExt;
 
 namespace GPUDriven
@@ -64,7 +63,7 @@ namespace GPUDriven
         public uint VertexCount { get; set; }       // 정점 수 배열
 
         // Indirect Buffer (나중에 설정)
-        public uint[] IndirectBuffers_LOD0 { get; set; }
+        public uint IndirectBuffers_LOD0 { get; set; }
         public uint IndirectBuffer_LOD1 { get; set; }
 
         public BatchDescriptor()
@@ -465,22 +464,6 @@ namespace GPUDriven
         private AABB CalculateModelAABB(UnifiedTexturedModel model)
         {
             return new AABB(model.AABB.Min, model.AABB.Max);
-        }
-
-        private AABB CalculateSingleModelAABB(TexturedModel model)
-        {
-            Vertex3f min = new Vertex3f(float.MaxValue);
-            Vertex3f max = new Vertex3f(float.MinValue);
-            Vertex3f[] vertices = model.Vertices;
-
-            for (int i = 0; i < vertices.Length; i++)
-            {
-                Vertex3f pos = vertices[i];
-                min = Vertex3f.Min(min, pos);
-                max = Vertex3f.Max(max, pos);
-            }
-
-            return new AABB(min, max);
         }
 
         private AABB TransformAABB(AABB local, Matrix4x4f transform)

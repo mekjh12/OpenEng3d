@@ -20,9 +20,10 @@ namespace Shader
 
         // 유니폼 위치
         private int loc_vp;
-        private int loc_texture;
+        private int loc_textureCount;
+        private int[] loc_textures;  // ✅ 배열 위치
+        private const int MAX_TEXTURES = 32;
         private int loc_batchStartOffset;
-        private int loc_currentBatchID;
 
 
         public GPUInstancedShader(string projectPath) : base()
@@ -37,9 +38,16 @@ namespace Shader
         protected override void GetAllUniformLocations()
         {
             loc_vp = GetUniformLocation("vp");
-            loc_texture = GetUniformLocation("uTexture");
             loc_batchStartOffset = GetUniformLocation("batchStartOffset");
-            loc_currentBatchID = GetUniformLocation("currentBatchID");
+
+            loc_textureCount = GetUniformLocation("textureCount");
+
+            // ✅ 배열 위치 가져오기
+            loc_textures = new int[MAX_TEXTURES];
+            for (int i = 0; i < MAX_TEXTURES; i++)
+            {
+                loc_textures[i] = GetUniformLocation($"textures[{i}]");
+            }
         }
 
         protected override void BindAttributes()
@@ -47,11 +55,7 @@ namespace Shader
             BindAttribute(0, "aPosition");
             BindAttribute(1, "aTexCoord");
             BindAttribute(2, "aNormal");
-        }
-
-        public void LoadCurrentBatchID(uint batchID)
-        {
-            Gl.Uniform1(loc_currentBatchID, (int)batchID);
+            BindAttribute(3, "materialID");
         }
 
         public void LoadBatchStartOffset(uint offset)
@@ -68,13 +72,20 @@ namespace Shader
         }
 
         /// <summary>
-        /// 텍스처 유닛을 설정합니다.
+        /// ✅ 텍스처 배열 바인딩 (초기화 시 한 번만 호출)
         /// </summary>
-        public void LoadTexture(TextureUnit unit, uint textureId)
+        public void LoadTextureArray(uint[] textureIDs)
         {
-            Gl.Uniform1(loc_texture, (uint)unit);
-            Gl.ActiveTexture(TextureUnit.Texture0);
-            Gl.BindTexture(TextureTarget.Texture2d, textureId);
+            int count = System.Math.Min(textureIDs.Length, MAX_TEXTURES);
+
+            Gl.Uniform1(loc_textureCount, count);
+
+            for (int i = 0; i < count; i++)
+            {
+                Gl.ActiveTexture(TextureUnit.Texture0 + i);
+                Gl.BindTexture(TextureTarget.Texture2d, textureIDs[i]);
+                Gl.Uniform1(loc_textures[i], i);  // sampler에 텍스처 유닛 번호 전달
+            }
         }
     }
 }

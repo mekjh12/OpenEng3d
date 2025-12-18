@@ -122,6 +122,12 @@
     <Compile Include="FormGPUDrivenImposter.Designer.cs">
       <DependentUpon>FormGPUDrivenImposter.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormGPUDrivenModelInstance.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormGPUDrivenModelInstance.Designer.cs">
+      <DependentUpon>FormGPUDrivenModelInstance.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormGPUDrivenQuadTree.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -250,6 +256,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormGPUDrivenImposter.resx">
       <DependentUpon>FormGPUDrivenImposter.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormGPUDrivenModelInstance.resx">
+      <DependentUpon>FormGPUDrivenModelInstance.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormGPUDrivenQuadTree.resx">
       <DependentUpon>FormGPUDrivenQuadTree.cs</DependentUpon>

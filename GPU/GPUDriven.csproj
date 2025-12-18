@@ -57,6 +57,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AABB.cs" />
+    <Compile Include="FrustumCullingRenderer.cs" />
     <Compile Include="GPUCullingRenderer.cs" />
     <Compile Include="ModelBatchManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

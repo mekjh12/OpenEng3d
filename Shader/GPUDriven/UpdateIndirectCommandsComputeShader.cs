@@ -16,7 +16,6 @@ namespace Shader
         // 유니폼 위치
         private int loc_numBatches;
         private int loc_batchCommandStartIndices;
-        private int loc_numModelsPerBatch;
 
         public UpdateIndirectCommandsComputeShader(string projectPath) : base()
         {
@@ -29,7 +28,6 @@ namespace Shader
         {
             loc_numBatches = GetUniformLocation("numBatches");
             loc_batchCommandStartIndices = GetUniformLocation("batchCommandStartIndices");
-            loc_numModelsPerBatch = GetUniformLocation("numModelsPerBatch");
         }
 
         protected override void BindAttributes()
@@ -51,14 +49,6 @@ namespace Shader
         public void LoadBatchCommandStartIndices(uint[] indices)
         {
             Gl.Uniform1(loc_batchCommandStartIndices, indices);
-        }
-
-        /// <summary>
-        /// 각 배치의 모델 개수 배열
-        /// </summary>
-        public void LoadNumModelsPerBatch(uint[] counts)
-        {
-            Gl.Uniform1(loc_numModelsPerBatch, counts);
         }
     }
 }

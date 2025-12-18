@@ -18,7 +18,9 @@ namespace FormTools
             //Application.Run(new FormGPUImposterInstance());       // 작동됨(실패)
             //Application.Run(new FormBillboardCloud());            // 작동됨
 
-            Application.Run(new FormGPUDrivenImposter());         // 작동됨(실패)
+
+            Application.Run(new FormGPUDrivenImposter());           // 작동됨
+            //Application.Run(new FormGPUDrivenModelInstance());      // 작동됨
             //Application.Run(new FormGPUDriveHiZ());                 // 작동됨(실패)
             //Application.Run(new FormGPUDriven());                 // 작동됨(이전버전으로 폐기)
             //Application.Run(new FormImpostor());                  // 작동됨

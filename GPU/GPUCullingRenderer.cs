@@ -15,7 +15,7 @@ namespace GPUDriven
     {
         private const int MAX_INSTANCES = 100000;
         private const int MAX_BATCHES = 64;
-        private const int FRAME_COUNT_DEBUG = 500;
+        private const int FRAME_COUNT_DEBUG = 2;
 
         private string _projPath;
 
@@ -52,8 +52,10 @@ namespace GPUDriven
         // ===== 셰이더 =====
         private FrustumCullingComputeShader _cullingCompute;
         private HiZOcclusionComputeShader _hizCullingCompute;
+
         private GPUInstancedShader _instancedShader;
         private ImpostorInstancedShader _impostorInstancedShader;
+
         private UnlitShader _unlitShader;
         private UpdateIndirectCommandsComputeShader _updateCommandsCompute;
 
@@ -160,7 +162,6 @@ namespace GPUDriven
             // Uniform 전달
             _updateCommandsCompute.LoadNumBatches(_batchManager.ActualBatchCount);
             _updateCommandsCompute.LoadBatchCommandStartIndices(_startIndices);
-            _updateCommandsCompute.LoadNumModelsPerBatch(_modelCounts);
 
             // Dispatch (배치 개수만큼)
             Gl.DispatchCompute(_batchManager.ActualBatchCount, 1, 1);
@@ -363,7 +364,7 @@ namespace GPUDriven
             PerformFrustumCulling(camera, viewFrustum);
 
             // ===== 2단계: HiZ Occlusion + LOD =====
-            if (_enableHiZCulling && hzBuffer != null)
+            if (_enableHiZCulling)// && hzBuffer != null)
             {
                 PerformHiZCulling(camera, hzBuffer);
             }
@@ -504,12 +505,14 @@ namespace GPUDriven
             // 실제로는 frustumPassedIndices를 읽어서 batchID별로 분류해야 함
 
             uint[] zeros = new uint[MAX_BATCHES];
-            Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleCountsSSBO_LOD1);
+            Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleCountsSSBO_LOD0);
             fixed (uint* ptr = zeros)
             {
                 Gl.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero,
                     (uint)(MAX_BATCHES * 4), (IntPtr)ptr);
             }
+
+            Console.WriteLine($"모델0={zeros[0]}개, 모델1={zeros[1]}개");
         }
 
         public void Render(Camera camera)
@@ -551,8 +554,7 @@ namespace GPUDriven
 
             if (batch.Model.Textures != null)
             {
-                _instancedShader.LoadTexture(TextureUnit.Texture0,
-                    batch.Model.TextureIDs[0]);
+                //_instancedShader.LoadTexture(TextureUnit.Texture0, batch.Model.TextureIDs[0]);
             }
 
             Gl.BindVertexArray(batch.VAO);
@@ -677,6 +679,7 @@ namespace GPUDriven
             }
             else
             {
+                // 지난 프레임 데이터 사용
                 uint totalVisible = 0;
                 for (uint b = 0; b < _batchManager.ActualBatchCount; b++)
                 {

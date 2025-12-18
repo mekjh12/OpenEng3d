@@ -459,8 +459,7 @@ namespace GPUDriven
             {
                 if (_treeModel[i].Texture != null)
                 {
-                    _instancedShader.LoadTexture(TextureUnit.Texture0,
-                        _treeModel[i].Texture.TextureID);
+                    //_instancedShader.LoadTexture(TextureUnit.Texture0, _treeModel[i].Texture.TextureID);
                 }
 
                 Gl.BindVertexArray(_vao[i]);

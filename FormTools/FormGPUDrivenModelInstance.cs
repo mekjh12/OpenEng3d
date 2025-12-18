@@ -17,7 +17,7 @@ using ZetaExt;
 
 namespace FormTools
 {
-    public partial class FormGPUDrivenImposter : Form, GlControlerable
+    public partial class FormGPUDrivenModelInstance : Form, GlControlerable
     {
         readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
         readonly string EXE_PATH = Application.StartupPath;
@@ -50,12 +50,12 @@ namespace FormTools
         uint _lastFrustumPassCount = 0;                     // 이전 프러스텀 패스 수
         string _visibleReport = "";                         // 가시 객체 리포트
 
-        public FormGPUDrivenImposter()
+        public FormGPUDrivenModelInstance()
         {
             InitializeComponent();
 
             // GL 생성
-            _glControl3 = new GlControl3("GPU Driven(임포스트 인스턴스)", Application.StartupPath, @"\fonts\fontList.txt", @"\Res\");
+            _glControl3 = new GlControl3("GPU Driven(모델 인스턴스)", Application.StartupPath, @"\fonts\fontList.txt", @"\Res\");
             _glControl3.Init += (w, h) => Init(w, h);
             _glControl3.Init3d += (w, h) => Init3d(w, h);
             _glControl3.Init2d += (w, h) => Init2d(w, h);
@@ -96,7 +96,7 @@ namespace FormTools
                 Text2d.TextAlignment.Center, heightInPixels: 20);
             _fpsText.Color = Color.Yellow;
 
-            _titleText = new Text2d("GPU Driven = 임포스터인스턴싱", 10, 10, width, height,
+            _titleText = new Text2d("GPU Driven = 모델 인스턴싱", 10, 10, width, height,
                 Text2d.TextAlignment.Left, heightInPixels: 24);
             _titleText.Color = Color.Yellow;
 
@@ -208,7 +208,7 @@ namespace FormTools
                 _lastVisibleCount = _visibleCount;
                 _lastFrustumPassCount = _frustumPassCount;
                 _culledText.Text = $"배치수{_modelBatchManager.ActualBatchCount}, " +
-                    $"가시객체 {_visibleReport}, " +
+                    $"가시객체 {_visibleCount}개({_visibleCountLod0}/{_visibleCountLod1}), " +
                     $"뷰프러스텀 {_frustumPassCount}개, " +
                     $"HZB Level: {_level}";
             }

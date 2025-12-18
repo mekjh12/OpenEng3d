@@ -1,0 +1,90 @@
+﻿#version 450 core
+layout(local_size_x = 64) in;
+
+#define MAX_BATCHES 64
+const float MAX_DEPTH_METERS = 10000.0;
+const float DEPTH_EPSILON = 0.005;
+
+struct AABB {vec3 min; float padding1; vec3 max; float padding2;};
+
+// ===== 입력 버퍼 =====
+layout(std430, binding = 0) readonly buffer TransformBuffer {mat4 transforms[];};
+layout(std430, binding = 1) readonly buffer FrustumPassedBuffer {int frustumPassedIndices[];};
+layout(std430, binding = 2) readonly buffer FrustumCounterBuffer {uint frustumPassedCount;};
+layout(std430, binding = 3) readonly buffer WorldAABBBuffer {AABB worldAABBs[];};
+layout(std430, binding = 4) readonly buffer BatchIDBuffer {uint batchIDs[];};
+
+// ===== 출력 버퍼 =====
+layout(std430, binding = 5) buffer VisibleIndicesLOD0Buffer {int visibleIndices_LOD0[];};   // 100,000개
+layout(std430, binding = 6) buffer VisibleCountsLOD0Buffer {uint visibleCounts_LOD0[];};    // 64 batches
+layout(std430, binding = 7) buffer VisibleIndicesLOD1Buffer {int visibleIndices_LOD1[];};   // 100,000개
+layout(std430, binding = 8) buffer VisibleCountsLOD1Buffer {uint visibleCounts_LOD1[];};    // 64 batches
+
+// ===== Uniform 변수 =====
+uniform mat4 vp;
+uniform mat4 view;
+uniform int u_maxMipLevel;
+uniform vec3 u_cameraPosition;
+uniform vec2 u_screenSize;
+uniform int u_maxInstanceCount;
+uniform float u_cameraNear;
+uniform float u_cameraFar;
+
+// ===== Batch 관련 Uniform =====
+uniform float batchLODs[64];        // 각 Batch의 LOD 거리
+uniform uint batchStarts[64];       // 각 Batch의 시작 인덱스
+uniform uint batchCounts[64];       // 각 Batch의 최대 개수
+
+void main()
+{
+    // 글로벌 ID 계산(100,000개)
+    uint gid = gl_GlobalInvocationID.x;
+    if (gid >= frustumPassedCount) return;
+    
+    // 프러스텀 테스트 통과한 인스턴스 인덱스
+    int instanceIdx = frustumPassedIndices[gid];
+    if (instanceIdx < 0 || instanceIdx >= u_maxInstanceCount) return;
+    
+    // 배치(모델) 정보 가져오기
+    uint batchID = batchIDs[instanceIdx];    
+    if (batchID >= MAX_BATCHES) return;
+
+    // 배치별 LOD 거리 및 슬롯 정보
+    float lodDistance = batchLODs[batchID];
+    uint batchStart = batchStarts[batchID];      // 이 배치의 시작 슬롯
+    uint batchMaxCount = batchCounts[batchID];   // 이 배치의 최대 개수
+    
+    // ===== AABB 투영 =====
+    AABB worldAABB = worldAABBs[instanceIdx];
+    vec3 worldCenter = (worldAABB.min + worldAABB.max) * 0.5;
+
+    // ===== LOD 거리 계산 =====
+    float distance = length(u_cameraPosition - worldCenter);
+    bool isLOD0 = (distance < 100); //TODO 하드코딩100
+    
+    // ===== HiZ 오클루전 테스트 (LOD0만) =====
+    if (isLOD0) 
+    {        
+        // 통과: 배치별 구역에 저장
+        uint relativeSlot = atomicAdd(visibleCounts_LOD0[batchID], 1);
+        
+        // Overflow 체크
+        if (relativeSlot < batchMaxCount) 
+        {
+            // 절대 위치 = 배치 시작점 + 상대 슬롯
+            uint absoluteSlot = batchStart + relativeSlot;
+            visibleIndices_LOD0[absoluteSlot] = instanceIdx;
+        }
+    } 
+    else 
+    {
+        // LOD1은 HiZ 테스트 없이 바로 저장
+        uint relativeSlot = atomicAdd(visibleCounts_LOD1[batchID], 1);
+        
+        if (relativeSlot < batchMaxCount) 
+        {
+            uint absoluteSlot = batchStart + relativeSlot;
+            visibleIndices_LOD1[absoluteSlot] = instanceIdx;
+        }
+    }
+}

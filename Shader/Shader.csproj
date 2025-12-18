@@ -86,8 +86,10 @@
     <Compile Include="GPUDriven\GPUBillboardShader.cs" />
     <Compile Include="GPUDriven\DepthDebugInstancedShader.cs" />
     <Compile Include="GPUDriven\GPUInstancedShader.cs" />
+    <Compile Include="GPUDriven\IndicesOrderCompShader.cs" />
     <Compile Include="GPUDriven\HiZOcclusionComputeShader.cs" />
     <Compile Include="GPUDriven\QuadTreeCullingComputeShader.cs" />
+    <Compile Include="GPUDriven\SimpleQuadTestShader.cs" />
     <Compile Include="GPUDriven\UpdateIndirectCommandsComputeShader.cs" />
     <Compile Include="ImpostorShader\ImpostorInstancedShader.cs" />
     <Compile Include="InstancedShader\InstancedDepthShader.cs" />
@@ -152,6 +154,7 @@
     <None Include="AABBShader\aabb.frag" />
     <None Include="AABBShader\aabb.vert" />
     <None Include="GPUDriven\comp\hiCulling.glsl" />
+    <None Include="GPUDriven\comp\indices_ordering.comp" />
     <None Include="GPUDriven\comp\updateIndirectCommands.comp" />
     <None Include="GPUDriven\glsl\billboard.vert" />
     <None Include="GPUDriven\glsl\billboard.frag" />
@@ -159,6 +162,9 @@
     <None Include="GPUDriven\comp\hiz_occlusion.comp" />
     <None Include="GPUDriven\glsl\depth_debug_instanced.vert" />
     <None Include="GPUDriven\comp\quadtree_culling.comp" />
+    <None Include="GPUDriven\glsl\simple_quad_test.gem.glsl" />
+    <None Include="GPUDriven\glsl\simple_quad_test.frag" />
+    <None Include="GPUDriven\glsl\simple_quad_test.vert" />
     <None Include="GPUDriven\glsl\instanced.frag" />
     <None Include="GPUDriven\glsl\instanced.vert" />
     <None Include="GPUDriven\comp\frustum_culling.comp" />
