@@ -9,7 +9,7 @@ struct AABB {
 };
 
 layout(std430, binding = 0) buffer AABBBuffer { AABB aabbs[];};
-layout(std430, binding = 1) buffer FrustumPassedBuffer { int frustumPassedIndices[];};// ✅ Frustum 통과한 모든 객체 (LOD 구분 없음)
+layout(std430, binding = 1) buffer FrustumPassedBuffer { int frustumPassedIndices[];};
 layout(std430, binding = 2) buffer FrustumCounterBuffer { uint frustumPassedCount;};
 
 // 유니폼

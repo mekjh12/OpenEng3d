@@ -116,6 +116,12 @@
     <Compile Include="FormGPUDriven.Designer.cs">
       <DependentUpon>FormGPUDriven.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormGPUDrivenFrustumHiZ.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormGPUDrivenFrustumHiZ.Designer.cs">
+      <DependentUpon>FormGPUDrivenFrustumHiZ.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormGPUDrivenImposter.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -253,6 +259,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormGPUDriven.resx">
       <DependentUpon>FormGPUDriven.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormGPUDrivenFrustumHiZ.resx">
+      <DependentUpon>FormGPUDrivenFrustumHiZ.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormGPUDrivenImposter.resx">
       <DependentUpon>FormGPUDrivenImposter.cs</DependentUpon>

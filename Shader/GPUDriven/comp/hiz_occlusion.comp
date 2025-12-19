@@ -12,14 +12,13 @@ layout(std430, binding = 0) readonly buffer TransformBuffer {mat4 transforms[];}
 layout(std430, binding = 1) readonly buffer FrustumPassedBuffer {int frustumPassedIndices[];};
 layout(std430, binding = 2) readonly buffer FrustumCounterBuffer {uint frustumPassedCount;};
 layout(std430, binding = 3) readonly buffer WorldAABBBuffer {AABB worldAABBs[];};
-layout(std430, binding = 8) buffer DepthDebugBuffer {float debugDepths[];};
-layout(std430, binding = 9) readonly buffer BatchIDBuffer {uint batchIDs[];};
+layout(std430, binding = 4) readonly buffer BatchIDBuffer {uint batchIDs[];};
 
 // ===== 출력 버퍼 =====
-layout(std430, binding = 4) buffer VisibleIndicesLOD0Buffer {int visibleIndices_LOD0[];};
-layout(std430, binding = 5) buffer VisibleCountsLOD0Buffer {uint visibleCounts_LOD0[];};
-layout(std430, binding = 6) buffer VisibleIndicesLOD1Buffer {int visibleIndices_LOD1[];};
-layout(std430, binding = 7) buffer VisibleCountsLOD1Buffer {uint visibleCounts_LOD1[];};
+layout(std430, binding = 5) buffer VisibleIndicesLOD0Buffer {int visibleIndices_LOD0[];};
+layout(std430, binding = 6) buffer VisibleCountsLOD0Buffer {uint visibleCounts_LOD0[];};
+layout(std430, binding = 7) buffer VisibleIndicesLOD1Buffer {int visibleIndices_LOD1[];};
+layout(std430, binding = 8) buffer VisibleCountsLOD1Buffer {uint visibleCounts_LOD1[];};
 
 // ===== HiZ 텍스처 =====
 uniform sampler2D u_hizTexture0;
@@ -174,8 +173,8 @@ void main()
     float minDepth;
     vec3 worldCenter;
     
-    // AABB를 화면에 투영
-    if (!projectAABB(worldAABB, minScreen, maxScreen, minDepth, worldCenter)) return; // 투영 실패 (카메라 뒤, 화면 밖 등)
+    // AABB를 화면에 투영 [투영 실패 (카메라 뒤, 화면 밖 등)]
+    if (!projectAABB(worldAABB, minScreen, maxScreen, minDepth, worldCenter)) return; 
     
     // LOD0는 HiZ 테스트 수행
     if (!hierarchicalOcclusionTest(minScreen, maxScreen, minDepth)) return; // 가려짐

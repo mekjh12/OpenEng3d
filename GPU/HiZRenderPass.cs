@@ -2,30 +2,24 @@
 using Common.Abstractions;
 using Geometry;
 using Model3d;
+using Occlusion;
 using OpenGL;
 using Shader;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace GPUDriven
 {
-    /// <summary>
-    /// GPU 기반 프러스텀 컬링 및 LOD 렌더러
-    /// - Compute Shader로 프러스텀 컬링 수행
-    /// - 거리 기반 LOD 그룹핑
-    /// - Multi Draw Indirect를 사용한 효율적인 배치 렌더링
-    /// </summary>
-    public unsafe class FrustumCullingRenderer : IDisposable
+    public unsafe class HiZRenderPass
     {
-        #region 상수 정의
-
         private const int MAX_INSTANCES = 100000;  // 최대 인스턴스 개수
         private const int MAX_BATCHES = 64;        // 최대 배치 개수
         private const int COMMAND_SIZE = 16;       // DrawArraysIndirectCommand 크기 (4 uint * 4 bytes)
         private const int FRAME_COUNT_DEBUG = 2;   // 디버그 정보 갱신 주기
-
-        #endregion
 
         #region SSBO 바인딩 포인트 문서화
 
@@ -66,25 +60,18 @@ namespace GPUDriven
         private uint _visibleCountsSSBO_LOD1;  // 배치별 LOD1 가시 개수
 
         // ===== 셰이더 =====
-        private FrustumCullingComputeShader _cullingCompute;           // 프러스텀 컬링
-        private IndicesOrderCompShader _indicesOrderCompShader;        // LOD 그룹핑
+        private FrustumCullingComputeShader _cullingCompute;        // 프러스텀 컬링
+        private HiZOcclusionComputeShader _hiZOcclusionCompute;
         private UpdateIndirectCommandsComputeShader _updateCommandsCompute; // Indirect 커맨드 업데이트
-        private GPUInstancedShader _instancedShader;                   // 메시 렌더링
-        private ImpostorInstancedShader _impostorInstancedShader;      // 임포스터 렌더링
-        private UnlitShader _unlitShader;                              // 임포스터 생성용
-        private SimpleQuadTestShader _simpleQuadTestShader;             // 디버그용 쿼드 렌더링
-        private AABBInstanceShader _aabbInstanceShader;                 // AABB 인스턴스 렌더링 (디버그용)
+        private GPUInstancedShader _instancedShader;                // 메시 렌더링
+        private ImpostorInstancedShader _impostorInstancedShader;   // 임포스터 렌더링
+        private UnlitShader _unlitShader;                           // 임포스터 생성용
+        private SimpleQuadTestShader _simpleQuadTestShader;         // 디버그용 쿼드 렌더링
+        private AABBInstanceShader _aabbInstanceShader;             // AABB 인스턴스 렌더링 (디버그용)
 
         // ===== 임포스터 관련 =====
         private ImpostorAssets _impostor;
-        public BaseModel3d _point = Loader3d.LoadPoint(0, 0, 0);
-
-        // ===== 성능 모니터링 =====
-        private int _frameCount = 0;
-        private uint[] _lastVisibleCount_LOD0;
-        private uint[] _lastVisibleCount_LOD1;
-        private uint _lastFrustumPassed = 0;
-        private Stopwatch _computeTimer;
+        public BaseModel3d _point;
 
         // ===== DrawIndirect 관련 =====
         private Dictionary<uint, int> _batchCommandStartIndices; // 배치별 커맨드 시작 인덱스
@@ -94,9 +81,6 @@ namespace GPUDriven
         private uint[] _startIndices;  // Compute Shader에 전달할 시작 인덱스
         private uint[] _frustumCount;  // 프러스텀 통과 개수 읽기용
 
-        // ===== 디버그 ======
-        private bool _isSimpleQuadDraw = true;      // 디버그용 쿼드 렌더링 활성화 여부
-
         // ===== 최적화 ======
         private BatchDescriptor _batch;             // 현재 렌더링 중인 배치
         uint[] _zeros;                              // 제로 초기화 배열
@@ -104,16 +88,32 @@ namespace GPUDriven
         uint[] _countsLOD1;
         uint[] _frustumPassed = new uint[1];
 
+        float[] _batchLODs;
+        uint[] _batchStarts;
+        uint[] _batchCounts;
 
+        // ===== 디버그 ======
+        private bool _isSimpleQuadDraw = true;      // 디버그용 쿼드 렌더링 활성화 여부
+        private int _frameCount = 0;
+        private uint[] _lastVisibleCount_LOD0;
+        private uint[] _lastVisibleCount_LOD1;
+        private uint _lastFrustumPassed = 0;
+        private Stopwatch _computeTimer;
+
+        // --------------------------------------------------------
+        // 속성
+        // --------------------------------------------------------
         public bool IsSimpleQuadDraw { get => _isSimpleQuadDraw; set => _isSimpleQuadDraw = value; }
 
-        public FrustumCullingRenderer(string projPath)
+        public HiZRenderPass(string projPath)
         {
             _projPath = projPath;
             _computeTimer = new Stopwatch();
             _zeros = new uint[MAX_BATCHES];
             _countsLOD0 = new uint[MAX_BATCHES];
             _countsLOD1 = new uint[MAX_BATCHES];
+
+            _point = Loader3d.LoadPoint(0, 0, 0);
         }
 
         /// <summary>
@@ -170,7 +170,7 @@ namespace GPUDriven
         private void LoadShaders(string projPath, int maxMipLevels)
         {
             _cullingCompute = new FrustumCullingComputeShader(projPath);
-            _indicesOrderCompShader = new IndicesOrderCompShader(projPath, maxMipLevels);
+            _hiZOcclusionCompute = new HiZOcclusionComputeShader(projPath, maxMipLevels);
             _instancedShader = new GPUInstancedShader(projPath);
             _impostorInstancedShader = new ImpostorInstancedShader(projPath);
             _unlitShader = new UnlitShader(projPath);
@@ -381,14 +381,14 @@ namespace GPUDriven
         /// <summary>
         /// 매 프레임 컬링 및 LOD 업데이트
         /// </summary>
-        public void Update(Camera camera, Polyhedron viewFrustum)
+        public void Update(Camera camera, Polyhedron viewFrustum, HierarchyZBuffer hizBuffer)
         {
             // ===== 1단계: 프러스텀 컬링 =====
             // GPU에서 뷰 프러스텀 내부 객체만 필터링
             PerformFrustumCulling(camera, viewFrustum);
 
-            // ===== 2단계: LOD 그룹핑 =====
-            PerformLodGrouping(camera);
+            // ===== 2단계: HiZ컬링과 LOD 그룹핑 =====
+            PerformHiZCulling(camera, hizBuffer);
 
             // ===== 3단계: DrawIndirect 커맨드 업데이트 =====
             // GPU에서 각 커맨드의 InstanceCount 필드를 가시 개수로 설정
@@ -436,10 +436,9 @@ namespace GPUDriven
         /// 입력: 프러스텀 통과 인스턴스, 카메라 위치
         /// 출력: LOD0/LOD1별 가시 인스턴스 인덱스 및 배치별 개수
         /// </summary>
-        private void PerformLodGrouping(Camera camera)
+        private void PerformHiZCulling(Camera camera, HierarchyZBuffer hizBuffer)
         {
             // 배치별 LOD 카운터 초기화
-
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleCountsSSBO_LOD0);
             fixed (uint* ptr = _zeros)
             {
@@ -454,7 +453,7 @@ namespace GPUDriven
                     (uint)(MAX_BATCHES * 4), (IntPtr)ptr);
             }
 
-            _indicesOrderCompShader.Bind();
+            _hiZOcclusionCompute.Bind();
 
             // ===== SSBO 바인딩 =====
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
@@ -468,20 +467,23 @@ namespace GPUDriven
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 8, _visibleCountsSSBO_LOD1);
 
             // ===== Uniform 전달 =====
-            _indicesOrderCompShader.LoadVPMatrix(camera.VPMatrix);
-            _indicesOrderCompShader.LoadCameraPosition(camera.Position);
-            _indicesOrderCompShader.LoadMaxInstanceCount(MAX_INSTANCES);
-            _indicesOrderCompShader.LoadCameraNearFar(camera.NEAR, camera.FAR);
-            _indicesOrderCompShader.LoadViewMatrix(camera.ViewMatrix);
+            _hiZOcclusionCompute.LoadHiZTextures(hizBuffer.HiZTexture);
+            _hiZOcclusionCompute.LoadMaxMipLevel(hizBuffer.Levels - 1);
+            _hiZOcclusionCompute.LoadVPMatrix(camera.VPMatrix);
+            _hiZOcclusionCompute.LoadCameraPosition(camera.Position);
+            _hiZOcclusionCompute.LoadScreenSize(hizBuffer.Width, hizBuffer.Height);
+            _hiZOcclusionCompute.LoadMaxInstanceCount(MAX_INSTANCES);
+            _hiZOcclusionCompute.LoadCameraNearFar(camera.NEAR, camera.FAR);
+            _hiZOcclusionCompute.LoadViewMatrix(camera.ViewMatrix);
 
             // 배치별 LOD 거리 임계값 전달
-            float[] batchLODs = _batchManager.GetBatchLODs();
-            uint[] batchStarts = _batchManager.GetBatchStarts();
-            uint[] batchCounts = _batchManager.GetBatchCounts();
+            _batchLODs = _batchManager.GetBatchLODs();
+            _batchStarts = _batchManager.GetBatchStarts();
+            _batchCounts = _batchManager.GetBatchCounts();
 
-            _indicesOrderCompShader.LoadBatchLODs(batchLODs);
-            _indicesOrderCompShader.LoadBatchStarts(batchStarts);
-            _indicesOrderCompShader.LoadBatchCounts(batchCounts);
+            _hiZOcclusionCompute.LoadBatchLODs(_batchLODs);
+            _hiZOcclusionCompute.LoadBatchStarts(_batchStarts);
+            _hiZOcclusionCompute.LoadBatchCounts(_batchCounts);
 
             // 프러스텀 통과 개수 읽기
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _frustumCounterSSBO);
@@ -492,7 +494,7 @@ namespace GPUDriven
             Gl.DispatchCompute((uint)numWorkGroups, 1, 1);
 
             Gl.MemoryBarrier(MemoryBarrierMask.ShaderStorageBarrierBit);
-            _indicesOrderCompShader.Unbind();
+            _hiZOcclusionCompute.Unbind();
         }
 
         /// <summary>
@@ -579,7 +581,7 @@ namespace GPUDriven
 
             if (_batch.Model.Textures != null)
             {
-                _instancedShader.LoadTextureArray(_batch.Model.TextureIDs.ToArray());
+                _instancedShader.LoadTextureArray(_batch.Model.TextureIDArray);
             }
 
             Gl.BindVertexArray(_batch.VAO);
@@ -589,7 +591,6 @@ namespace GPUDriven
 
             _instancedShader.Unbind();
             Gl.Enable(EnableCap.CullFace);
-
 
             // ===== LOD1: 테스트 사각형 렌더링 =====
             Gl.Disable(EnableCap.CullFace);  // Face culling 끄기
