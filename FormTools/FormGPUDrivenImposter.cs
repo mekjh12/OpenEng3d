@@ -100,15 +100,16 @@ namespace FormTools
                 Text2d.TextAlignment.Left, heightInPixels: 24);
             _titleText.Color = Color.Yellow;
 
-            _descText = new Text2d("1번키: 원점으로", 10, height, width, height,
+            _descText = new Text2d("1번키: 원점으로\n2번키: LOD1드로우모드 변경", 10, height, width, height,
                 Text2d.TextAlignment.TopLeft, heightInPixels: 15);
             _descText.Color = Color.LightGray;
 
             _camPosText = new Text2d("카메라 위치 (0,0,0)", width - 10, height, width, height,
                 Text2d.TextAlignment.TopRight, heightInPixels: 15);
 
-            _culledText = new Text2d("컬링된 노드 0개", width - 10, 10, width, height,
-                Text2d.TextAlignment.Right, heightInPixels: 15);
+            _culledText = new Text2d("컬링된 노드 0개", 10, (height * 0.5f), width, height,
+                Text2d.TextAlignment.Left, heightInPixels: 15);
+            _culledText.Color = Color.White;
         }
 
         public void Init3d(int width, int height)
@@ -155,7 +156,6 @@ namespace FormTools
                                 Matrix4x4f.Scaled(scale, scale, scale);
                 _modelBatchManager.AddInstance((uint)(x % 3), transform);
                 //_modelBatchManager.AddInstance((uint)Rand.NextInt(0, 2), transform);
-
             }
 
             Console.WriteLine($"Generated {MAX_INSTANCES} tree instances");
@@ -193,8 +193,11 @@ namespace FormTools
             //_textNamePlate.Update(deltaTime);
 
             // 렌더링 루프에서
-            _fpsText.Text = $"FPS: {FramePerSecond.FPS:F1}";
-            _camPosText.Text = $"카메라 위치 ({camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1})";
+            //_fpsText.Text = $"FPS: {FramePerSecond.FPS:F1}";
+            //_camPosText.Text = $"카메라 위치 ({camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1})";
+
+
+            return;
 
             _gpuDriven.GetVisibleCountDebug(ref _visibleCount,
                 ref _visibleCountLod0,
@@ -207,9 +210,12 @@ namespace FormTools
                 // 네임플레이트 업데이트            
                 _lastVisibleCount = _visibleCount;
                 _lastFrustumPassCount = _frustumPassCount;
-                _culledText.Text = $"배치수{_modelBatchManager.ActualBatchCount}, " +
-                    $"가시객체 {_visibleReport}, " +
-                    $"뷰프러스텀 {_frustumPassCount}개, " +
+                _culledText.Text = $"배치수{_modelBatchManager.ActualBatchCount}\n" +
+                    $"가시객체 모델별 통계\n" +
+                    $"----------------------\n" +
+                    $"{_visibleReport}\n" +
+                    $"----------------------\n" +
+                    $"뷰프러스텀 {_frustumPassCount}개\n" +
                     $"HZB Level: {_level}";
             }
         }
@@ -261,6 +267,10 @@ namespace FormTools
             if (e.KeyCode == Keys.D1)
             {
                 _glControl3.Camera.PivotPosition = new Vertex3f(0, 0, 1.0f);
+            }
+            else if (e.KeyCode == Keys.D2)
+            {
+                _gpuDriven.IsSimpleQuadDraw = !_gpuDriven.IsSimpleQuadDraw;
             }
         }
 

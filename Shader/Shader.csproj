@@ -81,6 +81,7 @@
     <Compile Include="AxisShader\AxisShader.cs" />
     <Compile Include="AABBShader\AABBBoxShader .cs" />
     <Compile Include="GlobalUniformBuffers.cs" />
+    <Compile Include="GPUDriven\AABBInstanceShader.cs" />
     <Compile Include="GPUDriven\DrawArraysIndirectCommand.cs" />
     <Compile Include="GPUDriven\FrustumCullingComputeShader.cs" />
     <Compile Include="GPUDriven\GPUBillboardShader.cs" />
@@ -156,6 +157,9 @@
     <None Include="GPUDriven\comp\hiCulling.glsl" />
     <None Include="GPUDriven\comp\indices_ordering.comp" />
     <None Include="GPUDriven\comp\updateIndirectCommands.comp" />
+    <None Include="GPUDriven\glsl\aabb_instance.frag" />
+    <None Include="GPUDriven\glsl\aabb_instance.gem.glsl" />
+    <None Include="GPUDriven\glsl\aabb_instance.vert" />
     <None Include="GPUDriven\glsl\billboard.vert" />
     <None Include="GPUDriven\glsl\billboard.frag" />
     <None Include="GPUDriven\glsl\depth_debug_instanced.frag" />

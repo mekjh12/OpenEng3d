@@ -331,11 +331,18 @@ namespace Ui3d
         }
 
         /// <summary>
-        /// 텍스트 높이 계산 (스케일 적용 전 기준)
+        /// 텍스트 높이 계산 (줄바꿈 포함)
         /// </summary>
         private float CalculateTextHeight()
         {
-            return GetStandardCharHeight();
+            if (string.IsNullOrEmpty(_text))
+                return 0;
+
+            float charHeight = GetStandardCharHeight();
+            int lineCount = _text.Split('\n').Length;
+            float lineSpacing = charHeight * 1.2f; // 줄 간격 (1.2배)
+
+            return charHeight + (lineCount - 1) * lineSpacing;
         }
 
         private void UpdateInstanceData()
@@ -354,19 +361,40 @@ namespace Ui3d
                 return;
             }
 
-            // 수평 정렬 오프셋 계산
-            float textWidth = CharacterTextureAtlas.Instance.CalculateTextWidth(_text);
-            float alignmentOffsetX = CalculateHorizontalOffset(textWidth);
+            // 줄바꿈 분리
+            string[] lines = _text.Split('\n');
+            float charHeight = GetStandardCharHeight();
+            float lineSpacing = charHeight * 1.2f; // 줄 간격
 
-            // 수직 정렬 오프셋 계산
-            float textHeight = CalculateTextHeight();
-            float alignmentOffsetY = CalculateVerticalOffset(textHeight);
+            // 전체 텍스트 높이 및 수직 정렬 오프셋
+            float totalTextHeight = CalculateTextHeight();
+            float baseAlignmentOffsetY = CalculateVerticalOffset(totalTextHeight);
 
-            // 정렬 오프셋을 적용하여 인스턴스 데이터 생성
-            var instances = _instanceBuilder.GenerateInstanceData(
-                _text,
-                CharacterTextureAtlas.Instance,
-                alignmentOffsetX, alignmentOffsetY, 0f);
+            // 모든 줄의 인스턴스를 합칠 리스트
+            var allInstances = new System.Collections.Generic.List<CharInstanceData>();
+
+            for (int lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+            {
+                string line = lines[lineIndex];
+                if (string.IsNullOrEmpty(line)) continue;
+
+                // 각 줄의 수평 정렬 오프셋 계산
+                float lineWidth = CharacterTextureAtlas.Instance.CalculateTextWidth(line);
+                float alignmentOffsetX = CalculateHorizontalOffset(lineWidth);
+
+                // 줄의 Y 오프셋 (위에서 아래로)
+                float lineOffsetY = baseAlignmentOffsetY + lineIndex * lineSpacing;
+
+                // 해당 줄의 인스턴스 데이터 생성
+                var lineInstances = _instanceBuilder.GenerateInstanceData(
+                    line,
+                    CharacterTextureAtlas.Instance,
+                    alignmentOffsetX, lineOffsetY, 0f);
+
+                allInstances.AddRange(lineInstances);
+            }
+
+            var instances = allInstances.ToArray();
 
             // 스케일 적용
             if (Math.Abs(_scale - 1.0f) > 0.001f)

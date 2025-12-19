@@ -114,6 +114,11 @@ namespace GPUDriven
         public uint ActualBatchCount => _actualBatchCount;
         public bool IsFinalized => _isFinalized;
 
+        // 최적화: GPU 업로드용 배열 미리 할당
+        float[] _lods = new float[MAX_BATCHES];
+        uint[] _counts = new uint[MAX_BATCHES];
+        uint[] _starts = new uint[MAX_BATCHES];
+
         public ModelBatchManager()
         {
             _models = new List<ModelInfo>();
@@ -363,15 +368,14 @@ namespace GPUDriven
                     "Must call Finalize() before getting batch starts");
             }
 
-            uint[] starts = new uint[MAX_BATCHES];
             for (uint i = 0; i < _actualBatchCount; i++)
             {
                 if (_batches[i] != null)
                 {
-                    starts[i] = _batches[i].StartIndex;
+                    _starts[i] = _batches[i].StartIndex;
                 }
             }
-            return starts;
+            return _starts;
         }
 
         /// <summary>
@@ -385,15 +389,14 @@ namespace GPUDriven
                     "Must call Finalize() before getting batch counts");
             }
 
-            uint[] counts = new uint[MAX_BATCHES];
             for (uint i = 0; i < _actualBatchCount; i++)
             {
                 if (_batches[i] != null)
                 {
-                    counts[i] = _batches[i].Count;
+                    _counts[i] = _batches[i].Count;
                 }
             }
-            return counts;
+            return _counts;
         }
 
         /// <summary>
@@ -407,15 +410,15 @@ namespace GPUDriven
                     "Must call Finalize() before getting batch LODs");
             }
 
-            float[] lods = new float[MAX_BATCHES];
+            
             for (uint i = 0; i < _actualBatchCount; i++)
             {
                 if (_batches[i] != null)
                 {
-                    lods[i] = _batches[i].LODDistance;
+                    _lods[i] = _batches[i].LODDistance;
                 }
             }
-            return lods;
+            return _lods;
         }
 
         /// <summary>

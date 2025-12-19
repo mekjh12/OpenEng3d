@@ -48,8 +48,6 @@ namespace GPUDriven
 
         #endregion
 
-        #region 필드
-
         private readonly string _projPath;
         private ModelBatchManager _batchManager;
 
@@ -75,6 +73,7 @@ namespace GPUDriven
         private ImpostorInstancedShader _impostorInstancedShader;      // 임포스터 렌더링
         private UnlitShader _unlitShader;                              // 임포스터 생성용
         private SimpleQuadTestShader _simpleQuadTestShader;             // 디버그용 쿼드 렌더링
+        private AABBInstanceShader _aabbInstanceShader;                 // AABB 인스턴스 렌더링 (디버그용)
 
         // ===== 임포스터 관련 =====
         private ImpostorAssets _impostor;
@@ -95,14 +94,20 @@ namespace GPUDriven
         private uint[] _startIndices;  // Compute Shader에 전달할 시작 인덱스
         private uint[] _frustumCount;  // 프러스텀 통과 개수 읽기용
 
-        #endregion
+        // ===== 디버그 ======
+        private bool _isSimpleQuadDraw = true;      // 디버그용 쿼드 렌더링 활성화 여부
 
-        #region 생성자 및 초기화
+        // ===== 최적화 ======
+        private BatchDescriptor _batch;             // 현재 렌더링 중인 배치
+        uint[] _zeros;                              // 제로 초기화 배열
+
+        public bool IsSimpleQuadDraw { get => _isSimpleQuadDraw; set => _isSimpleQuadDraw = value; }
 
         public FrustumCullingRenderer(string projPath)
         {
             _projPath = projPath;
             _computeTimer = new Stopwatch();
+            _zeros = new uint[MAX_BATCHES];
         }
 
         /// <summary>
@@ -165,6 +170,7 @@ namespace GPUDriven
             _unlitShader = new UnlitShader(projPath);
             _updateCommandsCompute = new UpdateIndirectCommandsComputeShader(projPath);
             _simpleQuadTestShader = new SimpleQuadTestShader(projPath);
+            _aabbInstanceShader = new AABBInstanceShader(projPath);
         }
 
         /// <summary>
@@ -184,8 +190,6 @@ namespace GPUDriven
                 Console.WriteLine($"Created impostor for: {batch.ModelName}");
             }
         }
-
-        #endregion
 
         #region GPU 버퍼 생성
 
@@ -429,17 +433,16 @@ namespace GPUDriven
         private void PerformLodGrouping(Camera camera)
         {
             // 배치별 LOD 카운터 초기화
-            uint[] zeros = new uint[MAX_BATCHES];
 
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleCountsSSBO_LOD0);
-            fixed (uint* ptr = zeros)
+            fixed (uint* ptr = _zeros)
             {
                 Gl.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero,
                     (uint)(MAX_BATCHES * 4), (IntPtr)ptr);
             }
 
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleCountsSSBO_LOD1);
-            fixed (uint* ptr = zeros)
+            fixed (uint* ptr = _zeros)
             {
                 Gl.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero,
                     (uint)(MAX_BATCHES * 4), (IntPtr)ptr);
@@ -554,55 +557,95 @@ namespace GPUDriven
         /// </summary>
         private void RenderBatch(uint batchID, Camera camera)
         {
-            BatchDescriptor batch = _batchManager.GetBatch(batchID);
+            _batch = _batchManager.GetBatch(batchID);
             int cmdStartIndex = _batchCommandStartIndices[batchID];
 
             Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectCommandBuffer);
 
             // ===== LOD0: 메시 렌더링 =====
+            Gl.Disable(EnableCap.CullFace);
             _instancedShader.Bind();
             _instancedShader.LoadVPMatrix(camera.VPMatrix);
-            _instancedShader.LoadBatchStartOffset(batch.StartIndex);
+            _instancedShader.LoadBatchStartOffset(_batch.StartIndex);
 
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD0);
 
-            if (batch.Model.Textures != null)
+            if (_batch.Model.Textures != null)
             {
-                _instancedShader.LoadTextureArray(batch.Model.TextureIDs.ToArray());
+                _instancedShader.LoadTextureArray(_batch.Model.TextureIDs.ToArray());
             }
 
-            Gl.BindVertexArray(batch.VAO);
+            Gl.BindVertexArray(_batch.VAO);
 
             int cmdOffset_LOD0 = cmdStartIndex * COMMAND_SIZE;
             Gl.DrawArraysIndirect(PrimitiveType.Triangles, (IntPtr)cmdOffset_LOD0);
 
             _instancedShader.Unbind();
+            Gl.Enable(EnableCap.CullFace);
+
 
             // ===== LOD1: 테스트 사각형 렌더링 =====
-
-            // ✅ 렌더 스테이트 명시적 설정
             Gl.Disable(EnableCap.CullFace);  // Face culling 끄기
-
-            _simpleQuadTestShader.Bind();
-            _simpleQuadTestShader.LoadVPMatrix(camera.VPMatrix);
-            _simpleQuadTestShader.LoadBatchStartOffset(batch.StartIndex);
-            _simpleQuadTestShader.LoadCurrentBatchID(batchID);
-
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD1);
-
-            Gl.BindVertexArray(_point.VAO);
-
-            // ✅ 디버깅: 몇 개 그려지는지 확인
             int cmdOffset_LOD1 = (cmdStartIndex + 1) * COMMAND_SIZE;
-            Gl.DrawArraysIndirect(PrimitiveType.Points, (IntPtr)cmdOffset_LOD1);
 
-            _simpleQuadTestShader.Unbind();
+            if (_isSimpleQuadDraw)
+            {
+                _simpleQuadTestShader.Bind();
+                _simpleQuadTestShader.LoadVPMatrix(camera.VPMatrix);
+                _simpleQuadTestShader.LoadBatchStartOffset(_batch.StartIndex);
+                _simpleQuadTestShader.LoadCurrentBatchID(batchID);
 
-            // ✅ 상태 복원
-            Gl.Enable(EnableCap.CullFace);
-            Gl.DepthFunc(DepthFunction.Less);
+                Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
+                Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD1);
+
+                Gl.BindVertexArray(_point.VAO);
+
+                // ✅ 디버깅: 몇 개 그려지는지 확인
+                Gl.DrawArraysIndirect(PrimitiveType.Points, (IntPtr)cmdOffset_LOD1);
+
+                _simpleQuadTestShader.Unbind();
+            }
+            else
+            {
+                _aabbInstanceShader.Bind();
+                _aabbInstanceShader.LoadVPMatrix(camera.VPMatrix);
+                _aabbInstanceShader.LoadBatchStartOffset(_batch.StartIndex);
+                _aabbInstanceShader.LoadCurrentBatchID(batchID);
+
+                if (batchID == 0) _aabbInstanceShader.LoadBoxColor(1, 0, 0);
+                else if (batchID == 1) _aabbInstanceShader.LoadBoxColor(0, 1, 0);
+                else _aabbInstanceShader.LoadBoxColor(0, 0, 1);
+
+                _aabbInstanceShader.LoadAlpha(0.3f);  // 반투명
+
+                // ✅ 반투명 렌더링 설정
+                Gl.Enable(EnableCap.Blend);
+                Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
+                // ✅ Depth 설정 (매우 중요!)
+                Gl.Enable(EnableCap.DepthTest);
+                Gl.DepthFunc(DepthFunction.Less);
+                Gl.DepthMask(false);  // ✅ 반투명 객체는 depth write 비활성화!
+
+                // ✅ Face culling (앞뒷면 모두 그리기)
+                Gl.Disable(EnableCap.CullFace);
+
+                Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
+                Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD1);
+                Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 2, _aabbSSBO);
+                Gl.BindVertexArray(_point.VAO);
+
+                // ✅ 디버깅: 몇 개 그려지는지 확인
+                Gl.DrawArraysIndirect(PrimitiveType.Points, (IntPtr)cmdOffset_LOD1);
+
+                // ✅ 상태 복원
+                Gl.DepthMask(true);   // ✅ depth write 다시 활성화
+                Gl.Enable(EnableCap.CullFace);
+                Gl.Disable(EnableCap.Blend);
+
+                _aabbInstanceShader.Unbind();
+            }
         }
 
         #endregion
@@ -658,7 +701,7 @@ namespace GPUDriven
                     _lastVisibleCount_LOD1[b] = countsLOD1[b];
                     totalVisible += countsLOD0[b] + countsLOD1[b];
 
-                    report += $"({b}){countsLOD0[b]},{countsLOD1[b]} ";
+                    report += $"({b}){countsLOD0[b]}/{countsLOD1[b]} \n";
 
                     // 배치별 개수 (디버그용)
                     if (b == 0) lod0 += countsLOD0[b];
