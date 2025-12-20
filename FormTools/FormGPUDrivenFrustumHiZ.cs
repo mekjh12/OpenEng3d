@@ -59,6 +59,8 @@ namespace FormTools
         uint _visibleCount = 0;                             // 가시 객체 수
         uint _visibleCountLod0 = 0;                         // 가시 객체 수 LOD0
         uint _visibleCountLod1 = 0;                         // 가시 객체 수 LOD1
+        uint _visibleCountLod2 = 0;                         // 가시 객체 수 LOD2
+        uint _visibleCountLod3 = 0;                         // 가시 객체 수 LOD3
         uint _frustumPassCount = 0;                         // 프러스텀 패스 수
         uint _lastVisibleCount = 0;                         // 이전 가시 객체 수
         uint _lastFrustumPassCount = 0;                     // 이전 프러스텀 패스 수
@@ -268,6 +270,8 @@ namespace FormTools
             _gpuDriven.GetVisibleCountDebug(ref _visibleCount,
                 ref _visibleCountLod0,
                 ref _visibleCountLod1,
+                ref _visibleCountLod2,
+                ref _visibleCountLod3,
                 ref _frustumPassCount,
                 ref _visibleReport);
 

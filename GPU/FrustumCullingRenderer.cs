@@ -601,6 +601,7 @@ namespace GPUDriven
                 _simpleQuadTestShader.LoadVPMatrix(camera.VPMatrix);
                 _simpleQuadTestShader.LoadBatchStartOffset(_batch.StartIndex);
                 _simpleQuadTestShader.LoadCurrentBatchID(batchID);
+                _simpleQuadTestShader.LoadQuadSize(0.25f);
 
                 Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
                 Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD1);

@@ -45,6 +45,12 @@ namespace Ui3d
         private Matrix4x4f _modelMatrix;
         private Matrix4x4f _mvp;
 
+
+        // GC를 줄이기 위한 인스턴스 버퍼 재사용
+        private CharInstanceData[] _instanceBuffer = new CharInstanceData[512];  // 512글자 초기 할당
+        private int _instanceCount = 0;
+        private float[] _floatBuffer = new float[512 * CharInstanceData.FloatCount];  // 512글자 * 8 floats
+
         // 기본 색상
         private static readonly Color DEFAULT_COLOR = Color.FromArgb(255, 255, 255, 255);
 
@@ -352,7 +358,6 @@ namespace Ui3d
                 Console.WriteLine("❌ CharacterTextureAtlas not initialized");
                 return;
             }
-
             if (string.IsNullOrEmpty(_text))
             {
                 Console.WriteLine("⚠️ 텍스트가 비어있음");
@@ -364,68 +369,75 @@ namespace Ui3d
             // 줄바꿈 분리
             string[] lines = _text.Split('\n');
             float charHeight = GetStandardCharHeight();
-            float lineSpacing = charHeight * 1.2f; // 줄 간격
-
-            // 전체 텍스트 높이 및 수직 정렬 오프셋
+            float lineSpacing = charHeight * 1.2f;
             float totalTextHeight = CalculateTextHeight();
             float baseAlignmentOffsetY = CalculateVerticalOffset(totalTextHeight);
 
-            // 모든 줄의 인스턴스를 합칠 리스트
-            var allInstances = new System.Collections.Generic.List<CharInstanceData>();
+            // ✅ List 생성 제거 - 카운터만 리셋
+            _instanceCount = 0;
 
             for (int lineIndex = 0; lineIndex < lines.Length; lineIndex++)
             {
                 string line = lines[lineIndex];
                 if (string.IsNullOrEmpty(line)) continue;
 
-                // 각 줄의 수평 정렬 오프셋 계산
                 float lineWidth = CharacterTextureAtlas.Instance.CalculateTextWidth(line);
                 float alignmentOffsetX = CalculateHorizontalOffset(lineWidth);
-
-                // 줄의 Y 오프셋 (위에서 아래로)
                 float lineOffsetY = baseAlignmentOffsetY + lineIndex * lineSpacing;
 
-                // 해당 줄의 인스턴스 데이터 생성
                 var lineInstances = _instanceBuilder.GenerateInstanceData(
                     line,
                     CharacterTextureAtlas.Instance,
                     alignmentOffsetX, lineOffsetY, 0f);
 
-                allInstances.AddRange(lineInstances);
+                // ✅ 버퍼 크기 확인 및 확장
+                if (_instanceCount + lineInstances.Length > _instanceBuffer.Length)
+                {
+                    Array.Resize(ref _instanceBuffer, _instanceBuffer.Length * 2);
+                }
+
+                // ✅ AddRange 대신 직접 복사
+                Array.Copy(lineInstances, 0, _instanceBuffer, _instanceCount, lineInstances.Length);
+                _instanceCount += lineInstances.Length;
             }
 
-            var instances = allInstances.ToArray();
-
+            // ✅ ToArray() 제거 - 버퍼 직접 사용
             // 스케일 적용
             if (Math.Abs(_scale - 1.0f) > 0.001f)
             {
-                for (int i = 0; i < instances.Length; i++)
+                for (int i = 0; i < _instanceCount; i++)  // ← instances.Length 대신 _instanceCount
                 {
-                    instances[i].offsetX *= _scale;
-                    instances[i].offsetY *= _scale;
-                    instances[i].charWidth *= _scale;
-                    instances[i].charHeight *= _scale;
+                    _instanceBuffer[i].offsetX *= _scale;
+                    _instanceBuffer[i].offsetY *= _scale;
+                    _instanceBuffer[i].charWidth *= _scale;
+                    _instanceBuffer[i].charHeight *= _scale;
                 }
             }
 
             // 버퍼 업데이트
-            float[] data = _instanceBuilder.ConvertToFloatArray(instances);
-            Gl.BindBuffer(BufferTarget.ArrayBuffer, _instanceBuilder.InstanceVBO);
-            int requiredSize = instances.Length * CharInstanceData.FloatCount * sizeof(float);
+            int requiredFloatSize = _instanceCount * CharInstanceData.FloatCount;
 
+            // float 버퍼 크기 확인 및 확장
+            if (_floatBuffer.Length < requiredFloatSize)
+            {
+                Array.Resize(ref _floatBuffer, requiredFloatSize * 2);
+            }
+
+            // 변환 (할당 없음!)
+            _instanceBuilder.ConvertToFloatArray(_instanceBuffer, _instanceCount, ref _floatBuffer);
+
+            Gl.BindBuffer(BufferTarget.ArrayBuffer, _instanceBuilder.InstanceVBO);
+            int requiredSize = requiredFloatSize * sizeof(float);
             if (requiredSize > 0)
             {
                 Gl.BufferData(BufferTarget.ArrayBuffer,
                     (uint)requiredSize,
-                    data,
+                    _floatBuffer,  // ← 재사용 버퍼
                     BufferUsage.DynamicDraw);
             }
-
             Gl.BindBuffer(BufferTarget.ArrayBuffer, 0);
 
-            // 인스턴스 개수 업데이트
-            _instanceBuilder.SetInstanceCount(instances.Length);
-
+            _instanceBuilder.SetInstanceCount(_instanceCount);
             SetupVAO();
         }
 

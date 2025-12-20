@@ -13,6 +13,8 @@ layout(std430, binding = 10) writeonly buffer IndirectCommands {uint indirectCom
 // Visible Counts (배치별)
 layout(std430, binding = 11) readonly buffer VisibleCounts_LOD0 {uint visibleCounts_LOD0[];};
 layout(std430, binding = 12) readonly buffer VisibleCounts_LOD1 {   uint visibleCounts_LOD1[];};
+layout(std430, binding = 13) readonly buffer VisibleCounts_LOD2 {uint visibleCounts_LOD2[];};
+layout(std430, binding = 14) readonly buffer VisibleCounts_LOD3 {   uint visibleCounts_LOD3[];};
 
 uniform uint numBatches;
 uniform uint batchCommandStartIndices[64];  // 각 배치의 시작 command 인덱스
@@ -24,10 +26,12 @@ void main() {
     uint cmdIdx = batchCommandStartIndices[batchID];
     uint visibleLOD0 = visibleCounts_LOD0[batchID];
     uint visibleLOD1 = visibleCounts_LOD1[batchID];
+    uint visibleLOD2 = visibleCounts_LOD2[batchID];
+    uint visibleLOD3 = visibleCounts_LOD3[batchID];
     
-    // LOD0 업데이트
-    indirectCommands[cmdIdx * 4 + 1] = visibleLOD0;
-
-    // LOD1 업데이트
-    indirectCommands[(cmdIdx + 1) * 4 + 1] = visibleLOD1;
+    
+    indirectCommands[cmdIdx * 4 + 1] = visibleLOD0;         // LOD0 업데이트
+    indirectCommands[(cmdIdx + 1) * 4 + 1] = visibleLOD1;   // LOD1 업데이트
+    indirectCommands[(cmdIdx + 2) * 4 + 1] = visibleLOD2;   // LOD2 업데이트
+    indirectCommands[(cmdIdx + 3) * 4 + 1] = visibleLOD3;   // LOD3 업데이트
 }

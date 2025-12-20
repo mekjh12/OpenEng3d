@@ -1,5 +1,6 @@
 ﻿using OpenGL;
 using System;
+using System.Collections.Generic;
 
 namespace Ui3d
 {
@@ -36,6 +37,7 @@ namespace Ui3d
         private uint _instanceVBO;
         private int _instanceBufferSize;
         private int _instanceCount;
+        private CharInstanceData[] _instances;
         private float[] _dataBuffer;
         private const int INITIAL_BUFFER_SIZE = 128; // 최대 128글자 기본 할당
 
@@ -48,6 +50,9 @@ namespace Ui3d
         /// 인스턴스 VBO ID
         /// </summary>
         public uint InstanceVBO => _instanceVBO;
+
+        private float[] _floatBuffer = new float[512 * CharInstanceData.FloatCount];  // 512글자 * 8 floats
+
 
         public TextInstanceBuilder()
         {
@@ -125,37 +130,21 @@ namespace Ui3d
         /// </summary>
         /// <param name="instances">인스턴스 데이터 배열</param>
         /// <returns>GPU 업로드용 float 배열</returns>
-        public float[] ConvertToFloatArray(CharInstanceData[] instances)
-        {
-            int requiredSize = instances.Length * CharInstanceData.FloatCount;
-
-            // 버퍼 크기 확인 및 재할당
-            if (_dataBuffer.Length < requiredSize)
+        public void ConvertToFloatArray(CharInstanceData[] instances, int count, ref float[] targetBuffer)
+        { 
+            for (int i = 0; i < count; i++)
             {
-                int newSize = Math.Max(requiredSize, _dataBuffer.Length * 2);
-                _dataBuffer = new float[newSize];
+                int offset = i * CharInstanceData.FloatCount;  // i * 9
+                targetBuffer[offset + 0] = instances[i].offsetX;
+                targetBuffer[offset + 1] = instances[i].offsetY;
+                targetBuffer[offset + 2] = instances[i].offsetZ;
+                targetBuffer[offset + 3] = instances[i].uvX;
+                targetBuffer[offset + 4] = instances[i].uvY;
+                targetBuffer[offset + 5] = instances[i].uvWidth;
+                targetBuffer[offset + 6] = instances[i].uvHeight;
+                targetBuffer[offset + 7] = instances[i].charWidth;
+                targetBuffer[offset + 8] = instances[i].charHeight;
             }
-
-            int index = 0;
-            for (int i = 0; i < instances.Length; i++)
-            {
-                // vec3 aOffset
-                _dataBuffer[index++] = instances[i].offsetX;
-                _dataBuffer[index++] = instances[i].offsetY;
-                _dataBuffer[index++] = instances[i].offsetZ;
-
-                // vec4 aUVRect
-                _dataBuffer[index++] = instances[i].uvX;
-                _dataBuffer[index++] = instances[i].uvY;
-                _dataBuffer[index++] = instances[i].uvWidth;
-                _dataBuffer[index++] = instances[i].uvHeight;
-
-                // vec2 aCharSize
-                _dataBuffer[index++] = instances[i].charWidth;
-                _dataBuffer[index++] = instances[i].charHeight;
-            }
-
-            return _dataBuffer;
         }
 
         /// <summary>
@@ -167,17 +156,17 @@ namespace Ui3d
         public void UpdateInstanceBuffer(string text, CharacterTextureAtlas atlas, bool centered = false)
         {
             // 인스턴스 데이터 생성
-            CharInstanceData[] instances = centered
+            _instances = centered
                 ? GenerateInstanceDataCentered(text, atlas)
                 : GenerateInstanceData(text, atlas);
 
-            _instanceCount = instances.Length;
+            _instanceCount = _instances.Length;
 
             if (_instanceCount == 0)
                 return;
 
             // float 배열로 변환
-            float[] data = ConvertToFloatArray(instances);
+            ConvertToFloatArray(_instances, _instanceCount, ref _floatBuffer);
 
             // VBO 바인딩 및 업데이트
             Gl.BindBuffer(BufferTarget.ArrayBuffer, _instanceVBO);
@@ -188,7 +177,7 @@ namespace Ui3d
             {
                 Gl.BufferData(BufferTarget.ArrayBuffer,
                     (uint)requiredSize,
-                    data,
+                    _floatBuffer,
                     BufferUsage.DynamicDraw);
                 _instanceBufferSize = requiredSize;
             }
@@ -197,7 +186,7 @@ namespace Ui3d
                 Gl.BufferSubData(BufferTarget.ArrayBuffer,
                     IntPtr.Zero,
                     (uint)requiredSize,
-                    data);
+                    _floatBuffer);
             }
 
             Gl.BindBuffer(BufferTarget.ArrayBuffer, 0);
@@ -253,6 +242,62 @@ namespace Ui3d
             }
             _instanceBufferSize = 0;
             _instanceCount = 0;
+        }
+
+
+        // 기존 리스트에 직접 추가 (배열 할당 없음)
+        public void GenerateInstanceDataInto(
+            string text,
+            int startIndex,
+            int length,
+            CharacterTextureAtlas atlas,
+            float startX, float startY, float z,
+            List<CharInstanceData> output)
+        {
+            float currentX = startX;
+
+            for (int i = 0; i < length; i++)
+            {
+                char c = text[startIndex + i];
+                CharInfo charInfo = atlas.GetCharInfo(c);
+
+                // GetCharInfo는 항상 유효한 값을 반환 (기본값 포함)
+                if (charInfo.character == '\0') continue; // 기본값 체크
+
+                output.Add(new CharInstanceData
+                {
+                    offsetX = currentX,
+                    offsetY = startY,
+                    offsetZ = z,
+                    charWidth = charInfo.width,
+                    charHeight = charInfo.height,
+                    uvX = charInfo.uvX,
+                    uvY = charInfo.uvY,
+                    uvWidth = charInfo.uvWidth,
+                    uvHeight = charInfo.uvHeight
+                });
+
+                currentX += charInfo.width;
+            }
+        }
+
+        // List를 배열로 변환하지 않고 직접 float 배열에 쓰기
+        public void ConvertToFloatArrayInto(List<CharInstanceData> instances, float[] output)
+        {
+            int floatIndex = 0;
+            for (int i = 0; i < instances.Count; i++)
+            {
+                var inst = instances[i];
+                output[floatIndex++] = inst.offsetX;
+                output[floatIndex++] = inst.offsetY;
+                output[floatIndex++] = inst.offsetZ;
+                output[floatIndex++] = inst.charWidth;
+                output[floatIndex++] = inst.charHeight;
+                output[floatIndex++] = inst.uvX;
+                output[floatIndex++] = inst.uvY;
+                output[floatIndex++] = inst.uvWidth;
+                output[floatIndex++] = inst.uvHeight;
+            }
         }
     }
 }

@@ -19,6 +19,7 @@ namespace Shader
         private int loc_vp;
         private int loc_batchStartOffset;
         private int loc_currentBatchID;
+        private int loc_quadSize;
 
         public SimpleQuadTestShader(string projectPath) : base()
         {
@@ -34,6 +35,7 @@ namespace Shader
             loc_vp = GetUniformLocation("vp");
             loc_batchStartOffset = GetUniformLocation("batchStartOffset");
             loc_currentBatchID = GetUniformLocation("currentBatchID");
+            loc_quadSize = GetUniformLocation("quadSize");
         }
 
         protected override void BindAttributes()
@@ -54,6 +56,11 @@ namespace Shader
         public void LoadCurrentBatchID(uint batchID)
         {
             Gl.Uniform1(loc_currentBatchID, batchID);
+        }
+
+        public void LoadQuadSize(float size)
+        {
+            Gl.Uniform1(loc_quadSize, size);
         }
     }
 }
