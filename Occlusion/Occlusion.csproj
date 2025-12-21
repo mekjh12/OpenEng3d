@@ -78,6 +78,7 @@
     <Compile Include="QuadTree\QuadTreeEx.cs" />
     <Compile Include="QuadTree\QuadTreeGPUBuffers.cs" />
     <Compile Include="QuadTree\WorldObject.cs" />
+    <Compile Include="RenderTarget.cs" />
     <Compile Include="TerrainOccluder3.cs" />
     <Compile Include="TreeBalanceInfo.cs" />
     <Compile Include="ViewFrustum.cs" />

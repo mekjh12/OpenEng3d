@@ -17,19 +17,22 @@ using ZetaExt;
 
 namespace FormTools
 {
-    public partial class FormGPUDrivenFrustumHiZ : Form, GlControlerable
+    public partial class FormGPUDrivenHiZLod4 : Form, GlControlerable
     {
         readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
         readonly string EXE_PATH = Application.StartupPath;
-        readonly string TITLE = "GPU Driven 뷰컬링+HiZ컬링 = lod0 모델인스턴싱, lod1 aabb 인스턴싱";
+        readonly string TITLE = "GPU Driven 뷰컬링+HiZ컬링 = lod2에 크로스빌보드 이식";
         readonly string HELP_TEXT =
             "1번키: 원점으로\n" +
-            "2번키: HiZ버퍼보기\n";
+            "2번키: HiZ버퍼보기\n" +
+            "3번키: 깊이버퍼보기\n";
 
         private GlControl3 _glControl3;                     // OpenGL 컨트롤
         private ColorShader _colorShader;                   // 컬러 셰이더
         private HzmDepthShader _hzmDepthShader;             // HZM 깊이 셰이더
         private TerrainTessellationShader _terrainShader;   // 지형 테셀레이션 셰이더
+        private RenderDepthBufferShader _renderDepthShader; // 렌더 깊이 셰이더
+
         private bool _isLoaded = false;                     // 로드 여부
         private bool _isStarted = false;                    // 시작 여부
 
@@ -66,27 +69,31 @@ namespace FormTools
         uint _lastFrustumPassCount = 0;                     // 이전 프러스텀 패스 수
         string _visibleReport = "";                         // 가시 객체 리포트
         Vertex3f _prevCameraPosition;                       // 이전 카메라 위치
-        bool _isVisibleDepthBuffer = false;                 // 깊이 버퍼 가시화 여부
+        bool _isVisibleHiZDepthBuffer = false;              // 깊이 Z버퍼 가시화 여부
+        bool _isVisibleRenderDepthBuffer = false;           // 렌더링 깊이 버퍼 가시화 여부
 
-        public FormGPUDrivenFrustumHiZ()
+        public FormGPUDrivenHiZLod4()
         {
             InitializeComponent();
 
             // GL 생성
             this.Text = TITLE;
-            _glControl3 = new GlControl3(TITLE, Application.StartupPath, @"\fonts\fontList.txt", @"\Res\");
+            _glControl3 = new GlControl3(TITLE, Application.StartupPath, @"\fonts\fontList.txt", @"\Res\", useRenderTarget: true);
             _glControl3.Init += (w, h) => Init(w, h);
             _glControl3.Init3d += (w, h) => Init3d(w, h);
             _glControl3.Init2d += (w, h) => Init2d(w, h);
             _glControl3.UpdateFrame = (deltaTime, w, h, camera) => UpdateFrame(deltaTime, w, h, camera);
-            _glControl3.RenderFrame = (deltaTime, w, h, backcolor, camera) => RenderFrame(deltaTime, backcolor, camera);
+            _glControl3.RenderFrame = (deltaTime, w, h, backcolor, camera) => Render3dScene(camera);  // ✅ 변경
+            _glControl3.PostProcessFrame = (deltaTime, camera) => RenderFinalOutput(deltaTime, camera);
             _glControl3.MouseDown += (s, e) => MouseDnEvent(s, e);
             _glControl3.MouseUp += (s, e) => MouseUpEvent(s, e);
             _glControl3.KeyDown += (s, e) => KeyDownEvent(s, e);
             _glControl3.KeyUp += (s, e) => KeyUpEvent(s, e);
             _glControl3.Load += (s, e) => Form_Load(s, e);
+            _glControl3.AutoBlitToScreen = false;
             _glControl3.Start();
             Controls.Add(_glControl3);
+
 
             // 파일 해시 매니저 초기화
             FileHashManager.ROOT_FILE_PATH = PROJECT_PATH;
@@ -105,9 +112,11 @@ namespace FormTools
             ShaderManager.Instance.AddShader(new ColorShader(PROJECT_PATH));
             ShaderManager.Instance.AddShader(new HzmDepthShader(PROJECT_PATH));
             ShaderManager.Instance.AddShader(new TerrainTessellationShader(PROJECT_PATH));
+            ShaderManager.Instance.AddShader(new RenderDepthBufferShader(PROJECT_PATH));
             _colorShader = ShaderManager.Instance.GetShader<ColorShader>();
             _hzmDepthShader = ShaderManager.Instance.GetShader<HzmDepthShader>();
             _terrainShader = ShaderManager.Instance.GetShader<TerrainTessellationShader>();
+            _renderDepthShader = ShaderManager.Instance.GetShader<RenderDepthBufferShader>();
 
             // 앱 시작 시 한 번만 초기화
             Ui3d.BillboardShader.Initialize();
@@ -248,8 +257,8 @@ namespace FormTools
                 _hiZBuffer.BindFramebuffer();
                 _hiZBuffer.PrepareRenderSurface();
 
-                _hiZBuffer.RenderSimpleTerrain(camera.ProjectiveMatrix, 
-                    camera.ViewMatrix, 
+                _hiZBuffer.RenderSimpleTerrain(camera.ProjectiveMatrix,
+                    camera.ViewMatrix,
                     TerrainConstants.DEFAULT_VERTICAL_SCALE,
                     _terrainRegion.TerrainEntity);
 
@@ -291,47 +300,85 @@ namespace FormTools
             }
         }
 
+        // ✅ 3D 씬 렌더링 (RenderTarget에 그려짐)
+        private void Render3dScene(Camera camera)
+        {
+            // 지형 렌더링
+            Renderer3d.RenderByTerrainTessellationShader(
+                _terrainShader,
+                _terrainRegion.TerrainEntity,
+                camera,
+                _levelTextureMap,
+                _detailTextureMap,
+                isDetailMap: true,
+                lightDirection: Vertex3f.UnitZ,
+                vegetationMap: 0,
+                heightScale: TerrainConstants.DEFAULT_VERTICAL_SCALE
+            );
 
-        public void RenderFrame(double deltaTime, Vertex4f backcolor, Camera camera)
+            // 나무 렌더링
+            _gpuDriven?.Render(camera);
+        }
+
+        // ✅ 최종 출력 (포스트 프로세싱)
+        private void RenderFinalOutput(int deltaTime, Camera camera)
         {
             if (!_isLoaded) return;
 
             int w = _glControl3.Width;
             int h = _glControl3.Height;
 
-            // 기본 프레임버퍼로 전환 및 초기화
+            // ========================================
+            // 이 시점에서 GlControl3가 이미 RenderTarget에
+            // 지형 + 나무를 렌더링 완료한 상태
+            // ========================================
+
+            // 최종 화면 출력
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
             Gl.Viewport(0, 0, w, h);
-            Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
+            Gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            // 계층적 Z-버퍼 렌더링
-            if (_isVisibleDepthBuffer)
+            if (_isVisibleHiZDepthBuffer)
             {
+                // [디버깅] HiZ 깊이 버퍼 시각화 (지형만)
                 Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
                 _hiZBuffer.RenderDepthBuffer(_hzmDepthShader, camera, level: _level);
                 Gl.PolygonMode(MaterialFace.FrontAndBack, _glControl3.PolygonMode);
             }
-            else
+            else if (_isVisibleRenderDepthBuffer)
             {
-                // 일반 렌더링 화면
-                Renderer3d.RenderByTerrainTessellationShader(_terrainShader, _terrainRegion.TerrainEntity, camera, _levelTextureMap, _detailTextureMap,
-                    isDetailMap: true,
-                    lightDirection: Vertex3f.UnitZ,
-                    vegetationMap: 0,
-                    heightScale: TerrainConstants.DEFAULT_VERTICAL_SCALE
+                // ✅ [디버깅] 메인 렌더 깊이 버퍼 시각화 (지형 + 나무)
+                _renderDepthShader.Bind();
+                {
+                    _renderDepthShader.LoadCameraNear(camera.NEAR);
+                    _renderDepthShader.LoadCameraFar(camera.FAR);
+                    _renderDepthShader.LoadIsPerspective(true);
+
+                    // GlControl3의 깊이 텍스처 사용
+                    _renderDepthShader.LoadDepthTexture(
+                        TextureUnit.Texture0,
+                        _glControl3.DepthTextureId
                     );
 
-                _gpuDriven?.Render(camera);
+                    Gl.DrawArrays(PrimitiveType.Points, 0, 1);
+                }
+                _renderDepthShader.Unbind();
+            }
+            else
+            {
+                // ✅ [일반] 컬러 버퍼 출력
+                _glControl3.BlitRenderTargetToScreen();
             }
 
-            // 2D 렌더링을 위한 상태 설정
+            // ========================================
+            // 2D UI 렌더링
+            // ========================================
             Gl.Disable(EnableCap.DepthTest);
-            Gl.Enable(EnableCap.Blend);  // ← 여기서 켜기
+            Gl.Enable(EnableCap.Blend);
             Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             Gl.Disable(EnableCap.CullFace);
             Gl.Viewport(0, 0, w, h);
 
-            // FPS 렌더링
             Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
             _textNamePlate.Render();
             _fpsText.Render();
@@ -340,7 +387,6 @@ namespace FormTools
             _camPosText.Render();
             _culledText.Render();
 
-            // 카메라 중심점 렌더링
             Gl.Disable(EnableCap.Blend);
             Renderer3d.RenderPoint(_colorShader, camera.PivotPosition, camera, new Vertex4f(1, 1, 0, 1), 0.02f);
             Gl.Enable(EnableCap.DepthTest);
@@ -362,11 +408,11 @@ namespace FormTools
             }
             else if (e.KeyCode == Keys.D2)
             {
-                _isVisibleDepthBuffer = !_isVisibleDepthBuffer;
+                _isVisibleHiZDepthBuffer = !_isVisibleHiZDepthBuffer;
             }
             else if (e.KeyCode == Keys.D3)
             {
-                _gpuDriven.IsSimpleQuadDraw = !_gpuDriven.IsSimpleQuadDraw;
+                _isVisibleRenderDepthBuffer = !_isVisibleRenderDepthBuffer;
             }
         }
 
@@ -415,6 +461,11 @@ namespace FormTools
         }
 
         private void FormGPUDrivenFrustumHiZ_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        public void RenderFrame(double deltaTime, Vertex4f backcolor, Camera camera)
         {
 
         }

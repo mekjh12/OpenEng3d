@@ -230,7 +230,7 @@ namespace FormTools
             }
             else
             {
-                _unifiedModelRenderer.Render(camera.VPMatrix);
+                _unifiedModelRenderer.Render(camera.VPMatrix, camera.ViewMatrix);
                 //_aabbRenderer.RenderAABB(_unifiedModel.AABB);
             }
 

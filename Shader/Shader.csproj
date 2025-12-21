@@ -96,6 +96,7 @@
     <Compile Include="ImpostorShader\ImpostorInstancedShader.cs" />
     <Compile Include="InstancedShader\InstancedDepthShader.cs" />
     <Compile Include="InstancedShader\InstancedShader.cs" />
+    <Compile Include="RenderDepthBufferShader\RenderDepthBufferShader.cs" />
     <Compile Include="ShaderManager.cs" />
     <Compile Include="SkyDomeShader\CloudShader.cs" />
     <Compile Include="SkyDomeShader\SkyDomeRenderShader.cs" />
@@ -188,6 +189,9 @@
     <None Include="InstancedShader\instanced_depth.vert" />
     <None Include="InstancedShader\instanced.frag" />
     <None Include="InstancedShader\instanced.vert" />
+    <None Include="RenderDepthBufferShader\dummy.vert" />
+    <None Include="RenderDepthBufferShader\post.gs.glsl" />
+    <None Include="RenderDepthBufferShader\renderdepth.frag" />
     <None Include="SkyDomeShader\volumetric_cloud.comp" />
     <None Include="SkyDomeShader\cloudGenerator.comp" />
     <None Include="SkyDomeShader\skyColorGenerator.comp" />

@@ -1,6 +1,5 @@
-﻿using OpenGL;
-using System.IO;
-using Common;
+﻿using Common;
+using OpenGL;
 
 namespace Shader
 {

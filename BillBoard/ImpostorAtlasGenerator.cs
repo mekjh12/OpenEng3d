@@ -8,6 +8,7 @@ using Shader;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Numerics;
 using ZetaExt;
 
 namespace BillBoard
@@ -335,7 +336,7 @@ namespace BillBoard
 
                 // 월드뷰투영 행렬 설정
                 Matrix4x4f mvp = proj * viewData.ViewMatrix;
-                _unifiedModelRenderer.Render(mvp);
+                _unifiedModelRenderer.Render(mvp, viewData.ViewMatrix);
 
                 shader.Unbind();
             }

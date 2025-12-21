@@ -25,7 +25,7 @@ namespace Renderer
         /// <summary>
         /// 렌더링
         /// </summary>
-        public void Render(Matrix4x4f mvp)
+        public void Render(Matrix4x4f mvp, Matrix4x4f mv)
         {
             if (_model.EnableCullFace)
             {
@@ -43,6 +43,7 @@ namespace Renderer
             _shader.LoadTextureArray(_model.TextureIDs.ToArray());
 
             _shader.LoadMVPMatrix(mvp);
+            _shader.LoadModelView(mv);
 
             Gl.BindVertexArray(_model.VaoID);
 

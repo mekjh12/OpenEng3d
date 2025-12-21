@@ -1,5 +1,6 @@
 ﻿using Common;
 using OpenGL;
+using System.Drawing.Drawing2D;
 
 namespace Shader
 {
@@ -18,6 +19,7 @@ namespace Shader
         private int loc_textureCount;
         private int[] loc_textures;  // ✅ 배열 위치
         private const int MAX_TEXTURES = 32;
+        private int loc_modelView;  // ✅ 추가
 
         /// <summary>
         /// UnlitShader의 생성자입니다.
@@ -35,6 +37,7 @@ namespace Shader
         {
             loc_mvp = GetUniformLocation("mvp");
             loc_textureCount = GetUniformLocation("textureCount");
+            loc_modelView = GetUniformLocation("modelView");  // ✅ 추가
 
             // ✅ 배열 위치 가져오기
             loc_textures = new int[MAX_TEXTURES];
@@ -57,6 +60,11 @@ namespace Shader
         }
 
         // === Load 메서드들 ===
+        // ✅ 추가: ModelView 행렬 로드
+        public void LoadModelView(Matrix4x4f modelView)
+        {
+            Gl.UniformMatrix4f(loc_mvp, 1, false, modelView);
+        }
 
         /// <summary>
         /// Model-View-Projection 행렬 설정

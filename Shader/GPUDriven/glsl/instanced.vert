@@ -11,12 +11,14 @@ layout(std430, binding = 0) buffer TransformBuffer { mat4 allTransforms[]; };
 layout(std430, binding = 1) buffer VisibleIndicesBuffer { int visibleIndices[]; };
 
 uniform mat4 vp;
+uniform mat4 view;
 uniform int batchStartOffset;
 
 out vec3 vNormal;
 out vec2 vTexCoord;
 out vec3 vWorldPos;
 out float vMaterialID;
+out vec3 vViewPos;
 
 void main() 
 {
@@ -34,6 +36,8 @@ void main()
     vWorldPos = worldPos.xyz;
     gl_Position = vp * worldPos;
     
+    vViewPos = (view * worldPos).xyz;
+
     mat3 normalMatrix = mat3(transpose(inverse(model)));
     vNormal = normalize(normalMatrix * aNormal);
     vTexCoord = aTexCoord;

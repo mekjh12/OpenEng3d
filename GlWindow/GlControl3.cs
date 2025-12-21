@@ -87,6 +87,29 @@ namespace GlWindow
         private GameInfoStringCache _gameInfoCache;
         private string _fps;
 
+        // 렌더 타겟 추가
+        private RenderTarget _renderTarget;
+        private bool _useRenderTarget = false;
+        private bool _autoBlitToScreen = true;  // ✅ 추가
+
+        // 렌더 타겟 속성
+        public bool AutoBlitToScreen
+        {
+            get => _autoBlitToScreen;
+            set => _autoBlitToScreen = value;
+        }
+
+        public uint DepthTextureId => _renderTarget?.DepthTextureId ?? 0;
+        public uint ColorTextureId => _renderTarget?.ColorTextureId ?? 0;
+        public bool UseRenderTarget => _useRenderTarget;
+
+        protected Action<int, Camera> _postProcess;  // ✅ 추가
+
+        public Action<int, Camera> PostProcessFrame
+        {
+            get => _postProcess;
+            set => _postProcess = value;
+        }
 
         private struct POINT
         { public int x; public int Y; }
@@ -226,12 +249,15 @@ namespace GlWindow
         /// <summary>
         /// 생성자
         /// </summary>
+        /// <param name="name">컨트롤 이름</param>
         /// <param name="rootPath">실행파일의 경로</param>
-        /// <param name="fontResourceFileName">실행파일에서의 폰트리소트 상대경로(파일리스트+폰트)</param>
-        /// <param name="ui2dResourcePath">UI2d를 위한 리소스 상대경로</param>
-        /// <param name="colorShader">ColorShader</param>
+        /// <param name="fontResourceFileName">폰트 리소스 상대경로</param>
+        /// <param name="ui2dResourcePath">UI2d 리소스 상대경로</param>
+        /// <param name="winMouseUsed">윈도우 마우스 사용 여부</param>
+        /// <param name="isEnableMouse">마우스 활성화 여부</param>
+        /// <param name="useRenderTarget">렌더 타겟 사용 여부 (깊이 버퍼 접근 필요시)</param>
         public GlControl3(string name, string rootPath, string fontResourceFileName, string ui2dResourcePath, 
-            bool winMouseUsed = false, bool isEnableMouse = true)
+            bool winMouseUsed = false, bool isEnableMouse = true, bool useRenderTarget = false)
         {
             // GL컨트롤 기본설정
             Location = new Point(0, 0);
@@ -239,6 +265,9 @@ namespace GlWindow
 
             // 이름 설정
             _formName = name;
+
+            // 렌더 타겟 사용 설정
+            _useRenderTarget = useRenderTarget;
 
             // 경로를 설정한다.
             _RootPath = rootPath;
@@ -355,6 +384,15 @@ namespace GlWindow
 
                 string shaderPath = SHADER_UI2D_PATH;
                 InitGlControl(shaderPath);
+
+                // 렌더 타겟 초기화
+                if (_useRenderTarget)
+                {
+                    _renderTarget = new RenderTarget();
+                    _renderTarget.Initialize(Width, Height);
+                    Console.WriteLine($"✅ GlControl3 렌더 타겟 활성화: {Width}x{Height}");
+                }
+
                 if (_init2d != null) _init2d(Width, Height);
             }
 
@@ -385,6 +423,12 @@ namespace GlWindow
                 if (_render != null)
                 {
                     Render3d(deltaTime);
+                }
+
+                // ✅ 포스트 프로세싱 호출
+                if (_postProcess != null)
+                {
+                    _postProcess(deltaTime, _camera);
                 }
             }
 
@@ -536,30 +580,78 @@ namespace GlWindow
 
         public void Render3d(int deltaTime)
         {
-            Gl.Enable(EnableCap.CullFace);
-            Gl.CullFace(CullFaceMode.Back);
-            Gl.ClearColor(_backColor.x, _backColor.y, _backColor.z, 1.0f);
-            Gl.Enable(EnableCap.DepthTest);
-            Gl.Viewport(0, 0, Width, Height);
-            Gl.PolygonMode(MaterialFace.FrontAndBack, _polygonMode);
-
-            // 3d렌더링
-            if (_render != null)
+            if (_useRenderTarget)
             {
-                _render(deltaTime, _width, _height, _backColor, _camera);
+                // 1단계: 렌더 타겟에 3D 씬 렌더링
+                _renderTarget.Bind();
+                {
+                    Gl.Enable(EnableCap.CullFace);
+                    Gl.CullFace(CullFaceMode.Back);
+                    Gl.ClearColor(_backColor.x, _backColor.y, _backColor.z, 1.0f);
+                    Gl.Enable(EnableCap.DepthTest);
+                    Gl.Viewport(0, 0, Width, Height);
+                    Gl.PolygonMode(MaterialFace.FrontAndBack, _polygonMode);
+                    Gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+                    // ✅ 3D 렌더링 (RenderTarget에 렌더링됨)
+                    if (_render != null)
+                    {
+                        _render(deltaTime, Width, Height, _backColor, _camera);
+                    }
+
+                    // 그리드 렌더링
+                    if (_isVisibleGrid)
+                    {
+                        _grid?.Render(_camera);
+                    }
+                }
+                _renderTarget.Unbind();
+
+                // ✅ 자동 BlitToScreen 옵션
+                if (_autoBlitToScreen)
+                {
+                    Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+                    Gl.Viewport(0, 0, Width, Height);
+                    _renderTarget.BlitToScreen(Width, Height);
+                }
+            }
+            else
+            {
+                // 기본 렌더링 (기존 코드)
+                Gl.Enable(EnableCap.CullFace);
+                Gl.CullFace(CullFaceMode.Back);
+                Gl.ClearColor(_backColor.x, _backColor.y, _backColor.z, 1.0f);
+                Gl.Enable(EnableCap.DepthTest);
+                Gl.Viewport(0, 0, Width, Height);
+                Gl.PolygonMode(MaterialFace.FrontAndBack, _polygonMode);
+
+                if (_render != null)
+                {
+                    _render(deltaTime, Width, Height, _backColor, _camera);
+                }
+
+                if (_isVisibleGrid)
+                {
+                    _grid?.Render(_camera);
+                }
             }
 
-            // 그리드를 렌더링한다.
-            if (_isVisibleGrid)
-            {
-                _grid?.Render(_camera);
-            }
-
-            // UI렌더링
+            // UI 렌더링 (공통)
             if (IsVisibleUi2d)
             {
-                Gl.PolygonMode( MaterialFace.Front, PolygonMode.Fill);
+                Gl.PolygonMode(MaterialFace.Front, PolygonMode.Fill);
                 UIEngine.RenderFrame(deltaTime);
+            }
+        }
+
+        // ✅ 외부에서 BlitToScreen 호출할 수 있도록
+        public void BlitRenderTargetToScreen()
+        {
+            if (_useRenderTarget && _renderTarget != null)
+            {
+                Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+                Gl.Viewport(0, 0, Width, Height);
+                _renderTarget.BlitToScreen(Width, Height);
             }
         }
 
@@ -606,6 +698,14 @@ namespace GlWindow
             _height = h;
             _camera.SetResolution(w, h);
             Gl.Viewport(0, 0, _width, _height);
+
+            // 렌더 타겟 리사이즈
+            if (_useRenderTarget && _renderTarget != null)
+            {
+                _renderTarget.Dispose();
+                _renderTarget.Initialize(w, h);
+                Console.WriteLine($"✅ 렌더 타겟 리사이즈: {w}x{h}");
+            }
         }
 
         private void InitGlControl(string path)

@@ -237,7 +237,7 @@ namespace BillBoard
                 Matrix4x4f mvp = plane.ProjectionMatrix * plane.ViewMatrix;
 
                 // 렌더링
-                _unifiedModelRenderer.Render(mvp);
+                _unifiedModelRenderer.Render(mvp, plane.ViewMatrix);
 
                 shader.Unbind();
             }

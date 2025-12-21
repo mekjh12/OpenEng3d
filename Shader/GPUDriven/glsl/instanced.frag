@@ -5,9 +5,11 @@ in vec3 vNormal;
 in vec2 vTexCoord;
 in vec3 vWorldPos;
 in float vMaterialID;
+in vec3 vViewPos;
 
-// 출력
-out vec4 fragColor;
+// MRT 출력
+layout(location = 0) out vec4 fragColor;   // 컬러
+layout(location = 1) out float fragDepth;  // 선형 깊이 (안개용)
 
 // ✅ Uniform sampler2D 배열 (최대 32개)
 uniform sampler2D textures[32];
@@ -21,6 +23,7 @@ void main()
     if (texIndex < 0 || texIndex >= textureCount)
     {
         fragColor = vec4(1.0, 0.0, 1.0, 1.0);  // 마젠타 = 에러
+        fragDepth = 0.0;
         return;
     }
     
@@ -28,5 +31,11 @@ void main()
     
     if (texColor.a < 0.05) discard;
     fragColor = texColor;
+
+    // ✅ 선형 깊이 출력 (안개용)
+    fragDepth = vViewPos.z / 10000.0;
+    
+    // ✅ 깊이 테스트용 (표준 깊이 버퍼)
+    gl_FragDepth = vViewPos.z / 10000.0;
 }
 

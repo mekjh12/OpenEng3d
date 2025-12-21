@@ -610,6 +610,7 @@ namespace GPUDriven
             _instancedShader.Bind();
             _instancedShader.LoadVPMatrix(camera.VPMatrix);
             _instancedShader.LoadBatchStartOffset(_batch.StartIndex);
+            _instancedShader.LoadViewMatrix(camera.ViewMatrix);
             _instancedShader.LoadTextureArray(_batch.Model.TextureIDArray);
             DrawArraysIndirect(_batch.VAO, cmdStartIndex, 0, COMMAND_SIZE, _visibleIndicesSSBO_LOD0, PrimitiveType.Triangles);
             _instancedShader.Unbind();

@@ -7,6 +7,7 @@
 
 // 출력 컬러 버퍼 설정
 layout(location = 0) out vec4 fragColor;
+layout(location = 1) out float fragDepth;  // ✅ 추가: 안개용 깊이
 
 // 버텍스 셰이더로부터의 입력
 in vec2 Tex3;         // 텍스처 좌표
@@ -152,4 +153,6 @@ void main()
     // 최종 색상 출력
     fragColor = vec4(finalColor, 1.0);
     
+    // ✅ 한 줄 추가: 선형 깊이 출력
+    fragDepth = viewPos.z / 10000.0;
 }

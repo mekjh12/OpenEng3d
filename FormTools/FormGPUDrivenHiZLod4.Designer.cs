@@ -1,6 +1,6 @@
 ﻿namespace FormTools
 {
-    partial class FormGPUDrivenFrustumHiZ
+    partial class FormGPUDrivenHiZLod4
     {
         /// <summary>
         /// Required designer variable.
@@ -30,14 +30,13 @@
         {
             this.SuspendLayout();
             // 
-            // FormGPUDrivenFrustumHiZ
+            // FormGPUDrivenHiZLod4
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(643, 455);
-            this.Name = "FormGPUDrivenFrustumHiZ";
-            this.Text = "GPU Driven (프러스텀, HiZ버퍼 컬링)";
-            this.Load += new System.EventHandler(this.FormGPUDrivenFrustumHiZ_Load);
+            this.ClientSize = new System.Drawing.Size(460, 279);
+            this.Name = "FormGPUDrivenHiZLod4";
+            this.Text = "FormGPUDrivenHiZLod4";
             this.ResumeLayout(false);
 
         }

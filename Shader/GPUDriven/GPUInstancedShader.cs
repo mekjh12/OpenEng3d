@@ -24,6 +24,7 @@ namespace Shader
         private int[] loc_textures;  // ✅ 배열 위치
         private const int MAX_TEXTURES = 32;
         private int loc_batchStartOffset;
+        private int loc_view;
 
 
         public GPUInstancedShader(string projectPath) : base()
@@ -38,6 +39,7 @@ namespace Shader
         protected override void GetAllUniformLocations()
         {
             loc_vp = GetUniformLocation("vp");
+            loc_view = GetUniformLocation("view");
             loc_batchStartOffset = GetUniformLocation("batchStartOffset");
 
             loc_textureCount = GetUniformLocation("textureCount");
@@ -64,6 +66,15 @@ namespace Shader
         }
 
         /// <summary>
+        /// 뷰 행렬을 설정합니다 (깊이 계산용)
+        /// </summary>
+        public void LoadViewMatrix(in Matrix4x4f matrix)
+        {
+            LoadUniformMatrix4(loc_view, matrix);
+        }
+
+
+        /// <summary>
         /// 뷰-투영 행렬을 설정합니다.
         /// </summary>
         public void LoadVPMatrix(in Matrix4x4f matrix)
@@ -72,7 +83,7 @@ namespace Shader
         }
 
         /// <summary>
-        /// ✅ 텍스처 배열 바인딩 (초기화 시 한 번만 호출)
+        /// 텍스처 배열 바인딩 (초기화 시 한 번만 호출)
         /// </summary>
         public void LoadTextureArray(uint[] textureIDs)
         {

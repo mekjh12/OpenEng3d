@@ -153,7 +153,7 @@ namespace FormTools
             Gl.Viewport(0, 0, w, h);
             Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
 
-            _unifiedModelRenderer.Render(camera.VPMatrix);
+            _unifiedModelRenderer.Render(camera.VPMatrix, camera.ViewMatrix);
             //Renderer3d.RenderAABB(_colorShader, _unifiedModel.AABB, camera);
 
             // 2D 렌더링을 위한 상태 설정
