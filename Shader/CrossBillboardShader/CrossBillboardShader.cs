@@ -4,20 +4,19 @@ using System.Xml.Linq;
 
 namespace Shader
 {
-    public class BillboardCloudShader : ShaderProgramBase
+    public class CrossBillboardShader : ShaderProgramBase
     {
-        const string VERTEX_FILE = @"\Shader\BillboardCloudShader\billboardcloud.vert";
-        const string GEOMETRY_FILE = @"\Shader\BillboardCloudShader\billboardcloud.gem.glsl";
-        const string FRAGMENT_FILE = @"\Shader\BillboardCloudShader\billboardcloud.frag";
+        const string VERTEX_FILE = @"\Shader\CrossBillboardShader\crossBillboard.vert";
+        const string GEOMETRY_FILE = @"\Shader\CrossBillboardShader\crossBillboard.gem.glsl";
+        const string FRAGMENT_FILE = @"\Shader\CrossBillboardShader\crossBillboard.frag";
 
         private int loc_vp;
         private int loc_objectWidth;
         private int loc_objectHeight;
-        private int loc_horizontalTopRatio;
-        private int loc_horizontalBottomRatio;
         private int loc_atlasTexture;
+        private int loc_enableEdgeLine;
 
-        public BillboardCloudShader(string projectPath) : base()
+        public CrossBillboardShader(string projectPath) : base()
         {
             _name = this.GetType().Name;
             VertFileName = projectPath + VERTEX_FILE;
@@ -31,15 +30,19 @@ namespace Shader
             loc_vp = GetUniformLocation("vp");
             loc_objectWidth = GetUniformLocation("objectWidth");
             loc_objectHeight = GetUniformLocation("objectHeight");
-            loc_horizontalTopRatio = GetUniformLocation("horizontalTopRatio");
-            loc_horizontalBottomRatio = GetUniformLocation("horizontalBottomRatio");
             loc_atlasTexture = GetUniformLocation("atlasTexture");
+            loc_enableEdgeLine = GetUniformLocation("enableEdgeLine");
         }
 
         protected override void BindAttributes()
         {
             base.BindAttribute(0, "instancePosition");
             base.BindAttribute(1, "instanceScale");
+        }
+
+        public void EnableEdgeLine(bool enable)
+        {
+            Gl.Uniform1(loc_enableEdgeLine, enable ? 1 : 0);
         }
 
         public void LoadVPMatrix(Matrix4x4f matrix)
@@ -51,12 +54,6 @@ namespace Shader
         {
             Gl.Uniform1(loc_objectWidth, width);
             Gl.Uniform1(loc_objectHeight, height);
-        }
-
-        public void LoadHorizontalRatios(float topRatio, float bottomRatio)
-        {
-            Gl.Uniform1(loc_horizontalTopRatio, topRatio);
-            Gl.Uniform1(loc_horizontalBottomRatio, bottomRatio);
         }
 
         public void LoadAtlasTexture(uint textureID)

@@ -66,15 +66,14 @@ void main()
         
         uint objectID = leafObjectIDs[arrayIndex];
         
-        if (objectID >= aabbMin.length() || objectID >= aabbMax.length())
-            continue;
+        //if (objectID >= aabbMin.length() || objectID >= aabbMax.length()) continue;
         
         // 거리 계산
-        vec3 center = (aabbMin[objectID].xyz + aabbMax[objectID].xyz) * 0.5;
-        float distance = length(cameraPosition.xyz - center);
+        //vec3 center = (aabbMin[objectID].xyz + aabbMax[objectID].xyz) * 0.5;
+        //float distance = length(cameraPosition.xyz - center);
         
         // 거리 필터링
-        if (distance < 30)
+        //if (distance < 30)
         {
             uint slot = atomicAdd(counter, 1u);
             

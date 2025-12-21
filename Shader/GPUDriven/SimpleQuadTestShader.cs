@@ -1,5 +1,4 @@
 ﻿using Common;
-using Common.Abstractions;
 using OpenGL;
 
 namespace Shader
@@ -20,6 +19,7 @@ namespace Shader
         private int loc_batchStartOffset;
         private int loc_currentBatchID;
         private int loc_quadSize;
+        private int loc_cameraPosition;
 
         public SimpleQuadTestShader(string projectPath) : base()
         {
@@ -36,11 +36,17 @@ namespace Shader
             loc_batchStartOffset = GetUniformLocation("batchStartOffset");
             loc_currentBatchID = GetUniformLocation("currentBatchID");
             loc_quadSize = GetUniformLocation("quadSize");
+            loc_cameraPosition = GetUniformLocation("u_cameraPosition");
         }
 
         protected override void BindAttributes()
         {
             BindAttribute(0, "aPosition");
+        }
+
+        public void LoadCameraPosition(Vertex3f position)
+        {
+            Gl.Uniform3f(loc_cameraPosition, 1, position);
         }
 
         public void LoadVPMatrix(in Matrix4x4f matrix)

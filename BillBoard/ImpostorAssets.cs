@@ -3,13 +3,15 @@ using Model3d;
 using Renderer;
 using Shader;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace BillBoard
 {
     public class ImpostorAssets
     {
-        Dictionary<string, uint> _dicImpostorAtlas;                 // 임포스터 아틀라스 딕셔너리
-        Dictionary<string, ImpostorSettings> _impostorSettings;     // 임포스터 셋팅 딕셔너리
+        Dictionary<string, uint> _dicImpostorAtlas;                     // 임포스터 아틀라스 딕셔너리
+        Dictionary<string, ImpostorSettings> _impostorSettings;         // 임포스터 셋팅 딕셔너리
+        Dictionary<string, UnifiedTexturedModel> _unifiedTexturedModel; // 통합 텍스처 모델 딕셔너리
 
         ImpostorAtlasGenerator _atlasGenerator;                     // 임포스터 아틀라스 생성기
         UnlitShader _shader;                                        // 임포스터 셰이더
@@ -36,6 +38,16 @@ namespace BillBoard
             _atlasGenerator = new ImpostorAtlasGenerator();
             _dicImpostorAtlas = new Dictionary<string, uint>();
             _impostorSettings = new Dictionary<string, ImpostorSettings>();
+            _unifiedTexturedModel = new Dictionary<string, UnifiedTexturedModel>();
+        }
+
+        public UnifiedTexturedModel UnifiedTexturedModel(string modelName)
+        {
+            if (_unifiedTexturedModel.ContainsKey(modelName))
+            {
+                return _unifiedTexturedModel[modelName];
+            }
+            return null;
         }
 
         public void CreateImpostorModel(ImpostorSettings settings, UnifiedTexturedModel texturedModels)
@@ -46,6 +58,7 @@ namespace BillBoard
                 uint textureId = _atlasGenerator.GenerateAtlas(_shader, settings, settings.Name,
                     texturedModels, _camera);
                 _dicImpostorAtlas.Add(settings.Name, textureId);
+                _unifiedTexturedModel.Add(settings.Name, texturedModels);
 
                 // 임포스터 렌더링 데이터 설정
                 SetImposterRenderData(settings, textureId);
@@ -81,7 +94,7 @@ namespace BillBoard
                 horizontalFrames = settings.HorizontalAngles,
                 verticalFrames = settings.VerticalAngles,
                 enableEdgeLine = false,
-                AtlasTextureId = GetAtlasTexture(modelName)
+                AtlasTextureId = GetAtlasTexture(modelName),
             };
             return renderData;
         }

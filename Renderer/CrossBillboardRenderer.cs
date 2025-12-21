@@ -3,15 +3,14 @@ using Shader;
 using System;
 using System.Collections.Generic;
 
-namespace BillBoard
+namespace Renderer
 {
     /// <summary>
     /// BillboardCloud 렌더러
     /// 인스턴싱을 사용하여 대량의 Billboard Cloud를 효율적으로 렌더링
     /// </summary>
-    public class BillboardCloudRenderer : IDisposable
+    public class CrossBillboardRenderer : IDisposable
     {
-        private BillboardCloudData _data;
         private uint _instanceVAO;
         private uint _instanceVBO;
         private int _instanceCount;
@@ -20,9 +19,8 @@ namespace BillBoard
         private float[] _atlasOffsets;
         private float[] _atlasSizes;
 
-        public BillboardCloudRenderer(BillboardCloudData data)
+        public CrossBillboardRenderer()
         {
-            _data = data;
             InitializeAtlasData();
         }
 
@@ -31,15 +29,15 @@ namespace BillBoard
         /// </summary>
         private void InitializeAtlasData()
         {
-            _atlasOffsets = new float[12];  // 6 * vec2
-            _atlasSizes = new float[12];
+            _atlasOffsets = new float[6];  // 6 * vec2
+            _atlasSizes = new float[6];
 
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < 3; i++)
             {
-                _atlasOffsets[i * 2 + 0] = _data.Regions[i].Offset.x;
-                _atlasOffsets[i * 2 + 1] = _data.Regions[i].Offset.y;
-                _atlasSizes[i * 2 + 0] = _data.Regions[i].Size.x;
-                _atlasSizes[i * 2 + 1] = _data.Regions[i].Size.y;
+                _atlasOffsets[i * 2 + 0] = 0.25f * i;
+                _atlasOffsets[i * 2 + 1] = 0.0f;
+                _atlasSizes[i * 2 + 0] = 0.25f;
+                _atlasSizes[i * 2 + 1] = 1.0f;
             }
         }
 
@@ -94,7 +92,8 @@ namespace BillBoard
         /// <summary>
         /// 렌더링
         /// </summary>
-        public void Render(BillboardCloudShader shader, Matrix4x4f vp)
+        public void Render(CrossBillboardShader shader, Matrix4x4f vp,
+            float objWidth, float objHeight, uint textureId)
         {
             if (_instanceCount == 0) return;
 
@@ -102,17 +101,15 @@ namespace BillBoard
 
             // Uniform 설정 (atlasRegions 제거)
             shader.LoadVPMatrix(vp);
-            shader.LoadObjectSize(_data.ObjectWidth, _data.ObjectHeight);
-            shader.LoadHorizontalRatios(
-                _data.HorizontalPlaneTopRatio,
-                _data.HorizontalPlaneBottomRatio
-            );
-            shader.LoadAtlasTexture(_data.AtlasTexture.TextureID);
+            shader.LoadObjectSize(objWidth, objHeight);
+            shader.LoadAtlasTexture(textureId);
+            shader.EnableEdgeLine(false);
 
             // 렌더링 상태
             Gl.Enable(EnableCap.Blend);
             Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             Gl.Disable(EnableCap.CullFace);
+            Gl.Enable(EnableCap.DepthTest);
 
             // 인스턴스 렌더링
             Gl.BindVertexArray(_instanceVAO);

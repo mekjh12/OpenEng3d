@@ -16,10 +16,10 @@ namespace FormTools
             //Application.Run(new FormTerrainDataTest());           // 작동됨(수정 필요)
             //Application.Run(new FormOcclusionOpt());              // 작동됨(실패)
             //Application.Run(new FormGPUImposterInstance());       // 작동됨(실패)
-            //Application.Run(new FormBillboardCloud());            // 작동됨            
+            Application.Run(new FormBillboardCloud());            // 작동됨            
             //Application.Run(new FormGPUDriveHiZ());                 // 작동됨(실패)
             //Application.Run(new FormGPUDriven());                 // 작동됨(이전버전으로 폐기)
-            Application.Run(new FormGPUDrivenFrustumHiZ());           // 작동됨 = 뷰컬링+HiZ컬링(LOD0 모델원형인스턴스, LOD1 AABB인스턴스)
+            //Application.Run(new FormGPUDrivenFrustumHiZ());           // 작동됨 = 뷰컬링+HiZ컬링(LOD0 모델원형인스턴스, LOD1 AABB인스턴스)
             //Application.Run(new FormGPUDrivenImposter());           // 작동됨 = 뷰컬링(LOD0 모델원형인스턴스, LOD1 AABB인스턴스)
             //Application.Run(new FormGPUDrivenModelInstance());      // 작동됨 = 모델 원형 인스턴스렌더링(카메라 근방)
             //Application.Run(new FormImpostor());                  // 작동됨

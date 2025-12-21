@@ -57,6 +57,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AABBRenderer.cs" />
+    <Compile Include="CrossBillboardRenderer.cs" />
     <Compile Include="ImposterRenderer.cs" />
     <Compile Include="SimpFrameBuffer.cs" />
     <Compile Include="Renderer3d.cs" />

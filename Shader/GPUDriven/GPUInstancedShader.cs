@@ -76,6 +76,8 @@ namespace Shader
         /// </summary>
         public void LoadTextureArray(uint[] textureIDs)
         {
+            if (textureIDs == null || textureIDs.Length == 0) return;
+
             int count = System.Math.Min(textureIDs.Length, MAX_TEXTURES);
 
             Gl.Uniform1(loc_textureCount, count);

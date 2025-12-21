@@ -73,7 +73,7 @@ namespace BillBoard
 
         private List<ViewData> _viewDataList;           // 렌더링할 뷰 데이터 리스트
         private RenderTarget2D _atlasRenderTarget;      // 렌더링 결과를 저장할 렌더 타겟
-        UnifiedModelRenderer _unifiedModelRenderer;     // 통합 모s델 렌더러
+        UnifiedModelRenderer _unifiedModelRenderer;     // 통합 모델 렌더러
 
         /// <summary>
         /// 임포스터 아틀라스 생성기 초기화
@@ -124,8 +124,8 @@ namespace BillBoard
             RenderAtlas(settings, shader, unifiedTexturedModel, bound, camera);
 
             // 디버깅(지울것)
-            GetImpostorTexture(settings, drawBorders: true).Save(@"C:\Users\mekjh\OneDrive\바탕 화면\" + modelname + ".png");
-            GetImpostorDepthTexture(settings, drawBorders: true).Save(@"C:\Users\mekjh\OneDrive\바탕 화면\" + modelname + "_depth.png");
+            //GetImpostorTexture(settings, drawBorders: true).Save(@"C:\Users\mekjh\OneDrive\바탕 화면\" + modelname + ".png");
+            //GetImpostorDepthTexture(settings, drawBorders: true).Save(@"C:\Users\mekjh\OneDrive\바탕 화면\" + modelname + "_depth.png");
 
             return _atlasRenderTarget.TextureHandle;
         }

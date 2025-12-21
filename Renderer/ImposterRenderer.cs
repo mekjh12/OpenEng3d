@@ -1,6 +1,4 @@
-﻿using Common;
-using Model3d;
-using OpenGL;
+﻿using OpenGL;
 using Shader;
 using ZetaExt;
 

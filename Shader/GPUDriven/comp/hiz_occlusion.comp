@@ -98,8 +98,7 @@ bool projectAABB(AABB worldAABB, out vec2 minScreen, out vec2 maxScreen, out flo
         
         vec3 ndc = clipPos.xyz / clipPos.w;
         
-        if (abs(ndc.x) > 1.2 || abs(ndc.y) > 1.2) 
-            continue;
+        if (abs(ndc.x) > 1.2 || abs(ndc.y) > 1.2)  continue;
         
         float linearDepth = clamp(viewPos.z / MAX_DEPTH_METERS, 0.0, 1.0);
         
@@ -186,8 +185,8 @@ void main()
     float distance = length(u_cameraPosition - worldCenter);
     bool isLOD0 =   0 < distance && distance <= 50;
     bool isLOD1 =  50 < distance && distance <= 100;
-    bool isLOD2 = 100 < distance && distance <= 200;
-    bool isLOD3 = 200 < distance;
+    bool isLOD2 = 100 < distance && distance <= 350;
+    bool isLOD3 = 350 < distance;
 
     // 결과 기록
     if (isLOD0) 

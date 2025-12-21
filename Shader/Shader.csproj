@@ -72,7 +72,7 @@
     <Compile Include="AnimateShader\BoneMatrixUBO.cs" />
     <Compile Include="AtmosphericScatteringLUT\AtmosphericScatteringLUT.cs" />
     <Compile Include="AxisShader\AxisGeometry.cs" />
-    <Compile Include="BillboardCloudShader\BillboardCloudShader.cs" />
+    <Compile Include="CrossBillboardShader\CrossBillboardShader.cs" />
     <Compile Include="CloudShader\CloudShadowMapShader.cs" />
     <Compile Include="CloudShader\CloudTestRenderShader.cs" />
     <Compile Include="CloudShader\CloudComputeShader.cs" />
@@ -86,6 +86,7 @@
     <Compile Include="GPUDriven\FrustumCullingComputeShader.cs" />
     <Compile Include="GPUDriven\GPUBillboardShader.cs" />
     <Compile Include="GPUDriven\DepthDebugInstancedShader.cs" />
+    <Compile Include="GPUDriven\GPUDrivenImpostorShader.cs" />
     <Compile Include="GPUDriven\GPUInstancedShader.cs" />
     <Compile Include="GPUDriven\IndicesOrderCompShader.cs" />
     <Compile Include="GPUDriven\HiZOcclusionComputeShader.cs" />
@@ -138,9 +139,9 @@
     <None Include="AnimateShader\ani.frag" />
     <None Include="AnimateShader\ani.vert" />
     <None Include="AtmosphericScatteringLUT\scattering.comp" />
-    <None Include="BillboardCloudShader\billboardcloud.gem.glsl" />
-    <None Include="BillboardCloudShader\billboardcloud.vert" />
-    <None Include="BillboardCloudShader\billboardcloud.frag" />
+    <None Include="CrossBillboardShader\crossBillboard.gem.glsl" />
+    <None Include="CrossBillboardShader\crossBillboard.vert" />
+    <None Include="CrossBillboardShader\crossBillboard.frag" />
     <None Include="CloudShader\noise3d.comp" />
     <None Include="CloudShader\volumeRaycasting.frag" />
     <None Include="CloudShader\cloudRenderTest.frag" />
@@ -166,6 +167,9 @@
     <None Include="GPUDriven\comp\hiz_occlusion.comp" />
     <None Include="GPUDriven\glsl\depth_debug_instanced.vert" />
     <None Include="GPUDriven\comp\quadtree_culling.comp" />
+    <None Include="GPUDriven\glsl\gpu_impostor.frag" />
+    <None Include="GPUDriven\glsl\gpu_impostor.gem.glsl" />
+    <None Include="GPUDriven\glsl\gpu_impostor.vert" />
     <None Include="GPUDriven\glsl\simple_quad_test.gem.glsl" />
     <None Include="GPUDriven\glsl\simple_quad_test.frag" />
     <None Include="GPUDriven\glsl\simple_quad_test.vert" />

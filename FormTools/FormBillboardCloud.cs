@@ -21,6 +21,9 @@ namespace FormTools
     {
         readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
         readonly string EXE_PATH = Application.StartupPath;
+        readonly string TITLE = "Cross Billboard";
+        readonly string HELP_TEXT =
+            "1번키: 원점으로\n";
 
         private GlControl3 _glControl3;                     // OpenGL 컨트롤
         private ColorShader _colorShader;                   // 컬러 셰이더
@@ -31,6 +34,7 @@ namespace FormTools
         private Text2d _titleText;                          // 타이틀 텍스트
         private Text2d _descText;                           // 설명 텍스트
         private Text2d _camPosText;                         // 카메라 위치 텍스트   
+        private Text2d _culledText;                         // 컬링된 노드 텍스트   
 
         // 3D 관련 변수들
         Vertex3f _prevCameraPosition;                       // 이전 카메라 위치
@@ -38,10 +42,10 @@ namespace FormTools
         UnifiedModelRenderer _unifiedModelRenderer;         // 통합 모델 렌더러
 
         // 테스트 관련 변수들
-        BillboardCloudAtlasGenerator _generator;
-        BillboardCloudRenderer _renderer;
-        BillboardCloudData _billboardData;
-        BillboardCloudShader _bbcShader;
+        CrossBillboardAtlasGenerator _generator;
+        CrossBillboardRenderer _renderer;
+        CrossBillboardData _billboardData;
+        CrossBillboardShader _cbShader;
         AABBBoxShader _aabbBoxShader;
 
 
@@ -50,7 +54,8 @@ namespace FormTools
             InitializeComponent();
 
             // GL 생성
-            _glControl3 = new GlControl3("UnifiedModel", Application.StartupPath, @"\fonts\fontList.txt", @"\Res\");
+            this.Text = TITLE;
+            _glControl3 = new GlControl3(TITLE, Application.StartupPath, @"\fonts\fontList.txt", @"\Res\");
             _glControl3.Init += (w, h) => Init(w, h);
             _glControl3.Init3d += (w, h) => Init3d(w, h);
             _glControl3.Init2d += (w, h) => Init2d(w, h);
@@ -92,11 +97,11 @@ namespace FormTools
             // 쉐이더 초기화 및 셰이더 매니저에 추가
             ShaderManager.Instance.AddShader(new ColorShader(PROJECT_PATH));
             ShaderManager.Instance.AddShader(new UnlitShader(PROJECT_PATH));
-            ShaderManager.Instance.AddShader(new BillboardCloudShader(PROJECT_PATH));
+            ShaderManager.Instance.AddShader(new CrossBillboardShader(PROJECT_PATH));
             ShaderManager.Instance.AddShader(new AABBBoxShader(PROJECT_PATH));
             _colorShader = ShaderManager.Instance.GetShader<ColorShader>();
             _unlitShader = ShaderManager.Instance.GetShader<UnlitShader>();
-            _bbcShader = ShaderManager.Instance.GetShader<BillboardCloudShader>();
+            _cbShader = ShaderManager.Instance.GetShader<CrossBillboardShader>();
             _aabbBoxShader = ShaderManager.Instance.GetShader<AABBBoxShader>();
 
             // 앱 시작 시 한 번만 초기화
@@ -106,19 +111,24 @@ namespace FormTools
         public void Init2d(int width, int height)
         {
             _fpsText = new Text2d("FPS: 60.0", width / 2, 10, width, height,
-                Text2d.TextAlignment.Center, heightInPixels: 20);
+                Text2d.TextAlignment.Center, heightInPixels: 30);
             _fpsText.Color = Color.Yellow;
 
-            _titleText = new Text2d("빌보드 클라우드", 10, 10, width, height,
-                Text2d.TextAlignment.Left, heightInPixels: 15);
+            _titleText = new Text2d(TITLE, 10, 10, width, height,
+                Text2d.TextAlignment.Left, heightInPixels: 18);
             _titleText.Color = Color.Yellow;
 
-            _descText = new Text2d("1번키: 원점으로", 10, height, width, height,
+            _descText = new Text2d(HELP_TEXT, 10, height, width, height,
                 Text2d.TextAlignment.TopLeft, heightInPixels: 15);
             _descText.Color = Color.LightGray;
 
             _camPosText = new Text2d("카메라 위치 (0,0,0)", width - 10, height, width, height,
                 Text2d.TextAlignment.TopRight, heightInPixels: 15);
+
+            _culledText = new Text2d("컬링된 노드 0개", 10, (height * 0.5f), width, height,
+                Text2d.TextAlignment.Left, heightInPixels: 15);
+            _culledText.Color = Color.White;
+
         }
 
         public void Init3d(int width, int height)
@@ -127,16 +137,16 @@ namespace FormTools
             _glControl3.InitGridShader(PROJECT_PATH);
 
             // 3D 모델 매니저 및 모델 로드
-            _unifiedModel = ObjLoaderEx.LoadObjUnified(PROJECT_PATH + @"FormTools\bin\Debug\Res\Palm2.obj");
+            _unifiedModel = ObjLoaderEx.LoadObjUnified(PROJECT_PATH + @"FormTools\bin\Debug\Res\tree1.obj");
 
-            _generator = new BillboardCloudAtlasGenerator();
-            _billboardData = _generator.GenerateAtlas(_unlitShader, "Palm4", _unifiedModel, new float[] {0.5f, 0.8f});
-            _renderer = new BillboardCloudRenderer(_billboardData);
+            _generator = new CrossBillboardAtlasGenerator();
+            _billboardData = _generator.GenerateAtlas(_unlitShader, _unifiedModel);
+            _renderer = new CrossBillboardRenderer();
 
             // 3. 나무 인스턴스 설정
-            var instances = new List<TreeInstance>();
-            instances.Add(new TreeInstance(new Vertex3f(3, 3, 0), 1.0f));
-            instances.Add(new TreeInstance(new Vertex3f(3, -3, 0), 1.0f));
+            var instances = new List<Renderer.TreeInstance>();
+            instances.Add(new Renderer.TreeInstance(new Vertex3f(3, 3, 0), 1.0f));
+            instances.Add(new Renderer.TreeInstance(new Vertex3f(3, -3, 0), 1.0f));
 
             _renderer.SetInstances(instances);
 
@@ -176,7 +186,7 @@ namespace FormTools
             Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
 
             // 4. 렌더링 루프에서
-            _renderer.Render(_bbcShader, camera.VPMatrix);
+            _renderer.Render(_cbShader, camera.VPMatrix, 10, 10, _billboardData.AtlasTexture.TextureID);
 
             // 2D 렌더링을 위한 상태 설정
             Gl.Disable(EnableCap.DepthTest);

@@ -2,6 +2,7 @@
 using Common.Abstractions;
 using Model3d;
 using OpenGL;
+using Renderer;
 using Shader;
 using System;
 using System.Collections.Generic;
@@ -38,11 +39,11 @@ namespace BillBoard
     /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     /// </code>
     /// </summary>
-    public class BillboardCloudAtlasGenerator : IDisposable
+    public class CrossBillboardAtlasGenerator : IDisposable
     {
         // === 설정 ===
         public const int AtlasWidth = 1024;
-        public const int AtlasHeight = 512;
+        public const int AtlasHeight = 256;
         public const int PlaneSize = 256;  // 모든 평면이 256x256
 
         /// <summary>
@@ -58,9 +59,9 @@ namespace BillBoard
 
         private List<PlaneData> _planeDataList;
         private RenderTarget2D _atlasRenderTarget;
-        //private UnifiedModelRenderer _unifiedModelRenderer;
+        private UnifiedModelRenderer _unifiedModelRenderer;
 
-        public BillboardCloudAtlasGenerator()
+        public CrossBillboardAtlasGenerator()
         {
             _planeDataList = new List<PlaneData>();
         }
@@ -82,23 +83,22 @@ namespace BillBoard
         /// <summary>
         /// Atlas 생성 메인 함수
         /// </summary>
-        public BillboardCloudData GenerateAtlas(UnlitShader shader, string modelName,
-            UnifiedTexturedModel model, float[] heightRatios)
+        public CrossBillboardData GenerateAtlas(UnlitShader shader, UnifiedTexturedModel model)
         {
             // 통합 모델 렌더러 생성
-            //_unifiedModelRenderer = new UnifiedModelRenderer(model);
+            _unifiedModelRenderer = new UnifiedModelRenderer(model, shader);
 
             // 렌더 타겟 준비
             InitializeRenderTarget();
 
-            // 모델 바운딩박스 계산
+            // 약간의 패딩된 모델 바운딩박스 계산
             AABB3f bounds = CalculateModelBounds(model.AABB);
 
             // 원점이 바닥 중앙에 오도록 변환
-            bounds = CreateAABB3fPivotOriginalPoint(bounds);
+            //bounds = CreateAABB3fPivotOriginalPoint(bounds);
 
-            // 6개 평면 데이터 계산
-            CalculatePlaneData(bounds, heightRatios);
+            // 3개 수직 평면 데이터 계산
+            CalculatePlaneData(bounds);
 
             // 렌더링
             RenderAtlas(shader, model);
@@ -107,11 +107,16 @@ namespace BillBoard
             var data = CreateBillboardCloudData(model, bounds);
 
             // 디버그 저장
-            GetAtlasTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{modelName}_billboardcloud.png");
+            GetAtlasTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_billboardcloud.png");
 
             return data;
         }
 
+        /// <summary>
+        /// 모델의 원점이 AABB의 바닥 중앙에 오도록 AABB3f를 수정한다.
+        /// </summary>
+        /// <param name="aabb"></param>
+        /// <returns></returns>
         private AABB3f CreateAABB3fPivotOriginalPoint(AABB3f aabb)
         {
             // 원점이 AABB의 바닥 중앙에 오도록 변환
@@ -146,7 +151,7 @@ namespace BillBoard
         /// 6개 평면의 렌더링 데이터 계산
         /// ✅ 수직 평면의 아래쪽 중간 = 모델 원점(바닥 중심)
         /// </summary>
-        private void CalculatePlaneData(AABB3f bounds, float[] heightRatios)
+        private void CalculatePlaneData(AABB3f bounds)
         {
             _planeDataList.Clear();
 
@@ -157,7 +162,7 @@ namespace BillBoard
                 bounds.Min.z  // 바닥
             );
 
-            float radius = bounds.Radius;
+            float radius = Math.Max(Math.Max(bounds.Size.x, bounds.Size.y), bounds.Size.z) * 0.5f;
             float objectHeight = bounds.Size.z;
             float cameraDistance = radius * 3.0f;
 
@@ -169,9 +174,9 @@ namespace BillBoard
                 0.1f, cameraDistance * 2.0f
             );
 
-            // === 수직 평면 4개 (0°, 45°, 90°, 135°) ===
-            float[] angles = BillboardCloudAtlasLayout.VerticalAngles;
-            for (int i = 0; i < 4; i++)
+            // === 수직 평면 3 (0°, 60°, 120°) ===
+            float[] angles = CrossBillboardAtlasLayout.VerticalAngles;
+            for (int i = 0; i < 3; i++)
             {
                 float angleRad = angles[i] * (float)Math.PI / 180f;
 
@@ -195,38 +200,6 @@ namespace BillBoard
                     ProjectionMatrix = orthoProj,
                     AtlasOffset = new Vertex2f(i * PlaneSize / (float)AtlasWidth, 0f),
                     DebugName = $"Vertical_{angles[i]}°"
-                };
-
-                _planeDataList.Add(plane);
-            }
-
-            // === 수평 평면 2개 (상단, 하단) ===
-            for (int i = 0; i < 2; i++)
-            {
-                // ✅ 바닥 기준으로 높이 계산
-                float height = bottomCenter.z + objectHeight * heightRatios[i];
-
-                Vertex3f cameraPos = new Vertex3f(
-                    bottomCenter.x,
-                    bottomCenter.y,
-                    height + cameraDistance
-                );
-
-                Vertex3f lookAtTarget = new Vertex3f(
-                    bottomCenter.x,
-                    bottomCenter.y,
-                    height
-                );
-
-                PlaneData plane = new PlaneData
-                {
-                    ViewMatrix = Matrix4x4f.LookAt(cameraPos, lookAtTarget, Vertex3f.UnitZ), 
-                    ProjectionMatrix = orthoProj,
-                    AtlasOffset = new Vertex2f(
-                        i * PlaneSize / (float)AtlasWidth,
-                        PlaneSize / (float)AtlasHeight
-                    ),
-                    DebugName = i == 0 ? "Horizontal_Top" : "Horizontal_Bottom"
                 };
 
                 _planeDataList.Add(plane);
@@ -264,7 +237,7 @@ namespace BillBoard
                 Matrix4x4f mvp = plane.ProjectionMatrix * plane.ViewMatrix;
 
                 // 렌더링
-                //_unifiedModelRenderer.Render(shader, mvp);
+                _unifiedModelRenderer.Render(mvp);
 
                 shader.Unbind();
             }
@@ -273,9 +246,9 @@ namespace BillBoard
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
         }
 
-        private BillboardCloudData CreateBillboardCloudData(UnifiedTexturedModel model, AABB3f bounds)
+        private CrossBillboardData CreateBillboardCloudData(UnifiedTexturedModel model, AABB3f bounds)
         {
-            var data = new BillboardCloudData();
+            CrossBillboardData data = new CrossBillboardData();
 
             // ✅ 바닥 중심 기준으로 경계 정보 저장
             Vertex3f bottomCenter = new Vertex3f(
@@ -293,7 +266,7 @@ namespace BillBoard
             //data.PivotOffset = new Vertex3f(0, 0, 0);  // 바닥 중심이 원점
 
             // UV 영역
-            data.Regions = BillboardCloudAtlasLayout.CalculateRegions();
+            data.Regions = CrossBillboardAtlasLayout.CalculateRegions();
 
             // Atlas 텍스처
             data.AtlasTexture = new Texture(_atlasRenderTarget.TextureHandle, AtlasWidth, AtlasHeight);

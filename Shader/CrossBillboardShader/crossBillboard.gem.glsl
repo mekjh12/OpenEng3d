@@ -1,7 +1,7 @@
 ﻿#version 450 core
 
 layout(points) in;
-layout(triangle_strip, max_vertices = 24) out;  // 6 quads * 4 vertices
+layout(triangle_strip, max_vertices = 12) out;  // 4 quads * 4 vertices
 
 // Vertex Shader 출력
 in VS_OUT {
@@ -24,21 +24,15 @@ uniform float horizontalBottomRatio;
 vec2 GetAtlasOffset(int planeIndex)
 {
     // 0~3: 수직 평면 (상단 줄, 각 0.25 x 0.5)
-    if (planeIndex < 4)
+    if (planeIndex < 3)
     {
         return vec2(planeIndex * 0.25, 0.0);
-    }
-    // 4~5: 수평 평면 (하단 줄, 각 0.25 x 0.5)
-    else
-    {
-        return vec2((planeIndex - 4) * 0.25, 0.5);
     }
 }
 
 vec2 GetAtlasSize(int planeIndex)
 {
-    // 모든 평면이 0.25 x 0.5
-    return vec2(0.25, 0.5);
+    return vec2(0.25, 1.0f);
 }
 
 // Quad 정점 생성 헬퍼
@@ -86,10 +80,10 @@ void main()
     float width = objectWidth * scale;
     float height = objectHeight * scale;
     
-    // === 수직 평면 4개 ===
-    float angles[4] = float[4](0.0, 45.0, 90.0, 135.0);
+    // === 수직 평면 3개 ===
+    float angles[3] = float[3](0.0, 60.0, 120.0);
     
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 3; i++)
     {
         float angleRad = radians(angles[i]);
         vec3 right = vec3(cos(angleRad), sin(angleRad), 0.0);
@@ -101,14 +95,4 @@ void main()
         EmitQuad(planeCenter, right, up, width, height, i);
     }
     
-    // === 수평 평면 2개 ===
-    vec3 horizontalRight = vec3(1, 0, 0);
-    vec3 horizontalUp = vec3(0, 1, 0);
-    
-    // ✅ 바닥 기준으로 높이 계산
-    vec3 topCenter = center + vec3(0, 0, height * horizontalTopRatio);
-    EmitQuad(topCenter, horizontalRight, horizontalUp, width, width, 4);
-    
-    vec3 bottomCenter = center + vec3(0, 0, height * horizontalBottomRatio);
-    EmitQuad(bottomCenter, horizontalRight, horizontalUp, width, width, 5);
 }

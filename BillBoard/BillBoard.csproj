@@ -56,10 +56,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BillboardCloudAtlasGenerator.cs" />
-    <Compile Include="BillboardCloudAtlasLayout.cs" />
-    <Compile Include="BillboardCloudData.cs" />
-    <Compile Include="BillboardCloudRenderer.cs" />
+    <Compile Include="CrossBillboardAtlasGenerator.cs" />
+    <Compile Include="CrossBillboardAtlasLayout.cs" />
+    <Compile Include="CrossBillboardData.cs" />
     <Compile Include="ImpostorAtlasGenerator.cs" />
     <Compile Include="ImpostorData.cs" />
     <Compile Include="ImpostorAssets.cs" />
