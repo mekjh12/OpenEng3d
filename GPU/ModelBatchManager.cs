@@ -30,8 +30,9 @@ namespace GPUDriven
         public uint ModelID { get; set; }              // 모델 ID (0~63)
         public string ModelName { get; set; }          // 모델 이름
         public float LODDistance { get; set; }         // LOD 전환 거리
-        public AABB ReferenceAABB { get; set; }        // 로컬 공간 AABB
+        public AABB LocalModelAABB { get; set; }        // 로컬 공간 AABB
         public UnifiedTexturedModel Model { get; set; }    // 메시 배열
+        public UnifiedTexturedModel Model_LOD1 { get; set; }    // 메시 배열
         public uint VAO { get; set; }               // VAO 배열
         public uint VertexCount { get; set; }       // 정점 수 배열
 
@@ -40,7 +41,7 @@ namespace GPUDriven
             ModelID = 0;
             ModelName = string.Empty;
             LODDistance = 60f;
-            ReferenceAABB = new AABB();
+            LocalModelAABB = new AABB();
             Model = null;
             VAO = 0;
             VertexCount = 0;
@@ -57,14 +58,11 @@ namespace GPUDriven
         public uint StartIndex { get; set; }           // 정렬 후 시작 인덱스
         public uint Count { get; set; }                // 인스턴스 개수
         public float LODDistance { get; set; }         // LOD 거리
-        public AABB ReferenceAABB { get; set; }        // 기준 AABB
+        public AABB LocalModelAABB { get; set; }        // 기준 AABB
         public UnifiedTexturedModel Model { get; set; }    // 메시 배열
+        public UnifiedTexturedModel Model_LOD1 { get; set; }    // 메시 배열
         public uint VAO { get; set; }               // VAO 배열
         public uint VertexCount { get; set; }       // 정점 수 배열
-
-        // Indirect Buffer (나중에 설정)
-        public uint IndirectBuffers_LOD0 { get; set; }
-        public uint IndirectBuffer_LOD1 { get; set; }
 
         public BatchDescriptor()
         {
@@ -73,8 +71,9 @@ namespace GPUDriven
             StartIndex = 0;
             Count = 0;
             LODDistance = 60f;
-            ReferenceAABB = new AABB();
+            LocalModelAABB = new AABB();
             Model = null;
+            Model_LOD1 = null;
             VAO = 0;
             VertexCount = 0;
         }
@@ -138,7 +137,8 @@ namespace GPUDriven
         public uint AddModel(
             string modelName,
             float lodDistance,
-            UnifiedTexturedModel model)
+            UnifiedTexturedModel model, 
+            UnifiedTexturedModel lod1 = null)
         {
             if (_isFinalized)
             {
@@ -169,16 +169,17 @@ namespace GPUDriven
             modelInfo.VertexCount = 0;
             modelInfo.VAO = model.VaoID;
             modelInfo.VertexCount = (uint)model.VertexCount;
+            modelInfo.Model_LOD1 = lod1;
 
             // 기준 AABB 계산
-            modelInfo.ReferenceAABB = CalculateModelAABB(model);
+            modelInfo.LocalModelAABB = CalculateModelAABB(model);
 
             // 모델 등록
             _models.Add(modelInfo);
 
             Console.WriteLine($"[Model {modelID}] Added: {modelName}");
             Console.WriteLine($"  LOD Distance: {lodDistance}m");
-            Console.WriteLine($"  AABB: Min{modelInfo.ReferenceAABB.Min} Max{modelInfo.ReferenceAABB.Max}");
+            Console.WriteLine($"  AABB: Min{modelInfo.LocalModelAABB.Min} Max{modelInfo.LocalModelAABB.Max}");
 
             return modelID;
         }
@@ -285,7 +286,7 @@ namespace GPUDriven
                 // AABB 계산
                 ModelInfo modelInfo = _models[(int)inst.ModelID];
                 _finalAABBs[currentIndex] = TransformAABB(
-                    modelInfo.ReferenceAABB,
+                    modelInfo.LocalModelAABB,
                     inst.Transform);
 
                 // Batch ID 저장
@@ -455,10 +456,11 @@ namespace GPUDriven
                 StartIndex = start,
                 Count = count,
                 LODDistance = modelInfo.LODDistance,
-                ReferenceAABB = modelInfo.ReferenceAABB,
+                LocalModelAABB = modelInfo.LocalModelAABB,
                 Model = modelInfo.Model,
                 VAO = modelInfo.VAO,
-                VertexCount = modelInfo.VertexCount
+                VertexCount = modelInfo.VertexCount,
+                Model_LOD1 = modelInfo.Model_LOD1
             };
 
             usedModelIDs.Add(modelID);

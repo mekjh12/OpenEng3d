@@ -39,8 +39,7 @@ namespace Renderer
 
             _shader.Bind();
 
-            // ✅ 텍스처 배열 바인딩 (한 번만!)
-            _shader.LoadTextureArray(_model.TextureIDs.ToArray());
+            _shader.LoadTextureArray(_model.TextureIDArray);
 
             _shader.LoadMVPMatrix(mvp);
             _shader.LoadModelView(mv);

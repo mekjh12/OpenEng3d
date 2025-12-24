@@ -61,11 +61,13 @@ namespace FormTools
             _glControl3.Init2d += (w, h) => Init2d(w, h);
             _glControl3.UpdateFrame = (deltaTime, w, h, camera) => UpdateFrame(deltaTime, w, h, camera);
             _glControl3.RenderFrame = (deltaTime, w, h, backcolor, camera) => RenderFrame(deltaTime, backcolor, camera);
+            _glControl3.BlitToScreen = (deltaTime, camera) => BlitToScreen(deltaTime, camera);
             _glControl3.MouseDown += (s, e) => MouseDnEvent(s, e);
             _glControl3.MouseUp += (s, e) => MouseUpEvent(s, e);
             _glControl3.KeyDown += (s, e) => KeyDownEvent(s, e);
             _glControl3.KeyUp += (s, e) => KeyUpEvent(s, e);
             _glControl3.Load += (s, e) => Form_Load(s, e);
+            _glControl3.AutoBlitToScreen = false;
             _glControl3.Start();
             Controls.Add(_glControl3);
 
@@ -220,6 +222,42 @@ namespace FormTools
             }
         }
 
+        private void BlitToScreen(int deltaTime, Camera camera)
+        {
+            if (!_isLoaded) return;
+
+            int w = _glControl3.Width;
+            int h = _glControl3.Height;
+
+            // 최종 화면 출력
+            Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            Gl.Viewport(0, 0, w, h);
+            Gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+            // [일반] 컬러 버퍼 출력
+            _glControl3.BlitRenderTargetToScreen();
+
+            // ========================================
+            // 2D UI 렌더링
+            // ========================================
+            Gl.Disable(EnableCap.DepthTest);
+            Gl.Enable(EnableCap.Blend);
+            Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            Gl.Disable(EnableCap.CullFace);
+            Gl.Viewport(0, 0, w, h);
+
+            Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
+            _textNamePlate.Render();
+            _fpsText.Render();
+            _titleText.Render();
+            _descText.Render();
+            _camPosText.Render();
+            _culledText.Render();
+
+            Gl.Disable(EnableCap.Blend);
+            Renderer3d.RenderPoint(_colorShader, camera.PivotPosition, camera, new Vertex4f(1, 1, 0, 1), 0.02f);
+            Gl.Enable(EnableCap.DepthTest);
+        }
 
         public void RenderFrame(double deltaTime, Vertex4f backcolor, Camera camera)
         {

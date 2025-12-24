@@ -237,7 +237,7 @@ namespace FormTools
             foreach (TerrainRegion terrainRegion in _regionManager.VisibleRegions)
             {
                 if (terrainRegion.TerrainEntity == null) continue;
-                _hzbuffer.RenderSimpleTerrain(
+                _hzbuffer.RenderTerrainDepth(
                     camera.ProjectiveMatrix,
                     camera.ViewMatrix,
                     TerrainConstants.DEFAULT_VERTICAL_SCALE,

@@ -2,7 +2,6 @@
 using Common.Abstractions;
 using OpenGL;
 using System.Collections.Generic;
-using System.Drawing.Printing;
 
 namespace Model3d
 {
@@ -18,6 +17,14 @@ namespace Model3d
 
         public List<Texture> Textures { get; set; }
 
+        public uint[] TextureIDArray => _textureIds;
+
+        public bool EnableCullFace { get; set; } = false;
+        public CullFaceMode CullFaceMode { get; set; } = CullFaceMode.Back;
+
+        public AABB3f AABB { get; set; }
+
+
         public List<uint> TextureIDs
         {
             get => _textureList;
@@ -27,13 +34,6 @@ namespace Model3d
                 _textureIds = TextureIDs.ToArray();
             }
         }
-
-        public uint[] TextureIDArray => _textureIds;
-
-        public bool EnableCullFace { get; set; } = false;
-        public CullFaceMode CullFaceMode { get; set; } = CullFaceMode.Back;
-
-        public AABB3f AABB { get; set; }
 
         public UnifiedTexturedModel(string name)
         {

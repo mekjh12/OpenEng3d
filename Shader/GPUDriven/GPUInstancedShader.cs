@@ -1,7 +1,5 @@
 ﻿using Common;
-using Common.Abstractions;
 using OpenGL;
-using System;
 
 namespace Shader
 {
@@ -25,6 +23,8 @@ namespace Shader
         private const int MAX_TEXTURES = 32;
         private int loc_batchStartOffset;
         private int loc_view;
+        private int loc_debugColor;
+        private int loc_enableDebug;
 
 
         public GPUInstancedShader(string projectPath) : base()
@@ -43,6 +43,8 @@ namespace Shader
             loc_batchStartOffset = GetUniformLocation("batchStartOffset");
 
             loc_textureCount = GetUniformLocation("textureCount");
+            loc_debugColor = GetUniformLocation("debugColor");
+            loc_enableDebug = GetUniformLocation("enableDebug");
 
             // ✅ 배열 위치 가져오기
             loc_textures = new int[MAX_TEXTURES];
@@ -58,6 +60,16 @@ namespace Shader
             BindAttribute(1, "aTexCoord");
             BindAttribute(2, "aNormal");
             BindAttribute(3, "materialID");
+        }
+
+        public void LoadEnableDebug(bool enableDebug)
+        {
+            Gl.Uniform1(loc_enableDebug, enableDebug ? 1 : 0);
+        }
+
+        public void LoadDebugColor(Vertex4f color)
+        {
+            Gl.Uniform4f(loc_debugColor, 1, color);
         }
 
         public void LoadBatchStartOffset(uint offset)

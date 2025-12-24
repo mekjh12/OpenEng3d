@@ -217,7 +217,7 @@ namespace Occlusion
         /// <param name="view">뷰 행렬</param>
         /// <param name="heightScale">높이 스케일</param>
         /// <param name="terrianPatchEntity">지형 패치</param>
-        public void RenderSimpleTerrain(Matrix4x4f proj, Matrix4x4f view, float heightScale, Entity terrianPatchEntity)
+        public void RenderTerrainDepth(Matrix4x4f proj, Matrix4x4f view, float heightScale, Entity terrianPatchEntity)
         {
             if (terrianPatchEntity == null) return;
             if (terrianPatchEntity?.Model == null || terrianPatchEntity.Model.Length == 0)

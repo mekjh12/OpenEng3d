@@ -1,37 +1,44 @@
 ﻿#version 450 core
-
 layout(local_size_x = 1) in;
 
-// Indirect Command Buffer (통합)
-// DrawArraysIndirectCommand: 4 uints per command
-// [cmdIdx * 4 + 0] = vertexCount    (읽기 전용, 초기화 시 설정됨)
-// [cmdIdx * 4 + 1] = instanceCount  ← 여기만 업데이트!
-// [cmdIdx * 4 + 2] = first
-// [cmdIdx * 4 + 3] = baseInstance
+// Indirect Command Buffer (바이트 단위 접근)
 layout(std430, binding = 10) writeonly buffer IndirectCommands {uint indirectCommands[];};
 
 // Visible Counts (배치별)
 layout(std430, binding = 11) readonly buffer VisibleCounts_LOD0 {uint visibleCounts_LOD0[];};
-layout(std430, binding = 12) readonly buffer VisibleCounts_LOD1 {   uint visibleCounts_LOD1[];};
+layout(std430, binding = 12) readonly buffer VisibleCounts_LOD1 {uint visibleCounts_LOD1[];};
 layout(std430, binding = 13) readonly buffer VisibleCounts_LOD2 {uint visibleCounts_LOD2[];};
-layout(std430, binding = 14) readonly buffer VisibleCounts_LOD3 {   uint visibleCounts_LOD3[];};
+layout(std430, binding = 14) readonly buffer VisibleCounts_LOD3 {uint visibleCounts_LOD3[];};
 
 uniform uint numBatches;
-uniform uint batchCommandStartIndices[64];  // 각 배치의 시작 command 인덱스
+uniform uint batchCommandStartIndices[64];  // 바이트 오프셋 (0, 68, 136...)
 
 void main() {
     uint batchID = gl_GlobalInvocationID.x;
     if (batchID >= numBatches) return;
     
-    uint cmdIdx = batchCommandStartIndices[batchID];
+    // 바이트 오프셋을 uint 인덱스로 변환 (4바이트 = 1 uint)
+    uint byteOffset = batchCommandStartIndices[batchID];
+    uint baseIndex = byteOffset / 4;
+    
     uint visibleLOD0 = visibleCounts_LOD0[batchID];
     uint visibleLOD1 = visibleCounts_LOD1[batchID];
     uint visibleLOD2 = visibleCounts_LOD2[batchID];
     uint visibleLOD3 = visibleCounts_LOD3[batchID];
     
+    // LOD0: 바이트 오프셋 + 0, 16바이트 (4 uints)
+    // instanceCount는 두 번째 uint
+    indirectCommands[baseIndex + 1] = visibleLOD0;
     
-    indirectCommands[cmdIdx * 4 + 1] = visibleLOD0;         // LOD0 업데이트
-    indirectCommands[(cmdIdx + 1) * 4 + 1] = visibleLOD1;   // LOD1 업데이트
-    indirectCommands[(cmdIdx + 2) * 4 + 1] = visibleLOD2;   // LOD2 업데이트
-    indirectCommands[(cmdIdx + 3) * 4 + 1] = visibleLOD3;   // LOD3 업데이트
+    // LOD1: 바이트 오프셋 + 16, 20바이트 (5 uints)
+    // 16 bytes = 4 uints, instanceCount는 두 번째 uint
+    indirectCommands[baseIndex + 4 + 1] = visibleLOD1;
+    
+    // LOD2: 바이트 오프셋 + 36, 16바이트 (4 uints)
+    // 36 bytes = 9 uints
+    indirectCommands[baseIndex + 9 + 1] = visibleLOD2;
+    
+    // LOD3: 바이트 오프셋 + 52, 16바이트 (4 uints)
+    // 52 bytes = 13 uints
+    indirectCommands[baseIndex + 13 + 1] = visibleLOD3;
 }

@@ -19,13 +19,13 @@ namespace FormTools
             //Application.Run(new FormGPUDriveHiZ());                 // 작동됨(실패)
             //Application.Run(new FormGPUDriven());                 // 작동됨(이전버전으로 폐기)
 
-            Application.Run(new FormGPUDrivenHiZLod4());            // 작동됨 = lod3에 크로스빌보드 이식
+            Application.Run(new FormGPUDrivenHiZLod4());          // 작동됨 = lod2에 크로스빌보드 이식
             //Application.Run(new FormBillboardCloud());            // 작동됨 = CrossBillboard로서 GPU Driven에 이식 준비
             //Application.Run(new FormGPUDrivenFrustumHiZ());       // 작동됨 = 뷰컬링+HiZ컬링(LOD0 모델원형인스턴스, LOD1 AABB인스턴스)
             //Application.Run(new FormGPUDrivenImposter());         // 작동됨 = 뷰컬링(LOD0 모델원형인스턴스, LOD1 AABB인스턴스)
             //Application.Run(new FormGPUDrivenModelInstance());    // 작동됨 = 모델 원형 인스턴스렌더링(카메라 근방)
-            //Application.Run(new FormImpostor());                  // 작동됨
-            //Application.Run(new FormUnifiedModel());              // 작동됨
+            //Application.Run(new FormImpostor());                  // 작동됨 = 임포스터 렌더링 테스트
+            //Application.Run(new FormUnifiedModel());              // 작동됨 = 단일 통합 모델 렌더링
             //Application.Run(new FormQuadTree());                  // 작동됨
             //Application.Run(new FormCulling());                   // 작동됨
             //Application.Run(new FormHZBuffer());                  // 작동됨

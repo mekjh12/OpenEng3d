@@ -37,6 +37,7 @@
             this.ClientSize = new System.Drawing.Size(460, 279);
             this.Name = "FormGPUDrivenHiZLod4";
             this.Text = "FormGPUDrivenHiZLod4";
+            this.Load += new System.EventHandler(this.FormGPUDrivenHiZLod4_Load);
             this.ResumeLayout(false);
 
         }

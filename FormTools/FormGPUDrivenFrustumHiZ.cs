@@ -248,7 +248,7 @@ namespace FormTools
                 _hiZBuffer.BindFramebuffer();
                 _hiZBuffer.PrepareRenderSurface();
 
-                _hiZBuffer.RenderSimpleTerrain(camera.ProjectiveMatrix, 
+                _hiZBuffer.RenderTerrainDepth(camera.ProjectiveMatrix, 
                     camera.ViewMatrix, 
                     TerrainConstants.DEFAULT_VERTICAL_SCALE,
                     _terrainRegion.TerrainEntity);
@@ -366,7 +366,7 @@ namespace FormTools
             }
             else if (e.KeyCode == Keys.D3)
             {
-                _gpuDriven.IsSimpleQuadDraw = !_gpuDriven.IsSimpleQuadDraw;
+                //_gpuDriven.IsSimpleQuadDraw = !_gpuDriven.IsSimpleQuadDraw;
             }
         }
 

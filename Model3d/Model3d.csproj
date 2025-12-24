@@ -98,6 +98,7 @@
     <Compile Include="TextureStorage.cs" />
     <Compile Include="TransformComponent.cs" />
     <Compile Include="UnifiedTexturedModel.cs" />
+    <Compile Include="UnifiedTexturedModelLOD.cs" />
     <Compile Include="WorldCoordinate.cs" />
   </ItemGroup>
   <ItemGroup>

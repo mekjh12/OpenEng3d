@@ -228,7 +228,7 @@ namespace FormTools
             // 지형 오클루더들의 깊이맵 생성
             if (_terrainRegion != null)
             {
-                _hzbuffer.RenderSimpleTerrain(
+                _hzbuffer.RenderTerrainDepth(
                     camera.ProjectiveMatrix,
                     camera.ViewMatrix,
                     TerrainConstants.DEFAULT_VERTICAL_SCALE,

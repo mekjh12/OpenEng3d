@@ -55,12 +55,14 @@ namespace FormTools
             InitializeComponent();
 
             // GL 생성
-            _glControl3 = new GlControl3("GPU Driven(모델 인스턴스)", Application.StartupPath, @"\fonts\fontList.txt", @"\Res\");
+            _glControl3 = new GlControl3("GPU Driven(모델 인스턴스)", Application.StartupPath, 
+                @"\fonts\fontList.txt", @"\Res\", useRenderTarget: true);
             _glControl3.Init += (w, h) => Init(w, h);
             _glControl3.Init3d += (w, h) => Init3d(w, h);
             _glControl3.Init2d += (w, h) => Init2d(w, h);
             _glControl3.UpdateFrame = (deltaTime, w, h, camera) => UpdateFrame(deltaTime, w, h, camera);
             _glControl3.RenderFrame = (deltaTime, w, h, backcolor, camera) => RenderFrame(deltaTime, backcolor, camera);
+            _glControl3.BlitToScreen = (deltaTime, camera) => BlitToScreen(deltaTime, camera);
             _glControl3.MouseDown += (s, e) => MouseDnEvent(s, e);
             _glControl3.MouseUp += (s, e) => MouseUpEvent(s, e);
             _glControl3.KeyDown += (s, e) => KeyDownEvent(s, e);
@@ -185,12 +187,8 @@ namespace FormTools
             // 뷰 프러스텀 업데이트
             _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
 
+            // GPU 드리븐 업데이트
             _gpuDriven.Update(camera, _viewFrustum);
-
-            // 네임플레이트 업데이트
-            //_textNamePlate.Text = $"가시객체{visibleCount}";
-            //_textNamePlate.WorldPosition = camera.Position + camera.Forward * 1f - camera.Right * 0.2f;
-            //_textNamePlate.Update(deltaTime);
 
             // 렌더링 루프에서
             _fpsText.Text = $"FPS: {FramePerSecond.FPS:F1}";
@@ -202,9 +200,9 @@ namespace FormTools
                 ref _frustumPassCount,
                 ref _visibleReport);
 
+            // 가시 정보 업데이트            
             if (_visibleCount != _lastVisibleCount || _frustumPassCount != _lastFrustumPassCount)
             {
-                // 네임플레이트 업데이트            
                 _lastVisibleCount = _visibleCount;
                 _lastFrustumPassCount = _frustumPassCount;
                 _culledText.Text = $"배치수{_modelBatchManager.ActualBatchCount}, " +
@@ -223,20 +221,39 @@ namespace FormTools
             int h = _glControl3.Height;
 
             // 기본 프레임버퍼로 전환 및 초기화
-            Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-            Gl.Viewport(0, 0, w, h);
-            Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
+            if (!_glControl3.UseRenderTarget)
+            {
+                Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+                Gl.Viewport(0, 0, w, h);
+                Gl.ClearColor(backcolor.x, backcolor.y, backcolor.z, backcolor.w);
+                Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
+            }
 
             _gpuDriven.Render(camera);
+        }
 
-            // 2D 렌더링을 위한 상태 설정
+
+        private void BlitToScreen(int deltaTime, Camera camera)
+        {
+            if (!_isLoaded) return;
+
+            int w = _glControl3.Width;
+            int h = _glControl3.Height;
+
+            // 최종 화면 출력
+            Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            Gl.Viewport(0, 0, w, h);
+            Gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+            _glControl3.BlitRenderTargetToScreen();
+
+            // 2D UI 렌더링
             Gl.Disable(EnableCap.DepthTest);
-            Gl.Enable(EnableCap.Blend);  // ← 여기서 켜기
+            Gl.Enable(EnableCap.Blend);
             Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             Gl.Disable(EnableCap.CullFace);
             Gl.Viewport(0, 0, w, h);
 
-            // FPS 렌더링
             Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
             _textNamePlate.Render();
             _fpsText.Render();
@@ -245,11 +262,11 @@ namespace FormTools
             _camPosText.Render();
             _culledText.Render();
 
-            // 카메라 중심점 렌더링
             Gl.Disable(EnableCap.Blend);
             Renderer3d.RenderPoint(_colorShader, camera.PivotPosition, camera, new Vertex4f(1, 1, 0, 1), 0.02f);
             Gl.Enable(EnableCap.DepthTest);
         }
+
 
         public void KeyDownEvent(object sender, KeyEventArgs e)
         {

@@ -70,7 +70,8 @@ namespace FormTools
             InitializeComponent();
 
             // GL 생성
-            _glControl3 = new GlControl3("임포스터", Application.StartupPath, @"\fonts\fontList.txt", @"\Res\")
+            _glControl3 = new GlControl3("임포스터", 
+                Application.StartupPath, @"\fonts\fontList.txt", @"\Res\", useRenderTarget: false)
             {
                 Location = new System.Drawing.Point(0, 0),
                 Dock = DockStyle.Fill,
@@ -218,9 +219,13 @@ namespace FormTools
             int h = _glControl3.Height;
 
             // 기본 프레임버퍼로 전환 및 초기화
-            Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-            Gl.Viewport(0, 0, w, h);
-            Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
+            if (!_glControl3.UseRenderTarget)
+            {
+                Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+                Gl.Viewport(0, 0, w, h);
+                Gl.ClearColor(backcolor.x, backcolor.y, backcolor.z, backcolor.w);
+                Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
+            }
 
             Gl.Disable(EnableCap.Blend);
 

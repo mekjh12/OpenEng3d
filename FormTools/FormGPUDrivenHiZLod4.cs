@@ -83,8 +83,8 @@ namespace FormTools
             _glControl3.Init3d += (w, h) => Init3d(w, h);
             _glControl3.Init2d += (w, h) => Init2d(w, h);
             _glControl3.UpdateFrame = (deltaTime, w, h, camera) => UpdateFrame(deltaTime, w, h, camera);
-            _glControl3.RenderFrame = (deltaTime, w, h, backcolor, camera) => Render3dScene(camera);  // ✅ 변경
-            _glControl3.PostProcessFrame = (deltaTime, camera) => RenderFinalOutput(deltaTime, camera);
+            _glControl3.RenderFrame = (deltaTime, w, h, backcolor, camera) => RenderFrame(deltaTime, backcolor, camera);
+            _glControl3.BlitToScreen = (deltaTime, camera) => BlitToScreen(deltaTime, camera);
             _glControl3.MouseDown += (s, e) => MouseDnEvent(s, e);
             _glControl3.MouseUp += (s, e) => MouseUpEvent(s, e);
             _glControl3.KeyDown += (s, e) => KeyDownEvent(s, e);
@@ -93,7 +93,6 @@ namespace FormTools
             _glControl3.AutoBlitToScreen = false;
             _glControl3.Start();
             Controls.Add(_glControl3);
-
 
             // 파일 해시 매니저 초기화
             FileHashManager.ROOT_FILE_PATH = PROJECT_PATH;
@@ -154,15 +153,16 @@ namespace FormTools
 
             // 3D 모델 매니저 초기화 및 모델 로드
             _model3DManager = new Model3dManager(PROJECT_PATH, EXE_PATH + "\\nullTexture.jpg");
-            UnifiedTexturedModel model1 = _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm4.obj");
-            UnifiedTexturedModel model2 = _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm1.obj");
             UnifiedTexturedModel model3 = _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\tree1.obj");
+            UnifiedTexturedModel model1 = _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm4.obj");
+            //UnifiedTexturedModel model2 = _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm1.obj");
 
-            // 모델 배치 매니저 초기화
+            UnifiedTexturedModelLOD model3_lod1 = model3 as UnifiedTexturedModelLOD;
+            UnifiedTexturedModelLOD model1_lod1 = model1 as UnifiedTexturedModelLOD;
+
             _modelBatchManager = new ModelBatchManager();
-            _modelBatchManager.AddModel(model1.Name, 100, model1);
-            _modelBatchManager.AddModel(model2.Name, 100, model2);
-            _modelBatchManager.AddModel(model3.Name, 100, model3);
+            _modelBatchManager.AddModel(model3.Name, 100, model3, model3_lod1.ModelLod1);
+            _modelBatchManager.AddModel(model1.Name, 100, model1, model1_lod1.ModelLod1);
 
             // 지형 영역 초기화
             RegionCoord regionCoord = new RegionCoord(0, 0);
@@ -195,7 +195,7 @@ namespace FormTools
                         Matrix4x4f transform = Matrix4x4f.Translated(posX, posY, posZ) *
                                         Matrix4x4f.RotatedZ(rotZ.ToDegree()) *
                                         Matrix4x4f.Scaled(scale, scale, scale);
-                        _modelBatchManager.AddInstance((uint)(x % 3), transform);
+                        _modelBatchManager.AddInstance((uint)(x % 2), transform);
                         //_modelBatchManager.AddInstance((uint)Rand.NextInt(0, 2), transform);
                     }
 
@@ -204,7 +204,6 @@ namespace FormTools
 
                     _isLoaded = true;
                 });
-
 
             // 지형 레벨 텍스쳐 로딩
             string heightMap = PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\";
@@ -257,7 +256,7 @@ namespace FormTools
                 _hiZBuffer.BindFramebuffer();
                 _hiZBuffer.PrepareRenderSurface();
 
-                _hiZBuffer.RenderSimpleTerrain(camera.ProjectiveMatrix,
+                _hiZBuffer.RenderTerrainDepth(camera.ProjectiveMatrix,
                     camera.ViewMatrix,
                     TerrainConstants.DEFAULT_VERTICAL_SCALE,
                     _terrainRegion.TerrainEntity);
@@ -300,9 +299,11 @@ namespace FormTools
             }
         }
 
-        // ✅ 3D 씬 렌더링 (RenderTarget에 그려짐)
-        private void Render3dScene(Camera camera)
+        public void RenderFrame(double deltaTime, Vertex4f backcolor, Camera camera)
         {
+            if (!_isLoaded) return;
+            if (!_isStarted) return;
+
             // 지형 렌더링
             Renderer3d.RenderByTerrainTessellationShader(
                 _terrainShader,
@@ -320,18 +321,13 @@ namespace FormTools
             _gpuDriven?.Render(camera);
         }
 
-        // ✅ 최종 출력 (포스트 프로세싱)
-        private void RenderFinalOutput(int deltaTime, Camera camera)
+        private void BlitToScreen(int deltaTime, Camera camera)
         {
             if (!_isLoaded) return;
+            if (!_isStarted) return;
 
             int w = _glControl3.Width;
             int h = _glControl3.Height;
-
-            // ========================================
-            // 이 시점에서 GlControl3가 이미 RenderTarget에
-            // 지형 + 나무를 렌더링 완료한 상태
-            // ========================================
 
             // 최종 화면 출력
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
@@ -347,7 +343,7 @@ namespace FormTools
             }
             else if (_isVisibleRenderDepthBuffer)
             {
-                // ✅ [디버깅] 메인 렌더 깊이 버퍼 시각화 (지형 + 나무)
+                // [디버깅] 메인 렌더 깊이 버퍼 시각화 (지형 + 나무)
                 _renderDepthShader.Bind();
                 {
                     _renderDepthShader.LoadCameraNear(camera.NEAR);
@@ -366,7 +362,7 @@ namespace FormTools
             }
             else
             {
-                // ✅ [일반] 컬러 버퍼 출력
+                // [일반] 컬러 버퍼 출력
                 _glControl3.BlitRenderTargetToScreen();
             }
 
@@ -450,22 +446,7 @@ namespace FormTools
             MemoryProfiler.StartFrameMonitoring();
         }
 
-        private void FormGPUDrivenImposter_Resize(object sender, EventArgs e)
-        {
-
-        }
-
-        private void FormGPUDrivenImposter_Load(object sender, EventArgs e)
-        {
-
-        }
-
-        private void FormGPUDrivenFrustumHiZ_Load(object sender, EventArgs e)
-        {
-
-        }
-
-        public void RenderFrame(double deltaTime, Vertex4f backcolor, Camera camera)
+        private void FormGPUDrivenHiZLod4_Load(object sender, EventArgs e)
         {
 
         }

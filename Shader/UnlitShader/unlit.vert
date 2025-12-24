@@ -4,7 +4,7 @@ layout(location = 1) in vec2 textureCoords;
 layout(location = 3) in float materialID;
 
 uniform mat4 mvp;   // Model-View-Projection
-uniform mat4 modelView;    // ✅ 추가: Model-View 행렬
+uniform mat4 mv;    // ✅ 추가: Model-View 행렬
 
 out vec2 vTexCoord;
 out float vMaterialID;
@@ -17,5 +17,5 @@ void main()
     vMaterialID = materialID;
     
     // ✅ 뷰 공간 위치 계산
-    vViewPos = (modelView * vec4(position, 1.0)).xyz;
+    vViewPos = (mv * vec4(position, 1.0)).xyz;
 }

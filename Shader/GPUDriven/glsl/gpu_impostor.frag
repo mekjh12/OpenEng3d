@@ -6,7 +6,9 @@ in GS_OUT
     vec2 atlasOffset;
 } fs_in;
 
-out vec4 FragColor;
+// MRT 출력
+layout(location = 0) out vec4 fragColor;   // 컬러
+layout(location = 1) out float fragDepth;  // 선형 깊이 (안개용)
 
 uniform sampler2D impostorAtlas;
 uniform float atlasSize;
@@ -26,7 +28,7 @@ void main()
                       
         if (isEdge)
         {
-            FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+            fragColor = vec4(1.0, 1.0, 0.0, 1.0);
             return;
         }
     }
@@ -53,6 +55,9 @@ void main()
     {
         discard;
     }
-    
-    FragColor = color;
+
+    fragColor = color;
+
+    // ✅ 선형 깊이 출력 (안개용)
+    //fragDepth = vViewPos.z / 10000.0;
 }

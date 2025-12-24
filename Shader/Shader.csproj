@@ -82,8 +82,10 @@
     <Compile Include="AABBShader\AABBBoxShader .cs" />
     <Compile Include="GlobalUniformBuffers.cs" />
     <Compile Include="GPUDriven\AABBInstanceShader.cs" />
+    <Compile Include="GPUDriven\CrossBillboardInstanceShader.cs" />
     <Compile Include="GPUDriven\DrawArraysIndirectCommand.cs" />
     <Compile Include="GPUDriven\FrustumCullingComputeShader.cs" />
+    <Compile Include="GPUDriven\GPUCrossBillboard.cs" />
     <Compile Include="GPUDriven\GPUBillboardShader.cs" />
     <Compile Include="GPUDriven\DepthDebugInstancedShader.cs" />
     <Compile Include="GPUDriven\GPUDrivenImpostorShader.cs" />
@@ -164,6 +166,9 @@
     <None Include="GPUDriven\glsl\aabb_instance.vert" />
     <None Include="GPUDriven\glsl\billboard.vert" />
     <None Include="GPUDriven\glsl\billboard.frag" />
+    <None Include="GPUDriven\glsl\crossBillboardInstance.frag" />
+    <None Include="GPUDriven\glsl\crossBillboardInstance.gem.glsl" />
+    <None Include="GPUDriven\glsl\crossBillboardInstance.vert" />
     <None Include="GPUDriven\glsl\depth_debug_instanced.frag" />
     <None Include="GPUDriven\comp\hiz_occlusion.comp" />
     <None Include="GPUDriven\glsl\depth_debug_instanced.vert" />

@@ -37,7 +37,7 @@ namespace Shader
         {
             loc_mvp = GetUniformLocation("mvp");
             loc_textureCount = GetUniformLocation("textureCount");
-            loc_modelView = GetUniformLocation("modelView");  // ✅ 추가
+            loc_modelView = GetUniformLocation("mv");  // ✅ 추가
 
             // ✅ 배열 위치 가져오기
             loc_textures = new int[MAX_TEXTURES];
@@ -60,10 +60,9 @@ namespace Shader
         }
 
         // === Load 메서드들 ===
-        // ✅ 추가: ModelView 행렬 로드
         public void LoadModelView(Matrix4x4f modelView)
         {
-            Gl.UniformMatrix4f(loc_mvp, 1, false, modelView);
+            Gl.UniformMatrix4f(loc_modelView, 1, false, modelView);
         }
 
         /// <summary>

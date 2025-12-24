@@ -243,7 +243,7 @@ namespace FormTools
             _hzbuffer.BindFramebuffer();
             _hzbuffer.PrepareRenderSurface();
 
-            _hzbuffer.RenderSimpleTerrain(camera.ProjectiveMatrix, camera.ViewMatrix, TerrainConstants.DEFAULT_VERTICAL_SCALE, _terrainRegion.TerrainEntity);
+            _hzbuffer.RenderTerrainDepth(camera.ProjectiveMatrix, camera.ViewMatrix, TerrainConstants.DEFAULT_VERTICAL_SCALE, _terrainRegion.TerrainEntity);
             
             if (_isAABBDepth)
                 _aabbDepthShader.RenderAABBDepth(in _quadTree.VisibleObjects, _quadTree.VisibleObjectCount, camera);

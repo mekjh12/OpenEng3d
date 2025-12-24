@@ -107,7 +107,7 @@ namespace BillBoard
             var data = CreateBillboardCloudData(model, bounds);
 
             // 디버그 저장
-            GetAtlasTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_billboardcloud.png");
+            //GetAtlasTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_billboardcloud.png");
 
             return data;
         }

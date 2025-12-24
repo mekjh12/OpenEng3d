@@ -19,6 +19,9 @@ namespace FormTools
     {
         readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
         readonly string EXE_PATH = Application.StartupPath;
+        readonly string TITLE = "UnifiedModel 렌더링";
+        readonly string HELP_TEXT =
+            "1번키: 원점으로\n";
 
         private GlControl3 _glControl3;                     // OpenGL 컨트롤
         private ColorShader _colorShader;                   // 컬러 셰이더
@@ -40,12 +43,16 @@ namespace FormTools
             InitializeComponent();
 
             // GL 생성
-            _glControl3 = new GlControl3("UnifiedModel", Application.StartupPath, @"\fonts\fontList.txt", @"\Res\");
+            _glControl3 = new GlControl3("UnifiedModel", Application.StartupPath, 
+                @"\fonts\fontList.txt", @"\Res\", 
+                useRenderTarget: false);
+
             _glControl3.Init += (w, h) => Init(w, h);
             _glControl3.Init3d += (w, h) => Init3d(w, h);
             _glControl3.Init2d += (w, h) => Init2d(w, h);
             _glControl3.UpdateFrame = (deltaTime, w, h, camera) => UpdateFrame(deltaTime, w, h, camera);
             _glControl3.RenderFrame = (deltaTime, w, h, backcolor, camera) => RenderFrame(deltaTime, backcolor, camera);
+            //_glControl3.BlitToScreen = (deltaTime, camera) => BlitToScreen(deltaTime, camera);
             _glControl3.MouseDown += (s, e) => MouseDnEvent(s, e);
             _glControl3.MouseUp += (s, e) => MouseUpEvent(s, e);
             _glControl3.KeyDown += (s, e) => KeyDownEvent(s, e);
@@ -130,9 +137,6 @@ namespace FormTools
             // 시야 절두체 생성
             Polyhedron viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
 
-
-
-
             if (_prevCameraPosition != camera.Position)
             {
                 _camPosText.Text = $"카메라 위치 ({camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1})";
@@ -148,29 +152,44 @@ namespace FormTools
             int w = _glControl3.Width;
             int h = _glControl3.Height;
 
-            // 기본 프레임버퍼로 전환 및 초기화
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
             Gl.Viewport(0, 0, w, h);
-            Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
+            Gl.ClearColor(backcolor.x, backcolor.y, backcolor.z, backcolor.w);
+            Gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
             _unifiedModelRenderer.Render(camera.VPMatrix, camera.ViewMatrix);
             //Renderer3d.RenderAABB(_colorShader, _unifiedModel.AABB, camera);
+        }
 
-            // 2D 렌더링을 위한 상태 설정
+
+        private void BlitToScreen(int deltaTime, Camera camera)
+        {
+            int w = _glControl3.Width;
+            int h = _glControl3.Height;
+
+            // 최종 화면 출력
+            Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            Gl.Viewport(0, 0, w, h);
+            Gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+            // 컬러 버퍼 출력
+            _glControl3.BlitRenderTargetToScreen();
+
+            // ========================================
+            // 2D UI 렌더링
+            // ========================================
             Gl.Disable(EnableCap.DepthTest);
-            Gl.Enable(EnableCap.Blend);  // ← 여기서 켜기
+            Gl.Enable(EnableCap.Blend);
             Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             Gl.Disable(EnableCap.CullFace);
             Gl.Viewport(0, 0, w, h);
 
-            // FPS 렌더링
             Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
             _fpsText.Render();
             _titleText.Render();
             _descText.Render();
             _camPosText.Render();
 
-            // 카메라 중심점 렌더링
             Gl.Disable(EnableCap.Blend);
             Renderer3d.RenderPoint(_colorShader, camera.PivotPosition, camera, new Vertex4f(1, 1, 0, 1), 0.02f);
             Gl.Enable(EnableCap.DepthTest);

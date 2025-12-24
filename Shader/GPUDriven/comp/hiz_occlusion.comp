@@ -98,7 +98,7 @@ bool projectAABB(AABB worldAABB, out vec2 minScreen, out vec2 maxScreen, out flo
         
         vec3 ndc = clipPos.xyz / clipPos.w;
         
-        if (abs(ndc.x) > 1.2 || abs(ndc.y) > 1.2)  continue;
+        //if (abs(ndc.x) > 21.2 || abs(ndc.y) > 21.2)  continue;
         
         float linearDepth = clamp(viewPos.z / MAX_DEPTH_METERS, 0.0, 1.0);
         
@@ -110,7 +110,7 @@ bool projectAABB(AABB worldAABB, out vec2 minScreen, out vec2 maxScreen, out flo
         validCount++;
     }
 
-    if (validCount == 0) return false;
+    //if (validCount == 0) return false; // 가까이 오면 너무 빨리 오클루전이 되어서 제외함.
     
     minScreen = clamp(minScreen, 0.0, 1.0);
     maxScreen = clamp(maxScreen, 0.0, 1.0);
@@ -177,7 +177,7 @@ void main()
     
     // AABB를 화면에 투영 [투영 실패 (카메라 뒤, 화면 밖 등)]
     if (!projectAABB(worldAABB, minScreen, maxScreen, minDepth, worldCenter)) return; 
-    
+
     // HiZ 테스트 수행
     if (!hierarchicalOcclusionTest(minScreen, maxScreen, minDepth)) return; // 가려짐
 

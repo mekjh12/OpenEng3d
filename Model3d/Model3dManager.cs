@@ -29,13 +29,18 @@ namespace Model3d
         {
             string materialFileName = modelFileName.Replace(".obj", ".mtl");
 
-            // 텍스쳐모델을 읽어온다.
+            // 모델을 읽어온다.
             UnifiedTexturedModel texturedModels = ObjLoaderEx.LoadObjUnified(_rootPath + modelFileName);
 
-            // 모델을 캐시에 저장한다.
-            _dicRawModel[Path.GetFileNameWithoutExtension(modelFileName)] = texturedModels;
+            // LOD1 모델을 읽어온다.
+            UnifiedTexturedModel texturedModel_lod1 = ObjLoaderEx.LoadObjUnified(_rootPath + modelFileName.Replace(".obj", "_lod1.obj"));
 
-            return texturedModels;
+            var texturedModel_Lod1 = new UnifiedTexturedModelLOD(texturedModels, texturedModel_lod1);
+
+            // 모델을 캐시에 저장한다.
+            _dicRawModel[Path.GetFileNameWithoutExtension(modelFileName)] = texturedModel_Lod1;
+
+            return texturedModel_Lod1;
         }
 
         public UnifiedTexturedModel GetModels(string modelName)

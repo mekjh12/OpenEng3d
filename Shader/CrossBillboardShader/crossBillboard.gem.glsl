@@ -1,7 +1,7 @@
 ﻿#version 450 core
 
 layout(points) in;
-layout(triangle_strip, max_vertices = 12) out;  // 4 quads * 4 vertices
+layout(triangle_strip, max_vertices = 12) out;  // 3 quads * 4 vertices
 
 // Vertex Shader 출력
 in VS_OUT {
@@ -17,8 +17,6 @@ out flat int fPlaneIndex;
 uniform mat4 vp;
 uniform float objectWidth;
 uniform float objectHeight;
-uniform float horizontalTopRatio;
-uniform float horizontalBottomRatio;
 
 // ✅ Atlas 영역을 직접 계산하는 함수들
 vec2 GetAtlasOffset(int planeIndex)

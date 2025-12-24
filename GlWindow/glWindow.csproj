@@ -83,6 +83,21 @@
   <ItemGroup>
     <Compile Include="FpsStringCache.cs" />
     <Compile Include="GameInfoStringCache.cs" />
+    <Compile Include="Glcontrol3.initialization.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Glcontrol3.input.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Glcontrol3.rendering.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Glcontrol3.ui.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Glcontrol3.update.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="GlControlerable.cs" />
     <Compile Include="InfiniteGrid.cs" />
     <Compile Include="IRenderable.cs" />
@@ -100,17 +115,14 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <Compile Include="GlControl3.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
     <Compile Include="RenderTarget.cs" />
-    <EmbeddedResource Include="GlControl3.resx">
-      <DependentUpon>GlControl3.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <Compile Include="Glcontrol3.core.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

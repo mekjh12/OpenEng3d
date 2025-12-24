@@ -46,6 +46,15 @@ namespace GPUDriven
         public uint BaseInstance;
     }
 
+    public struct DrawElementsIndirectCommand
+    {
+        public uint IndexCount;
+        public uint InstanceCount;  // GPU가 쓸 값
+        public uint FirstIndex;
+        public int  BaseVertex;
+        public uint BaseInstance;
+    }
+
     // LOD 인덱스를 저장할 구조
     [StructLayout(LayoutKind.Sequential)]
     public struct InstanceData

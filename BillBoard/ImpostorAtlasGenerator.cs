@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using ZetaExt;
 
 namespace BillBoard
@@ -319,6 +320,10 @@ namespace BillBoard
 
             Gl.Enable(EnableCap.DepthTest);
 
+            Gl.Disable(EnableCap.Blend);
+
+            shader.Bind();
+
             // 각 뷰포인트에서 모델 렌더링
             foreach (ViewData viewData in _viewDataList)
             {
@@ -330,16 +335,12 @@ namespace BillBoard
                     settings.IndividualSize
                 );
 
-                Gl.Disable(EnableCap.Blend);
 
-                shader.Bind();
-
-                // 월드뷰투영 행렬 설정
                 Matrix4x4f mvp = proj * viewData.ViewMatrix;
                 _unifiedModelRenderer.Render(mvp, viewData.ViewMatrix);
-
-                shader.Unbind();
             }
+
+            shader.Unbind();
         }
 
         /// <summary>
