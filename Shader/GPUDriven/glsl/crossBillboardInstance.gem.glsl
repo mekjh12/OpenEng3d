@@ -15,9 +15,11 @@ in VS_OUT {
 out vec2 fTexCoord;      // UV 좌표
 out flat int fPlaneIndex;  // 평면 인덱스
 out vec3 vColor;         // 디버그용 색상
+out vec3 vViewPos;
 
 // Uniform
 uniform mat4 vp;
+uniform mat4 view;
 
 // ===== Transform 행렬에서 Z축 회전 추출 =====
 float GetZRotation(mat4 transform)
@@ -53,31 +55,39 @@ void EmitQuad(vec3 center, vec3 right, vec3 up, float size, vec3 color, int plan
     vec2 uvSize = GetAtlasSize(planeIndex);
     
     // 좌하 (Left-Bottom)
+    vec3 worldPos0 = center - halfRight;
+    vViewPos = (view * vec4(worldPos0, 1.0)).xyz;
     vColor = color;
     fTexCoord = uvOffset;
     fPlaneIndex = planeIndex;
-    gl_Position = vp * vec4(center - halfRight, 1.0);
+    gl_Position = vp * vec4(worldPos0, 1.0);
     EmitVertex();
     
     // 우하 (Right-Bottom)
+    vec3 worldPos1 = center + halfRight;
+    vViewPos = (view * vec4(worldPos1, 1.0)).xyz;
     vColor = color;
     fTexCoord = uvOffset + vec2(uvSize.x, 0.0);
     fPlaneIndex = planeIndex;
-    gl_Position = vp * vec4(center + halfRight, 1.0);
+    gl_Position = vp * vec4(worldPos1, 1.0);
     EmitVertex();
     
     // 좌상 (Left-Top)
+    vec3 worldPos2 = center - halfRight + 2.0 * halfUp;
+    vViewPos = (view * vec4(worldPos2, 1.0)).xyz;
     vColor = color;
     fTexCoord = uvOffset + vec2(0.0, uvSize.y);
     fPlaneIndex = planeIndex;
-    gl_Position = vp * vec4(center - halfRight + 2.0 * halfUp, 1.0);
+    gl_Position = vp * vec4(worldPos2, 1.0);
     EmitVertex();
     
     // 우상 (Right-Top)
+    vec3 worldPos3 = center + halfRight + 2.0 * halfUp;
+    vViewPos = (view * vec4(worldPos3, 1.0)).xyz;
     vColor = color;
     fTexCoord = uvOffset + uvSize;
     fPlaneIndex = planeIndex;
-    gl_Position = vp * vec4(center + halfRight + 2.0 * halfUp, 1.0);
+    gl_Position = vp * vec4(worldPos3, 1.0);
     EmitVertex();
     
     EndPrimitive();
@@ -102,7 +112,7 @@ void main()
     for (int i = 0; i < 3; i++)
     {
         // ✅ 기본 각도(도) + Transform의 회전(라디안)
-        float angleRad = radians(angles[i]) - baseRotation;
+        float angleRad = radians(angles[i]) - baseRotation; // baseRotation이 플러스, 마이너스인지 아직 미해결
         
         // Right 벡터 (XY 평면에서 회전)
         vec3 right = vec3(cos(angleRad), sin(angleRad), 0.0);

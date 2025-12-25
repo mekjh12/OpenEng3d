@@ -184,9 +184,9 @@ void main()
     // ===== LOD 결정 및 결과 기록 =====
     float distance = length(u_cameraPosition - worldCenter);
     bool isLOD0 =   0 < distance && distance <= 50;
-    bool isLOD1 =  50 < distance && distance <= 100;
-    bool isLOD2 = 100 < distance && distance <= 350;
-    bool isLOD3 = 350 < distance;
+    bool isLOD1 =  50 < distance && distance <= 150;
+    bool isLOD2 = 150 < distance && distance <= 450;
+    bool isLOD3 = 450 < distance;
 
     // 결과 기록
     if (isLOD0) 

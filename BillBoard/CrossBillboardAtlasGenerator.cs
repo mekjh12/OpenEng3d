@@ -104,10 +104,11 @@ namespace BillBoard
             RenderAtlas(shader, model);
 
             // BillboardCloudData 생성
-            var data = CreateBillboardCloudData(model, bounds);
-
+            var data = CreateCrossBillboardData(model, bounds);
+            
             // 디버그 저장
-            //GetAtlasTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_billboardcloud.png");
+            GetAtlasTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_cb.png");
+            GetAtlasDepthTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_cb_depth.png");
 
             return data;
         }
@@ -246,7 +247,7 @@ namespace BillBoard
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
         }
 
-        private CrossBillboardData CreateBillboardCloudData(UnifiedTexturedModel model, AABB3f bounds)
+        private CrossBillboardData CreateCrossBillboardData(UnifiedTexturedModel model, AABB3f bounds)
         {
             CrossBillboardData data = new CrossBillboardData();
 
@@ -365,6 +366,94 @@ namespace BillBoard
             }
         }
 
+        public Bitmap GetAtlasDepthTexture(bool drawBorders = false)
+        {
+            // 깊이값 데이터를 저장할 포인터
+            IntPtr depthPtr = IntPtr.Zero;
+
+            try
+            {
+                // 깊이 버퍼 메모리 할당 (float 타입)
+                int size = AtlasWidth * AtlasHeight * sizeof(float);
+                depthPtr = System.Runtime.InteropServices.Marshal.AllocHGlobal(size);
+
+                // 현재 바인딩된 프레임버퍼 저장
+                Gl.GetInteger(GetPName.ReadFramebufferBinding, out uint previousFramebuffer);
+
+                // 렌더 타겟 프레임버퍼 바인딩
+                Gl.BindFramebuffer(FramebufferTarget.Framebuffer, _atlasRenderTarget.FrameBuffer);
+
+                // 깊이 데이터 읽기
+                Gl.ReadPixels(
+                    0, 0,                          // x, y 좌표
+                    AtlasWidth,            // 너비
+                    AtlasHeight,            // 높이
+                    OpenGL.PixelFormat.DepthComponent,    // 깊이 컴포넌트
+                    PixelType.Float,               // float 타입
+                    depthPtr                       // 저장할 메모리 위치
+                );
+
+                // 이전 프레임버퍼로 복구
+                Gl.BindFramebuffer(FramebufferTarget.Framebuffer, previousFramebuffer);
+
+                // float 데이터를 관리되는 배열로 복사
+                float[] depthValues = new float[AtlasWidth * AtlasHeight];
+                System.Runtime.InteropServices.Marshal.Copy(depthPtr, depthValues, 0, depthValues.Length);
+
+                // Bitmap 생성
+                Bitmap bitmap = new Bitmap((int)AtlasWidth, AtlasHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+                // Bitmap 데이터를 직접 조작하기 위해 락
+                var bitmapData = bitmap.LockBits(
+                    new Rectangle(0, 0, bitmap.Width, bitmap.Height),
+                    System.Drawing.Imaging.ImageLockMode.WriteOnly,
+                    System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+                try
+                {
+                    unsafe
+                    {
+                        byte* bitmapPtr = (byte*)bitmapData.Scan0;
+                        int stride = bitmapData.Stride;
+
+                        for (int y = 0; y < AtlasHeight; y++)
+                        {
+                            for (int x = 0; x < AtlasWidth; x++)
+                            {
+                                // OpenGL 데이터는 아래에서 위로 저장되어 있으므로 y좌표를 뒤집어서 읽음
+                                int srcIndex = ((AtlasHeight - 1 - y) * AtlasWidth) + x;
+                                int dstIndex = (y * stride) + (x * 4);
+
+                                // 깊이값을 0-255 범위로 변환
+                                byte depthByte = (byte)(depthValues[srcIndex] * 255.0f);
+
+                                // 그레이스케일로 변환 (R=G=B)
+                                bitmapPtr[dstIndex + 0] = depthByte; // B
+                                bitmapPtr[dstIndex + 1] = depthByte; // G
+                                bitmapPtr[dstIndex + 2] = depthByte; // R
+                                bitmapPtr[dstIndex + 3] = 255;       // A (불투명)
+                            }
+                        }
+                    }
+
+                }
+                finally
+                {
+                    // 비트맵 언락
+                    bitmap.UnlockBits(bitmapData);
+                }
+
+                return bitmap;
+            }
+            finally
+            {
+                // 할당된 메모리 해제
+                if (depthPtr != IntPtr.Zero)
+                {
+                    System.Runtime.InteropServices.Marshal.FreeHGlobal(depthPtr);
+                }
+            }
+        }
         public void Dispose()
         {
             _atlasRenderTarget?.Dispose();

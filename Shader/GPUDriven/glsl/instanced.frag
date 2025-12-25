@@ -9,7 +9,7 @@ in vec3 vViewPos;
 
 // MRT 출력
 layout(location = 0) out vec4 fragColor;   // 컬러
-layout(location = 1) out float fragDepth;  // 선형 깊이 (안개용)
+layout(location = 1) out float fragDepth;  // 선형 깊이 (안개용 등)
 
 // ✅ Uniform sampler2D 배열 (최대 32개)
 uniform sampler2D textures[32];

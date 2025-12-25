@@ -3,8 +3,11 @@
 in vec2 fTexCoord;
 in flat int fPlaneIndex;
 in vec3 vColor;
+in vec3 vViewPos;       // 뷰 공간 위치
 
-out vec4 FragColor;
+// MRT 출력
+layout(location = 0) out vec4 fragColor;   // 컬러
+layout(location = 1) out float fragDepth;  // 선형 깊이 (안개용 등)
 
 uniform sampler2D atlasTexture;
 uniform bool useTexture;  // 텍스처 사용 여부
@@ -20,11 +23,14 @@ void main()
         if (texColor.a < 0.1)
             discard;
         
-        FragColor = texColor;
+        fragColor = texColor;
     }
     else
     {
         // 디버그 모드: batchID 색상 표시
-        FragColor = vec4(vColor, 1.0);
+        fragColor = vec4(vColor, 1.0);
     }
+
+    // ✅ 선형 깊이 출력
+    fragDepth = vViewPos.z / 10000.0;
 }

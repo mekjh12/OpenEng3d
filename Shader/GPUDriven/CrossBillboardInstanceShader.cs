@@ -16,6 +16,7 @@ namespace Shader
 
         // 유니폼 위치
         private int loc_vp;
+        private int loc_view;
         private int loc_batchStartOffset;
         private int loc_currentBatchID;
         private int loc_atlasTexture;
@@ -33,6 +34,7 @@ namespace Shader
         protected override void GetAllUniformLocations()
         {
             loc_vp = GetUniformLocation("vp");
+            loc_view = GetUniformLocation("view");
             loc_batchStartOffset = GetUniformLocation("batchStartOffset");
             loc_currentBatchID = GetUniformLocation("currentBatchID");
             loc_atlasTexture = GetUniformLocation("atlasTexture");
@@ -42,6 +44,11 @@ namespace Shader
         protected override void BindAttributes()
         {
             BindAttribute(0, "aPosition");
+        }
+
+        public void LoadViewMatrix(in Matrix4x4f matrix)
+        {
+            LoadUniformMatrix4(loc_view, matrix);
         }
 
         public void LoadVPMatrix(in Matrix4x4f matrix)

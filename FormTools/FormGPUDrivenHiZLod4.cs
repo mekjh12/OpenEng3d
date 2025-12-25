@@ -25,7 +25,8 @@ namespace FormTools
         readonly string HELP_TEXT =
             "1번키: 원점으로\n" +
             "2번키: HiZ버퍼보기\n" +
-            "3번키: 깊이버퍼보기\n";
+            "3번키: 깊이버퍼보기\n" +
+            "4번키: LOD1보기\n";
 
         private GlControl3 _glControl3;                     // OpenGL 컨트롤
         private ColorShader _colorShader;                   // 컬러 셰이더
@@ -69,6 +70,8 @@ namespace FormTools
         uint _lastFrustumPassCount = 0;                     // 이전 프러스텀 패스 수
         string _visibleReport = "";                         // 가시 객체 리포트
         Vertex3f _prevCameraPosition;                       // 이전 카메라 위치
+
+        // 디버깅 관련 변수들
         bool _isVisibleHiZDepthBuffer = false;              // 깊이 Z버퍼 가시화 여부
         bool _isVisibleRenderDepthBuffer = false;           // 렌더링 깊이 버퍼 가시화 여부
 
@@ -155,14 +158,16 @@ namespace FormTools
             _model3DManager = new Model3dManager(PROJECT_PATH, EXE_PATH + "\\nullTexture.jpg");
             UnifiedTexturedModel model3 = _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\tree1.obj");
             UnifiedTexturedModel model1 = _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm4.obj");
-            //UnifiedTexturedModel model2 = _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm1.obj");
+            UnifiedTexturedModel model2 = _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm11.obj");
 
             UnifiedTexturedModelLOD model3_lod1 = model3 as UnifiedTexturedModelLOD;
             UnifiedTexturedModelLOD model1_lod1 = model1 as UnifiedTexturedModelLOD;
+            UnifiedTexturedModelLOD model2_lod1 = model2 as UnifiedTexturedModelLOD;
 
             _modelBatchManager = new ModelBatchManager();
             _modelBatchManager.AddModel(model3.Name, 100, model3, model3_lod1.ModelLod1);
             _modelBatchManager.AddModel(model1.Name, 100, model1, model1_lod1.ModelLod1);
+            _modelBatchManager.AddModel(model2.Name, 100, model2, model2_lod1.ModelLod1);
 
             // 지형 영역 초기화
             RegionCoord regionCoord = new RegionCoord(0, 0);
@@ -195,7 +200,7 @@ namespace FormTools
                         Matrix4x4f transform = Matrix4x4f.Translated(posX, posY, posZ) *
                                         Matrix4x4f.RotatedZ(rotZ.ToDegree()) *
                                         Matrix4x4f.Scaled(scale, scale, scale);
-                        _modelBatchManager.AddInstance((uint)(x % 2), transform);
+                        _modelBatchManager.AddInstance((uint)(x % 3), transform);
                         //_modelBatchManager.AddInstance((uint)Rand.NextInt(0, 2), transform);
                     }
 
@@ -409,6 +414,10 @@ namespace FormTools
             else if (e.KeyCode == Keys.D3)
             {
                 _isVisibleRenderDepthBuffer = !_isVisibleRenderDepthBuffer;
+            }
+            else if (e.KeyCode == Keys.D4)
+            {
+                _gpuDriven.IsDebugLOD1 = !_gpuDriven.IsDebugLOD1;
             }
         }
 

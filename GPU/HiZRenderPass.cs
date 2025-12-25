@@ -131,6 +131,17 @@ namespace GPUDriven
         private uint _lastFrustumPassed = 0;    // 마지막 프러스텀 통과 개수
         private int _frameCount = 0;            // 프레임 카운터
 
+        // 디버그 옵션
+        bool _isDebugLOD1 = false;                          // LOD1 디버깅 여부 
+        Vertex4f COLOR_RED4 = new Vertex4f(1f, 0f, 0f, 1f);  // 빨간색
+
+        // ------------------------------------------------------------
+        // 속성
+        // ------------------------------------------------------------
+
+        public bool IsDebugLOD1 { get => _isDebugLOD1; set => _isDebugLOD1 = value;}
+
+
         // ------------------------------------------------------------
         // 생성자
         // ------------------------------------------------------------
@@ -634,6 +645,7 @@ namespace GPUDriven
             _instancedShader.LoadBatchStartOffset(_batch.StartIndex);
             _instancedShader.LoadViewMatrix(camera.ViewMatrix);
             _instancedShader.LoadTextureArray(_batch.Model.TextureIDArray);
+            _instancedShader.LoadEnableDebug(false);
             DrawArraysIndirect(_batch.VAO, cmdStartIndex, 0, _visibleIndicesSSBO_LOD0, PrimitiveType.Triangles);
             _instancedShader.Unbind();
 
@@ -644,6 +656,8 @@ namespace GPUDriven
             _instancedShader.LoadBatchStartOffset(_batch.StartIndex);
             _instancedShader.LoadViewMatrix(camera.ViewMatrix);
             _instancedShader.LoadTextureArray(_batch.Model.TextureIDArray);
+            _instancedShader.LoadEnableDebug(_isDebugLOD1);
+            _instancedShader.LoadDebugColor(COLOR_RED4);
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD1);
             Gl.BindVertexArray(_batch.Model_LOD1.VaoID);
@@ -654,6 +668,7 @@ namespace GPUDriven
             // LOD2: 크로스 빌보드 렌더링
             _crossBillboardInstanceShader.Bind();
             _crossBillboardInstanceShader.LoadVPMatrix(camera.VPMatrix);
+            _crossBillboardInstanceShader.LoadViewMatrix(camera.ViewMatrix);
             _crossBillboardInstanceShader.LoadCurrentBatchID(batchID);
             _crossBillboardInstanceShader.LoadBatchStartOffset(_batch.StartIndex);
             _crossBillboardInstanceShader.LoadAtlasTexture(crossBillboardData.AtlasTexture.TextureID);
