@@ -272,7 +272,47 @@ namespace Occlusion
             // CPU 전송
             if (_zbuffer != null)
             {
-                if (isTransferToCpu) TransferDepthDataToCPU(maxLevel);
+                if (isTransferToCpu) 
+                    TransferDepthDataToCPU(maxLevel);
+            }
+        }
+
+        public void GenerateMipmapsUsingFragmentExt(uint depthTextureExt, int maxLevel = -1, bool isTransferToCpu = false)
+        {
+            if (maxLevel < 0)
+                maxLevel = _levels - 1;
+
+            // 
+            Gl.BindFramebuffer(FramebufferTarget.Framebuffer, _fbo);
+
+            // 최대 레벨까지 생성한다.
+            if (maxLevel == -1) maxLevel = _levels - 1;
+
+            _mipmapShader.Bind();
+            for (int i = 0; i <= maxLevel; i++)
+            {
+                Gl.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2d, _hzbTextures[i], 0);
+                Gl.Viewport(0, 0, _width >> i, _height >> i);
+                _mipmapShader.LoadDepthBuffer(TextureUnit.Texture0, i == 0 ? depthTextureExt : _hzbTextures[i - 1]);
+                _mipmapShader.LoadLastMipSize(new Vertex2i(_width >> i, _height >> i));
+                Gl.Disable(EnableCap.DepthTest);
+                Gl.DrawArrays(PrimitiveType.Points, 0, 1);
+                Gl.Enable(EnableCap.DepthTest);
+            }
+            _mipmapShader.Unbind();
+
+            // 프레임버퍼 상태 복원
+            Gl.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0,
+                TextureTarget.Texture2d, _colorTexture, 0);
+
+            // 
+            Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+
+            // CPU 전송
+            if (_zbuffer != null)
+            {
+                if (isTransferToCpu)
+                    TransferDepthDataToCPU(maxLevel);
             }
         }
 

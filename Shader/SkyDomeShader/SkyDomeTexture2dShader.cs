@@ -1,10 +1,8 @@
-﻿using System;
-using Common;
-using OpenGL;
+﻿using OpenGL;
+using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
-using Common.Abstractions;
 
 namespace Shader
 {
@@ -190,7 +188,7 @@ namespace Shader
             cloudTopAltitude = ClampValue(cloudTopAltitude, 0.0f, 1.0f);
 
             // 1단계: 하늘색 렌더링
-            _skyColorShader.RenderSkyTexture(_skyTexture, sunPosition);
+            _skyColorShader.GenerateSkyTexture(_skyTexture, sunPosition);
 
             // 2단계: 구름 렌더링
             _cloudShader.RenderCloudTexture(
@@ -216,7 +214,7 @@ namespace Shader
             float[] pixelData = new float[_width * _height * 4]; // RGBA
 
             // 텍스처 바인딩
-            Gl.BindTexture(TextureTarget.Texture2d, _finalTexture);
+            Gl.BindTexture(TextureTarget.Texture2d, _skyTexture);
 
             // 픽셀 데이터 가져오기
             Gl.GetTexImage(TextureTarget.Texture2d, 0, OpenGL.PixelFormat.Rgba, PixelType.Float, pixelData);

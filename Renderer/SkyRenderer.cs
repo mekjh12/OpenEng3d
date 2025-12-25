@@ -75,14 +75,13 @@ namespace Renderer
                                   * Matrix4x4f.Scaled(1000.0f, 1000.0f, 1000.0f); // 충분히 큰 스케일로 설정
 
             // 셰이더 유니폼 설정
-            _skyDomeRenderShader.LoadUniform(SkyDomeRenderShader.UNIFORM_NAME.model, modelMatrix);
-            _skyDomeRenderShader.LoadUniform(SkyDomeRenderShader.UNIFORM_NAME.view, camera.ViewMatrix);
-            _skyDomeRenderShader.LoadUniform(SkyDomeRenderShader.UNIFORM_NAME.proj, camera.ProjectiveMatrix);
+            Matrix4x4f mvp = camera.ProjectiveMatrix * camera.ViewMatrix * modelMatrix;
+            _skyDomeRenderShader.LoadMVPMatrix(mvp);
 
             // 텍스처 바인딩
             Gl.ActiveTexture(TextureUnit.Texture0);
             Gl.BindTexture(TextureTarget.Texture2d, _skyDomeTexture2DShader.FinalTexture);
-            _skyDomeRenderShader.LoadUniform(SkyDomeRenderShader.UNIFORM_NAME.skyTexture, 0);
+            _skyDomeRenderShader.LoadSkyTexture(_skyDomeTexture2DShader.SkyTextureId);
 
             // 스카이돔 메시 렌더링
             Gl.BindVertexArray(_skyDomeVAO);

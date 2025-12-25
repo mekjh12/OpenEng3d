@@ -17,16 +17,11 @@ using ZetaExt;
 
 namespace FormTools
 {
-    public partial class FormGPUDrivenHiZLod4 : Form, GlControlerable
+    public partial class FormGPUHiZBufferPrevFrame : Form, GlControlerable
     {
         readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
         readonly string EXE_PATH = Application.StartupPath;
-        readonly string TITLE = "GPU Driven 뷰컬링+HiZ컬링 = lod2에 크로스빌보드 이식";
-        readonly string HELP_TEXT =
-            "1번키: 원점으로\n" +
-            "2번키: HiZ버퍼보기\n" +
-            "3번키: 깊이버퍼보기\n" +
-            "4번키: LOD1보기\n";
+        readonly string TITLE = "GPU Driven 이전 프레임 깊이 버퍼 활용 HiZ버퍼 사용하기";
 
         private GlControl3 _glControl3;                     // OpenGL 컨트롤
         private ColorShader _colorShader;                   // 컬러 셰이더
@@ -59,6 +54,10 @@ namespace FormTools
         Texture[] _levelTextureMap = null;                  // 지형 레벨 텍스쳐
         Texture _detailTextureMap = null;                   // 지형 디테일 텍스쳐
 
+        // 하늘과 구름 관련 변수들
+        SkyRenderer _skyRenderer;                           // 하늘 렌더러
+        SkyDomeTexture2dShader _skyDomeTexture2DShader;     // 스카이돔 텍스처 2D 셰이더
+
         int _level = 0;                                     // 현재 Z 버퍼 레벨
         uint _visibleCount = 0;                             // 가시 객체 수
         uint _visibleCountLod0 = 0;                         // 가시 객체 수 LOD0
@@ -69,13 +68,13 @@ namespace FormTools
         uint _lastVisibleCount = 0;                         // 이전 가시 객체 수
         uint _lastFrustumPassCount = 0;                     // 이전 프러스텀 패스 수
         string _visibleReport = "";                         // 가시 객체 리포트
-        Vertex3f _prevCameraPosition;                       // 이전 카메라 위치
 
         // 디버깅 관련 변수들
         bool _isVisibleHiZDepthBuffer = false;              // 깊이 Z버퍼 가시화 여부
         bool _isVisibleRenderDepthBuffer = false;           // 렌더링 깊이 버퍼 가시화 여부
+        bool _isUseAfertHiZBuffer = false;                  // 이전 프레임 HiZ 버퍼 사용 여부
 
-        public FormGPUDrivenHiZLod4()
+        public FormGPUHiZBufferPrevFrame()
         {
             InitializeComponent();
 
@@ -226,6 +225,12 @@ namespace FormTools
                 _levelTextureMap[i] = new Texture(levelTextureMap[i]);
             }
 
+            // 하늘 렌더러 초기화
+            _skyDomeTexture2DShader = new SkyDomeTexture2dShader(PROJECT_PATH);
+            _skyDomeTexture2DShader.GenerateRandomSunPosition();
+            _skyDomeTexture2DShader.GenerateSkyTexture(_glControl3.Camera.Position);
+            _skyRenderer = new SkyRenderer(PROJECT_PATH, _skyDomeTexture2DShader);
+
             // UI 3D 텍스트 네임플레이트 초기화
             _textNamePlate = new TextNamePlate(_glControl3.Camera, "FPS");
             _textNamePlate.Height = 0.35f;
@@ -252,25 +257,31 @@ namespace FormTools
             }
 
             // 카메라 위치가 변경되었는지 확인
-            if (_prevCameraPosition != camera.Position)
+            if (camera.IsCameraFrameMoved)
             {
                 // 뷰 프러스텀 업데이트
                 _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
 
                 // HZB 업데이트
-                _hiZBuffer.BindFramebuffer();
-                _hiZBuffer.PrepareRenderSurface();
+                if (_isUseAfertHiZBuffer)
+                {
+                    _hiZBuffer.GenerateMipmapsUsingFragmentExt(_glControl3.DepthTextureId);
+                }
+                else
+                {
+                    _hiZBuffer.BindFramebuffer();
+                    _hiZBuffer.PrepareRenderSurface();
 
-                _hiZBuffer.RenderTerrainDepth(camera.ProjectiveMatrix,
-                    camera.ViewMatrix,
-                    TerrainConstants.DEFAULT_VERTICAL_SCALE,
-                    _terrainRegion.TerrainEntity);
+                    _hiZBuffer.RenderTerrainDepth(camera.ProjectiveMatrix,
+                        camera.ViewMatrix,
+                        TerrainConstants.DEFAULT_VERTICAL_SCALE,
+                        _terrainRegion.TerrainEntity);
 
-                _hiZBuffer.UnbindFramebuffer();
-                _hiZBuffer.GenerateMipmapsUsingFragment(maxLevel: -1);
+                    _hiZBuffer.UnbindFramebuffer();
+                    _hiZBuffer.GenerateMipmapsUsingFragment(maxLevel: -1);
+                }
 
                 _camPosText.Text = $"카메라 위치 ({camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1})";
-                _prevCameraPosition = camera.Position;
             }
 
             // GPU 드리븐 업데이트
@@ -300,7 +311,8 @@ namespace FormTools
                     $"{_visibleReport}\n" +
                     $"----------------------\n" +
                     $"뷰프러스텀 {_frustumPassCount}개\n" +
-                    $"HZB Level: {_level}\n";
+                    $"HZB Level: {_level}\n" +
+                    $"Prev HiZBuffer Use: {_isUseAfertHiZBuffer}";
             }
         }
 
@@ -328,6 +340,8 @@ namespace FormTools
 
             // 나무 렌더링
             _gpuDriven?.Render(camera);
+
+            _skyRenderer.RenderSkyDome(camera);
         }
 
         private void BlitToScreen(int deltaTime, Camera camera)
@@ -402,26 +416,38 @@ namespace FormTools
 
         }
 
+        readonly string HELP_TEXT =
+            "1번키: HiZ버퍼보기\n" +
+            "2번키: 이전프레임HiZ사용\n" +
+            "8번키: 깊이버퍼보기\n" +
+            "9번키: LOD1보기\n" +
+            "0번키: 원점으로\n";
+
         public void KeyUpEvent(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.D1)
+            if (e.KeyCode == Keys.D0)
             {
                 Vertex3f pos = _glControl3.Camera.PivotPosition;
                 float z = _terrainRegion.TerrainData.GetTerrainHeight(ref pos, Terrain.TerrainConstants.DEFAULT_VERTICAL_SCALE);
                 pos.z = z;
                 _glControl3.Camera.PivotPosition = pos;
             }
-            else if (e.KeyCode == Keys.D2)
-            {
-                _isVisibleHiZDepthBuffer = !_isVisibleHiZDepthBuffer;
-            }
-            else if (e.KeyCode == Keys.D3)
+            else if (e.KeyCode == Keys.D8)
             {
                 _isVisibleRenderDepthBuffer = !_isVisibleRenderDepthBuffer;
             }
-            else if (e.KeyCode == Keys.D4)
+            else if (e.KeyCode == Keys.D9)
             {
                 _gpuDriven.IsDebugLOD1 = !_gpuDriven.IsDebugLOD1;
+            }
+            else if (e.KeyCode == Keys.D2)
+            {
+                _isUseAfertHiZBuffer = !_isUseAfertHiZBuffer;
+                _glControl3.Camera.IsCameraFrameMoved = true;
+            }
+            else if (e.KeyCode == Keys.D1)
+            {
+                _isVisibleHiZDepthBuffer = !_isVisibleHiZDepthBuffer;
             }
         }
 

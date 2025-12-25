@@ -181,9 +181,9 @@ namespace GPUDriven
                     "BatchManager must be finalized before initializing renderer");
             }
 
-            if (maxMipLevels > 10)
+            if (maxMipLevels > 11)
             {
-                throw new ArgumentException("Max mip levels exceed limit (10)");
+                throw new ArgumentException("Max mip levels exceed limit (11)");
             }
 
             _batchManager = batchManager;
@@ -436,6 +436,8 @@ namespace GPUDriven
         /// <param name="hizBuffer">Hi-Z 버퍼</param>
         public void Update(Camera camera, Polyhedron viewFrustum, HierarchyZBuffer hizBuffer)
         {
+            if (viewFrustum == null) return;
+
             PerformFrustumCulling(camera, viewFrustum);
             PerformHiZCulling(camera, hizBuffer);
             UpdateIndirectCommandsGPU();

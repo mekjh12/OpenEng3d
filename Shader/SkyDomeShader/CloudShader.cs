@@ -7,103 +7,72 @@ namespace Shader
     /// <summary>
     /// 구름 생성을 위한 컴퓨트 셰이더
     /// </summary>
-    public class CloudShader : ShaderProgram<CloudShader.UNIFORM_NAME>
+    public class CloudShader : ShaderProgramBase
     {
-        /// <summary>
-        /// 유니폼 변수 열거형
-        /// </summary>
-        public enum UNIFORM_NAME
-        {
-            // 태양 관련 유니폼
-            sunPosition,          // 태양 위치 (정규화된 방향 벡터)
-            sunColor,             // 태양 색상
-
-            // 구름 형상 관련 유니폼
-            cloudCoverage,        // 구름 커버리지 (0.0 - 1.0)
-            cloudBaseAltitude,    // 구름 바닥 고도 (0.0 - 1.0, 0 = 지평선, 1 = 천정)
-            cloudTopAltitude,     // 구름 최상층 고도 (0.0 - 1.0)
-            cloudFeatheringDistance, // 구름 경계면 페더링 거리 (0.0 - 0.2)
-
-            // 구름 품질 관련 유니폼
-            cloudDensity,         // 구름 밀도 (0.0 - 2.0)
-            cloudDetail,          // 구름 디테일 수준 (0.0 - 2.0)
-
-            // 구름 애니메이션 관련 유니폼
-            cloudOffset,          // 구름 오프셋 (구름 위치 조정)
-            time,                 // 시간 변수 (애니메이션용)
-            randomSeed,           // 랜덤 시드
-
-            // 총 유니폼 개수
-            Count
-        }
-
         // 컴퓨트 셰이더 파일 경로
-        const string COMPUTE_FILE = @"\Shader\SkyDomeShader\cloudGenerator.comp";
+        private const string COMPUTE_FILE = @"\Shader\SkyDomeShader\cloudGenerator.comp";
 
-        // 텍스처 속성
-        private uint _cloudTextureId;
+        // 텍스처 크기
         private readonly int _texWidth;
         private readonly int _texHeight;
+
+        // 유니폼 위치 캐싱
+        private int loc_sunPosition;          // 태양 위치 (정규화된 방향 벡터)
+        private int loc_sunColor;             // 태양 색상
+        private int loc_cloudCoverage;        // 구름 커버리지 (0.0 - 1.0)
+        private int loc_cloudBaseAltitude;    // 구름 바닥 고도 (0.0 - 1.0, 0 = 지평선, 1 = 천정)
+        private int loc_cloudTopAltitude;     // 구름 최상층 고도 (0.0 - 1.0)
+        private int loc_cloudFeatheringDistance; // 구름 경계면 페더링 거리 (0.0 - 0.2)
+        private int loc_cloudDensity;         // 구름 밀도 (0.0 - 2.0)
+        private int loc_cloudDetail;          // 구름 디테일 수준 (0.0 - 2.0)
+        private int loc_cloudOffset;          // 구름 오프셋 (구름 위치 조정)
+        private int loc_time;                 // 시간 변수 (애니메이션용)
+        private int loc_randomSeed;           // 랜덤 시드
 
         /// <summary>
         /// 생성자
         /// </summary>
         /// <param name="projectPath">프로젝트 경로</param>
+        /// <param name="width">텍스처 너비</param>
+        /// <param name="height">텍스처 높이</param>
         public CloudShader(string projectPath, int width, int height) : base()
         {
             _name = this.GetType().Name;
             _texWidth = width;
             _texHeight = height;
-            
-            // 컴퓨트 셰이더 파일 경로 설정
-            _compFilename = projectPath + COMPUTE_FILE;
 
-            // 셰이더 초기화
+            ComputeFileName = projectPath + COMPUTE_FILE;
             InitCompileShader();
-
-            // 텍스처 초기화
-            InitializeTexture();
 
             // 기본 유니폼 값 설정
             SetDefaultUniforms();
         }
 
-
-        /// <summary>
-        /// 텍스처 초기화 메서드
-        /// </summary>
-        private void InitializeTexture()
-        {
-            // 텍스처 생성
-            _cloudTextureId = Gl.GenTexture();
-            Gl.BindTexture(TextureTarget.Texture2d, _cloudTextureId);
-
-            // 텍스처 설정
-            Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, Gl.LINEAR);
-            Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, Gl.LINEAR);
-            Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.CLAMP_TO_EDGE);
-            Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.CLAMP_TO_EDGE);
-
-            // 텍스처 데이터 할당 (초기 값은 빈 상태)
-            Gl.TexImage2D(TextureTarget.Texture2d, 0, InternalFormat.Rgba16f,
-                         _texWidth, _texHeight, 0,
-                         OpenGL.PixelFormat.Rgba, PixelType.Float, IntPtr.Zero);
-
-            Gl.BindTexture(TextureTarget.Texture2d, 0);
-        }
-
         protected override void BindAttributes()
         {
-            // 컴퓨트 셰이더는 BindAttributes가 필요 없음
+            // 컴퓨트 셰이더는 attribute 바인딩 불필요
         }
 
         protected override void GetAllUniformLocations()
         {
-            // 유니폼 변수 이름을 이용하여 위치 찾기
-            for (int i = 0; i < (int)UNIFORM_NAME.Count; i++)
-            {
-                UniformLocation(((UNIFORM_NAME)i).ToString());
-            }
+            // 태양 관련
+            loc_sunPosition = GetUniformLocation("sunPosition");
+            loc_sunColor = GetUniformLocation("sunColor");
+
+            // 구름 형상 관련
+            loc_cloudCoverage = GetUniformLocation("cloudCoverage");
+            loc_cloudBaseAltitude = GetUniformLocation("cloudBaseAltitude");
+            loc_cloudTopAltitude = GetUniformLocation("cloudTopAltitude");
+            loc_cloudFeatheringDistance = GetUniformLocation("cloudFeatheringDistance");
+
+            // 구름 품질 관련
+            loc_cloudDensity = GetUniformLocation("cloudDensity");
+            loc_cloudDetail = GetUniformLocation("cloudDetail");
+
+            // 구름 애니메이션 관련
+            loc_cloudOffset = GetUniformLocation("cloudOffset");
+            loc_time = GetUniformLocation("time");
+            loc_randomSeed = GetUniformLocation("randomSeed");
         }
 
         /// <summary>
@@ -113,25 +82,115 @@ namespace Shader
         {
             Bind();
 
-            // 태양 관련 기본 유니폼 설정
-            LoadUniform(UNIFORM_NAME.sunColor, new Vertex3f(1.0f, 0.95f, 0.8f));
+            // 태양 관련 기본값
+            LoadSunColor(new Vertex3f(1.0f, 0.95f, 0.8f));
 
-            // 구름 형상 관련 기본 유니폼 설정
-            LoadUniform(UNIFORM_NAME.cloudCoverage, 0.5f);
-            LoadUniform(UNIFORM_NAME.cloudBaseAltitude, 0.1f);
-            LoadUniform(UNIFORM_NAME.cloudTopAltitude, 0.3f);
-            LoadUniform(UNIFORM_NAME.cloudFeatheringDistance, 0.03f);
+            // 구름 형상 관련 기본값
+            LoadCloudCoverage(0.5f);
+            LoadCloudBaseAltitude(0.1f);
+            LoadCloudTopAltitude(0.3f);
+            LoadCloudFeatheringDistance(0.03f);
 
-            // 구름 품질 관련 기본 유니폼 설정
-            LoadUniform(UNIFORM_NAME.cloudDensity, 0.5f);
-            LoadUniform(UNIFORM_NAME.cloudDetail, 1.0f);
+            // 구름 품질 관련 기본값
+            LoadCloudDensity(0.5f);
+            LoadCloudDetail(1.0f);
 
-            // 구름 애니메이션 관련 기본 유니폼 설정
-            LoadUniform(UNIFORM_NAME.cloudOffset, new Vertex3f(0.0f, 0.0f, 0.0f));
-            LoadUniform(UNIFORM_NAME.time, 0.0f);
-            LoadUniform(UNIFORM_NAME.randomSeed, new Vertex4f(0.123f, 0.456f, 0.789f, 0.0f));
+            // 구름 애니메이션 관련 기본값
+            LoadCloudOffset(new Vertex3f(0.0f, 0.0f, 0.0f));
+            LoadTime(0.0f);
+            LoadRandomSeed(new Vertex4f(0.123f, 0.456f, 0.789f, 0.0f));
 
             Unbind();
+        }
+
+        // === Load 메서드들 ===
+
+        /// <summary>
+        /// 태양 위치 설정
+        /// </summary>
+        public void LoadSunPosition(Vertex3f position)
+        {
+            Gl.Uniform3(loc_sunPosition, position.x, position.y, position.z);
+        }
+
+        /// <summary>
+        /// 태양 색상 설정
+        /// </summary>
+        public void LoadSunColor(Vertex3f color)
+        {
+            Gl.Uniform3(loc_sunColor, color.x, color.y, color.z);
+        }
+
+        /// <summary>
+        /// 구름 커버리지 설정 (0.0 - 1.0)
+        /// </summary>
+        public void LoadCloudCoverage(float coverage)
+        {
+            Gl.Uniform1(loc_cloudCoverage, coverage);
+        }
+
+        /// <summary>
+        /// 구름 바닥 고도 설정 (0.0 - 1.0)
+        /// </summary>
+        public void LoadCloudBaseAltitude(float altitude)
+        {
+            Gl.Uniform1(loc_cloudBaseAltitude, altitude);
+        }
+
+        /// <summary>
+        /// 구름 상단 고도 설정 (0.0 - 1.0)
+        /// </summary>
+        public void LoadCloudTopAltitude(float altitude)
+        {
+            Gl.Uniform1(loc_cloudTopAltitude, altitude);
+        }
+
+        /// <summary>
+        /// 구름 경계면 페더링 거리 설정 (0.0 - 0.2)
+        /// </summary>
+        public void LoadCloudFeatheringDistance(float distance)
+        {
+            Gl.Uniform1(loc_cloudFeatheringDistance, distance);
+        }
+
+        /// <summary>
+        /// 구름 밀도 설정 (0.0 - 2.0)
+        /// </summary>
+        public void LoadCloudDensity(float density)
+        {
+            Gl.Uniform1(loc_cloudDensity, density);
+        }
+
+        /// <summary>
+        /// 구름 디테일 수준 설정 (0.0 - 2.0)
+        /// </summary>
+        public void LoadCloudDetail(float detail)
+        {
+            Gl.Uniform1(loc_cloudDetail, detail);
+        }
+
+        /// <summary>
+        /// 구름 오프셋 설정
+        /// </summary>
+        public void LoadCloudOffset(Vertex3f offset)
+        {
+            Gl.Uniform3(loc_cloudOffset, offset.x, offset.y, offset.z);
+        }
+
+        /// <summary>
+        /// 시간 변수 설정 (애니메이션용)
+        /// </summary>
+        public void LoadTime(float time)
+        {
+            Gl.Uniform1(loc_time, time);
+        }
+
+        /// <summary>
+        /// 랜덤 시드 설정
+        /// </summary>
+        public void LoadRandomSeed(Vertex4f seed)
+        {
+            Gl.Uniform4(loc_randomSeed, seed.x, seed.y, seed.z, seed.w);
         }
 
         /// <summary>
@@ -153,22 +212,21 @@ namespace Shader
             float cloudTopAltitude = 0.3f,
             Vertex3f? cloudOffset = null)
         {
-            // 기본 오프셋 제공
             if (cloudOffset == null)
                 cloudOffset = new Vertex3f(0.0f, 0.0f, 0.0f);
 
             Bind();
 
-            // 태양 위치 유니폼 설정
-            LoadUniform(UNIFORM_NAME.sunPosition, sunPosition);
+            // 태양 위치 설정
+            LoadSunPosition(sunPosition);
 
             // 구름 형상 관련 유니폼 설정
-            LoadUniform(UNIFORM_NAME.cloudCoverage, cloudCoverage);
-            LoadUniform(UNIFORM_NAME.cloudBaseAltitude, cloudBaseAltitude);
-            LoadUniform(UNIFORM_NAME.cloudTopAltitude, cloudTopAltitude);
+            LoadCloudCoverage(cloudCoverage);
+            LoadCloudBaseAltitude(cloudBaseAltitude);
+            LoadCloudTopAltitude(cloudTopAltitude);
 
             // 구름 오프셋 설정
-            LoadUniform(UNIFORM_NAME.cloudOffset, (Vertex3f)cloudOffset);
+            LoadCloudOffset((Vertex3f)cloudOffset);
 
             // 이미지 바인딩
             Gl.BindImageTexture(0, skyTextureId, 0, false, 0, BufferAccess.ReadOnly, InternalFormat.Rgba16f);

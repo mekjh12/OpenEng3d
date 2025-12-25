@@ -146,6 +146,12 @@
     <Compile Include="FormGPUDrivenQuadTree.Designer.cs">
       <DependentUpon>FormGPUDrivenQuadTree.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormGPUHiZBufferPrevFrame.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormGPUHiZBufferPrevFrame.Designer.cs">
+      <DependentUpon>FormGPUHiZBufferPrevFrame.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormGPUImposterInstance.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -280,6 +286,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormGPUDrivenQuadTree.resx">
       <DependentUpon>FormGPUDrivenQuadTree.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormGPUHiZBufferPrevFrame.resx">
+      <DependentUpon>FormGPUHiZBufferPrevFrame.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormGPUImposterInstance.resx">
       <DependentUpon>FormGPUImposterInstance.cs</DependentUpon>

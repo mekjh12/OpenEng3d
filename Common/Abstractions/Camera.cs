@@ -42,6 +42,12 @@ namespace Common.Abstractions
         protected float _pitch = 0.0f;                 // 현재 상하 회전 각도
         protected float _yaw = 0.0f;                   // 현재 좌우 회전 각도
 
+        Vertex3f _prevCameraPosition;                   // 이전 카메라 위치
+        Vertex3f _prevCameraFoward;                     // 이전 카메라 전방 벡터
+        bool _isCameraFrameMoved = true;               // 카메라 프레임이 이동했는지 여부
+
+        public bool IsCameraFrameMoved { get => _isCameraFrameMoved; set => _isCameraFrameMoved = value; }
+
         public int Width => _width;                    // 뷰포트 너비
         public int Height => _height;                  // 뷰포트 높이
 
@@ -181,7 +187,21 @@ namespace Common.Abstractions
         // 카메라 종료
         public virtual void ShutDown() { }
 
-        public virtual void Update(int deltaTime) => UpdateCameraVectors();
+        public virtual void Update(int deltaTime)
+        {
+            UpdateCameraVectors();
+
+            if (_prevCameraPosition != _position || _prevCameraFoward.Dot(_cameraForward) < 0.98f)
+            {
+                _isCameraFrameMoved = true;
+                _prevCameraPosition = _position;
+                _prevCameraFoward = _cameraForward;
+            }
+            else
+            {
+                _isCameraFrameMoved = false;
+            }
+        }
 
         /// <summary>카메라의 기저 벡터들을 갱신합니다.</summary>
         protected abstract void UpdateCameraVectors();
