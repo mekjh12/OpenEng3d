@@ -28,6 +28,7 @@ namespace FormTools
         private HzmDepthShader _hzmDepthShader;             // HZM 깊이 셰이더
         private TerrainTessellationShader _terrainShader;   // 지형 테셀레이션 셰이더
         private RenderDepthBufferShader _renderDepthShader; // 렌더 깊이 셰이더
+        private FogShader _fogShader;                       // 안개 셰이더
 
         private bool _isLoaded = false;                     // 로드 여부
         private bool _isStarted = false;                    // 시작 여부
@@ -58,6 +59,15 @@ namespace FormTools
         SkyRenderer _skyRenderer;                           // 하늘 렌더러
         SkyDomeTexture2dShader _skyDomeTexture2DShader;     // 스카이돔 텍스처 2D 셰이더
 
+        // 안개 효과 관련 변수들
+        private bool _isFogEnabled = true;
+        private int _fogType = 2;  // 0: Linear, 1: Exp, 2: Exp2
+        private float _fogDensity = 0.02f;
+        private float _fogStart = 50f;
+        private float _fogEnd = 500f;
+        private Vertex3f _fogColor = new Vertex3f(0.7f, 0.8f, 0.9f);  // 연한 하늘색
+        private const float MAX_DEPTH_DISTANCE = 10000.0f;  // 셰이더에서 사용한 정규화 값
+
         int _level = 0;                                     // 현재 Z 버퍼 레벨
         uint _visibleCount = 0;                             // 가시 객체 수
         uint _visibleCountLod0 = 0;                         // 가시 객체 수 LOD0
@@ -72,7 +82,6 @@ namespace FormTools
         // 디버깅 관련 변수들
         bool _isVisibleHiZDepthBuffer = false;              // 깊이 Z버퍼 가시화 여부
         bool _isVisibleRenderDepthBuffer = false;           // 렌더링 깊이 버퍼 가시화 여부
-        bool _isUseAfertHiZBuffer = false;                  // 이전 프레임 HiZ 버퍼 사용 여부
 
         public FormGPUHiZBufferPrevFrame()
         {
@@ -114,10 +123,12 @@ namespace FormTools
             ShaderManager.Instance.AddShader(new HzmDepthShader(PROJECT_PATH));
             ShaderManager.Instance.AddShader(new TerrainTessellationShader(PROJECT_PATH));
             ShaderManager.Instance.AddShader(new RenderDepthBufferShader(PROJECT_PATH));
+            ShaderManager.Instance.AddShader(new FogShader(PROJECT_PATH));
             _colorShader = ShaderManager.Instance.GetShader<ColorShader>();
             _hzmDepthShader = ShaderManager.Instance.GetShader<HzmDepthShader>();
             _terrainShader = ShaderManager.Instance.GetShader<TerrainTessellationShader>();
             _renderDepthShader = ShaderManager.Instance.GetShader<RenderDepthBufferShader>();
+            _fogShader = ShaderManager.Instance.GetShader<FogShader>();
 
             // 앱 시작 시 한 번만 초기화
             Ui3d.BillboardShader.Initialize();
@@ -263,23 +274,16 @@ namespace FormTools
                 _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
 
                 // HZB 업데이트
-                if (_isUseAfertHiZBuffer)
-                {
-                    _hiZBuffer.GenerateMipmapsUsingFragmentExt(_glControl3.DepthTextureId);
-                }
-                else
-                {
-                    _hiZBuffer.BindFramebuffer();
-                    _hiZBuffer.PrepareRenderSurface();
+                _hiZBuffer.BindFramebuffer();
+                _hiZBuffer.PrepareRenderSurface();
 
-                    _hiZBuffer.RenderTerrainDepth(camera.ProjectiveMatrix,
-                        camera.ViewMatrix,
-                        TerrainConstants.DEFAULT_VERTICAL_SCALE,
-                        _terrainRegion.TerrainEntity);
+                _hiZBuffer.RenderTerrainDepth(camera.ProjectiveMatrix,
+                    camera.ViewMatrix,
+                    TerrainConstants.DEFAULT_VERTICAL_SCALE,
+                    _terrainRegion.TerrainEntity);
 
-                    _hiZBuffer.UnbindFramebuffer();
-                    _hiZBuffer.GenerateMipmapsUsingFragment(maxLevel: -1);
-                }
+                _hiZBuffer.UnbindFramebuffer();
+                _hiZBuffer.GenerateMipmapsUsingFragment(maxLevel: -1);
 
                 _camPosText.Text = $"카메라 위치 ({camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1})";
             }
@@ -312,7 +316,7 @@ namespace FormTools
                     $"----------------------\n" +
                     $"뷰프러스텀 {_frustumPassCount}개\n" +
                     $"HZB Level: {_level}\n" +
-                    $"Prev HiZBuffer Use: {_isUseAfertHiZBuffer}";
+                    $"안개유무: {_isFogEnabled}";
             }
         }
 
@@ -373,10 +377,11 @@ namespace FormTools
                     _renderDepthShader.LoadCameraFar(camera.FAR);
                     _renderDepthShader.LoadIsPerspective(true);
 
-                    // GlControl3의 깊이 텍스처 사용
+                    // ✅ 선형 깊이 텍스처 사용 (MRT location 1)
+                    // GlControl3가 LinearDepthTextureId를 제공한다고 가정
                     _renderDepthShader.LoadDepthTexture(
                         TextureUnit.Texture0,
-                        _glControl3.DepthTextureId
+                        _glControl3.DepthTextureId  // 또는 적절한 프로퍼티명
                     );
 
                     Gl.DrawArrays(PrimitiveType.Points, 0, 1);
@@ -386,7 +391,57 @@ namespace FormTools
             else
             {
                 // [일반] 컬러 버퍼 출력
-                _glControl3.BlitRenderTargetToScreen();
+                if (_isFogEnabled)
+                {
+                    // === 안개 Post-Processing 패스 ===
+                    Gl.Disable(EnableCap.DepthTest);
+                    Gl.Disable(EnableCap.Blend);
+
+                    _fogShader.Bind();
+                    {
+                        // 원본 색상 텍스처 (MRT location 0)
+                        _fogShader.LoadColorTexture(
+                            TextureUnit.Texture0,
+                            _glControl3.ColorTextureId
+                        );
+
+                        // 선형 깊이 텍스처 (MRT location 1)
+                        _fogShader.LoadLinearDepthTexture(
+                            TextureUnit.Texture1,
+                            _glControl3.DepthTextureId  // ✅ 선형 깊이 텍스처
+                        );
+
+                        // 안개 색상
+                        _fogShader.LoadFogColor(_fogColor);
+
+                        // 안개 타입
+                        _fogShader.LoadFogType(_fogType);
+
+                        // 최대 거리 (정규화에 사용한 값)
+                        _fogShader.LoadMaxDistance(MAX_DEPTH_DISTANCE);
+
+                        // 안개 파라미터
+                        if (_fogType == 0)  // Linear
+                        {
+                            _fogShader.LoadFogRange(_fogStart, _fogEnd);
+                        }
+                        else  // Exponential or Exponential Squared
+                        {
+                            _fogShader.LoadFogDensity(_fogDensity);
+                        }
+
+                        // 풀스크린 삼각형 렌더링
+                        Gl.DrawArrays(PrimitiveType.Triangles, 0, 3);
+                    }
+                    _fogShader.Unbind();
+
+                    Gl.Enable(EnableCap.DepthTest);
+                }
+                else
+                {
+                    // 안개 없이 그냥 출력
+                    _glControl3.BlitRenderTargetToScreen();
+                }
             }
 
             // ========================================
@@ -418,7 +473,7 @@ namespace FormTools
 
         readonly string HELP_TEXT =
             "1번키: HiZ버퍼보기\n" +
-            "2번키: 이전프레임HiZ사용\n" +
+            "2번키: 안개사용\n" +
             "8번키: 깊이버퍼보기\n" +
             "9번키: LOD1보기\n" +
             "0번키: 원점으로\n";
@@ -432,6 +487,10 @@ namespace FormTools
                 pos.z = z;
                 _glControl3.Camera.PivotPosition = pos;
             }
+            else if (e.KeyCode == Keys.D2)
+            {
+                _isFogEnabled = !_isFogEnabled;
+            }
             else if (e.KeyCode == Keys.D8)
             {
                 _isVisibleRenderDepthBuffer = !_isVisibleRenderDepthBuffer;
@@ -439,11 +498,6 @@ namespace FormTools
             else if (e.KeyCode == Keys.D9)
             {
                 _gpuDriven.IsDebugLOD1 = !_gpuDriven.IsDebugLOD1;
-            }
-            else if (e.KeyCode == Keys.D2)
-            {
-                _isUseAfertHiZBuffer = !_isUseAfertHiZBuffer;
-                _glControl3.Camera.IsCameraFrameMoved = true;
             }
             else if (e.KeyCode == Keys.D1)
             {

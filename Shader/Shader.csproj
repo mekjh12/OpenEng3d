@@ -80,6 +80,7 @@
     <Compile Include="AtmosphericScatteringLUT\AtmosphericRenderShader.cs" />
     <Compile Include="AxisShader\AxisShader.cs" />
     <Compile Include="AABBShader\AABBBoxShader .cs" />
+    <Compile Include="FogShader\FogShader.cs" />
     <Compile Include="GlobalUniformBuffers.cs" />
     <Compile Include="GPUDriven\AABBInstanceShader.cs" />
     <Compile Include="GPUDriven\CrossBillboardInstanceShader.cs" />
@@ -158,6 +159,8 @@
     <None Include="AxisShader\axis.vert" />
     <None Include="AABBShader\aabb.frag" />
     <None Include="AABBShader\aabb.vert" />
+    <None Include="FogShader\fog.frag" />
+    <None Include="FogShader\fog.vert" />
     <None Include="GPUDriven\comp\hiCulling.glsl" />
     <None Include="GPUDriven\comp\indices_ordering.comp" />
     <None Include="GPUDriven\comp\updateIndirectCommands.comp" />
