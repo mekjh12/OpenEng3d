@@ -73,10 +73,7 @@ namespace GlWindow
             if (_camera is OrbitCamera)
             {
                 OrbitCamera orbitCamera = (OrbitCamera)_camera;
-                if (Keyboard.IsKeyDown(Key.Z)) orbitCamera.Distance = 900.0f;
-                if (Keyboard.IsKeyDown(Key.X)) orbitCamera.Distance = 150.0f;
-                if (Keyboard.IsKeyDown(Key.C)) orbitCamera.Distance = 10.0f;
-
+                
                 if (Keyboard.IsKeyDown(Key.W)) orbitCamera.GoForward(_cameraStepLength);
                 if (Keyboard.IsKeyDown(Key.S)) orbitCamera.GoForward(-_cameraStepLength);
                 if (Keyboard.IsKeyDown(Key.D)) orbitCamera.GoRight(_cameraStepLength);

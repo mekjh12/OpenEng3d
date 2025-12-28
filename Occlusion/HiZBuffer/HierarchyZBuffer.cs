@@ -83,7 +83,7 @@ namespace Occlusion
             // 기본 속성 초기화
             _width = width;
             _height = height;
-            _levels = (int)Math.Floor(Math.Log(Math.Max(width, height), 2)) + 1;
+            _levels = (int)Math.Floor(Math.Log(Math.Max(width, height), 2));
             _hzbTextures = new uint[_levels];
 
             // 버퍼 생성

@@ -44,7 +44,7 @@ namespace Common.Abstractions
 
         Vertex3f _prevCameraPosition;                   // 이전 카메라 위치
         Vertex3f _prevCameraFoward;                     // 이전 카메라 전방 벡터
-        bool _isCameraFrameMoved = true;               // 카메라 프레임이 이동했는지 여부
+        protected bool _isCameraFrameMoved = true;      // 카메라 프레임이 이동했는지 여부
 
         public bool IsCameraFrameMoved { get => _isCameraFrameMoved; set => _isCameraFrameMoved = value; }
 
@@ -191,7 +191,8 @@ namespace Common.Abstractions
         {
             UpdateCameraVectors();
 
-            if (_prevCameraPosition != _position || _prevCameraFoward.Dot(_cameraForward) < 0.98f)
+            if (_prevCameraPosition != _position 
+                || _prevCameraFoward.Dot(_cameraForward) < 0.999f)
             {
                 _isCameraFrameMoved = true;
                 _prevCameraPosition = _position;

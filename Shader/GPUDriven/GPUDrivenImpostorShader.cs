@@ -1,119 +1,118 @@
 ﻿using Common;
 using OpenGL;
 
-namespace Shader
+public class GPUDrivenImpostorShader : ShaderProgramBase
 {
-    /// <summary>
-    /// GPU-Driven Impostor 렌더링 셰이더
-    /// SSBO 기반 대량 인스턴싱 + 아틀라스 텍스처 빌보드
-    /// </summary>
-    public class GPUDrivenImpostorShader : ShaderProgramBase
+    const string VERTEX_FILE = @"\Shader\GPUDriven\glsl\gpu_impostor.vert";
+    const string GEOMETRY_FILE = @"\Shader\GPUDriven\glsl\gpu_impostor.gem.glsl";
+    const string FRAGMENT_FILE = @"\Shader\GPUDriven\glsl\gpu_impostor.frag";
+
+    // 유니폼 위치
+    private int loc_vp;
+    private int loc_view;  // ✅ 추가
+    private int loc_batchStartOffset;
+    private int loc_cameraPosition;
+    private int loc_aabbSphereRadius;
+    private int loc_modelMatrix;
+
+    // 아틀라스 관련
+    private int loc_impostorAtlas;
+    private int loc_atlasSize;
+    private int loc_individualSize;
+    private int loc_horizontalFrames;
+    private int loc_verticalFrames;
+
+    // 디버깅
+    private int loc_enableEdgeLine;
+
+    public GPUDrivenImpostorShader(string projectPath) : base()
     {
-        const string VERTEX_FILE = @"\Shader\GPUDriven\glsl\gpu_impostor.vert";
-        const string GEOMETRY_FILE = @"\Shader\GPUDriven\glsl\gpu_impostor.gem.glsl";
-        const string FRAGMENT_FILE = @"\Shader\GPUDriven\glsl\gpu_impostor.frag";
+        _name = this.GetType().Name;
+        VertFileName = projectPath + VERTEX_FILE;
+        GeomFileName = projectPath + GEOMETRY_FILE;
+        FragFileName = projectPath + FRAGMENT_FILE;
+        InitCompileShader();
+    }
 
-        // 유니폼 위치
-        private int loc_vp;
-        private int loc_batchStartOffset;
-        private int loc_cameraPosition;
-        private int loc_aabbSphereRadius;
-        private int loc_modelMatrix;
+    protected override void GetAllUniformLocations()
+    {
+        loc_vp = GetUniformLocation("vp");
+        loc_view = GetUniformLocation("view");  // ✅ 추가
+        loc_batchStartOffset = GetUniformLocation("batchStartOffset");
+        loc_cameraPosition = GetUniformLocation("cameraPosition");
+        loc_aabbSphereRadius = GetUniformLocation("aabbSphereRadius");
+        loc_impostorAtlas = GetUniformLocation("impostorAtlas");
+        loc_atlasSize = GetUniformLocation("atlasSize");
+        loc_individualSize = GetUniformLocation("individualSize");
+        loc_horizontalFrames = GetUniformLocation("horizontalFrames");
+        loc_verticalFrames = GetUniformLocation("verticalFrames");
+        loc_enableEdgeLine = GetUniformLocation("enableEdgeLine");
+        loc_modelMatrix = GetUniformLocation("model");
+    }
 
-        // 아틀라스 관련
-        private int loc_impostorAtlas;
-        private int loc_atlasSize;
-        private int loc_individualSize;
-        private int loc_horizontalFrames;
-        private int loc_verticalFrames;
+    protected override void BindAttributes()
+    {
+        BindAttribute(0, "aPosition");
+    }
 
-        // 디버깅
-        private int loc_enableEdgeLine;
+    public void LoadVPMatrix(in Matrix4x4f matrix)
+    {
+        LoadUniformMatrix4(loc_vp, matrix);
+    }
 
-        public GPUDrivenImpostorShader(string projectPath) : base()
-        {
-            _name = this.GetType().Name;
-            VertFileName = projectPath + VERTEX_FILE;
-            GeomFileName = projectPath + GEOMETRY_FILE;
-            FragFileName = projectPath + FRAGMENT_FILE;
-            InitCompileShader();
-        }
+    // ✅ 추가
+    public void LoadViewMatrix(in Matrix4x4f matrix)
+    {
+        LoadUniformMatrix4(loc_view, matrix);
+    }
 
-        protected override void GetAllUniformLocations()
-        {
-            loc_vp = GetUniformLocation("vp");
-            loc_batchStartOffset = GetUniformLocation("batchStartOffset");
-            loc_cameraPosition = GetUniformLocation("cameraPosition");
-            loc_aabbSphereRadius = GetUniformLocation("aabbSphereRadius");
+    public void LoadModelMatrix(in Matrix4x4f matrix)
+    {
+        LoadUniformMatrix4(loc_modelMatrix, matrix);
+    }
 
-            loc_impostorAtlas = GetUniformLocation("impostorAtlas");
-            loc_atlasSize = GetUniformLocation("atlasSize");
-            loc_individualSize = GetUniformLocation("individualSize");
-            loc_horizontalFrames = GetUniformLocation("horizontalFrames");
-            loc_verticalFrames = GetUniformLocation("verticalFrames");
+    public void LoadBatchStartOffset(uint offset)
+    {
+        Gl.Uniform1(loc_batchStartOffset, (int)offset);
+    }
 
-            loc_enableEdgeLine = GetUniformLocation("enableEdgeLine");
-            loc_modelMatrix = GetUniformLocation("model");
-        }
+    public void LoadCameraPosition(Vertex3f position)
+    {
+        Gl.Uniform3f(loc_cameraPosition, 1, position);
+    }
 
-        protected override void BindAttributes()
-        {
-            BindAttribute(0, "aPosition");
-        }
+    public void LoadAABBSphereRadius(float radius)
+    {
+        Gl.Uniform1(loc_aabbSphereRadius, radius);
+    }
 
-        public void LoadVPMatrix(in Matrix4x4f matrix)
-        {
-            LoadUniformMatrix4(loc_vp, matrix);
-        }
+    public void LoadImpostorAtlas(uint textureId)
+    {
+        Gl.ActiveTexture(TextureUnit.Texture0);
+        Gl.BindTexture(TextureTarget.Texture2d, textureId);
+        Gl.Uniform1(loc_impostorAtlas, 0);
+    }
 
-        public void LoadModelMatrix(in Matrix4x4f matrix)
-        {
-            LoadUniformMatrix4(loc_modelMatrix, matrix);
-        }
+    public void LoadAtlasSize(float size)
+    {
+        Gl.Uniform1(loc_atlasSize, size);
+    }
 
-        public void LoadBatchStartOffset(uint offset)
-        {
-            Gl.Uniform1(loc_batchStartOffset, (int)offset);
-        }
+    public void LoadIndividualSize(float size)
+    {
+        Gl.Uniform1(loc_individualSize, size);
+    }
 
-        public void LoadCameraPosition(Vertex3f position)
-        {
-            Gl.Uniform3f(loc_cameraPosition, 1, position);
-        }
+    public void LoadFrameCounts(int horizontal, int vertical)
+    {
+        Gl.Uniform1(loc_horizontalFrames, horizontal);
+        Gl.Uniform1(loc_verticalFrames, vertical);
+    }
 
-        public void LoadAABBSphereRadius(float radius)
-        {
-            Gl.Uniform1(loc_aabbSphereRadius, radius);
-        }
-
-        public void LoadImpostorAtlas(uint textureId)
-        {
-            Gl.ActiveTexture(TextureUnit.Texture0);
-            Gl.BindTexture(TextureTarget.Texture2d, textureId);
-            Gl.Uniform1(loc_impostorAtlas, 0);
-        }
-
-        public void LoadAtlasSize(float size)
-        {
-            Gl.Uniform1(loc_atlasSize, size);
-        }
-
-        public void LoadIndividualSize(float size)
-        {
-            Gl.Uniform1(loc_individualSize, size);
-        }
-
-        public void LoadFrameCounts(int horizontal, int vertical)
-        {
-            Gl.Uniform1(loc_horizontalFrames, horizontal);
-            Gl.Uniform1(loc_verticalFrames, vertical);
-        }
-
-        public void LoadEnableEdgeLine(bool enable, float lineWidth = 1.0f)
-        {
-            Gl.Uniform1i(loc_enableEdgeLine, 1, enable ? 1 : 0);
-            if (enable)
-                Gl.LineWidth(lineWidth);
-        }
+    public void LoadEnableEdgeLine(bool enable, float lineWidth = 1.0f)
+    {
+        Gl.Uniform1i(loc_enableEdgeLine, 1, enable ? 1 : 0);
+        if (enable)
+            Gl.LineWidth(lineWidth);
     }
 }

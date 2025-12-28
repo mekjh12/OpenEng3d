@@ -12,9 +12,11 @@ out GS_OUT
 {
     vec2 texCoord;
     vec2 atlasOffset;
+    vec3 viewPos;  // ✅ 추가
 } gs_out;
 
 uniform mat4 vp;
+uniform mat4 view;  // ✅ 추가
 uniform vec3 cameraPosition;
 uniform float aabbSphereRadius;
 uniform float atlasSize;
@@ -127,6 +129,7 @@ void main()
         gl_Position = vp * vec4(positions[i], 1.0);
         gs_out.texCoord = texCoords[i];
         gs_out.atlasOffset = instanceAtlasOffset;
+        gs_out.viewPos = (view * vec4(positions[i], 1.0)).xyz;  // ✅ 추가
         EmitVertex();
     }
     

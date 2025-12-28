@@ -90,6 +90,7 @@ namespace GPUDriven
         private UnlitShader _unlitShader;                           // 임포스터 생성용 셰이더
         private GPUDrivenImpostorShader _gpuDrivenImpostorShader;   // GPU 드리븐 임포스터 렌더링 셰이더
         private CrossBillboardInstanceShader _crossBillboardInstanceShader; // 크로스 빌보드 렌더링 셰이더
+        private GPUInstancedDepthShader _depthShader;               // 깊이 렌더링 셰이더
 
         // 임포스터 관련
         private ImpostorAssets _impostor;   // 임포스터 에셋 관리자
@@ -234,6 +235,7 @@ namespace GPUDriven
             _updateCommandsCompute = new UpdateIndirectCommandsComputeShader(projPath);
             _gpuDrivenImpostorShader = new GPUDrivenImpostorShader(projPath);
             _crossBillboardInstanceShader = new CrossBillboardInstanceShader(projPath);
+            _depthShader = new GPUInstancedDepthShader(projPath);
         }
 
         /// <summary>
@@ -621,6 +623,51 @@ namespace GPUDriven
         }
 
         /// <summary>
+        /// 이전 프레임의 LOD0, LOD1 깊이만 렌더링
+        /// 기존 RenderBatch 코드와 거의 동일, 셰이더만 교체
+        /// </summary>
+        public void RenderDepthPrePassFromPrevFrame(Camera camera)
+        {
+            Gl.Disable(EnableCap.CullFace);
+
+            // 깊이 전용 셰이더 사용
+            _depthShader.Bind();
+            {
+                _depthShader.LoadVPMatrix(camera.VPMatrix);
+                _depthShader.LoadViewMatrix(camera.ViewMatrix);
+
+                Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectCommandBuffer);
+
+                // 각 배치별로 렌더링
+                for (uint b = 0; b < _batchManager.ActualBatchCount; b++)
+                {
+                    BatchDescriptor batch = _batchManager.GetBatch(b);
+                    int cmdStartIndex = _batchCommandStartIndices[b];
+
+                    _depthShader.LoadTextureArray(batch.Model.TextureIDArray);
+                    _depthShader.LoadBatchStartOffset(batch.StartIndex);
+                                        
+                    // LOD0 렌더링 (DrawElementsIndirect)
+                    Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
+                    Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD0);
+                    Gl.BindVertexArray(batch.Model.VaoID);
+
+                    int byteOffset = cmdStartIndex + LOD_OFFSETS[0];
+                    DrawArraysIndirect(batch.VAO, cmdStartIndex, 0, _visibleIndicesSSBO_LOD0, PrimitiveType.Triangles);
+
+                    // LOD1 렌더링 (DrawElementsIndirect)
+                    Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
+                    Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD1);
+                    Gl.BindVertexArray(batch.Model_LOD1.VaoID);
+                    byteOffset = cmdStartIndex + LOD_OFFSETS[1];
+                    Gl.DrawElementsIndirect(PrimitiveType.Triangles, DrawElementsType.UnsignedInt, (IntPtr)byteOffset);
+
+                }
+            }
+            _depthShader.Unbind();
+        }
+
+        /// <summary>
         /// 단일 배치 렌더링 (4단계 LOD)
         /// LOD0: 풀 메시
         /// LOD1: 인덱스 메시 (단순화)
@@ -680,12 +727,14 @@ namespace GPUDriven
             _crossBillboardInstanceShader.Unbind();
 
             // LOD3: 임포스터 렌더링
+            Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
             Gl.Disable(EnableCap.CullFace);
             _gpuDrivenImpostorShader.Bind();
             _gpuDrivenImpostorShader.LoadVPMatrix(camera.VPMatrix);
             _gpuDrivenImpostorShader.LoadCameraPosition(camera.Position);
             _gpuDrivenImpostorShader.LoadAABBSphereRadius(_unifiedTexturedModel.AABB.Radius);
             _gpuDrivenImpostorShader.LoadModelMatrix(_unifiedTexturedModel.AABB.ModelMatrix);
+            _gpuDrivenImpostorShader.LoadViewMatrix(camera.ViewMatrix);
             _gpuDrivenImpostorShader.LoadImpostorAtlas(_renderData.AtlasTextureId);
             _gpuDrivenImpostorShader.LoadAtlasSize(_renderData.atlasSize);
             _gpuDrivenImpostorShader.LoadIndividualSize(_renderData.individualSize);

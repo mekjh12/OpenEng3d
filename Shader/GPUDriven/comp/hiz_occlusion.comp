@@ -3,7 +3,7 @@ layout(local_size_x = 64) in;
 
 #define MAX_BATCHES 64
 const float MAX_DEPTH_METERS = 10000.0;
-const float DEPTH_EPSILON = 0.005;
+const float DEPTH_EPSILON = 0.0010; //10m
 
 struct AABB {vec3 min; float padding1; vec3 max; float padding2;};
 
@@ -100,8 +100,10 @@ bool projectAABB(AABB worldAABB, out vec2 minScreen, out vec2 maxScreen, out flo
         
         //if (abs(ndc.x) > 21.2 || abs(ndc.y) > 21.2)  continue;
         
+        // 각 점의 선형 깊이 계산
         float linearDepth = clamp(viewPos.z / MAX_DEPTH_METERS, 0.0, 1.0);
         
+        // NDC를 스크린 좌표(0~1)로 변환
         vec2 uv = ndc.xy * 0.5 + 0.5;
         
         minScreen = min(minScreen, uv);
@@ -125,29 +127,44 @@ bool hierarchicalOcclusionTest(vec2 minScreen, vec2 maxScreen, float minDepth)
     vec2 sizePixels = sizeUV * u_screenSize;
     float maxSize = max(sizePixels.x, sizePixels.y);
     
-    if (maxSize < 1.0) return false;
+    // 너무 작으면 무조건 렌더링
+    if (maxSize < 1.0) return true;  // ✅ false → true
     
     float targetMipLevel = clamp(ceil(log2(maxSize)), 0.0, float(u_maxMipLevel));
     int startMipLevel = int(targetMipLevel);
     
     vec2 center = (minScreen + maxScreen) * 0.5;
-    vec2 halfSize = (maxScreen - minScreen) * 0.5;
+    vec2 extent = (maxScreen - minScreen) * 0.5;  // ✅ halfSize → extent
     
+    // ✅ 7x7 샘플링 설정
+    const int GRID_SIZE = 7;
+    const int HALF_GRID = 3;  // (7-1)/2 = 3
+    
+    // 계층적 테스트 (coarse-to-fine)
     for (int mip = startMipLevel; mip >= 0; mip--)
     {
-        float hizDepth0 = sampleHiZTexture(mip, center + vec2(-halfSize.x, -halfSize.y));
-        float hizDepth1 = sampleHiZTexture(mip, center + vec2(+halfSize.x, -halfSize.y));
-        float hizDepth2 = sampleHiZTexture(mip, center + vec2(-halfSize.x, +halfSize.y));
-        float hizDepth3 = sampleHiZTexture(mip, center + vec2(+halfSize.x, +halfSize.y));
-        
-        float maxHZBDepth = max(max(hizDepth0, hizDepth1), max(hizDepth2, hizDepth3));
-        
-        if (minDepth > maxHZBDepth + DEPTH_EPSILON) {
-            return false;
+        // ✅ 7x7 그리드 샘플링
+        for (int y = -HALF_GRID; y <= HALF_GRID; y++) {
+            for (int x = -HALF_GRID; x <= HALF_GRID; x++) {
+                // 정규화된 오프셋 계산
+                vec2 offset = vec2(x, y) * extent / float(HALF_GRID);
+                vec2 samplePos = clamp(center + offset, 0.0, 1.0);
+                
+                float hizDepth = sampleHiZTexture(mip, samplePos);
+                
+                // ✅ CPU 버전처럼: 하나라도 보이면 즉시 렌더링
+                if (minDepth <= hizDepth + DEPTH_EPSILON) {
+                    return true;  // 보임!
+                }
+            }
         }
+        
+        // 이 mip level에서 모든 샘플(49개)이 가려짐
+        // → 다음 레벨(더 세밀한)로 진행
     }
     
-    return true;
+    // ✅ 모든 레벨, 모든 샘플(49개씩)에서 가려짐 → 컬링
+    return false;
 }
 
 void main()

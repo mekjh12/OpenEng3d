@@ -158,6 +158,12 @@
     <Compile Include="FormGPUImposterInstance.Designer.cs">
       <DependentUpon>FormGPUImposterInstance.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormHiZReUse.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormHiZReUse.Designer.cs">
+      <DependentUpon>FormHiZReUse.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormHZBuffer.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -292,6 +298,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormGPUImposterInstance.resx">
       <DependentUpon>FormGPUImposterInstance.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormHiZReUse.resx">
+      <DependentUpon>FormHiZReUse.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormHZBuffer.resx">
       <DependentUpon>FormHZBuffer.cs</DependentUpon>

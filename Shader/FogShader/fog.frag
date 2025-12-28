@@ -54,8 +54,8 @@ void main()
     // 하늘 처리 (깊이가 매우 큰 경우)
     if (normalizedDepth >= 0.9999)
     {
-        fragColor = sceneColor;
-        return;
+        //fragColor = sceneColor;
+        //return;
     }
     
     // 안개 밀도 계산

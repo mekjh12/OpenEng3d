@@ -13,6 +13,7 @@ namespace Renderer
         // 스카이돔 메시를 위한 변수들
         private uint _skyDomeVAO;
         private int _skyDomeVertexCount;
+        Matrix4x4f _skyDomeModelMatrix;
 
         private SkyDomeTexture2dShader _skyDomeTexture2DShader;
         private SkyDomeRenderShader _skyDomeRenderShader;
@@ -49,6 +50,9 @@ namespace Renderer
 
             // 테스트용 고정 값
             _fixedCloudOffset = new Vertex3f(32.0f, 5.0f, 61.0f);
+
+            // 스카이돔 모델 행렬 초기화 (큰 크기로 스케일링)
+            _skyDomeModelMatrix = Matrix4x4f.Scaled(1000.0f, 1000.0f, 1000.0f);
         }
 
 
@@ -71,11 +75,15 @@ namespace Renderer
             Gl.FrontFace(FrontFaceDirection.Cw); // 시계 방향으로 설정
 
             // 모델 행렬 설정 (카메라 위치에 스카이돔 배치, 큰 반지름으로 스케일링)
-            Matrix4x4f modelMatrix = Matrix4x4f.Translated(camera.Position.x, camera.Position.y, camera.Position.z)
-                                  * Matrix4x4f.Scaled(1000.0f, 1000.0f, 1000.0f); // 충분히 큰 스케일로 설정
+            if (camera.IsCameraFrameMoved)
+            {
+                _skyDomeModelMatrix[3, 0] = camera.Position.x;
+                _skyDomeModelMatrix[3, 1] = camera.Position.y;
+                _skyDomeModelMatrix[3, 2] = camera.Position.z;
+            }
 
             // 셰이더 유니폼 설정
-            Matrix4x4f mvp = camera.ProjectiveMatrix * camera.ViewMatrix * modelMatrix;
+            Matrix4x4f mvp = camera.VPMatrix * _skyDomeModelMatrix;
             _skyDomeRenderShader.LoadMVPMatrix(mvp);
 
             // 텍스처 바인딩
@@ -101,12 +109,20 @@ namespace Renderer
         /// <summary>
         /// 반구형 스카이돔 메시를 생성합니다.
         /// </summary>
+        /// <summary>
+        /// 반구형 스카이돔 메시를 생성합니다.
+        /// </summary>
         private void CreateSkyDomeMesh()
         {
             // 메시 파라미터
             int stacks = 20;  // 수직 분할 수
             int slices = 40;  // 수평 분할 수
             float radius = 1.0f;  // 반지름 (나중에 스케일링)
+
+            // 수직 범위 설정: -30도 ~ 90도
+            float phiStart = -(float)Math.PI / 6.0f;  // -30도
+            float phiEnd = (float)Math.PI / 2.0f;      // 90도
+            float phiRange = phiEnd - phiStart;         // 전체 범위 (120도)
 
             // 삼각형 메시 계산
             // 정점 수 = 스택 * 슬라이스 * 6 (각 쿼드는 2개의 삼각형, 각 삼각형은 3개의 정점)
@@ -117,12 +133,12 @@ namespace Renderer
             int vertexIndex = 0;
             int texCoordIndex = 0;
 
-            // 반구 생성 (z가 위쪽 방향)
+            // 확장된 스카이돔 생성 (z가 위쪽 방향, -30도부터 90도까지)
             for (int stack = 0; stack < stacks; stack++)
             {
-                // 스택의 시작과 끝 각도 계산 (0 = 하단, PI/2 = 상단)
-                float phi1 = (float)Math.PI * 0.5f * (float)stack / stacks;
-                float phi2 = (float)Math.PI * 0.5f * (float)(stack + 1) / stacks;
+                // 스택의 시작과 끝 각도 계산 (-30도 = 하단, 90도 = 상단)
+                float phi1 = phiStart + phiRange * (float)stack / stacks;
+                float phi2 = phiStart + phiRange * (float)(stack + 1) / stacks;
 
                 // 반지름과 고도 계산
                 float z1 = (float)Math.Sin(phi1);

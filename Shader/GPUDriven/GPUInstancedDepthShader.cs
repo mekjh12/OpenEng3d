@@ -1,38 +1,30 @@
 ﻿using Common;
 using OpenGL;
+using System.Drawing.Drawing2D;
 
 namespace Shader
 {
     /// <summary>
-    /// GPU Driven Instanced Rendering Shader
-    /// SSBO에서 변환 행렬과 가시 인덱스를 읽어 렌더링합니다.
+    /// GPU 인스턴싱 깊이 전용 셰이더 (Temporal Z-PrePass용)
+    /// 텍스처, 라이팅 없이 깊이만 출력
     /// </summary>
-    public class GPUInstancedShader : ShaderProgramBase
+    public class GPUInstancedDepthShader : ShaderProgramBase
     {
-        const string VERTEX_FILE = @"\Shader\GPUDriven\glsl\instanced.vert";
-        const string FRAGMENT_FILE = @"\Shader\GPUDriven\glsl\instanced.frag";
-
-        // SSBO 바인딩 포인트
-        private const int TRANSFORM_BUFFER_BINDING = 0;
-        private const int VISIBLE_INDICES_BINDING = 1;
-
-        // 유니폼 위치
-        private int loc_vp;
-        private int loc_textureCount;
-        private int[] loc_textures;  // ✅ 배열 위치
+        const string VERTEX_FILE = @"\Shader\GPUDriven\glsl\gpuInstancedDepth.vert";
+        const string FRAGMENT_FILE = @"\Shader\GPUDriven\glsl\gpuInstancedDepth.frag";
         private const int MAX_TEXTURES = 32;
-        private int loc_batchStartOffset;
+
+        private int loc_vp;
         private int loc_view;
-        private int loc_debugColor;
-        private int loc_enableDebug;
+        private int loc_batchStartOffset;
+        private int loc_textureCount;
+        private int[] loc_textures;
 
-
-        public GPUInstancedShader(string projectPath) : base()
+        public GPUInstancedDepthShader(string projectPath) : base()
         {
             _name = this.GetType().Name;
             VertFileName = projectPath + VERTEX_FILE;
             FragFileName = projectPath + FRAGMENT_FILE;
-
             InitCompileShader();
         }
 
@@ -41,9 +33,6 @@ namespace Shader
             loc_vp = GetUniformLocation("vp");
             loc_view = GetUniformLocation("view");
             loc_batchStartOffset = GetUniformLocation("batchStartOffset");
-
-            loc_debugColor = GetUniformLocation("debugColor");
-            loc_enableDebug = GetUniformLocation("enableDebug");
 
             loc_textureCount = GetUniformLocation("textureCount");
             loc_textures = new int[MAX_TEXTURES];
@@ -61,14 +50,14 @@ namespace Shader
             BindAttribute(3, "materialID");
         }
 
-        public void LoadEnableDebug(bool enableDebug)
+        public void LoadViewMatrix(Matrix4x4f view)
         {
-            Gl.Uniform1(loc_enableDebug, enableDebug ? 1 : 0);
+            LoadUniformMatrix4(loc_view, view);
         }
 
-        public void LoadDebugColor(Vertex4f color)
+        public void LoadVPMatrix(Matrix4x4f vp)
         {
-            Gl.Uniform4f(loc_debugColor, 1, color);
+            LoadUniformMatrix4(loc_vp, vp);
         }
 
         public void LoadBatchStartOffset(uint offset)
@@ -76,22 +65,6 @@ namespace Shader
             Gl.Uniform1(loc_batchStartOffset, (int)offset);
         }
 
-        /// <summary>
-        /// 뷰 행렬을 설정합니다 (깊이 계산용)
-        /// </summary>
-        public void LoadViewMatrix(in Matrix4x4f matrix)
-        {
-            LoadUniformMatrix4(loc_view, matrix);
-        }
-
-
-        /// <summary>
-        /// 뷰-투영 행렬을 설정합니다.
-        /// </summary>
-        public void LoadVPMatrix(in Matrix4x4f matrix)
-        {
-            LoadUniformMatrix4(loc_vp, matrix);
-        }
 
         /// <summary>
         /// 텍스처 배열 바인딩 (초기화 시 한 번만 호출)

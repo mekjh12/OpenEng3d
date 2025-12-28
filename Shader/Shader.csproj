@@ -90,6 +90,7 @@
     <Compile Include="GPUDriven\GPUBillboardShader.cs" />
     <Compile Include="GPUDriven\DepthDebugInstancedShader.cs" />
     <Compile Include="GPUDriven\GPUDrivenImpostorShader.cs" />
+    <Compile Include="GPUDriven\GPUInstancedDepthShader.cs" />
     <Compile Include="GPUDriven\GPUInstancedShader.cs" />
     <Compile Include="GPUDriven\IndicesOrderCompShader.cs" />
     <Compile Include="GPUDriven\HiZOcclusionComputeShader.cs" />
@@ -176,6 +177,8 @@
     <None Include="GPUDriven\comp\hiz_occlusion.comp" />
     <None Include="GPUDriven\glsl\depth_debug_instanced.vert" />
     <None Include="GPUDriven\comp\quadtree_culling.comp" />
+    <None Include="GPUDriven\glsl\gpuInstancedDepth.frag" />
+    <None Include="GPUDriven\glsl\gpuInstancedDepth.vert" />
     <None Include="GPUDriven\glsl\gpu_impostor.frag" />
     <None Include="GPUDriven\glsl\gpu_impostor.gem.glsl" />
     <None Include="GPUDriven\glsl\gpu_impostor.vert" />

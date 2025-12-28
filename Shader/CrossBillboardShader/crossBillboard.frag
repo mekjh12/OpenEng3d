@@ -27,7 +27,7 @@ void main()
     vec4 texColor = texture(atlasTexture, fTexCoord);
     
     // 알파 테스트
-    if (texColor.a < 0.1)
+    if (texColor.a < 0.9)
         discard;
     
     fragColor = texColor;

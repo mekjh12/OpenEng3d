@@ -1,9 +1,9 @@
 ﻿#version 450 core
-
 in GS_OUT 
 {
     vec2 texCoord;
     vec2 atlasOffset;
+    vec3 viewPos;  // ✅ 추가
 } fs_in;
 
 // MRT 출력
@@ -29,6 +29,7 @@ void main()
         if (isEdge)
         {
             fragColor = vec4(1.0, 1.0, 0.0, 1.0);
+            fragDepth = fs_in.viewPos.z / 10000.0;  // ✅ 엣지라인에도 깊이 출력
             return;
         }
     }
@@ -55,9 +56,9 @@ void main()
     {
         discard;
     }
-
+    
     fragColor = color;
-
+    
     // ✅ 선형 깊이 출력 (안개용)
-    //fragDepth = vViewPos.z / 10000.0;
+    fragDepth = fs_in.viewPos.z / 10000.0;
 }

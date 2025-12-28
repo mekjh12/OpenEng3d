@@ -10,6 +10,8 @@ namespace Camera3d
         public static float Epsilon = 0.5f;
         private const float MIN_FARAWAY_DISTANCE = 0.1f;
         private Vertex3f _orbitPosition;
+        private float _prevCameraDistance;                   // 이전 카메라 피봇 거리
+
 
         public override Vertex3f Position 
         {
@@ -67,6 +69,13 @@ namespace Camera3d
         {
             base.Update(deltaTime);
             _orbitPosition = _position - _cameraForward * _distance;
+
+            // 카메라 프레임 이동(피봇과 카메라의 거리) 체크
+            if (Math.Abs(_prevCameraDistance - _distance) > 0.01f)
+            {
+                _isCameraFrameMoved = true;
+                _prevCameraDistance = _distance;
+            }
         }
 
         protected override void UpdateCameraVectors()

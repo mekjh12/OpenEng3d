@@ -107,8 +107,8 @@ namespace BillBoard
             var data = CreateCrossBillboardData(model, bounds);
             
             // 디버그 저장
-            GetAtlasTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_cb.png");
-            GetAtlasDepthTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_cb_depth.png");
+            //GetAtlasTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_cb.png");
+            //GetAtlasDepthTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_cb_depth.png");
 
             return data;
         }

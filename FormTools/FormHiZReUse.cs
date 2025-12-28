@@ -17,11 +17,11 @@ using ZetaExt;
 
 namespace FormTools
 {
-    public partial class FormGPUHiZBufferPrevFrame : Form, GlControlerable
+    public partial class FormHiZReUse : Form, GlControlerable
     {
         readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
         readonly string EXE_PATH = Application.StartupPath;
-        readonly string TITLE = "GPU Driven 이전 프레임 깊이 버퍼 활용 HiZ버퍼 사용하기";
+        readonly string TITLE = "HiZBuffer 이전 프레임 재사용(LOD0)";
 
         private GlControl3 _glControl3;                     // OpenGL 컨트롤
         private ColorShader _colorShader;                   // 컬러 셰이더
@@ -47,13 +47,14 @@ namespace FormTools
         ModelBatchManager _modelBatchManager;               // 모델 배치 매니저
         HiZRenderPass _gpuDriven;                           // GPU 드리븐 렌더러
         HierarchyZBuffer _hiZBuffer;                        // 계층적 Z 버퍼
-        const int DOWN_LEVEL = 2;                           // 다운샘플링 레벨
+        const int DOWN_LEVEL = 0;                           // 다운샘플링 레벨
         const int MAX_INSTANCES = 100000;                   // 최대 인스턴스 수
 
         // 지형 관련 변수들
         TerrainRegion _terrainRegion;                       // 지형 영역
         Texture[] _levelTextureMap = null;                  // 지형 레벨 텍스쳐
         Texture _detailTextureMap = null;                   // 지형 디테일 텍스쳐
+        Vertex3f _cameraPivotPosition;                      // 카메라 피벗 위치    
 
         // 하늘과 구름 관련 변수들
         SkyRenderer _skyRenderer;                           // 하늘 렌더러
@@ -82,8 +83,9 @@ namespace FormTools
         // 디버깅 관련 변수들
         bool _isVisibleHiZDepthBuffer = false;              // 깊이 Z버퍼 가시화 여부
         bool _isVisibleRenderDepthBuffer = false;           // 렌더링 깊이 버퍼 가시화 여부
+        bool _isDebugTextDirty = true;                      // 디버그 텍스트 갱신 여부
 
-        public FormGPUHiZBufferPrevFrame()
+        public FormHiZReUse()
         {
             InitializeComponent();
 
@@ -151,7 +153,7 @@ namespace FormTools
             _camPosText = new Text2d("카메라 위치 (0,0,0)", width - 10, height, width, height,
                 Text2d.TextAlignment.TopRight, heightInPixels: 15);
 
-            _culledText = new Text2d("컬링된 노드 0개", 10, (height * 0.5f), width, height,
+            _culledText = new Text2d("컬링된 노드 0개", 10, (height * 0.2f), width, height,
                 Text2d.TextAlignment.Left, heightInPixels: 15);
             _culledText.Color = Color.White;
         }
@@ -166,18 +168,34 @@ namespace FormTools
 
             // 3D 모델 매니저 초기화 및 모델 로드
             _model3DManager = new Model3dManager(PROJECT_PATH, EXE_PATH + "\\nullTexture.jpg");
-            UnifiedTexturedModel model3 = _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\tree1.obj");
-            UnifiedTexturedModel model1 = _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm4.obj");
-            UnifiedTexturedModel model2 = _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\Palm11.obj");
-
-            UnifiedTexturedModelLOD model3_lod1 = model3 as UnifiedTexturedModelLOD;
-            UnifiedTexturedModelLOD model1_lod1 = model1 as UnifiedTexturedModelLOD;
-            UnifiedTexturedModelLOD model2_lod1 = model2 as UnifiedTexturedModelLOD;
-
             _modelBatchManager = new ModelBatchManager();
-            _modelBatchManager.AddModel(model3.Name, 100, model3, model3_lod1.ModelLod1);
-            _modelBatchManager.AddModel(model1.Name, 100, model1, model1_lod1.ModelLod1);
-            _modelBatchManager.AddModel(model2.Name, 100, model2, model2_lod1.ModelLod1);
+
+            string[] objFileNames = new string[]
+            {
+                @"tree1.obj",
+                @"florida_foliage\palm1.obj",
+                @"florida_foliage\palm2.obj",
+                @"florida_foliage\palm3.obj",
+                @"florida_foliage\bananaPlant1.obj",
+                @"florida_foliage\bananaPlant2.obj",
+                @"florida_foliage\bananaPlant3.obj",
+                @"florida_foliage\fern1.obj",
+                @"florida_foliage\fern2.obj",
+                @"florida_foliage\fern3.obj",
+                @"florida_foliage\fern4.obj",
+                @"florida_foliage\fern5.obj",            
+            };
+
+            /*
+               
+             */
+
+            for (int i = 0; i < objFileNames.Length; i++)
+            {
+                UnifiedTexturedModel model3 = _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\" + objFileNames[i]);
+                UnifiedTexturedModelLOD model3_lod1 = model3 as UnifiedTexturedModelLOD;
+                _modelBatchManager.AddModel(model3.Name, 100, model3, model3_lod1.ModelLod1);
+            }
 
             // 지형 영역 초기화
             RegionCoord regionCoord = new RegionCoord(0, 0);
@@ -198,8 +216,11 @@ namespace FormTools
                         int x = i % gridSize;
                         int y = i / gridSize;
 
-                        float posX = (x - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
-                        float posY = (y - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
+                        //float posX = (x - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
+                        //float posY = (y - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
+                        float posX = 1000f * (float)(rand.NextDouble() * 2.0f  - 1.0f);
+                        float posY = 1000f * (float)(rand.NextDouble() * 2.0f - 1.0f);
+
                         position.x = posX;
                         position.y = posY;
                         float posZ = _terrainRegion.TerrainData.GetTerrainHeight(ref position, Terrain.TerrainConstants.DEFAULT_VERTICAL_SCALE);
@@ -210,8 +231,8 @@ namespace FormTools
                         Matrix4x4f transform = Matrix4x4f.Translated(posX, posY, posZ) *
                                         Matrix4x4f.RotatedZ(rotZ.ToDegree()) *
                                         Matrix4x4f.Scaled(scale, scale, scale);
-                        _modelBatchManager.AddInstance((uint)(x % 3), transform);
-                        //_modelBatchManager.AddInstance((uint)Rand.NextInt(0, 2), transform);
+                        _modelBatchManager.AddInstance((uint)(x % objFileNames.Length), transform);
+                        //_modelBatchManager.AddInstance((uint)Rand.NextInt(0, objFileNames.Length), transform);
                     }
 
                     Console.WriteLine($"Generated {MAX_INSTANCES} tree instances");
@@ -222,18 +243,20 @@ namespace FormTools
 
             // 지형 레벨 텍스쳐 로딩
             string heightMap = PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\";
-            string[] levelTextureMap = new string[5];
-            levelTextureMap[0] = EXE_PATH + @"\Res\Terrain\blend\water1.png";
-            levelTextureMap[1] = EXE_PATH + @"\Res\Terrain\blend\grass_1.png";
-            levelTextureMap[2] = EXE_PATH + @"\Res\Terrain\blend\lowestTile.png";
-            levelTextureMap[3] = EXE_PATH + @"\Res\Terrain\blend\HighTile.png";
-            levelTextureMap[4] = EXE_PATH + @"\Res\Terrain\blend\highestTile.png";
+            string[] levelTextureMap = new string[5] 
+            {
+                "water1.png",
+                "grass_1.png",
+                "lowestTile.png",
+                "HighTile.png",
+                "highestTile.png"
+            };
             string detailMap = EXE_PATH + @"\Res\Terrain\blend\detailMap.png";
             _levelTextureMap = new Texture[levelTextureMap.Length];
             _detailTextureMap = new Texture(detailMap);
             for (int i = 0; i < _levelTextureMap.Length; i++)
             {
-                _levelTextureMap[i] = new Texture(levelTextureMap[i]);
+                _levelTextureMap[i] = new Texture(EXE_PATH + @"\Res\Terrain\blend\" + levelTextureMap[i]);
             }
 
             // 하늘 렌더러 초기화
@@ -273,16 +296,30 @@ namespace FormTools
                 // 뷰 프러스텀 업데이트
                 _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
 
-                // HZB 업데이트
+                // 카메라 피벗 위치에 대한 지형 높이 얻기
+                _cameraPivotPosition = camera.PivotPosition;
+                _terrainRegion.TerrainData.GetTerrainHeightVertex3f(ref _cameraPivotPosition);
+                _cameraPivotPosition.z += 2.0f; // 약간 띄우기   
+                camera.PivotPosition = _cameraPivotPosition;
+
+                // === HiZ 버퍼 업데이트 ===
                 _hiZBuffer.BindFramebuffer();
                 _hiZBuffer.PrepareRenderSurface();
 
-                _hiZBuffer.RenderTerrainDepth(camera.ProjectiveMatrix,
+                // 1. 지형 깊이 렌더링
+                _hiZBuffer.RenderTerrainDepth(
+                    camera.ProjectiveMatrix,
                     camera.ViewMatrix,
                     TerrainConstants.DEFAULT_VERTICAL_SCALE,
-                    _terrainRegion.TerrainEntity);
+                    _terrainRegion.TerrainEntity
+                );
+
+                // 2. ✅ 이전 프레임 LOD0, LOD1 깊이 렌더링 (Temporal Z-PrePass)
+                _gpuDriven?.RenderDepthPrePassFromPrevFrame(camera);
 
                 _hiZBuffer.UnbindFramebuffer();
+
+                // 3. HiZ 밉맵 생성
                 _hiZBuffer.GenerateMipmapsUsingFragment(maxLevel: -1);
 
                 _camPosText.Text = $"카메라 위치 ({camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1})";
@@ -306,6 +343,11 @@ namespace FormTools
             // 최적화가 안되고 있음(TODO)
             if (_visibleCount != _lastVisibleCount || _frustumPassCount != _lastFrustumPassCount)
             {
+                _isDebugTextDirty = true;
+            }
+
+            if (_isDebugTextDirty)
+            {
                 // 네임플레이트 업데이트            
                 _lastVisibleCount = _visibleCount;
                 _lastFrustumPassCount = _frustumPassCount;
@@ -315,8 +357,10 @@ namespace FormTools
                     $"{_visibleReport}\n" +
                     $"----------------------\n" +
                     $"뷰프러스텀 {_frustumPassCount}개\n" +
-                    $"HZB Level: {_level}\n" +
+                    $"{_hiZBuffer.Width}x{_hiZBuffer.Height} HZB Level: {_level}\n" +
                     $"안개유무: {_isFogEnabled}";
+
+                _isDebugTextDirty = false;
             }
         }
 
@@ -466,12 +510,17 @@ namespace FormTools
 
         }
 
+        // --------------------------------
+        // 도움말 텍스트
+        // --------------------------------
         readonly string HELP_TEXT =
             "1번키: HiZ버퍼보기\n" +
             "2번키: 안개사용\n" +
             "8번키: 깊이버퍼보기\n" +
             "9번키: LOD1보기\n" +
-            "0번키: 원점으로\n";
+            "0번키: 원점으로\n" +
+            "Z키: Level Down\n" +
+            "C키: Level Up\n";
 
         public void KeyUpEvent(object sender, KeyEventArgs e)
         {
@@ -498,6 +547,16 @@ namespace FormTools
             {
                 _isVisibleHiZDepthBuffer = !_isVisibleHiZDepthBuffer;
             }
+            else if (e.KeyCode == Keys.Z)
+            {
+                _level = Math.Max(_level - 1, 0);
+                _isDebugTextDirty = true;
+            }
+            else if (e.KeyCode == Keys.C)
+            {
+                _level = Math.Min(_level + 1, _hiZBuffer.Levels - 1);
+                _isDebugTextDirty = true;
+            }
         }
 
         public void MouseDnEvent(object sender, MouseEventArgs e)
@@ -520,7 +579,6 @@ namespace FormTools
         {
             int width = _glControl3.Width;
             int height = _glControl3.Height;
-
         }
 
         public void Form_Load(object sender, EventArgs e)
