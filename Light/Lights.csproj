@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -55,8 +56,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DirectionalLight .cs" />
+    <Compile Include="LightingManager.cs" />
+    <Compile Include="LightingUBO.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SceneLighting.cs" />
     <Compile Include="SunLight.cs" />
   </ItemGroup>
   <ItemGroup>

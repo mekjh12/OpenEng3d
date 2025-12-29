@@ -1,5 +1,4 @@
 ﻿#version 450 core
-
 layout(points) in;
 layout(triangle_strip, max_vertices = 12) out;  // 3 quads × 4 vertices
 
@@ -16,6 +15,7 @@ out vec2 fTexCoord;      // UV 좌표
 out flat int fPlaneIndex;  // 평면 인덱스
 out vec3 vColor;         // 디버그용 색상
 out vec3 vViewPos;
+out vec3 vNormal;        // ✅ 평면 노멀
 
 // Uniform
 uniform mat4 vp;
@@ -46,7 +46,8 @@ vec2 GetAtlasSize(int planeIndex)
 }
 
 // ===== 크로스 빌보드용 헬퍼 함수 =====
-void EmitQuad(vec3 center, vec3 right, vec3 up, float size, vec3 color, int planeIndex)
+// ✅ planeNormal 파라미터 추가
+void EmitQuad(vec3 center, vec3 right, vec3 up, float size, vec3 color, int planeIndex, vec3 planeNormal)
 {
     vec3 halfRight = right * size;
     vec3 halfUp = up * size;
@@ -58,6 +59,7 @@ void EmitQuad(vec3 center, vec3 right, vec3 up, float size, vec3 color, int plan
     vec3 worldPos0 = center - halfRight;
     vViewPos = (view * vec4(worldPos0, 1.0)).xyz;
     vColor = color;
+    vNormal = planeNormal;  // ✅ 노멀 설정
     fTexCoord = uvOffset;
     fPlaneIndex = planeIndex;
     gl_Position = vp * vec4(worldPos0, 1.0);
@@ -67,6 +69,7 @@ void EmitQuad(vec3 center, vec3 right, vec3 up, float size, vec3 color, int plan
     vec3 worldPos1 = center + halfRight;
     vViewPos = (view * vec4(worldPos1, 1.0)).xyz;
     vColor = color;
+    vNormal = planeNormal;  // ✅ 노멀 설정
     fTexCoord = uvOffset + vec2(uvSize.x, 0.0);
     fPlaneIndex = planeIndex;
     gl_Position = vp * vec4(worldPos1, 1.0);
@@ -76,6 +79,7 @@ void EmitQuad(vec3 center, vec3 right, vec3 up, float size, vec3 color, int plan
     vec3 worldPos2 = center - halfRight + 2.0 * halfUp;
     vViewPos = (view * vec4(worldPos2, 1.0)).xyz;
     vColor = color;
+    vNormal = planeNormal;  // ✅ 노멀 설정
     fTexCoord = uvOffset + vec2(0.0, uvSize.y);
     fPlaneIndex = planeIndex;
     gl_Position = vp * vec4(worldPos2, 1.0);
@@ -85,6 +89,7 @@ void EmitQuad(vec3 center, vec3 right, vec3 up, float size, vec3 color, int plan
     vec3 worldPos3 = center + halfRight + 2.0 * halfUp;
     vViewPos = (view * vec4(worldPos3, 1.0)).xyz;
     vColor = color;
+    vNormal = planeNormal;  // ✅ 노멀 설정
     fTexCoord = uvOffset + uvSize;
     fPlaneIndex = planeIndex;
     gl_Position = vp * vec4(worldPos3, 1.0);
@@ -112,12 +117,15 @@ void main()
     for (int i = 0; i < 3; i++)
     {
         // ✅ 기본 각도(도) + Transform의 회전(라디안)
-        float angleRad = radians(angles[i]) - baseRotation; // baseRotation이 플러스, 마이너스인지 아직 미해결
+        float angleRad = radians(angles[i]) - baseRotation;
         
         // Right 벡터 (XY 평면에서 회전)
         vec3 right = vec3(cos(angleRad), sin(angleRad), 0.0);
         
+        // ✅ 평면 노멀 = right 벡터 (평면과 수직인 방향)
+        vec3 planeNormal = right;
+        
         // 각 평면 생성
-        EmitQuad(worldPos, right, up, size, color, i);
+        EmitQuad(worldPos, right, up, size, color, i, planeNormal);
     }
 }

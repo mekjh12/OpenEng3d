@@ -5,9 +5,10 @@ using ZetaExt;
 
 namespace Lights
 {
-    public class SunLight : DirectionalLight
+    public class SunLight
     {
         private SolarAngles _angles;
+        private Vertex3f _direction;
 
         public struct SolarAngles
         {
@@ -26,6 +27,8 @@ namespace Lights
             _angles = new SolarAngles(azimuth, elevation);
             UpdateDirection();
         }
+
+        public Vertex3f GetDirection() => _direction;
 
         public void SetSolarAngles(SolarAngles angles)
         {

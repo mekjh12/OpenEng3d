@@ -3,6 +3,7 @@ using FastMath;
 using Geometry;
 using GlWindow;
 using GPUDriven;
+using Light;
 using Model3d;
 using Occlusion;
 using OpenGL;
@@ -54,7 +55,9 @@ namespace FormTools
         TerrainRegion _terrainRegion;                       // 지형 영역
         Texture[] _levelTextureMap = null;                  // 지형 레벨 텍스쳐
         Texture _detailTextureMap = null;                   // 지형 디테일 텍스쳐
-        Vertex3f _cameraPivotPosition;                      // 카메라 피벗 위치    
+        Vertex3f _cameraPivotPosition;                      // 카메라 피벗 위치
+
+        LightingManager _lightingManager;                   // 라이팅 매니저
 
         // 하늘과 구름 관련 변수들
         SkyRenderer _skyRenderer;                           // 하늘 렌더러
@@ -265,6 +268,13 @@ namespace FormTools
             _skyDomeTexture2DShader.GenerateSkyTexture(_glControl3.Camera.Position);
             _skyRenderer = new SkyRenderer(PROJECT_PATH, _skyDomeTexture2DShader);
 
+            // 초기 라이팅 설정 (선택사항)
+            _lightingManager = new LightingManager();
+            _lightingManager.Lighting.SunDirection = new Vertex3f(0.5f, 0.3f, -0.8f).Normalized;
+            _lightingManager.Lighting.SunIntensity = 1.5f;
+            _lightingManager.Lighting.SetTimeOfDay(19);
+            _lightingManager.SetDirty();
+
             // UI 3D 텍스트 네임플레이트 초기화
             _textNamePlate = new TextNamePlate(_glControl3.Camera, "FPS");
             _textNamePlate.Height = 0.35f;
@@ -289,6 +299,9 @@ namespace FormTools
                 _gpuDriven.Initialize(_modelBatchManager, _glControl3.Camera, _hiZBuffer.Levels);
                 _isStarted = true;
             }
+
+            // 라이팅 매니저 업데이트
+            _lightingManager.Update();  // UBO 업데이트
 
             // 카메라 위치가 변경되었는지 확인
             if (camera.IsCameraFrameMoved)

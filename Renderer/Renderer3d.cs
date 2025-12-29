@@ -642,7 +642,6 @@ namespace Renderer
 
                 TexturedModel modelTextured = rawModel as TexturedModel;
                 shader.LoadIsDetailMap(isDetailMap);
-                shader.LoadLightDirection(lightDirection);
                 shader.LoadHeightScale(heightScale);
 
                 shader.SetInt("gHeightMap", 0);
