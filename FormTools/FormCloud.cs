@@ -84,10 +84,7 @@ namespace FormTools
             // GPU 정보 출력
             string vendor = Gl.GetString(StringName.Vendor);
             string renderer = Gl.GetString(StringName.Renderer);
-            string version = Gl.GetString(StringName.Version);
-            Console.WriteLine($"GPU 제조사: {vendor}");
-            Console.WriteLine($"렌더러: {renderer}");
-            Console.WriteLine($"OpenGL 버전: {version}");
+            string version = Gl.GetString(StringName.Version);            
         }
 
         private void Init3d(int w, int h)

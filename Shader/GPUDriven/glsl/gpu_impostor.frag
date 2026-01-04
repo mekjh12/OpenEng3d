@@ -15,8 +15,8 @@ uniform float atlasSize;
 uniform float individualSize;
 uniform bool enableEdgeLine;
 
-// ✅ UBO (Ambient만 사용)
-layout(std140, binding = 0) uniform LightingBlock
+// UBO (Ambient만 사용)
+layout(std140, binding = 1) uniform LightingBlock
 {
     vec3 ambientColor;
     vec3 lightDirection;

@@ -138,12 +138,15 @@ namespace Shader
         /// <summary>
         /// 하늘 텍스처 생성 메서드
         /// </summary>
+        /// <param name="cameraPosition">태양의 위치 벡터</param>
+        /// <param name="sunDirection">태양의 방향 벡터(태양이 종점벡터)</param>
         /// <param name="cloudCoverage">구름의 양 (0.0 = 맑음, 1.0 = 흐림)</param>
         /// <param name="cloudBaseAltitude">구름 바닥 고도 (0.0-1.0)</param>
         /// <param name="cloudTopAltitude">구름 상단 고도 (0.0-1.0)</param>
         /// <returns>생성된 텍스처 ID</returns>
         public uint GenerateSkyTexture(
             Vertex3f cameraPosition,
+            Vertex3f sunDirection,
             float cloudCoverage = 0.5f,
             float cloudBaseAltitude = 0.1f,
             float cloudTopAltitude = 0.3f)
@@ -153,12 +156,9 @@ namespace Shader
             cloudBaseAltitude = ClampValue(cloudBaseAltitude, 0.0f, 0.8f);
             cloudTopAltitude = ClampValue(cloudTopAltitude, cloudBaseAltitude + 0.1f, 0.9f);
 
-            // 랜덤 태양 위치 생성
-            Vertex3f sunPosition = GenerateRandomSunPosition();
-
             // 지정된 태양 위치로 하늘 렌더링
             return GenerateSkyTextureWithSunPosition(
-                sunPosition,
+                sunDirection,
                 cameraPosition,
                 cloudCoverage,
                 cloudBaseAltitude,
@@ -175,7 +175,7 @@ namespace Shader
         /// <param name="useFixedCloudPattern">고정된 구름 패턴 사용 여부 (태양 위치와 독립적)</param>
         /// <returns>생성된 텍스처 ID</returns>
         public uint GenerateSkyTextureWithSunPosition(
-            Vertex3f sunPosition,
+            Vertex3f sunDirection,
             Vertex3f cameraPosition,
             float cloudCoverage = 0.99f,
             float cloudBaseAltitude = 0.1f,
@@ -188,13 +188,13 @@ namespace Shader
             cloudTopAltitude = ClampValue(cloudTopAltitude, 0.0f, 1.0f);
 
             // 1단계: 하늘색 렌더링
-            _skyColorShader.GenerateSkyTexture(_skyTexture, sunPosition);
+            _skyColorShader.GenerateSkyTexture(_skyTexture, sunDirection);
 
             // 2단계: 구름 렌더링
             _cloudShader.RenderCloudTexture(
                 _skyTexture,
                 _finalTexture,
-                sunPosition,
+                sunDirection,
                 cameraPosition,
                 cloudCoverage,
                 cloudBaseAltitude,

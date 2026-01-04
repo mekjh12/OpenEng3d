@@ -134,7 +134,19 @@ namespace Common.Abstractions
         // 모델 행렬
         public virtual Matrix4x4f ModelMatrix => ViewMatrix.Inverse;
         // 뷰*투영 행렬
-        public virtual Matrix4x4f VPMatrix => ProjectiveMatrix * ViewMatrix;
+        public virtual Matrix4x4f VPMatrix
+        {
+            get
+            {
+                _vpMatrix = ProjectiveMatrix* ViewMatrix;
+                return _vpMatrix;
+            }
+        }
+        public Matrix4x4f InverseViewProjectionMatrix => _vpMatrix.Inversed();
+
+
+        protected Matrix4x4f _vpMatrix;
+
         // 모델*뷰*투영 행렬
         public Matrix4x4f MVPMatrix => ProjectiveMatrix * ViewMatrix * ModelMatrix;
 
@@ -192,7 +204,9 @@ namespace Common.Abstractions
             UpdateCameraVectors();
 
             if (_prevCameraPosition != _position 
-                || _prevCameraFoward.Dot(_cameraForward) < 0.999f)
+                || _prevCameraFoward.Dot(_cameraForward) < 0.99999f)
+            // 이 정도 정확성을 넘어가면 방향이 바뀐 것으로 간주
+            // 0.999는 수직 이동시 업데이트가 끊김
             {
                 _isCameraFrameMoved = true;
                 _prevCameraPosition = _position;
@@ -202,6 +216,7 @@ namespace Common.Abstractions
             {
                 _isCameraFrameMoved = false;
             }
+
         }
 
         /// <summary>카메라의 기저 벡터들을 갱신합니다.</summary>

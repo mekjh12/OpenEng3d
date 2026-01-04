@@ -15,8 +15,8 @@ out GS_OUT
     vec3 viewPos;  // ✅ 추가
 } gs_out;
 
-uniform mat4 vp;
-uniform mat4 view;  // ✅ 추가
+layout(std140, binding = 0) uniform CameraBlock {mat4 view; mat4 proj; mat4 vp;} camera;
+
 uniform vec3 cameraPosition;
 uniform float aabbSphereRadius;
 uniform float atlasSize;
@@ -126,10 +126,10 @@ void main()
     // Triangle Strip으로 쿼드 생성
     for (int i = 0; i < 4; i++) 
     {
-        gl_Position = vp * vec4(positions[i], 1.0);
+        gl_Position = camera.vp * vec4(positions[i], 1.0);
         gs_out.texCoord = texCoords[i];
         gs_out.atlasOffset = instanceAtlasOffset;
-        gs_out.viewPos = (view * vec4(positions[i], 1.0)).xyz;  // ✅ 추가
+        gs_out.viewPos = (camera.view * vec4(positions[i], 1.0)).xyz;  // ✅ 추가
         EmitVertex();
     }
     

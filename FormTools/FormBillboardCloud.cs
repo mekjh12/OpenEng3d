@@ -143,7 +143,7 @@ namespace FormTools
 
             _generator = new CrossBillboardAtlasGenerator();
             _billboardData = _generator.GenerateAtlas(_unlitShader, _unifiedModel);
-            _renderer = new CrossBillboardRenderer();
+            _renderer = new CrossBillboardRenderer(PROJECT_PATH);
 
             // 3. 나무 인스턴스 설정
             var instances = new List<Renderer.TreeInstance>();
@@ -191,7 +191,7 @@ namespace FormTools
                 Gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
             }
 
-            _renderer.Render(_cbShader, camera.VPMatrix, 10, 10, _billboardData.AtlasTexture.TextureID);
+            //_renderer.Render(_cbShader, camera.VPMatrix, 10, 10, _billboardData.AtlasTexture.TextureID);
         }
 
         private void BlitToScreen(int deltaTime, Camera camera)

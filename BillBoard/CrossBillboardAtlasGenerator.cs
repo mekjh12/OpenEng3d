@@ -8,57 +8,33 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
+using ZetaExt;
 
 namespace BillBoard
 {
-    /// <summary>
-    /// Billboard Cloud용 Atlas 텍스처 생성기
-    /// ImpostorAtlasGenerator 패턴을 따라 6개 평면(수직 4개 + 수평 2개)을 렌더링
-    /// <code>
-    /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    /// 📖 읽기 가이드
-    /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    /// 
-    /// [진입점]
-    ///   GenerateAtlas()
-    /// 
-    /// [초기화 흐름]
-    ///   GenerateAtlas()
-    ///   ├─► InitializeRenderTarget()  : _atlasRenderTarget 생성
-    ///   ├─► CalculateModelBounds()    : 모델 경계 계산
-    ///   ├─► CalculatePlaneData()      : 6개 평면 정보 생성
-    ///   └─► RenderAtlas()             : 실제 렌더링 수행
-    /// 
-    /// [Atlas 레이아웃] 1024x512
-    ///   ┌────────┬────────┬────────┬────────┐
-    ///   │  0°    │  45°   │  90°   │  135°  │ ← 256x256 each (수직)
-    ///   ├────────┼────────┼────────┼────────┤
-    ///   │  Top   │ Bottom │        │        │ ← 256x256 each (수평)
-    ///   └────────┴────────┴────────┴────────┘
-    /// 
-    /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    /// </code>
-    /// </summary>
     public class CrossBillboardAtlasGenerator : IDisposable
     {
         // === 설정 ===
         public const int AtlasWidth = 1024;
         public const int AtlasHeight = 256;
-        public const int PlaneSize = 256;  // 모든 평면이 256x256
+        public const int PlaneSize = 256;
 
-        /// <summary>
-        /// 각 평면의 렌더링 정보
-        /// </summary>
         private class PlaneData
         {
-            public Matrix4x4f ViewMatrix;      // 뷰 행렬
-            public Matrix4x4f ProjectionMatrix; // 투영 행렬
-            public Vertex2f AtlasOffset;       // Atlas UV 오프셋
-            public string DebugName;           // 디버그 이름
+            public Matrix4x4f ViewMatrix;
+            public Matrix4x4f ProjectionMatrix;
+            public Vertex2f AtlasOffset;
+            public string DebugName;
         }
 
         private List<PlaneData> _planeDataList;
-        private RenderTarget2D _atlasRenderTarget;
+
+        // ✅ 텍스처 핸들 직접 저장
+        private uint _colorTexture;
+        private uint _normalTexture;
+        private uint _depthRenderBuffer;
+        private uint _atlasFBO;
+
         private UnifiedModelRenderer _unifiedModelRenderer;
 
         public CrossBillboardAtlasGenerator()
@@ -66,18 +42,93 @@ namespace BillBoard
             _planeDataList = new List<PlaneData>();
         }
 
-        /// <summary>
-        /// 렌더 타겟 초기화
-        /// </summary>
         private void InitializeRenderTarget()
         {
-            _atlasRenderTarget = new RenderTarget2D(
+            // Depth Renderbuffer 생성
+            _depthRenderBuffer = Gl.GenRenderbuffer();
+            Gl.BindRenderbuffer(RenderbufferTarget.Renderbuffer, _depthRenderBuffer);
+            Gl.RenderbufferStorage(
+                RenderbufferTarget.Renderbuffer,
+                InternalFormat.Depth24Stencil8,
+                AtlasWidth,
+                AtlasHeight
+            );
+
+            // ✅ Color 텍스처 생성 (필드에 저장)
+            _colorTexture = Gl.GenTexture();
+            Gl.BindTexture(TextureTarget.Texture2d, _colorTexture);
+            Gl.TexImage2D(
+                TextureTarget.Texture2d,
+                0,
+                InternalFormat.Rgba8,
                 AtlasWidth,
                 AtlasHeight,
-                false,
-                SurfaceFormat.Color,
-                DepthFormat.Depth24
+                0,
+                OpenGL.PixelFormat.Rgba,
+                PixelType.UnsignedByte,
+                IntPtr.Zero
             );
+            Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+            Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+
+            // ✅ Normal 텍스처 생성 (필드에 저장)
+            _normalTexture = Gl.GenTexture();
+            Gl.BindTexture(TextureTarget.Texture2d, _normalTexture);
+            Gl.TexImage2D(
+                TextureTarget.Texture2d,
+                0,
+                InternalFormat.Rgba8,
+                AtlasWidth,
+                AtlasHeight,
+                0,
+                OpenGL.PixelFormat.Rgba,
+                PixelType.UnsignedByte,
+                IntPtr.Zero
+            );
+            Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+            Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+
+            // MRT용 FBO 생성
+            _atlasFBO = Gl.GenFramebuffer();
+            Gl.BindFramebuffer(FramebufferTarget.Framebuffer, _atlasFBO);
+
+            // Color attachment (location = 0)
+            Gl.FramebufferTexture2D(
+                FramebufferTarget.Framebuffer,
+                FramebufferAttachment.ColorAttachment0,
+                TextureTarget.Texture2d,
+                _colorTexture,
+                0
+            );
+
+            // Normal attachment (location = 1)
+            Gl.FramebufferTexture2D(
+                FramebufferTarget.Framebuffer,
+                FramebufferAttachment.ColorAttachment1,
+                TextureTarget.Texture2d,
+                _normalTexture,
+                0
+            );
+
+            // Depth attachment
+            Gl.FramebufferRenderbuffer(
+                FramebufferTarget.Framebuffer,
+                FramebufferAttachment.DepthStencilAttachment,
+                RenderbufferTarget.Renderbuffer,
+                _depthRenderBuffer
+            );
+
+            // ✅ MRT 활성화
+            Gl.DrawBuffers(new int[] { Gl.COLOR_ATTACHMENT0, Gl.COLOR_ATTACHMENT1 });
+
+            // FBO 상태 체크
+            FramebufferStatus status = Gl.CheckFramebufferStatus(FramebufferTarget.Framebuffer);
+            if (status != FramebufferStatus.FramebufferComplete)
+            {
+                throw new Exception($"Framebuffer incomplete: {status}");
+            }
+
+            Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
         }
 
         /// <summary>
@@ -105,10 +156,11 @@ namespace BillBoard
 
             // BillboardCloudData 생성
             var data = CreateCrossBillboardData(model, bounds);
-            
+
             // 디버그 저장
-            //GetAtlasTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_cb.png");
+            GetAtlasTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_cb.png");
             //GetAtlasDepthTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_cb_depth.png");
+            //GetAtlasNormalTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_normal.png");
 
             return data;
         }
@@ -152,43 +204,46 @@ namespace BillBoard
         /// 6개 평면의 렌더링 데이터 계산
         /// ✅ 수직 평면의 아래쪽 중간 = 모델 원점(바닥 중심)
         /// </summary>
+        /// <summary>
+        /// 3개 평면의 렌더링 데이터 계산
+        /// ✅ 물체의 종횡비를 고려한 직교 투영
+        /// </summary>
         private void CalculatePlaneData(AABB3f bounds)
         {
             _planeDataList.Clear();
 
-            // ✅ 바닥 중심을 원점으로
             Vertex3f bottomCenter = new Vertex3f(
                 bounds.Center.x,
                 bounds.Center.y,
-                bounds.Min.z  // 바닥
+                bounds.Min.z
             );
 
-            float radius = Math.Max(Math.Max(bounds.Size.x, bounds.Size.y), bounds.Size.z) * 0.5f;
-            float objectHeight = bounds.Size.z;
-            float cameraDistance = radius * 3.0f;
+            // ✅ 수직 평면의 실제 크기 계산
+            float horizontalRadius = Math.Max(bounds.Size.x, bounds.Size.y) * 0.5f;
+            float verticalRadius = bounds.Size.z * 0.5f;
+            float cameraDistance = Math.Max(horizontalRadius, verticalRadius) * 3.0f;
 
-            // 직교 투영 행렬 (공통)
-            float orthoSize = radius;
-            Matrix4x4f orthoProj = Matrix4x4f.Ortho(
-                -orthoSize, orthoSize,
-                -orthoSize, orthoSize,
+            // ✅ 물체 비율에 맞는 직교 투영 (수직 평면용)
+            // 가로는 XY 평면의 반경, 세로는 높이
+            Matrix4x4f verticalOrthoProj = Matrix4x4f.Ortho(
+                -horizontalRadius, horizontalRadius,      // 좌우: XY 평면 크기
+                -verticalRadius, verticalRadius,          // 상하: Z 높이
                 0.1f, cameraDistance * 2.0f
             );
 
-            // === 수직 평면 3 (0°, 60°, 120°) ===
+            float objectHeight = bounds.Size.z;
             float[] angles = CrossBillboardAtlasLayout.VerticalAngles;
+
             for (int i = 0; i < 3; i++)
             {
                 float angleRad = angles[i] * (float)Math.PI / 180f;
 
-                // ✅ 카메라는 중간 높이에 배치
                 Vertex3f cameraPos = new Vertex3f(
                     bottomCenter.x + cameraDistance * (float)Math.Cos(angleRad),
                     bottomCenter.y + cameraDistance * (float)Math.Sin(angleRad),
-                    bottomCenter.z + objectHeight * 0.5f  // 바닥 + 절반 높이
+                    bottomCenter.z + objectHeight * 0.5f
                 );
 
-                // ✅ 중간 높이를 바라봄
                 Vertex3f lookAtTarget = new Vertex3f(
                     bottomCenter.x,
                     bottomCenter.y,
@@ -198,7 +253,7 @@ namespace BillBoard
                 PlaneData plane = new PlaneData
                 {
                     ViewMatrix = Matrix4x4f.LookAt(cameraPos, lookAtTarget, Vertex3f.UnitZ),
-                    ProjectionMatrix = orthoProj,
+                    ProjectionMatrix = verticalOrthoProj,  // ✅ 비율에 맞는 투영
                     AtlasOffset = new Vertex2f(i * PlaneSize / (float)AtlasWidth, 0f),
                     DebugName = $"Vertical_{angles[i]}°"
                 };
@@ -207,24 +262,29 @@ namespace BillBoard
             }
         }
 
-        /// <summary>
-        /// 실제 Atlas 렌더링
-        /// </summary>
         private void RenderAtlas(UnlitShader shader, UnifiedTexturedModel model)
         {
-            // 렌더 타겟 바인딩
-            Gl.BindFramebuffer(FramebufferTarget.Framebuffer, _atlasRenderTarget.FrameBuffer);
-            Gl.ClearColor(0, 0, 0, 0);  // 투명 배경
+            // MRT 렌더 타겟 바인딩
+            Gl.BindFramebuffer(FramebufferTarget.Framebuffer, _atlasFBO);
+
+            // 두 버퍼 모두 클리어
+            Gl.ClearColor(0, 0, 0, 0);
             Gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+            // Normal 버퍼 기본값 설정
+            Gl.DrawBuffers(new int[] { Gl.COLOR_ATTACHMENT1 });
+            Gl.ClearColor(0.5f, 0.5f, 1.0f, 0.0f);
+            Gl.Clear(ClearBufferMask.ColorBufferBit);
+
+            // MRT 모드 복원
+            Gl.DrawBuffers(new int[] { Gl.COLOR_ATTACHMENT0, Gl.COLOR_ATTACHMENT1 });
 
             Gl.Enable(EnableCap.DepthTest);
             Gl.Enable(EnableCap.Blend);
             Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
-            // 각 평면 렌더링
             foreach (PlaneData plane in _planeDataList)
             {
-                // Viewport 설정
                 Gl.Viewport(
                     (int)(AtlasWidth * plane.AtlasOffset.x),
                     (int)(AtlasHeight * plane.AtlasOffset.y),
@@ -234,11 +294,18 @@ namespace BillBoard
 
                 shader.Bind();
 
-                // MVP 계산
                 Matrix4x4f mvp = plane.ProjectionMatrix * plane.ViewMatrix;
+                Matrix4x4f mv = plane.ViewMatrix;
 
-                // 렌더링
-                _unifiedModelRenderer.Render(mvp, plane.ViewMatrix);
+                // ✅ Normal Matrix 계산 (View의 3x3 부분의 inverse transpose)
+                // uniform scale이면 단순히 View의 3x3 부분 사용 가능
+                Matrix3x3f normalMatrix = GetNormalMatrix(plane.ViewMatrix);
+
+                shader.LoadMVPMatrix(mvp);
+                shader.LoadModelView(mv);
+                shader.LoadNormalMatrix(normalMatrix);
+
+                _unifiedModelRenderer.Render(mvp, mv);
 
                 shader.Unbind();
             }
@@ -247,11 +314,20 @@ namespace BillBoard
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
         }
 
+        // ✅ Normal Matrix 계산 헬퍼 함수
+        private Matrix3x3f GetNormalMatrix(Matrix4x4f viewMatrix)
+        {
+            // View Matrix의 3x3 부분 추출
+            Matrix3x3f mat3 = viewMatrix.Rot3x3f();
+
+            // Inverse Transpose (uniform scale이면 생략 가능)
+            return mat3.Transposed.Inversed();
+        }
+
         private CrossBillboardData CreateCrossBillboardData(UnifiedTexturedModel model, AABB3f bounds)
         {
             CrossBillboardData data = new CrossBillboardData();
 
-            // ✅ 바닥 중심 기준으로 경계 정보 저장
             Vertex3f bottomCenter = new Vertex3f(
                 bounds.Center.x,
                 bounds.Center.y,
@@ -261,25 +337,19 @@ namespace BillBoard
             data.BoundsMin = new Vertex3f(bounds.Min.x, bounds.Min.y, bounds.Min.z);
             data.BoundsMax = new Vertex3f(bounds.Max.x, bounds.Max.y, bounds.Max.z);
             data.ObjectWidth = Math.Max(bounds.Size.x, bounds.Size.y);
-            data.ObjectHeight = bounds.Size.z;  // Z축이 높이
+            data.ObjectHeight = bounds.Size.z;
 
-            // ✅ 원점 오프셋 정보 추가 (선택사항)
-            //data.PivotOffset = new Vertex3f(0, 0, 0);  // 바닥 중심이 원점
-
-            // UV 영역
             data.Regions = CrossBillboardAtlasLayout.CalculateRegions();
 
-            // Atlas 텍스처
-            data.AtlasTexture = new Texture(_atlasRenderTarget.TextureHandle, AtlasWidth, AtlasHeight);
+            // ✅ 직접 텍스처 핸들 사용
+            data.AtlasTexture = new Texture(_colorTexture, AtlasWidth, AtlasHeight);
+            data.NormalTexture = new Texture(_normalTexture, AtlasWidth, AtlasHeight);
             data.AtlasWidth = AtlasWidth;
             data.AtlasHeight = AtlasHeight;
 
             return data;
         }
 
-        /// <summary>
-        /// Atlas를 Bitmap으로 반환
-        /// </summary>
         public Bitmap GetAtlasTexture(bool drawBorders = false)
         {
             IntPtr pixelsPtr = IntPtr.Zero;
@@ -290,7 +360,10 @@ namespace BillBoard
                 pixelsPtr = System.Runtime.InteropServices.Marshal.AllocHGlobal(size);
 
                 Gl.GetInteger(GetPName.ReadFramebufferBinding, out uint previousFramebuffer);
-                Gl.BindFramebuffer(FramebufferTarget.Framebuffer, _atlasRenderTarget.FrameBuffer);
+
+                // ✅ _atlasFBO 바인딩하고 ColorAttachment0 읽기
+                Gl.BindFramebuffer(FramebufferTarget.Framebuffer, _atlasFBO);
+                Gl.ReadBuffer(ReadBufferMode.ColorAttachment0);
 
                 Gl.ReadPixels(0, 0, AtlasWidth, AtlasHeight,
                     OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, pixelsPtr);
@@ -300,7 +373,8 @@ namespace BillBoard
                 byte[] pixels = new byte[size];
                 System.Runtime.InteropServices.Marshal.Copy(pixelsPtr, pixels, 0, size);
 
-                Bitmap bitmap = new Bitmap(AtlasWidth, AtlasHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                Bitmap bitmap = new Bitmap(AtlasWidth, AtlasHeight,
+                    System.Drawing.Imaging.PixelFormat.Format32bppArgb);
                 var bitmapData = bitmap.LockBits(
                     new Rectangle(0, 0, bitmap.Width, bitmap.Height),
                     ImageLockMode.WriteOnly,
@@ -320,7 +394,6 @@ namespace BillBoard
                                 int srcIndex = (((AtlasHeight - 1 - y) * AtlasWidth) + x) * 4;
                                 int dstIndex = (y * stride) + (x * 4);
 
-                                // RGBA → BGRA
                                 bitmapPtr[dstIndex + 0] = pixels[srcIndex + 2]; // B
                                 bitmapPtr[dstIndex + 1] = pixels[srcIndex + 1]; // G
                                 bitmapPtr[dstIndex + 2] = pixels[srcIndex + 0]; // R
@@ -334,7 +407,6 @@ namespace BillBoard
                     bitmap.UnlockBits(bitmapData);
                 }
 
-                // 테두리 그리기
                 if (drawBorders)
                 {
                     using (Graphics g = Graphics.FromImage(bitmap))
@@ -344,11 +416,95 @@ namespace BillBoard
                         {
                             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-                            // 6개 평면 테두리
-                            for (int i = 0; i < 6; i++)
+                            for (int i = 0; i < 3; i++)  // ✅ 3개 평면만
                             {
-                                int x = (i % 4) * PlaneSize;
-                                int y = (i / 4) * PlaneSize;
+                                int x = i * PlaneSize;
+                                int y = 0;
+                                g.DrawRectangle(pen, x + 1, y + 1, PlaneSize - 3, PlaneSize - 3);
+                            }
+                        }
+                    }
+                }
+
+                return bitmap;
+            }
+            finally
+            {
+                if (pixelsPtr != IntPtr.Zero)
+                {
+                    System.Runtime.InteropServices.Marshal.FreeHGlobal(pixelsPtr);
+                }
+            }
+        }
+
+        public Bitmap GetAtlasNormalTexture(bool drawBorders = false)
+        {
+            IntPtr pixelsPtr = IntPtr.Zero;
+
+            try
+            {
+                int size = AtlasWidth * AtlasHeight * 4;
+                pixelsPtr = System.Runtime.InteropServices.Marshal.AllocHGlobal(size);
+
+                // ✅ _atlasFBO 바인딩하고 ColorAttachment1 읽기
+                Gl.BindFramebuffer(FramebufferTarget.Framebuffer, _atlasFBO);
+                Gl.ReadBuffer(ReadBufferMode.ColorAttachment1);
+
+                Gl.ReadPixels(0, 0, AtlasWidth, AtlasHeight,
+                    OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, pixelsPtr);
+
+                Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+
+                byte[] pixels = new byte[size];
+                System.Runtime.InteropServices.Marshal.Copy(pixelsPtr, pixels, 0, size);
+
+                Bitmap bitmap = new Bitmap(AtlasWidth, AtlasHeight,
+                    System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                var bitmapData = bitmap.LockBits(
+                    new Rectangle(0, 0, bitmap.Width, bitmap.Height),
+                    ImageLockMode.WriteOnly,
+                    System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+                try
+                {
+                    unsafe
+                    {
+                        byte* bitmapPtr = (byte*)bitmapData.Scan0;
+                        int stride = bitmapData.Stride;
+
+                        for (int y = 0; y < AtlasHeight; y++)
+                        {
+                            for (int x = 0; x < AtlasWidth; x++)
+                            {
+                                int srcIndex = (((AtlasHeight - 1 - y) * AtlasWidth) + x) * 4;
+                                int dstIndex = (y * stride) + (x * 4);
+
+                                bitmapPtr[dstIndex + 0] = pixels[srcIndex + 2]; // B
+                                bitmapPtr[dstIndex + 1] = pixels[srcIndex + 1]; // G
+                                bitmapPtr[dstIndex + 2] = pixels[srcIndex + 0]; // R
+                                bitmapPtr[dstIndex + 3] = pixels[srcIndex + 3]; // A
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    bitmap.UnlockBits(bitmapData);
+                }
+
+                if (drawBorders)
+                {
+                    using (Graphics g = Graphics.FromImage(bitmap))
+                    {
+                        g.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceOver;
+                        using (Pen pen = new Pen(Color.FromArgb(255, Color.Green), 2))
+                        {
+                            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+                            for (int i = 0; i < 3; i++)
+                            {
+                                int x = i * PlaneSize;
+                                int y = 0;
                                 g.DrawRectangle(pen, x + 1, y + 1, PlaneSize - 3, PlaneSize - 3);
                             }
                         }
@@ -368,42 +524,35 @@ namespace BillBoard
 
         public Bitmap GetAtlasDepthTexture(bool drawBorders = false)
         {
-            // 깊이값 데이터를 저장할 포인터
             IntPtr depthPtr = IntPtr.Zero;
 
             try
             {
-                // 깊이 버퍼 메모리 할당 (float 타입)
                 int size = AtlasWidth * AtlasHeight * sizeof(float);
                 depthPtr = System.Runtime.InteropServices.Marshal.AllocHGlobal(size);
 
-                // 현재 바인딩된 프레임버퍼 저장
                 Gl.GetInteger(GetPName.ReadFramebufferBinding, out uint previousFramebuffer);
 
-                // 렌더 타겟 프레임버퍼 바인딩
-                Gl.BindFramebuffer(FramebufferTarget.Framebuffer, _atlasRenderTarget.FrameBuffer);
+                // ✅ _atlasFBO 바인딩
+                Gl.BindFramebuffer(FramebufferTarget.Framebuffer, _atlasFBO);
 
-                // 깊이 데이터 읽기
                 Gl.ReadPixels(
-                    0, 0,                          // x, y 좌표
-                    AtlasWidth,            // 너비
-                    AtlasHeight,            // 높이
-                    OpenGL.PixelFormat.DepthComponent,    // 깊이 컴포넌트
-                    PixelType.Float,               // float 타입
-                    depthPtr                       // 저장할 메모리 위치
+                    0, 0,
+                    AtlasWidth,
+                    AtlasHeight,
+                    OpenGL.PixelFormat.DepthComponent,
+                    PixelType.Float,
+                    depthPtr
                 );
 
-                // 이전 프레임버퍼로 복구
                 Gl.BindFramebuffer(FramebufferTarget.Framebuffer, previousFramebuffer);
 
-                // float 데이터를 관리되는 배열로 복사
                 float[] depthValues = new float[AtlasWidth * AtlasHeight];
                 System.Runtime.InteropServices.Marshal.Copy(depthPtr, depthValues, 0, depthValues.Length);
 
-                // Bitmap 생성
-                Bitmap bitmap = new Bitmap((int)AtlasWidth, AtlasHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                Bitmap bitmap = new Bitmap(AtlasWidth, AtlasHeight,
+                    System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
-                // Bitmap 데이터를 직접 조작하기 위해 락
                 var bitmapData = bitmap.LockBits(
                     new Rectangle(0, 0, bitmap.Width, bitmap.Height),
                     System.Drawing.Imaging.ImageLockMode.WriteOnly,
@@ -420,26 +569,21 @@ namespace BillBoard
                         {
                             for (int x = 0; x < AtlasWidth; x++)
                             {
-                                // OpenGL 데이터는 아래에서 위로 저장되어 있으므로 y좌표를 뒤집어서 읽음
                                 int srcIndex = ((AtlasHeight - 1 - y) * AtlasWidth) + x;
                                 int dstIndex = (y * stride) + (x * 4);
 
-                                // 깊이값을 0-255 범위로 변환
                                 byte depthByte = (byte)(depthValues[srcIndex] * 255.0f);
 
-                                // 그레이스케일로 변환 (R=G=B)
                                 bitmapPtr[dstIndex + 0] = depthByte; // B
                                 bitmapPtr[dstIndex + 1] = depthByte; // G
                                 bitmapPtr[dstIndex + 2] = depthByte; // R
-                                bitmapPtr[dstIndex + 3] = 255;       // A (불투명)
+                                bitmapPtr[dstIndex + 3] = 255;       // A
                             }
                         }
                     }
-
                 }
                 finally
                 {
-                    // 비트맵 언락
                     bitmap.UnlockBits(bitmapData);
                 }
 
@@ -447,16 +591,39 @@ namespace BillBoard
             }
             finally
             {
-                // 할당된 메모리 해제
                 if (depthPtr != IntPtr.Zero)
                 {
                     System.Runtime.InteropServices.Marshal.FreeHGlobal(depthPtr);
                 }
             }
         }
+
         public void Dispose()
         {
-            _atlasRenderTarget?.Dispose();
+            // ✅ 텍스처 정리
+            if (_colorTexture != 0)
+            {
+                Gl.DeleteTextures(_colorTexture);
+                _colorTexture = 0;
+            }
+
+            if (_normalTexture != 0)
+            {
+                Gl.DeleteTextures(_normalTexture);
+                _normalTexture = 0;
+            }
+
+            if (_depthRenderBuffer != 0)
+            {
+                Gl.DeleteRenderbuffers(_depthRenderBuffer);
+                _depthRenderBuffer = 0;
+            }
+
+            if (_atlasFBO != 0)
+            {
+                Gl.DeleteFramebuffers(_atlasFBO);
+                _atlasFBO = 0;
+            }
         }
     }
 }

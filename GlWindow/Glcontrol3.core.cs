@@ -78,6 +78,7 @@ namespace GlWindow
         private Size _prevSize = new Size(0, 0);
         private Point _prevLocation = new Point(0, 0);
         private Vertex2f _cameraPrevAngle = Vertex2f.Zero;
+        private CameraUBO _cameraUBO;
 
         // ==================================================================================
         //                              멤버 변수 - 마우스 입력
@@ -160,6 +161,10 @@ namespace GlWindow
         public bool AutoBlitToScreen { get => _autoBlitToScreen; set => _autoBlitToScreen = value; }
         public uint DepthTextureId => _renderTarget?.DepthTextureId ?? 0;
         public uint ColorTextureId => _renderTarget?.ColorTextureId ?? 0;
+        public uint PositionTextureId => _renderTarget?.PositionTextureId ?? 0;
+        public uint NormalTextureId => _renderTarget?.NormalTextureId ?? 0;
+
+        public RenderTarget RenderTarget => _renderTarget;
         public bool UseRenderTarget => _useRenderTarget;
         public Action<int, Camera> BlitToScreen { get => _blitScreen; set => _blitScreen = value; }
 
@@ -234,6 +239,8 @@ namespace GlWindow
         /// </summary>
         private void PrintSystemInfo()
         {
+            return;
+
             Console.WriteLine("=======================================================");
             Console.WriteLine("  OpenGL3D 시스템 정보");
             Console.WriteLine("=======================================================");
@@ -253,7 +260,7 @@ namespace GlWindow
             Console.WriteLine("=======================================================");
             Console.WriteLine();
             Console.WriteLine("-------------------------------------------------------");
-            Console.WriteLine("  C# 행렬 복합 대입 연산자 (M *= N)");
+            Console.WriteLine("  C# 행렬 복합 대입 연산자 (M *= N) <=> M=MN");
             Console.WriteLine("-------------------------------------------------------");
             Console.WriteLine();
             Console.WriteLine("[ 기본 의미 ]");
@@ -261,22 +268,13 @@ namespace GlWindow
             Console.WriteLine("  (M에 N을 오른쪽에서 곱한 결과를 M에 저장)");
             Console.WriteLine();
             Console.WriteLine("[ 변환 적용 순서 ]");
-            Console.WriteLine("  M *= N;");
+            Console.WriteLine("  M *= N; <=> M = M * N");
             Console.WriteLine("  → 1단계: N 변환 적용 (먼저)");
             Console.WriteLine("  → 2단계: M 변환 적용 (나중)");
-            Console.WriteLine();
-            Console.WriteLine("[ 예시 ]");
+            Console.WriteLine(" (예시)");
             Console.WriteLine("  Matrix4x4 M = CreateTranslation(10, 0, 0);  // 이동");
             Console.WriteLine("  Matrix4x4 N = CreateRotationZ(45);          // 회전");
-            Console.WriteLine("  M *= N;");
             Console.WriteLine("  결과: 45도 회전(N) → (10,0,0) 이동(M)");
-            Console.WriteLine();
-            Console.WriteLine("[ 비교 ]");
-            Console.WriteLine("  M *= N;      // N 먼저 → M 나중");
-            Console.WriteLine("  M = N * M;   // M 먼저 → N 나중 (순서 반대!)");
-            Console.WriteLine();
-            Console.WriteLine("[ 결론 ]");
-            Console.WriteLine("  M *= N은 기존 M 변환 앞에 N 변환을 추가하는 의미");
             Console.WriteLine("-------------------------------------------------------");
         }
     }

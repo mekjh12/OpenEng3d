@@ -1,7 +1,8 @@
 ﻿#version 450 core
 layout(location = 0) in vec3 aPosition;
 
-layout(std430, binding = 0) buffer TransformBuffer {mat4 allTransforms[];};
+struct InstanceModelMatrixData{mat4 modelMatrix; mat4 normalMatrix; };
+layout(std430, binding = 0) buffer TransformBuffer { InstanceModelMatrixData instances[]; };
 layout(std430, binding = 1) buffer VisibleIndicesBuffer {int visibleIndices[];};
 
 uniform int batchStartOffset;
@@ -27,12 +28,13 @@ void main()
         return;
     }
     
-    // Transform 버퍼에서 모델 행렬 가져오기
-    mat4 modelMatrix = allTransforms[instanceIndex];
+    // 구조체에서 가져오기
+    InstanceModelMatrixData inst = instances[instanceIndex];
+    mat4 model = inst.modelMatrix;
     
     // 월드 위치 추출
-    vs_out.worldPosition = vec3(modelMatrix[3][0], modelMatrix[3][1], modelMatrix[3][2]);
-    vs_out.modelMatrix = modelMatrix;
+    vs_out.worldPosition = vec3(model[3][0], model[3][1], model[3][2]);
+    vs_out.modelMatrix = model;
     
     gl_Position = vec4(vs_out.worldPosition, 1.0);
 }

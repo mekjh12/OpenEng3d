@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using Common;
+using OpenGL;
 using Shader;
 using System;
 using System.Collections.Generic;
@@ -19,7 +20,7 @@ namespace Renderer
         private float[] _atlasOffsets;
         private float[] _atlasSizes;
 
-        public CrossBillboardRenderer()
+        public CrossBillboardRenderer(string projPath)
         {
             InitializeAtlasData();
         }
@@ -92,30 +93,30 @@ namespace Renderer
         /// <summary>
         /// 렌더링
         /// </summary>
-        public void Render(CrossBillboardShader shader, Matrix4x4f vp,
-            float objWidth, float objHeight, uint textureId)
+        public void Render(CrossBillboardShader shader, uint textureId, uint normalTextureId, AABB3f aabb)
         {
             if (_instanceCount == 0) return;
 
             shader.Bind();
+            {
+                // Uniform 설정 (atlasRegions 제거)
+                shader.LoadAtlasTexture(textureId);
+                shader.LoadNormalTexture(normalTextureId);
+                shader.LoadModelMatrix(Matrix4x4f.RotatedZ(60));
+                shader.EnableEdgeLine(false);
+                shader.LoadAABB(aabb.Min, aabb.Max);
 
-            // Uniform 설정 (atlasRegions 제거)
-            shader.LoadVPMatrix(vp);
-            shader.LoadObjectSize(objWidth, objHeight);
-            shader.LoadAtlasTexture(textureId);
-            shader.EnableEdgeLine(false);
+                // 렌더링 상태
+                Gl.Enable(EnableCap.Blend);
+                Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+                Gl.Disable(EnableCap.CullFace);
+                Gl.Enable(EnableCap.DepthTest);
 
-            // 렌더링 상태
-            Gl.Enable(EnableCap.Blend);
-            Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-            Gl.Disable(EnableCap.CullFace);
-            Gl.Enable(EnableCap.DepthTest);
-
-            // 인스턴스 렌더링
-            Gl.BindVertexArray(_instanceVAO);
-            Gl.DrawArraysInstanced(PrimitiveType.Points, 0, 1, _instanceCount);
-            Gl.BindVertexArray(0);
-
+                // 인스턴스 렌더링
+                Gl.BindVertexArray(_instanceVAO);
+                Gl.DrawArraysInstanced(PrimitiveType.Points, 0, 1, _instanceCount);
+                Gl.BindVertexArray(0);
+            }
             shader.Unbind();
         }
 

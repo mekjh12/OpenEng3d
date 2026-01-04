@@ -2,7 +2,6 @@
 using System;
 using System.Windows.Forms;
 using System.IO;
-using Shader;
 using Common;
 
 namespace Ui2d

@@ -71,10 +71,6 @@
     <Compile Include="VegetationMap.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\BSP\BSP.csproj">
-      <Project>{9fe8744c-00c2-4a02-ac86-38489525b4c9}</Project>
-      <Name>BSP</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Camera3d\Camera3d.csproj">
       <Project>{f5477333-11c8-4e59-8084-1bc3c01df3fe}</Project>
       <Name>Camera3d</Name>

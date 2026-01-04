@@ -1,23 +1,31 @@
 ﻿#version 450 core
 
 // 입력: 인스턴스 데이터
-layout(location = 0) in vec3 instancePosition;   // 나무 위치
-layout(location = 1) in float instanceScale;     // 나무 크기
+layout(location = 0) in vec3 instancePosition;
+layout(location = 1) in float instanceScale;
 
-// Uniform
-uniform mat4 vp;  // View-Projection 행렬
+uniform vec3 aabbMin;
+uniform vec3 aabbMax;
+uniform mat4 model;
 
-// Geometry Shader로 전달
 out VS_OUT {
-    vec3 worldPosition;
-    float scale;
+    vec3 worldPos;
+    vec3 color;
+    float horizontalSize;
+    float verticalSize;
+    mat4 transform;
 } vs_out;
 
 void main()
-{
-    vs_out.worldPosition = instancePosition;
-    vs_out.scale = instanceScale;
+{    
+    vec3 extents = aabbMax - aabbMin;
     
-    // Point를 그대로 전달 (Geometry Shader에서 확장)
-    gl_Position = vec4(instancePosition, 1.0);
+    // 출력 변수 설정
+    vs_out.worldPos = instancePosition;
+    vs_out.horizontalSize = max(extents.x, extents.y) * 0.5;
+    vs_out.verticalSize = extents.z * 0.5;
+    vs_out.transform = model;
+
+    // 최종 위치 계산
+    gl_Position = vec4(vs_out.worldPos, 1.0);
 }

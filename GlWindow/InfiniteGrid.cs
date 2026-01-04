@@ -26,6 +26,7 @@ namespace GlWindow
 
         public void Render(Camera camera)
         {
+            Gl.Enable(EnableCap.DepthTest);
             Gl.Enable(EnableCap.Blend);
             Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             Gl.Disable(EnableCap.CullFace);

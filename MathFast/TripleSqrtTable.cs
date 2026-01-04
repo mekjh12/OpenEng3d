@@ -59,10 +59,10 @@ namespace FastMath
             }
 
             int totalMemory = (tinySize + smallSize + largeSize + 3) * sizeof(float);
-            Console.WriteLine($"[TripleSqrtTable] 메모리: {totalMemory / 1024f:F2}KB");
-            Console.WriteLine($"  매우작은값 (0.0001~0.25): 간격 {_tinyStep:F6}");
-            Console.WriteLine($"  작은값 (0.25~10): 간격 {_smallStep:F6}");
-            Console.WriteLine($"  큰값 (10~max): 간격 {_largeStep:F2}");
+            Console.WriteLine($"FastMath [TripleSqrtTable] 메모리: {totalMemory / 1024f:F2}KB");
+            //Console.WriteLine($"  매우작은값 (0.0001~0.25): 간격 {_tinyStep:F6}");
+            //Console.WriteLine($"  작은값 (0.25~10): 간격 {_smallStep:F6}");
+            //Console.WriteLine($"  큰값 (10~max): 간격 {_largeStep:F2}");
         }
 
         public float Sqrt(float value)

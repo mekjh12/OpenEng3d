@@ -19,9 +19,10 @@ namespace FormTools
             //Application.Run(new FormGPUDriveHiZ());                 // 작동됨(실패)
             //Application.Run(new FormGPUDriven());                 // 작동됨(이전버전으로 폐기)
 
-            //
-            Application.Run(new FormHiZReUse());       // 작동됨 = 이전프레임 HiZ버퍼 활용 GPU드리븐 테스트
-            //Application.Run(new FormGPUHiZBufferPrevFrame());       // 작동됨 = 이전프레임 HiZ버퍼 활용 GPU드리븐 테스트
+            Application.Run(new FormLightAmbDir());                 // 작동됨 = GPU드리븐 라이트 시스템 도입
+            //Application.Run(new FormCrossBillboardLight());         // 작동됨 = 크로스빌보드 GPU드리븐 라이트 시스템 도입
+            //Application.Run(new FormHiZReUse());                  // 작동됨 = 이전프레임 HiZ버퍼 활용 GPU드리븐 테스트
+            //Application.Run(new FormGPUHiZBufferPrevFrame());     // 작동됨 = 이전프레임 HiZ버퍼 활용 GPU드리븐 테스트
             //Application.Run(new FormGPUDrivenHiZLod4());          // 작동됨 = lod2에 크로스빌보드 이식
             //Application.Run(new FormBillboardCloud());            // 작동됨 = CrossBillboard로서 GPU Driven에 이식 준비
             //Application.Run(new FormGPUDrivenFrustumHiZ());       // 작동됨 = 뷰컬링+HiZ컬링(LOD0 모델원형인스턴스, LOD1 AABB인스턴스)

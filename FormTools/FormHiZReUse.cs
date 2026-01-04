@@ -48,7 +48,7 @@ namespace FormTools
         ModelBatchManager _modelBatchManager;               // 모델 배치 매니저
         HiZRenderPass _gpuDriven;                           // GPU 드리븐 렌더러
         HierarchyZBuffer _hiZBuffer;                        // 계층적 Z 버퍼
-        const int DOWN_LEVEL = 0;                           // 다운샘플링 레벨
+        const int DOWN_LEVEL = 3;                           // 다운샘플링 레벨
         const int MAX_INSTANCES = 100000;                   // 최대 인스턴스 수
 
         // 지형 관련 변수들
@@ -177,6 +177,9 @@ namespace FormTools
             {
                 @"tree1.obj",
                 @"florida_foliage\palm1.obj",
+            };
+
+            /*
                 @"florida_foliage\palm2.obj",
                 @"florida_foliage\palm3.obj",
                 @"florida_foliage\bananaPlant1.obj",
@@ -187,9 +190,6 @@ namespace FormTools
                 @"florida_foliage\fern3.obj",
                 @"florida_foliage\fern4.obj",
                 @"florida_foliage\fern5.obj",            
-            };
-
-            /*
                
              */
 
@@ -221,8 +221,8 @@ namespace FormTools
 
                         //float posX = (x - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
                         //float posY = (y - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
-                        float posX = 1000f * (float)(rand.NextDouble() * 2.0f  - 1.0f);
-                        float posY = 1000f * (float)(rand.NextDouble() * 2.0f - 1.0f);
+                        float posX = 2000f * (float)(rand.NextDouble() * 2.0f  - 1.0f);
+                        float posY = 2000f * (float)(rand.NextDouble() * 2.0f - 1.0f);
 
                         position.x = posX;
                         position.y = posY;
@@ -263,16 +263,15 @@ namespace FormTools
             }
 
             // 하늘 렌더러 초기화
+            Vertex3f sunDirection = -new Vertex3f(0, 3, 1).Normalized;
             _skyDomeTexture2DShader = new SkyDomeTexture2dShader(PROJECT_PATH);
-            _skyDomeTexture2DShader.GenerateRandomSunPosition();
-            _skyDomeTexture2DShader.GenerateSkyTexture(_glControl3.Camera.Position);
+            _skyDomeTexture2DShader.GenerateSkyTexture(_glControl3.Camera.Position, -sunDirection);
             _skyRenderer = new SkyRenderer(PROJECT_PATH, _skyDomeTexture2DShader);
 
             // 초기 라이팅 설정 (선택사항)
             _lightingManager = new LightingManager();
-            _lightingManager.Lighting.SunDirection = new Vertex3f(0.5f, 0.3f, -0.8f).Normalized;
+            _lightingManager.Lighting.SunDirection = sunDirection;
             _lightingManager.Lighting.SunIntensity = 1.5f;
-            _lightingManager.Lighting.SetTimeOfDay(19);
             _lightingManager.SetDirty();
 
             // UI 3D 텍스트 네임플레이트 초기화
@@ -321,8 +320,6 @@ namespace FormTools
 
                 // 1. 지형 깊이 렌더링
                 _hiZBuffer.RenderTerrainDepth(
-                    camera.ProjectiveMatrix,
-                    camera.ViewMatrix,
                     TerrainConstants.DEFAULT_VERTICAL_SCALE,
                     _terrainRegion.TerrainEntity
                 );
@@ -606,6 +603,11 @@ namespace FormTools
         }
 
         private void FormGPUDrivenHiZLod4_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void FormHiZReUse_Load(object sender, EventArgs e)
         {
 
         }

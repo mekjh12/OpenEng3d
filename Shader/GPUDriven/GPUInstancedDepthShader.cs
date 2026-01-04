@@ -1,6 +1,5 @@
 ﻿using Common;
 using OpenGL;
-using System.Drawing.Drawing2D;
 
 namespace Shader
 {
@@ -14,8 +13,6 @@ namespace Shader
         const string FRAGMENT_FILE = @"\Shader\GPUDriven\glsl\gpuInstancedDepth.frag";
         private const int MAX_TEXTURES = 32;
 
-        private int loc_vp;
-        private int loc_view;
         private int loc_batchStartOffset;
         private int loc_textureCount;
         private int[] loc_textures;
@@ -30,8 +27,6 @@ namespace Shader
 
         protected override void GetAllUniformLocations()
         {
-            loc_vp = GetUniformLocation("vp");
-            loc_view = GetUniformLocation("view");
             loc_batchStartOffset = GetUniformLocation("batchStartOffset");
 
             loc_textureCount = GetUniformLocation("textureCount");
@@ -48,16 +43,6 @@ namespace Shader
             BindAttribute(1, "aTexCoord");
             BindAttribute(2, "aNormal");
             BindAttribute(3, "materialID");
-        }
-
-        public void LoadViewMatrix(Matrix4x4f view)
-        {
-            LoadUniformMatrix4(loc_view, view);
-        }
-
-        public void LoadVPMatrix(Matrix4x4f vp)
-        {
-            LoadUniformMatrix4(loc_vp, vp);
         }
 
         public void LoadBatchStartOffset(uint offset)

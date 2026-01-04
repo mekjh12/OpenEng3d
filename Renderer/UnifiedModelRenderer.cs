@@ -25,7 +25,7 @@ namespace Renderer
         /// <summary>
         /// 렌더링
         /// </summary>
-        public void Render(Matrix4x4f mvp, Matrix4x4f mv)
+        public void Render(Matrix4x4f mvp, Matrix4x4f mv, bool isLighting = false)
         {
             if (_model.EnableCullFace)
             {
@@ -38,21 +38,19 @@ namespace Renderer
             }
 
             _shader.Bind();
+            {
+                _shader.LoadTextureArray(_model.TextureIDArray);
+                _shader.LoadTransforms(mvp, mv, Matrix4x4f.Identity);
+                _shader.LoadEnableLighting(isLighting);
 
-            _shader.LoadTextureArray(_model.TextureIDArray);
-
-            _shader.LoadMVPMatrix(mvp);
-            _shader.LoadModelView(mv);
-
-            Gl.BindVertexArray(_model.VaoID);
-
-            Gl.DrawElements(
-                PrimitiveType.Triangles,
-                _model.IndexCount,
-                DrawElementsType.UnsignedInt,
-                IntPtr.Zero);
-
-            Gl.BindVertexArray(0);
+                Gl.BindVertexArray(_model.VaoID);
+                Gl.DrawElements(
+                    PrimitiveType.Triangles,
+                    _model.IndexCount,
+                    DrawElementsType.UnsignedInt,
+                    IntPtr.Zero);
+                Gl.BindVertexArray(0);
+            }
             _shader.Unbind();
 
             Gl.Disable(EnableCap.CullFace);

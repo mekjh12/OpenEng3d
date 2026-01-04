@@ -51,6 +51,7 @@ namespace Camera3d
         public override Matrix4x4f ViewMatrix
             => Matrix4x4F.CreateViewMatrix(_orbitPosition, _cameraRight, _cameraUp, _cameraForward);
 
+
         /// <summary>
         /// 역투영 행렬을 계산합니다.
         /// </summary>
@@ -87,6 +88,7 @@ namespace Camera3d
             direction.y = Sin(yawRad) * Cos(pitchRad);
             direction.z = Sin(pitchRad);
 
+            // 카메라 앞 방향이 반대방향인 이유는 **카메라 위치에서 피봇 위치로 향하는 벡터**이기 때문
             _cameraForward = -direction.Normalized;
             _cameraRight = _cameraForward.Cross(Vertex3f.UnitZ).Normalized;
             _cameraUp = _cameraRight.Cross(_cameraForward).Normalized;

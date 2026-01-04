@@ -5,6 +5,7 @@ using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 using Camera3d;
 using Ui2d;
+using Shader;
 
 namespace GlWindow
 {
@@ -93,6 +94,16 @@ namespace GlWindow
                 Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
                 Gl.Viewport(0, 0, Width, Height);
                 _renderTarget.BlitToScreen(Width, Height);
+            }
+        }
+
+        public void BlitDebugView(RenderDepthBufferShader shader)
+        {
+            if (_useRenderTarget && _renderTarget != null)
+            {
+                Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+                Gl.Viewport(0, 0, Width, Height);
+                _renderTarget.BlitDebugView(Width, Height, shader);
             }
         }
 

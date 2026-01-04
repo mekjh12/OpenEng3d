@@ -263,7 +263,7 @@ namespace FormTools
             // HZB 업데이트
             _hzbuffer.BindFramebuffer();
             _hzbuffer.PrepareRenderSurface();
-            _hzbuffer.RenderTerrainDepth(camera.ProjectiveMatrix, camera.ViewMatrix, TerrainConstants.DEFAULT_VERTICAL_SCALE, _terrainRegion.TerrainEntity);            
+            _hzbuffer.RenderTerrainDepth(TerrainConstants.DEFAULT_VERTICAL_SCALE, _terrainRegion.TerrainEntity);            
             _instancedRenderer.RenderDepth(_instancedDepthShader, camera); // 인스턴스 깊이 렌더링
             _hzbuffer.UnbindFramebuffer();
 

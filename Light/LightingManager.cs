@@ -7,7 +7,7 @@ namespace Light
     public class LightingManager
     {
         private uint _uboHandle;
-        private const int BINDING_POINT = 0;  // 모든 셰이더가 binding = 0 사용
+        private const int BINDING_POINT = 1;  // 모든 셰이더가 binding = 1 사용
         private bool _isDirty = true;
 
         public SceneLighting Lighting { get; set; }
@@ -46,6 +46,9 @@ namespace Light
             _isDirty = true;
         }
 
+        /// <summary>
+        /// 새로운 정보가 업데이트 되었을 때 UBO를 갱신합니다.
+        /// </summary>
         public void Update()
         {
             if (!_isDirty) return;

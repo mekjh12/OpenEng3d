@@ -17,14 +17,13 @@ namespace Shader
         private const int VISIBLE_INDICES_BINDING = 1;
 
         // 유니폼 위치
-        private int loc_vp;
         private int loc_textureCount;
         private int[] loc_textures;  // ✅ 배열 위치
         private const int MAX_TEXTURES = 32;
         private int loc_batchStartOffset;
-        private int loc_view;
         private int loc_debugColor;
         private int loc_enableDebug;
+        private int loc_gMaxDepthDistance;
 
 
         public GPUInstancedShader(string projectPath) : base()
@@ -38,12 +37,11 @@ namespace Shader
 
         protected override void GetAllUniformLocations()
         {
-            loc_vp = GetUniformLocation("vp");
-            loc_view = GetUniformLocation("view");
             loc_batchStartOffset = GetUniformLocation("batchStartOffset");
 
             loc_debugColor = GetUniformLocation("debugColor");
             loc_enableDebug = GetUniformLocation("enableDebug");
+            loc_gMaxDepthDistance = GetUniformLocation("gMaxDepthDistance");
 
             loc_textureCount = GetUniformLocation("textureCount");
             loc_textures = new int[MAX_TEXTURES];
@@ -61,6 +59,11 @@ namespace Shader
             BindAttribute(3, "materialID");
         }
 
+        public void LoadMaxDepthDistance(float distance)
+        {
+            LoadUniform1f(loc_gMaxDepthDistance, distance);
+        }
+
         public void LoadEnableDebug(bool enableDebug)
         {
             Gl.Uniform1(loc_enableDebug, enableDebug ? 1 : 0);
@@ -74,23 +77,6 @@ namespace Shader
         public void LoadBatchStartOffset(uint offset)
         {
             Gl.Uniform1(loc_batchStartOffset, (int)offset);
-        }
-
-        /// <summary>
-        /// 뷰 행렬을 설정합니다 (깊이 계산용)
-        /// </summary>
-        public void LoadViewMatrix(in Matrix4x4f matrix)
-        {
-            LoadUniformMatrix4(loc_view, matrix);
-        }
-
-
-        /// <summary>
-        /// 뷰-투영 행렬을 설정합니다.
-        /// </summary>
-        public void LoadVPMatrix(in Matrix4x4f matrix)
-        {
-            LoadUniformMatrix4(loc_vp, matrix);
         }
 
         /// <summary>

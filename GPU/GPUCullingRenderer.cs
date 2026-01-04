@@ -327,13 +327,13 @@ namespace GPUDriven
 
         private void UploadToGPU()
         {
-            var transforms = _batchManager.GetTransforms();
+            var transforms = _batchManager.GetInstanceData();
             var aabbs = _batchManager.GetAABBs();
             var batchIDs = _batchManager.GetBatchIDs();
 
             // Transform 업로드
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _transformSSBO);
-            fixed (Matrix4x4f* ptr = transforms)
+            fixed (InstanceModelMatrixData* ptr = transforms)
             {
                 Gl.BufferSubData(BufferTarget.ShaderStorageBuffer,
                     IntPtr.Zero, (uint)(MAX_INSTANCES * 64), (IntPtr)ptr);
@@ -546,7 +546,6 @@ namespace GPUDriven
 
             // ===== LOD0: Mesh 렌더링 =====
             _instancedShader.Bind();
-            _instancedShader.LoadVPMatrix(camera.VPMatrix);
             _instancedShader.LoadBatchStartOffset(batch.StartIndex);
 
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);

@@ -240,7 +240,7 @@ namespace Terrain
                     adjacentRegions,
                     terrainRegion.BlendFactor,
                     true,
-                    _sunLight == null ? -Vertex3f.UnitZ : _sunLight.GetDirection(),
+                    _sunLight == null ? -Vertex3f.UnitZ : _sunLight.Direction,
                     0, 
                     SEPERATE_CHUNK_SIZE,
                     SEPERATE_CHUNK_COUNT,
@@ -265,7 +265,7 @@ namespace Terrain
                     simpleTerrainShader, 
                     camera, 
                     RegionManager.Textures,
-                    _sunLight.GetDirection(),
+                    _sunLight.Direction,
                     adjacentRegions,
                     TerrainConstants.DEFAULT_VERTICAL_SCALE);
             }

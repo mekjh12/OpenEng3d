@@ -450,7 +450,6 @@ namespace GPUDriven
             Gl.MemoryBarrier(MemoryBarrierMask.AllBarrierBits);
 
             _instancedShader.Bind();
-            _instancedShader.LoadVPMatrix(camera.VPMatrix);
 
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO);

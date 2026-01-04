@@ -24,6 +24,7 @@ namespace BillBoard
 
         // === Atlas 정보 ===
         public Texture AtlasTexture { get; set; }
+        public Texture NormalTexture { get; set; }
         public int AtlasWidth { get; set; }
         public int AtlasHeight { get; set; }
 

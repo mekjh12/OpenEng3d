@@ -24,7 +24,7 @@ namespace FastMath
         {
             if (_initialized)
             {
-                Console.WriteLine("[MathFast] 이미 초기화되었습니다.");
+                //Console.WriteLine("[MathFast] 이미 초기화되었습니다.");
                 return;
             }
 
@@ -32,7 +32,7 @@ namespace FastMath
             {
                 if (_initialized) return;
 
-                Console.WriteLine("[MathFast] 초기화 시작...");
+                //Console.WriteLine("[MathFast] 초기화 시작...");
                 var sw = Stopwatch.StartNew();
 
                 _tripleSqrtTable = new TripleSqrtTable(sqrtMaxValue);
@@ -41,7 +41,7 @@ namespace FastMath
                 _initialized = true;
 
                 sw.Stop();
-                Console.WriteLine($"[MathFast] 초기화 완료 ({sw.ElapsedMilliseconds}ms)");
+                Console.WriteLine($"- 초기화 완료 ({sw.ElapsedMilliseconds}ms)");
             }
         }
 

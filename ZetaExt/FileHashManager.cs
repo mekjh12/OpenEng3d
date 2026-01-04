@@ -47,7 +47,7 @@ namespace ZetaExt
         /// </summary>
         private static void LoadHashes()
         {
-            Console.WriteLine("-----[세이더 파일 헤시]------");
+            Console.WriteLine("-------------------[세이더 파일 헤시]------------------------");
             if (File.Exists(HASH_CACHE_FILE))
             {
                 try

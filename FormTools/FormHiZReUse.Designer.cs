@@ -37,6 +37,7 @@
             this.ClientSize = new System.Drawing.Size(414, 288);
             this.Name = "FormHiZReUse";
             this.Text = "FormHiZReUse";
+            this.Load += new System.EventHandler(this.FormHiZReUse_Load);
             this.ResumeLayout(false);
 
         }

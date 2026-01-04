@@ -1,6 +1,4 @@
-﻿using Common.Abstractions;
-using OpenGL;
-using System.Numerics;
+﻿using OpenGL;
 using ZetaExt;
 
 namespace Lights
@@ -15,6 +13,11 @@ namespace Lights
             public float azimuth;    // 방위각 (0-360도)
             public float elevation;  // 고도각 (0-90도)
 
+            /// <summary>
+            /// 생성자
+            /// </summary>
+            /// <param name="azimuth">방위각 (0-360도)</param>
+            /// <param name="elevation">고도각 (0-90도)</param>
             public SolarAngles(float azimuth, float elevation)
             {
                 this.azimuth = azimuth;
@@ -22,13 +25,32 @@ namespace Lights
             }
         }
 
+        /// <summary>
+        /// 생성자
+        /// </summary>
+        /// <param name="azimuth">방위각 (0-360도)</param>
+        /// <param name="elevation">고도각 (0-90도)</param>
+
         public SunLight(float azimuth, float elevation)
         {
             _angles = new SolarAngles(azimuth, elevation);
             UpdateDirection();
         }
 
-        public Vertex3f GetDirection() => _direction;
+        /// <summary>
+        /// 태양에서 지표면을 향하는 벡터
+        /// </summary>
+        public Vertex3f Direction => _direction;
+
+        /// <summary>
+        /// 방위각(0-360도) 
+        /// </summary>
+        public float Azimuth => _angles.azimuth;
+
+        /// <summary>
+        /// 고도각(0-90도)
+        /// </summary>
+        public float Elevation => _angles.elevation;
 
         public void SetSolarAngles(SolarAngles angles)
         {
@@ -37,7 +59,7 @@ namespace Lights
         }
 
         /// <summary>
-        /// 방위각만 변경
+        /// 방위각만 변경(0-360도)
         /// </summary>
         /// <param name="azimuth"></param>
         public void SetAzimuth(float azimuth)
@@ -50,6 +72,11 @@ namespace Lights
             UpdateDirection();
         }
 
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="deltaAzimuth"></param>
         public void SetDeltaAzimuth(float deltaAzimuth)
         {
             // 0-360도 범위로 정규화
@@ -59,7 +86,7 @@ namespace Lights
         }
 
         /// <summary>
-        /// 고도각만 변경
+        /// 고도각만 변경(0-90도)
         /// </summary>
         /// <param name="elevation"></param>
         public void SetElevation(float elevation)
@@ -81,7 +108,7 @@ namespace Lights
 
 
         /// <summary>
-        /// 태양에서 지표면을 향하는 벡터로 직접 계산
+        /// 태양에서 지표면을 향하는 벡터
         /// </summary>
         private void UpdateDirection()
         {

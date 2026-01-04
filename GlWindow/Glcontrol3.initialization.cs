@@ -160,6 +160,7 @@ namespace GlWindow
                 string vendor = Gl.GetString(StringName.Vendor);
                 string renderer = Gl.GetString(StringName.Renderer);
                 string version = Gl.GetString(StringName.Version);
+                Console.WriteLine("---------------------------------------------------");
                 Console.WriteLine($"GPU 제조사: {vendor}");
                 Console.WriteLine($"렌더러: {renderer}");
                 Console.WriteLine($"OpenGL 버전: {version}");
@@ -189,6 +190,10 @@ namespace GlWindow
                 }
 
                 if (_init2d != null) _init2d(Width, Height);
+
+                // 카메라 UBO 생성하기
+                _cameraUBO = new CameraUBO();
+                _cameraUBO.UpdateViewProjMatrices(_camera.ViewMatrix, _camera.ProjectiveMatrix, _camera.Position);
             }
 
             // 프레임 카운트 증가

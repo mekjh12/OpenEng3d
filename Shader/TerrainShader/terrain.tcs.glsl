@@ -7,6 +7,7 @@
 // 패치당 4개의 제어점 출력 설정
 
 layout(vertices = 4) out;
+layout(std140, binding = 0) uniform CameraBlock {mat4 view; mat4 proj; mat4 vp; vec4 cameraPos;} camera;
 
 // 버텍스 셰이더로부터의 입력
 in vec2 Tex1[];           // 입력 텍스처 좌표 배열
@@ -16,9 +17,7 @@ out vec2 Tex2[];          // 출력 텍스처 좌표 배열
 out vec4 ViewSpacePos[];  // 뷰 공간 위치 배열
 
 // 변환 행렬
-uniform mat4 proj;        // 투영 행렬
 uniform mat4 model;       // 모델 행렬
-uniform mat4 view;        // 뷰 행렬
 
 void main()
 {
@@ -27,7 +26,7 @@ void main()
     Tex2[gl_InvocationID] = Tex1[gl_InvocationID];
 
     // 모델-뷰 변환 행렬 계산
-    mat4 gView = view * model;
+    mat4 gView = camera.view * model;
 
     // 단계 1: 각 정점을 뷰 공간으로 변환
     vec4 ViewSpacePos00 = gView * gl_in[0].gl_Position;  // 좌하단

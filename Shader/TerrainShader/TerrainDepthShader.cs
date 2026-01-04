@@ -10,20 +10,14 @@ namespace Shader
     /// </summary>
     public class TerrainDepthShader : ShaderProgramBase
     {
-        /// <summary>버텍스 셰이더 파일 경로</summary>
         const string VERTEX_FILE = @"\Shader\TerrainShader\terrain.vert";
-        /// <summary>테셀레이션 컨트롤 셰이더 파일 경로</summary>
         const string TCS_FILE = @"\Shader\TerrainShader\terrain.tcs.glsl";
-        /// <summary>테셀레이션 평가 셰이더 파일 경로</summary>
         const string TES_FILE = @"\Shader\TerrainShader\terrain.tes.glsl";
-        /// <summary>프래그먼트 셰이더 파일 경로 (빈 셰이더)</summary>
-        const string FRAGMENT_FILE = @"\Shader\TerrainShader\null.frag";
+        const string FRAGMENT_FILE = @"\Shader\TerrainShader\terrain_depth.frag";
 
-        // ✅ 유니폼 위치 캐싱
+        // 유니폼 위치 캐싱
         private int loc_heightScale;
         private int loc_model;
-        private int loc_view;
-        private int loc_proj;
         private int loc_gHeightMap;
 
         /// <summary>
@@ -51,8 +45,6 @@ namespace Shader
         {
             loc_heightScale = GetUniformLocation("heightScale");
             loc_model = GetUniformLocation("model");
-            loc_view = GetUniformLocation("view");
-            loc_proj = GetUniformLocation("proj");
             loc_gHeightMap = GetUniformLocation("gHeightMap");
         }
 
@@ -79,22 +71,6 @@ namespace Shader
         public void LoadModelMatrix(in Matrix4x4f matrix)
         {
             LoadUniformMatrix4(loc_model, matrix);
-        }
-
-        /// <summary>
-        /// 뷰 변환 행렬을 설정합니다.
-        /// </summary>
-        public void LoadViewMatrix(in Matrix4x4f matrix)
-        {
-            LoadUniformMatrix4(loc_view, matrix);
-        }
-
-        /// <summary>
-        /// 투영 변환 행렬을 설정합니다.
-        /// </summary>
-        public void LoadProjectionMatrix(in Matrix4x4f matrix)
-        {
-            LoadUniformMatrix4(loc_proj, matrix);
         }
 
         /// <summary>

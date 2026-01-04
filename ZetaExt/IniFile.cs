@@ -21,6 +21,9 @@ namespace ZetaExt
 
         public static void SetFileName(string fileName)
         {
+            Console.WriteLine("----------------------------------------------------");
+            Console.WriteLine("                  게임엔진");
+            Console.WriteLine("----------------------------------------------------");
             s_PATH_ROOT = Application.StartupPath;
             s_PATH_ROOT = Directory.GetParent(s_PATH_ROOT).FullName;
             s_PATH_ROOT = Directory.GetParent(s_PATH_ROOT).FullName;
@@ -29,6 +32,7 @@ namespace ZetaExt
             
             Console.WriteLine("s_PATH_ROOT=" + IniFile.s_PATH_ROOT);
             Console.WriteLine("s_FILENAME=" + IniFile.s_FILENAME);
+            Console.WriteLine("----------------------------------------------------");
 
             if (!File.Exists(IniFile.s_FILENAME))
             {

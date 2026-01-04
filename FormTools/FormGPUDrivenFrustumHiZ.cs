@@ -248,8 +248,7 @@ namespace FormTools
                 _hiZBuffer.BindFramebuffer();
                 _hiZBuffer.PrepareRenderSurface();
 
-                _hiZBuffer.RenderTerrainDepth(camera.ProjectiveMatrix, 
-                    camera.ViewMatrix, 
+                _hiZBuffer.RenderTerrainDepth(
                     TerrainConstants.DEFAULT_VERTICAL_SCALE,
                     _terrainRegion.TerrainEntity);
 

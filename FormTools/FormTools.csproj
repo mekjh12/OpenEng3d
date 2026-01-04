@@ -98,6 +98,12 @@
     <Compile Include="FormCloud.Designer.cs">
       <DependentUpon>FormCloud.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormCrossBillboardLight.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormCrossBillboardLight.Designer.cs">
+      <DependentUpon>FormCrossBillboardLight.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormCulling.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -188,6 +194,12 @@
     <Compile Include="FormEntityTest.Designer.cs">
       <DependentUpon>FormEntityTest.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormLightAmbDir.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormLightAmbDir.Designer.cs">
+      <DependentUpon>FormLightAmbDir.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormOcclusionOpt.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -269,6 +281,9 @@
     <EmbeddedResource Include="FormCloud.resx">
       <DependentUpon>FormCloud.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="FormCrossBillboardLight.resx">
+      <DependentUpon>FormCrossBillboardLight.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="FormCulling.resx">
       <DependentUpon>FormCulling.cs</DependentUpon>
     </EmbeddedResource>
@@ -313,6 +328,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormEntityTest.resx">
       <DependentUpon>FormEntityTest.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormLightAmbDir.resx">
+      <DependentUpon>FormLightAmbDir.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormOcclusionOpt.resx">
       <DependentUpon>FormOcclusionOpt.cs</DependentUpon>

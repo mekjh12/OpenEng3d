@@ -8,6 +8,7 @@ using Renderer;
 using Shader;
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace GPUDriven
 {
@@ -92,6 +93,7 @@ namespace GPUDriven
         private CrossBillboardInstanceShader _crossBillboardInstanceShader; // 크로스 빌보드 렌더링 셰이더
         private GPUInstancedDepthShader _depthShader;               // 깊이 렌더링 셰이더
 
+
         // 임포스터 관련
         private ImpostorAssets _impostor;   // 임포스터 에셋 관리자
         public BaseModel3d _point;          // 단일 포인트 모델 (인스턴싱용)
@@ -135,6 +137,12 @@ namespace GPUDriven
         // 디버그 옵션
         bool _isDebugLOD1 = false;                          // LOD1 디버깅 여부 
         Vertex4f COLOR_RED4 = new Vertex4f(1f, 0f, 0f, 1f);  // 빨간색
+        Vertex4f COLOR_GREEN4 = new Vertex4f(0f, 1f, 0f, 1f); // 초록색
+        Vertex4f COLOR_BLUE4 = new Vertex4f(0f, 0f, 1f, 1f);  // 파란색
+
+        NormalVectorShader _normalShader;
+        CrossBillboardNormalShader _crossBillboardNormalShader;
+
 
         // ------------------------------------------------------------
         // 속성
@@ -204,7 +212,6 @@ namespace GPUDriven
             // 셰이더 로드
             LoadShaders(_projPath, maxMipLevels);
 
-            // 인스턴스 데이터 업로드
             UploadToGPU();
 
             // 임포스터 아틀라스 생성
@@ -236,6 +243,8 @@ namespace GPUDriven
             _gpuDrivenImpostorShader = new GPUDrivenImpostorShader(projPath);
             _crossBillboardInstanceShader = new CrossBillboardInstanceShader(projPath);
             _depthShader = new GPUInstancedDepthShader(projPath);
+            _normalShader = new NormalVectorShader(projPath);
+            _crossBillboardNormalShader = new CrossBillboardNormalShader(projPath);
         }
 
         /// <summary>
@@ -394,33 +403,169 @@ namespace GPUDriven
         /// </summary>
         private void UploadToGPU()
         {
-            var transforms = _batchManager.GetTransforms();
-            var aabbs = _batchManager.GetAABBs();
-            var batchIDs = _batchManager.GetBatchIDs();
+            const int GL_BUFFER_SIZE = 0x8764;  // ✅ BufferParameterName.BufferSize
 
-            // Transform 행렬 업로드
+            if (!_batchManager.IsFinalized)
+            {
+                throw new InvalidOperationException("BatchManager must be finalized!");
+            }
+
+            InstanceModelMatrixData[] instanceData = _batchManager.GetInstanceData();
+            AABB[] aabbs = _batchManager.GetAABBs();
+            uint[] batchIDs = _batchManager.GetBatchIDs();
+
+            uint totalInstances = _batchManager.TotalInstances;
+
+            int instanceDataSize = Marshal.SizeOf<InstanceModelMatrixData>();
+            int aabbSize = Marshal.SizeOf<AABB>();
+            int batchIDSize = sizeof(uint);
+
+            Console.WriteLine($"[GPU Upload] Starting...");
+            Console.WriteLine($"  Total Instances: {totalInstances}");
+            Console.WriteLine($"  InstanceModelMatrixData size: {instanceDataSize} bytes");
+            Console.WriteLine($"  AABB size: {aabbSize} bytes");
+
+            // ✅ Transform SSBO 업로드
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _transformSSBO);
-            fixed (Matrix4x4f* ptr = transforms)
+
+            // ✅ 버퍼 크기 확인
+            int bufferSize = 0;
+            Gl.GetBufferParameter(BufferTarget.ShaderStorageBuffer, GL_BUFFER_SIZE, out bufferSize);
+            Console.WriteLine($"  Transform SSBO buffer size: {bufferSize} bytes");
+
+            uint requiredSize = totalInstances * (uint)instanceDataSize;
+            Console.WriteLine($"  Required size: {requiredSize} bytes");
+
+            if (bufferSize < requiredSize)
             {
-                Gl.BufferSubData(BufferTarget.ShaderStorageBuffer,
-                    IntPtr.Zero, (uint)(_batchManager.TotalInstances * 64), (IntPtr)ptr);
+                Console.WriteLine($"  ❌ ERROR: Buffer too small! Allocating new buffer...");
+                Gl.BufferData(
+                    BufferTarget.ShaderStorageBuffer,
+                    requiredSize,
+                    IntPtr.Zero,
+                    BufferUsage.DynamicDraw
+                );
             }
 
-            // AABB 업로드
+            unsafe
+            {
+                fixed (InstanceModelMatrixData* ptr = instanceData)
+                {
+                    uint sizeInBytes = totalInstances * (uint)instanceDataSize;
+
+                    Console.WriteLine($"  Uploading {sizeInBytes} bytes...");
+
+                    Gl.BufferSubData(
+                        BufferTarget.ShaderStorageBuffer,
+                        IntPtr.Zero,
+                        sizeInBytes,
+                        (IntPtr)ptr
+                    );
+
+                    // ✅ OpenGL 에러 확인
+                    int error = (int)Gl.GetError();
+                    if (error != 0)
+                    {
+                        Console.WriteLine($"  ❌ OpenGL Error after BufferSubData: 0x{error:X} ({(ErrorCode)error})");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"  ✅ Transform SSBO uploaded: {sizeInBytes / 1024.0:F1} KB");
+                    }
+                }
+            }
+
+            // ✅ AABB 업로드
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _aabbSSBO);
-            fixed (AABB* ptr = aabbs)
+
+            Gl.GetBufferParameter(BufferTarget.ShaderStorageBuffer, GL_BUFFER_SIZE, out bufferSize);
+            requiredSize = totalInstances * (uint)aabbSize;
+
+            Console.WriteLine($"  AABB SSBO buffer size: {bufferSize} bytes");
+            Console.WriteLine($"  AABB Required size: {requiredSize} bytes");
+
+            if (bufferSize < requiredSize)
             {
-                Gl.BufferSubData(BufferTarget.ShaderStorageBuffer,
-                    IntPtr.Zero, (uint)(_batchManager.TotalInstances * 32), (IntPtr)ptr);
+                Console.WriteLine($"  ❌ AABB Buffer too small! Allocating...");
+                Gl.BufferData(
+                    BufferTarget.ShaderStorageBuffer,
+                    requiredSize,
+                    IntPtr.Zero,
+                    BufferUsage.DynamicDraw
+                );
             }
 
-            // Batch ID 업로드
-            Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _batchIDSSBO);
-            fixed (uint* ptr = batchIDs)
+            unsafe
             {
-                Gl.BufferSubData(BufferTarget.ShaderStorageBuffer,
-                    IntPtr.Zero, (uint)(_batchManager.TotalInstances * 4), (IntPtr)ptr);
+                fixed (AABB* ptr = aabbs)
+                {
+                    uint sizeInBytes = totalInstances * (uint)aabbSize;
+                    Gl.BufferSubData(
+                        BufferTarget.ShaderStorageBuffer,
+                        IntPtr.Zero,
+                        sizeInBytes,
+                        (IntPtr)ptr
+                    );
+
+                    int error = (int)Gl.GetError();
+                    if (error != 0)
+                    {
+                        Console.WriteLine($"  ❌ OpenGL Error: 0x{error:X}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"  ✅ AABB SSBO uploaded: {sizeInBytes / 1024.0:F1} KB");
+                    }
+                }
             }
+
+            // ✅ Batch ID 업로드
+            Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _batchIDSSBO);
+
+            Gl.GetBufferParameter(BufferTarget.ShaderStorageBuffer, GL_BUFFER_SIZE, out bufferSize);
+            requiredSize = totalInstances * (uint)batchIDSize;
+
+            Console.WriteLine($"  BatchID SSBO buffer size: {bufferSize} bytes");
+            Console.WriteLine($"  BatchID Required size: {requiredSize} bytes");
+
+            if (bufferSize < requiredSize)
+            {
+                Console.WriteLine($"  ❌ BatchID Buffer too small! Allocating...");
+                Gl.BufferData(
+                    BufferTarget.ShaderStorageBuffer,
+                    requiredSize,
+                    IntPtr.Zero,
+                    BufferUsage.DynamicDraw
+                );
+            }
+
+            unsafe
+            {
+                fixed (uint* ptr = batchIDs)
+                {
+                    uint sizeInBytes = totalInstances * (uint)batchIDSize;
+                    Gl.BufferSubData(
+                        BufferTarget.ShaderStorageBuffer,
+                        IntPtr.Zero,
+                        sizeInBytes,
+                        (IntPtr)ptr
+                    );
+
+                    int error = (int)Gl.GetError();
+                    if (error != 0)
+                    {
+                        Console.WriteLine($"  ❌ OpenGL Error: 0x{error:X}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"  ✅ BatchID SSBO uploaded: {sizeInBytes / 1024.0:F1} KB");
+                    }
+                }
+            }
+
+            Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
+
+            Console.WriteLine($"[GPU Upload] Complete! Total: {(totalInstances * (instanceDataSize + aabbSize + batchIDSize)) / 1024.0 / 1024.0:F2} MB");
         }
 
         // ------------------------------------------------------------
@@ -623,51 +768,6 @@ namespace GPUDriven
         }
 
         /// <summary>
-        /// 이전 프레임의 LOD0, LOD1 깊이만 렌더링
-        /// 기존 RenderBatch 코드와 거의 동일, 셰이더만 교체
-        /// </summary>
-        public void RenderDepthPrePassFromPrevFrame(Camera camera)
-        {
-            Gl.Disable(EnableCap.CullFace);
-
-            // 깊이 전용 셰이더 사용
-            _depthShader.Bind();
-            {
-                _depthShader.LoadVPMatrix(camera.VPMatrix);
-                _depthShader.LoadViewMatrix(camera.ViewMatrix);
-
-                Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectCommandBuffer);
-
-                // 각 배치별로 렌더링
-                for (uint b = 0; b < _batchManager.ActualBatchCount; b++)
-                {
-                    BatchDescriptor batch = _batchManager.GetBatch(b);
-                    int cmdStartIndex = _batchCommandStartIndices[b];
-
-                    _depthShader.LoadTextureArray(batch.Model.TextureIDArray);
-                    _depthShader.LoadBatchStartOffset(batch.StartIndex);
-                                        
-                    // LOD0 렌더링 (DrawElementsIndirect)
-                    Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
-                    Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD0);
-                    Gl.BindVertexArray(batch.Model.VaoID);
-
-                    int byteOffset = cmdStartIndex + LOD_OFFSETS[0];
-                    DrawArraysIndirect(batch.VAO, cmdStartIndex, 0, _visibleIndicesSSBO_LOD0, PrimitiveType.Triangles);
-
-                    // LOD1 렌더링 (DrawElementsIndirect)
-                    Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
-                    Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD1);
-                    Gl.BindVertexArray(batch.Model_LOD1.VaoID);
-                    byteOffset = cmdStartIndex + LOD_OFFSETS[1];
-                    Gl.DrawElementsIndirect(PrimitiveType.Triangles, DrawElementsType.UnsignedInt, (IntPtr)byteOffset);
-
-                }
-            }
-            _depthShader.Unbind();
-        }
-
-        /// <summary>
         /// 단일 배치 렌더링 (4단계 LOD)
         /// LOD0: 풀 메시
         /// LOD1: 인덱스 메시 (단순화)
@@ -690,59 +790,102 @@ namespace GPUDriven
             // LOD0: 풀 메시 렌더링
             Gl.Disable(EnableCap.CullFace);
             _instancedShader.Bind();
-            _instancedShader.LoadVPMatrix(camera.VPMatrix);
-            _instancedShader.LoadBatchStartOffset(_batch.StartIndex);
-            _instancedShader.LoadViewMatrix(camera.ViewMatrix);
-            _instancedShader.LoadTextureArray(_batch.Model.TextureIDArray);
-            _instancedShader.LoadEnableDebug(false);
-            DrawArraysIndirect(_batch.VAO, cmdStartIndex, 0, _visibleIndicesSSBO_LOD0, PrimitiveType.Triangles);
+            {
+                _instancedShader.LoadBatchStartOffset(_batch.StartIndex);
+                _instancedShader.LoadTextureArray(_batch.Model.TextureIDArray);
+                _instancedShader.LoadEnableDebug(false);
+                _instancedShader.LoadMaxDepthDistance(10000.0f);
+                DrawArraysIndirect(_batch.VAO, cmdStartIndex, 0, _visibleIndicesSSBO_LOD0, PrimitiveType.Triangles);
+            }
             _instancedShader.Unbind();
 
             // LOD1: 인덱스 메시 렌더링 (단순화된 메시)
             Gl.Disable(EnableCap.CullFace);
             _instancedShader.Bind();
-            _instancedShader.LoadVPMatrix(camera.VPMatrix);
-            _instancedShader.LoadBatchStartOffset(_batch.StartIndex);
-            _instancedShader.LoadViewMatrix(camera.ViewMatrix);
-            _instancedShader.LoadTextureArray(_batch.Model.TextureIDArray);
-            _instancedShader.LoadEnableDebug(_isDebugLOD1);
-            _instancedShader.LoadDebugColor(COLOR_RED4);
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD1);
-            Gl.BindVertexArray(_batch.Model_LOD1.VaoID);
-            int byteOffset = cmdStartIndex + LOD_OFFSETS[1];
-            Gl.DrawElementsIndirect(PrimitiveType.Triangles, DrawElementsType.UnsignedInt, (IntPtr)byteOffset);
+            {
+                _instancedShader.LoadBatchStartOffset(_batch.StartIndex);
+                _instancedShader.LoadTextureArray(_batch.Model.TextureIDArray);
+                _instancedShader.LoadEnableDebug(_isDebugLOD1);
+                _instancedShader.LoadMaxDepthDistance(10000.0f);
+                _instancedShader.LoadDebugColor(COLOR_RED4);
+                DrawArraysIndirect(_batch.VAO, cmdStartIndex, 1, _visibleIndicesSSBO_LOD1, PrimitiveType.Triangles);
+            }
             _instancedShader.Unbind();
 
             // LOD2: 크로스 빌보드 렌더링
+            Gl.Disable(EnableCap.CullFace);
             _crossBillboardInstanceShader.Bind();
-            _crossBillboardInstanceShader.LoadVPMatrix(camera.VPMatrix);
-            _crossBillboardInstanceShader.LoadViewMatrix(camera.ViewMatrix);
-            _crossBillboardInstanceShader.LoadCurrentBatchID(batchID);
-            _crossBillboardInstanceShader.LoadBatchStartOffset(_batch.StartIndex);
-            _crossBillboardInstanceShader.LoadAtlasTexture(crossBillboardData.AtlasTexture.TextureID);
-            _crossBillboardInstanceShader.UseTexture(true);
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 2, _aabbSSBO);
-            DrawArraysIndirect(_point.VAO, cmdStartIndex, 2, _visibleIndicesSSBO_LOD2);
+            {
+                _crossBillboardInstanceShader.LoadCurrentBatchID(batchID);
+                _crossBillboardInstanceShader.LoadBatchStartOffset(_batch.StartIndex);
+                _crossBillboardInstanceShader.LoadAtlasTexture(crossBillboardData.AtlasTexture.TextureID);
+                _crossBillboardInstanceShader.LoadNormalTexture(crossBillboardData.NormalTexture.TextureID);
+                _crossBillboardInstanceShader.UseTexture(true);
+                Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 2, _aabbSSBO);
+                DrawArraysIndirect(_point.VAO, cmdStartIndex , 2, _visibleIndicesSSBO_LOD2);
+            }
             _crossBillboardInstanceShader.Unbind();
 
             // LOD3: 임포스터 렌더링
+            int[] previousModeArray = new int[1];
+            Gl.Get(GetPName.PolygonMode, previousModeArray);
+            PolygonMode previousMode = (PolygonMode)previousModeArray[0];
+
             Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
-            Gl.Disable(EnableCap.CullFace);
             _gpuDrivenImpostorShader.Bind();
-            _gpuDrivenImpostorShader.LoadVPMatrix(camera.VPMatrix);
-            _gpuDrivenImpostorShader.LoadCameraPosition(camera.Position);
-            _gpuDrivenImpostorShader.LoadAABBSphereRadius(_unifiedTexturedModel.AABB.Radius);
-            _gpuDrivenImpostorShader.LoadModelMatrix(_unifiedTexturedModel.AABB.ModelMatrix);
-            _gpuDrivenImpostorShader.LoadViewMatrix(camera.ViewMatrix);
-            _gpuDrivenImpostorShader.LoadImpostorAtlas(_renderData.AtlasTextureId);
-            _gpuDrivenImpostorShader.LoadAtlasSize(_renderData.atlasSize);
-            _gpuDrivenImpostorShader.LoadIndividualSize(_renderData.individualSize);
-            _gpuDrivenImpostorShader.LoadFrameCounts(_renderData.horizontalFrames, _renderData.verticalFrames);
-            _gpuDrivenImpostorShader.LoadEnableEdgeLine(false);
-            _gpuDrivenImpostorShader.LoadBatchStartOffset(_batch.StartIndex);
-            DrawArraysIndirect(_point.VAO, cmdStartIndex, 3, _visibleIndicesSSBO_LOD3);
+            {
+                _gpuDrivenImpostorShader.LoadModelMatrix(_unifiedTexturedModel.AABB.ModelMatrix);
+                _gpuDrivenImpostorShader.LoadCameraPosition(camera.Position);
+                _gpuDrivenImpostorShader.LoadAABBSphereRadius(_unifiedTexturedModel.AABB.Radius);
+                _gpuDrivenImpostorShader.LoadImpostorAtlas(_renderData.AtlasTextureId);
+                _gpuDrivenImpostorShader.LoadAtlasSize(_renderData.atlasSize);
+                _gpuDrivenImpostorShader.LoadIndividualSize(_renderData.individualSize);
+                _gpuDrivenImpostorShader.LoadFrameCounts(_renderData.horizontalFrames, _renderData.verticalFrames);
+                _gpuDrivenImpostorShader.LoadEnableEdgeLine(false);
+                _gpuDrivenImpostorShader.LoadBatchStartOffset(_batch.StartIndex);
+                DrawArraysIndirect(_point.VAO, cmdStartIndex, 3, _visibleIndicesSSBO_LOD3);
+            }
             _gpuDrivenImpostorShader.Unbind();
+            Gl.PolygonMode(MaterialFace.FrontAndBack, previousMode);
+
+        }
+
+        /// <summary>
+        /// 이전 프레임의 LOD0, LOD1 깊이만 렌더링
+        /// 기존 RenderBatch 코드와 거의 동일, 셰이더만 교체
+        /// </summary>
+        public void RenderDepthPrePassFromPrevFrame(Camera camera)
+        {
+            Gl.Disable(EnableCap.CullFace);
+
+            // 깊이 전용 셰이더 사용
+            _depthShader.Bind();
+            {
+                Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectCommandBuffer);
+
+                // 각 배치별로 렌더링
+                for (uint b = 0; b < _batchManager.ActualBatchCount; b++)
+                {
+                    BatchDescriptor batch = _batchManager.GetBatch(b);
+                    int cmdStartIndex = _batchCommandStartIndices[b];
+
+                    _depthShader.LoadTextureArray(batch.Model.TextureIDArray);
+                    _depthShader.LoadBatchStartOffset(batch.StartIndex);
+
+                    Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
+
+                    // LOD0 렌더링
+                    Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD0);
+                    Gl.BindVertexArray(batch.VAO);
+                    Gl.DrawArraysIndirect(PrimitiveType.Triangles, (IntPtr)(cmdStartIndex + LOD_OFFSETS[0]));
+
+                    // LOD1 렌더링
+                    Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD1);
+                    Gl.BindVertexArray(batch.Model_LOD1.VaoID);
+                    Gl.DrawArraysIndirect(PrimitiveType.Triangles, (IntPtr)(cmdStartIndex + LOD_OFFSETS[1]));
+                }
+            }
+            _depthShader.Unbind();
         }
 
         /// <summary>
@@ -772,17 +915,17 @@ namespace GPUDriven
         // 디버그 정보 조회
         // ------------------------------------------------------------
 
+        // 멤버 변수에 추가
+        const int NUM_INDICES = 30;
+        private uint[] _visibleIndicesSample_LOD0 = new uint[NUM_INDICES];  // LOD0 샘플 인덱스
+        private uint[] _visibleIndicesSample_LOD1 = new uint[NUM_INDICES];  // LOD1 샘플 인덱스
+        private uint[] _visibleIndicesSample_LOD2 = new uint[NUM_INDICES];  // LOD2 샘플 인덱스
+        private uint[] _visibleIndicesSample_LOD3 = new uint[NUM_INDICES];  // LOD3 샘플 인덱스
+
         /// <summary>
-        /// 디버그용 가시 객체 개수 조회
+        /// 디버그용 가시 객체 개수 및 샘플 인덱스 조회
         /// 성능을 위해 FRAME_COUNT_DEBUG 프레임마다만 GPU에서 읽음
         /// </summary>
-        /// <param name="visibleCount">전체 가시 객체 개수</param>
-        /// <param name="visibleCountLod0">LOD0 가시 객체 개수</param>
-        /// <param name="visibleCountLod1">LOD1 가시 객체 개수</param>
-        /// <param name="visibleCountLod2">LOD2 가시 객체 개수</param>
-        /// <param name="visibleCountLod3">LOD3 가시 객체 개수</param>
-        /// <param name="frustumPassCount">프러스텀 통과 개수</param>
-        /// <param name="report">배치별 상세 리포트</param>
         public void GetVisibleCountDebug(
             ref uint visibleCount,
             ref uint visibleCountLod0,
@@ -790,7 +933,7 @@ namespace GPUDriven
             ref uint visibleCountLod2,
             ref uint visibleCountLod3,
             ref uint frustumPassCount,
-            ref string report)
+            ref string report,  bool isHookIndices = false)
         {
             if (_frameCount % FRAME_COUNT_DEBUG == 0)
             {
@@ -847,7 +990,69 @@ namespace GPUDriven
                     report += $"({b}){_countsLOD0[b]}/{_countsLOD1[b]}/{_countsLOD2[b]}/{_countsLOD3[b]} \n";
 
                     if (b == 0) lod0 += _countsLOD0[b];
-                    if (b == 1) lod1 += _countsLOD0[b];
+                    if (b == 1) lod1 += _countsLOD1[b];
+                    if (b == 2) lod2 += _countsLOD2[b];
+                    if (b == 3) lod3 += _countsLOD3[b];
+
+                    // 샘플 인덱스 읽기
+                    if (isHookIndices)
+                    {
+                        uint[] batchStartIndices = _batchManager.GetBatchStarts();
+                        uint offsetInBytes = batchStartIndices[b] * 4;
+
+                        // 각 LOD별 실제 개수만큼만 읽기
+                        uint readCountLOD0 = Math.Min(_countsLOD0[b], NUM_INDICES);
+                        uint readCountLOD1 = Math.Min(_countsLOD1[b], NUM_INDICES);
+                        uint readCountLOD2 = Math.Min(_countsLOD2[b], NUM_INDICES);
+                        uint readCountLOD3 = Math.Min(_countsLOD3[b], NUM_INDICES);
+
+                        if (readCountLOD0 > 0)
+                        {
+                            Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleIndicesSSBO_LOD0);
+                            fixed (uint* ptr = _visibleIndicesSample_LOD0)
+                            {
+                                Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, (IntPtr)offsetInBytes, 4 * readCountLOD0, (IntPtr)ptr);
+                            }
+                        }
+
+                        if (readCountLOD1 > 0)
+                        {
+                            Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleIndicesSSBO_LOD1);
+                            fixed (uint* ptr = _visibleIndicesSample_LOD1)
+                            {
+                                Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, (IntPtr)offsetInBytes, 4 * readCountLOD1, (IntPtr)ptr);
+                            }
+                        }
+
+                        if (readCountLOD2 > 0)
+                        {
+                            Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleIndicesSSBO_LOD2);
+                            fixed (uint* ptr = _visibleIndicesSample_LOD2)
+                            {
+                                Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, (IntPtr)offsetInBytes, 4 * readCountLOD2, (IntPtr)ptr);
+                            }
+                        }
+
+                        if (readCountLOD3 > 0)
+                        {
+                            Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleIndicesSSBO_LOD3);
+                            fixed (uint* ptr = _visibleIndicesSample_LOD3)
+                            {
+                                Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, (IntPtr)offsetInBytes, 4 * readCountLOD3, (IntPtr)ptr);
+                            }
+                        }
+
+                        // 샘플 인덱스 리포트 추가
+                        report += "[LOD0]";
+                        for (int i = 0; i < readCountLOD0; i++) report += $"{_visibleIndicesSample_LOD0[i]} ";
+                        report += "\n[LOD1]";
+                        for (int i = 0; i < readCountLOD1; i++) report += $"{_visibleIndicesSample_LOD1[i]} ";
+                        report += "\n[LOD2]";
+                        for (int i = 0; i < readCountLOD2; i++) report += $"{_visibleIndicesSample_LOD2[i]} ";
+                        report += "\n[LOD3]";
+                        for (int i = 0; i < readCountLOD3; i++) report += $"{_visibleIndicesSample_LOD3[i]} ";
+                        report += "\n";
+                    }
                 }
 
                 visibleCountLod0 = lod0;

@@ -239,7 +239,7 @@ namespace FormTools
             // 하늘 렌더러 초기화
             _skyDomeTexture2DShader = new SkyDomeTexture2dShader(PROJECT_PATH);
             _skyDomeTexture2DShader.GenerateRandomSunPosition();
-            _skyDomeTexture2DShader.GenerateSkyTexture(_glControl3.Camera.Position);
+            _skyDomeTexture2DShader.GenerateSkyTexture(_glControl3.Camera.Position, new Vertex3f(1, 1, 1));
             _skyRenderer = new SkyRenderer(PROJECT_PATH, _skyDomeTexture2DShader);
 
             // UI 3D 텍스트 네임플레이트 초기화
@@ -277,8 +277,7 @@ namespace FormTools
                 _hiZBuffer.BindFramebuffer();
                 _hiZBuffer.PrepareRenderSurface();
 
-                _hiZBuffer.RenderTerrainDepth(camera.ProjectiveMatrix,
-                    camera.ViewMatrix,
+                _hiZBuffer.RenderTerrainDepth(
                     TerrainConstants.DEFAULT_VERTICAL_SCALE,
                     _terrainRegion.TerrainEntity);
 

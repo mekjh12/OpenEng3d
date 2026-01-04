@@ -238,8 +238,6 @@ namespace FormTools
             {
                 if (terrainRegion.TerrainEntity == null) continue;
                 _hzbuffer.RenderTerrainDepth(
-                    camera.ProjectiveMatrix,
-                    camera.ViewMatrix,
                     TerrainConstants.DEFAULT_VERTICAL_SCALE,
                 terrainRegion.TerrainEntity);
             }

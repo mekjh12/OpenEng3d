@@ -207,13 +207,13 @@ namespace Shader
         /// 스카이 텍스처 생성 (컴퓨트 셰이더 실행)
         /// </summary>
         /// <param name="outputTextureId">출력 텍스처 ID</param>
-        /// <param name="sunPosition">태양 위치</param>
-        public void GenerateSkyTexture(uint outputTextureId, Vertex3f sunPosition)
+        /// <param name="sunDirection">태양 위치</param>
+        public void GenerateSkyTexture(uint outputTextureId, Vertex3f sunDirection)
         {
             Bind();
 
             // 태양 위치 설정
-            LoadSunPosition(sunPosition);
+            LoadSunPosition(sunDirection);
 
             // 출력 이미지 바인딩
             Gl.BindImageTexture(0, outputTextureId, 0, false, 0,

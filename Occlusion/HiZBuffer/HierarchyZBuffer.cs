@@ -130,6 +130,7 @@ namespace Occlusion
             Gl.BindTexture(TextureTarget.Texture2d, 0);
 
             // 각 레벨별 HZB 텍스처 생성 (32비트 부동소수점 포맷)
+            Console.WriteLine("-----------------------------------------------------");
             for (int i = 0; i < _levels; i++)
             {
                 _hzbTextures[i] = Gl.GenTexture();
@@ -213,11 +214,9 @@ namespace Occlusion
         /// 주의: 지형 렌더링시 오클루더로 나무와 같은 작은 오브젝트 사용은 권장하지 않습니다.
         /// 깜빡임 현상이 발생할 수 있습니다.
         /// </summary>
-        /// <param name="proj">투영 행렬</param>
-        /// <param name="view">뷰 행렬</param>
         /// <param name="heightScale">높이 스케일</param>
         /// <param name="terrianPatchEntity">지형 패치</param>
-        public void RenderTerrainDepth(Matrix4x4f proj, Matrix4x4f view, float heightScale, Entity terrianPatchEntity)
+        public void RenderTerrainDepth(float heightScale, Entity terrianPatchEntity)
         {
             if (terrianPatchEntity == null) return;
             if (terrianPatchEntity?.Model == null || terrianPatchEntity.Model.Length == 0)
@@ -227,11 +226,12 @@ namespace Occlusion
             TexturedModel terrainModel = terrianPatchEntity.Model[0] as TexturedModel;
 
             shader.Bind();
-            shader.LoadProjectionMatrix(proj);
-            shader.LoadViewMatrix(view);
             shader.LoadModelMatrix(terrianPatchEntity.ModelMatrix);
             shader.LoadHeightScale(heightScale);
-            shader.LoadHeightMap(TextureUnit.Texture0, terrainModel.Texture == null ? 0 : terrainModel.Texture.TextureID);
+
+            shader.SetInt("gHeightMap", 0);
+            Gl.ActiveTexture(TextureUnit.Texture0);
+            Gl.BindTexture(TextureTarget.Texture2d, terrainModel.Texture == null ? 0 : terrainModel.Texture.TextureID);
 
             try
             {

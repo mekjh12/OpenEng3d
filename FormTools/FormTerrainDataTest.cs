@@ -270,8 +270,7 @@ namespace FormTools
                 // ✅ HZB 업데이트
                 _hzbuffer.BindFramebuffer();
                 _hzbuffer.PrepareRenderSurface();
-                _hzbuffer.RenderTerrainDepth(camera.ProjectiveMatrix, camera.ViewMatrix, TerrainConstants.DEFAULT_VERTICAL_SCALE,
-                    _terrainRegion.TerrainEntity);
+                _hzbuffer.RenderTerrainDepth(TerrainConstants.DEFAULT_VERTICAL_SCALE,_terrainRegion.TerrainEntity);
                 _hzbuffer.UnbindFramebuffer();
 
                 // ✅ 밉맵 생성

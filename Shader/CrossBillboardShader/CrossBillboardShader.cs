@@ -1,5 +1,6 @@
 ﻿using Common;
 using OpenGL;
+using System.Drawing.Drawing2D;
 using System.Xml.Linq;
 
 namespace Shader
@@ -10,11 +11,12 @@ namespace Shader
         const string GEOMETRY_FILE = @"\Shader\CrossBillboardShader\crossBillboard.gem.glsl";
         const string FRAGMENT_FILE = @"\Shader\CrossBillboardShader\crossBillboard.frag";
 
-        private int loc_vp;
-        private int loc_objectWidth;
-        private int loc_objectHeight;
         private int loc_atlasTexture;
+        private int loc_normalTexture;
         private int loc_enableEdgeLine;
+        private int loc_aabbMin;
+        private int loc_aabbMax;
+        private int loc_model;
 
         public CrossBillboardShader(string projectPath) : base()
         {
@@ -27,11 +29,12 @@ namespace Shader
 
         protected override void GetAllUniformLocations()
         {
-            loc_vp = GetUniformLocation("vp");
-            loc_objectWidth = GetUniformLocation("objectWidth");
-            loc_objectHeight = GetUniformLocation("objectHeight");
             loc_atlasTexture = GetUniformLocation("atlasTexture");
+            loc_normalTexture = GetUniformLocation("normalTexture");
             loc_enableEdgeLine = GetUniformLocation("enableEdgeLine");
+            loc_aabbMin = GetUniformLocation("aabbMin");
+            loc_aabbMax = GetUniformLocation("aabbMax");
+            loc_model = GetUniformLocation("model");
         }
 
         protected override void BindAttributes()
@@ -40,20 +43,15 @@ namespace Shader
             base.BindAttribute(1, "instanceScale");
         }
 
+        public void LoadAABB(Vertex3f aabbMin, Vertex3f aabbMax)
+        {
+            Gl.Uniform3(loc_aabbMin, aabbMin);
+            Gl.Uniform3(loc_aabbMax, aabbMax);
+        }
+
         public void EnableEdgeLine(bool enable)
         {
             Gl.Uniform1(loc_enableEdgeLine, enable ? 1 : 0);
-        }
-
-        public void LoadVPMatrix(Matrix4x4f matrix)
-        {
-            Gl.UniformMatrix4f(loc_vp, 1, false, matrix);
-        }
-
-        public void LoadObjectSize(float width, float height)
-        {
-            Gl.Uniform1(loc_objectWidth, width);
-            Gl.Uniform1(loc_objectHeight, height);
         }
 
         public void LoadAtlasTexture(uint textureID)
@@ -61,6 +59,18 @@ namespace Shader
             Gl.ActiveTexture(TextureUnit.Texture0);
             Gl.BindTexture(TextureTarget.Texture2d, textureID);
             Gl.Uniform1(loc_atlasTexture, 0);
+        }
+
+        public void LoadNormalTexture(uint textureID)
+        {
+            Gl.ActiveTexture(TextureUnit.Texture1);
+            Gl.BindTexture(TextureTarget.Texture2d, textureID);
+            Gl.Uniform1(loc_normalTexture, 1);
+        }
+
+        public void LoadModelMatrix(Matrix4x4f model)
+        {
+            LoadUniformMatrix4(loc_model, model);
         }
     }
 }

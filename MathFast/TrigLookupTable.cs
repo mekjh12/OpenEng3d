@@ -73,9 +73,9 @@ namespace FastMath
 
             // 메모리 계산 업데이트
             int memoryBytes = (tableSize * 3 + atanTableSize * 3) * sizeof(float);  // ← 3개 추가
-            Console.WriteLine($"[TrigLookupTable] 메모리: {memoryBytes / 1024f:F2}KB");
-            Console.WriteLine($"  Sin/Cos/Tan 크기: {tableSize}");
-            Console.WriteLine($"  Atan/Asin/Acos 크기: {atanTableSize}");
+            Console.WriteLine($"FastMath [TrigLookupTable] 메모리: {memoryBytes / 1024f:F2}KB");
+            //Console.WriteLine($"  Sin/Cos/Tan 크기: {tableSize}");
+            //Console.WriteLine($"  Atan/Asin/Acos 크기: {atanTableSize}");
         }
 
         public float Sin(float radians)

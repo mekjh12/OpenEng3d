@@ -1,6 +1,5 @@
 ﻿using Common;
 using OpenGL;
-using Shader;
 using System;
 using System.IO;
 using System.Windows.Forms;

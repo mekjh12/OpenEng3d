@@ -34,6 +34,12 @@ namespace GlWindow
                 _camera?.Update(deltaTime);
             }
 
+            // 카메라 프레임 이동 검사 및 UBO 업데이트
+            if (_camera.IsCameraFrameMoved)
+            {
+                _cameraUBO.UpdateViewProjMatrices(_camera.ViewMatrix, _camera.ProjectiveMatrix, _camera.Position);
+            }
+
             // 사용자 정의 업데이트 함수 실행
             _update(deltaTime, _width, _height, _camera);
 

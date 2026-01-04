@@ -52,7 +52,7 @@ namespace Renderer
             _fixedCloudOffset = new Vertex3f(32.0f, 5.0f, 61.0f);
 
             // 스카이돔 모델 행렬 초기화 (큰 크기로 스케일링)
-            _skyDomeModelMatrix = Matrix4x4f.Scaled(1000.0f, 1000.0f, 1000.0f);
+            _skyDomeModelMatrix = Matrix4x4f.Scaled(5000.0f, 5000.0f, 5000.0f);
         }
 
 
@@ -70,9 +70,10 @@ namespace Renderer
             Gl.DepthMask(false); // 깊이 버퍼에 쓰기 비활성화
 
             // 컬링 설정 (안쪽 면은 렌더링하지 않음)
-            Gl.Enable(EnableCap.CullFace);
+            Gl.Disable(EnableCap.CullFace);
             Gl.CullFace(CullFaceMode.Back);
             Gl.FrontFace(FrontFaceDirection.Cw); // 시계 방향으로 설정
+            Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
 
             // 모델 행렬 설정 (카메라 위치에 스카이돔 배치, 큰 반지름으로 스케일링)
             if (camera.IsCameraFrameMoved)
@@ -105,10 +106,6 @@ namespace Renderer
             _skyDomeRenderShader.Unbind();
         }
 
-
-        /// <summary>
-        /// 반구형 스카이돔 메시를 생성합니다.
-        /// </summary>
         /// <summary>
         /// 반구형 스카이돔 메시를 생성합니다.
         /// </summary>
