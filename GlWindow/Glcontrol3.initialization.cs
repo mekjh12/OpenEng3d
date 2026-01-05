@@ -75,10 +75,10 @@ namespace GlWindow
             Gl.Viewport(0, 0, _width, _height);
 
             // 렌더 타겟 리사이즈
-            if (_useRenderTarget && _renderTarget != null)
+            if (_useRenderTarget && _gbuffer != null)
             {
-                _renderTarget.Dispose();
-                _renderTarget.Initialize(w, h);
+                _gbuffer.Dispose();
+                _gbuffer.Initialize(w, h);
                 Console.WriteLine($"✅ 렌더 타겟 리사이즈: {w}x{h}");
             }
         }
@@ -184,8 +184,8 @@ namespace GlWindow
                 // 렌더 타겟 초기화
                 if (_useRenderTarget)
                 {
-                    _renderTarget = new RenderTarget();
-                    _renderTarget.Initialize(Width, Height);
+                    _gbuffer = new GBuffer();
+                    _gbuffer.Initialize(Width, Height);
                     Console.WriteLine($"✅ GlControl3 렌더 타겟 활성화: {Width}x{Height}");
                 }
 

@@ -3,6 +3,9 @@ using ZetaExt;
 
 namespace Lights
 {
+    /// <summary>
+    /// 태양의 방위각과 고도각을 관리하는 클래스
+    /// </summary>
     public class SunLight
     {
         private SolarAngles _angles;

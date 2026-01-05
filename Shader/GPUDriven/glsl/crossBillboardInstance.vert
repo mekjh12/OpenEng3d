@@ -42,7 +42,7 @@ void main()
     AABB aabb = aabbs[instanceIndex];
     vec3 extents = aabb.max - aabb.min;
     
-    // ✅ 가로/세로 분리 (아틀라스 생성과 동일한 로직)
+    // 가로/세로 분리 (아틀라스 생성과 동일한 로직)
     vs_out.horizontalSize = max(extents.x, extents.y) * 0.5;
     vs_out.verticalSize = extents.z * 0.5;
     

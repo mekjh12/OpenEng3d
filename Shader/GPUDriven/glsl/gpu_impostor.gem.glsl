@@ -12,12 +12,17 @@ out GS_OUT
 {
     vec2 texCoord;
     vec2 atlasOffset;
-    vec3 viewPos;  // ✅ 추가
+    vec3 viewPos;
+    vec3 worldPos;  // ✅ 추가
 } gs_out;
 
-layout(std140, binding = 0) uniform CameraBlock {mat4 view; mat4 proj; mat4 vp;} camera;
+layout(std140, binding = 0) uniform CameraBlock {
+    mat4 view; 
+    mat4 proj; 
+    mat4 vp;
+    vec3 cameraPos;  // ✅ cameraPosition에서 cameraPos로 통일
+} camera;
 
-uniform vec3 cameraPosition;
 uniform float aabbSphereRadius;
 uniform float atlasSize;
 uniform float individualSize;
@@ -79,14 +84,13 @@ vec2 calculateAtlasOffset(vec3 localViewDir)
     return vec2(float(frameX) * frameSize, float(frameY) * frameSize);
 }
 
-
 void main() 
 {
     vec3 worldPosition = gs_in[0].worldPosition;
     mat4 modelMatrix = gs_in[0].modelMatrix;
     
     // 카메라 방향 계산
-    vec3 toCamera = normalize(cameraPosition - worldPosition);
+    vec3 toCamera = normalize(camera.cameraPos - worldPosition);
     
     // 모델의 회전을 고려한 로컬 뷰 방향 계산
     vec3 localViewDir = getLocalViewDirection(modelMatrix, toCamera);
@@ -111,10 +115,10 @@ void main()
     
     // 빌보드 네 모서리 위치
     vec3 positions[4];
-    positions[0] = worldPosition - right;  // 좌하
-    positions[1] = worldPosition + right;  // 우하
-    positions[2] = worldPosition - right + 2*up;  // 좌상
-    positions[3] = worldPosition + right + 2*up;  // 우상
+    positions[0] = worldPosition - right;           // 좌하
+    positions[1] = worldPosition + right;           // 우하
+    positions[2] = worldPosition - right + 2*up;    // 좌상
+    positions[3] = worldPosition + right + 2*up;    // 우상
 
     const vec2 texCoords[4] = vec2[4](
         vec2(0.0, 0.0),
@@ -129,7 +133,8 @@ void main()
         gl_Position = camera.vp * vec4(positions[i], 1.0);
         gs_out.texCoord = texCoords[i];
         gs_out.atlasOffset = instanceAtlasOffset;
-        gs_out.viewPos = (camera.view * vec4(positions[i], 1.0)).xyz;  // ✅ 추가
+        gs_out.viewPos = (camera.view * vec4(positions[i], 1.0)).xyz;
+        gs_out.worldPos = positions[i];  // ✅ 월드 위치 전달
         EmitVertex();
     }
     

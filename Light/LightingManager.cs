@@ -4,6 +4,9 @@ using System.Runtime.InteropServices;
 
 namespace Light
 {
+    /// <summary>
+    /// 광원을 관리하는 클래스(UBO 사용)
+    /// </summary>
     public class LightingManager
     {
         private uint _uboHandle;

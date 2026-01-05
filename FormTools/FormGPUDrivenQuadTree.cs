@@ -235,5 +235,10 @@ namespace FormTools
         {
             MemoryProfiler.StartFrameMonitoring();
         }
+
+        public void InitFinished()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

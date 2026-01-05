@@ -116,10 +116,10 @@ namespace Renderer
             int slices = 40;  // 수평 분할 수
             float radius = 1.0f;  // 반지름 (나중에 스케일링)
 
-            // 수직 범위 설정: -30도 ~ 90도
-            float phiStart = -(float)Math.PI / 6.0f;  // -30도
+            // 수직 범위 설정: -60도 ~ 90도
+            float phiStart = -(float)Math.PI / 3.0f;  // -60도
             float phiEnd = (float)Math.PI / 2.0f;      // 90도
-            float phiRange = phiEnd - phiStart;         // 전체 범위 (120도)
+            float phiRange = phiEnd - phiStart;         // 전체 범위 (150도)
 
             // 삼각형 메시 계산
             // 정점 수 = 스택 * 슬라이스 * 6 (각 쿼드는 2개의 삼각형, 각 삼각형은 3개의 정점)
@@ -130,10 +130,10 @@ namespace Renderer
             int vertexIndex = 0;
             int texCoordIndex = 0;
 
-            // 확장된 스카이돔 생성 (z가 위쪽 방향, -30도부터 90도까지)
+            // 확장된 스카이돔 생성 (z가 위쪽 방향, -60도부터 90도까지)
             for (int stack = 0; stack < stacks; stack++)
             {
-                // 스택의 시작과 끝 각도 계산 (-30도 = 하단, 90도 = 상단)
+                // 스택의 시작과 끝 각도 계산 (-60도 = 하단, 90도 = 상단)
                 float phi1 = phiStart + phiRange * (float)stack / stacks;
                 float phi2 = phiStart + phiRange * (float)(stack + 1) / stacks;
 
@@ -185,11 +185,23 @@ namespace Renderer
                     vertices[vertexIndex++] = y4 * radius;
                     vertices[vertexIndex++] = z2 * radius;
 
-                    // 텍스처 좌표 계산
+                    // ✅ 텍스처 좌표 계산 (0도~90도를 0~1로 매핑, 음수는 모두 0)
                     float u1 = (float)slice / slices;
                     float u2 = (float)(slice + 1) / slices;
-                    float v1 = (float)stack / stacks;
-                    float v2 = (float)(stack + 1) / stacks;
+
+                    // phi1에 대한 v 좌표: 0도 미만이면 0, 0도~90도는 0~1로 매핑
+                    float v1;
+                    if (phi1 < 0.0f)
+                        v1 = 0.0f;
+                    else
+                        v1 = phi1 / ((float)Math.PI / 2.0f);  // 0도~90도를 0~1로 정규화
+
+                    // phi2에 대한 v 좌표: 0도 미만이면 0, 0도~90도는 0~1로 매핑
+                    float v2;
+                    if (phi2 < 0.0f)
+                        v2 = 0.0f;
+                    else
+                        v2 = phi2 / ((float)Math.PI / 2.0f);  // 0도~90도를 0~1로 정규화
 
                     // 첫 번째 삼각형 텍스처 좌표
                     texCoords[texCoordIndex++] = u1;

@@ -417,5 +417,10 @@ namespace FormTools
         {
 
         }
+
+        public void InitFinished()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

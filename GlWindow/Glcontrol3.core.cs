@@ -118,7 +118,7 @@ namespace GlWindow
         //                              멤버 변수 - 렌더 타겟
         // ==================================================================================
 
-        private RenderTarget _renderTarget;
+        private GBuffer _gbuffer;
         private bool _useRenderTarget = false;
         private bool _autoBlitToScreen = true;
 
@@ -159,12 +159,12 @@ namespace GlWindow
         public ColorShader ColorShader { get => _colorShader; set => _colorShader = value; }
         public bool IsVisibleUi2d { get => _isVisibleUi2d; set => _isVisibleUi2d = value; }
         public bool AutoBlitToScreen { get => _autoBlitToScreen; set => _autoBlitToScreen = value; }
-        public uint DepthTextureId => _renderTarget?.DepthTextureId ?? 0;
-        public uint ColorTextureId => _renderTarget?.ColorTextureId ?? 0;
-        public uint PositionTextureId => _renderTarget?.PositionTextureId ?? 0;
-        public uint NormalTextureId => _renderTarget?.NormalTextureId ?? 0;
+        public uint DepthTextureId => _gbuffer?.DepthTextureId ?? 0;
+        public uint ColorTextureId => _gbuffer?.ColorTextureId ?? 0;
+        public uint PositionTextureId => _gbuffer?.PositionTextureId ?? 0;
+        public uint NormalTextureId => _gbuffer?.NormalTextureId ?? 0;
 
-        public RenderTarget RenderTarget => _renderTarget;
+        public GBuffer GBuffer => _gbuffer;
         public bool UseRenderTarget => _useRenderTarget;
         public Action<int, Camera> BlitToScreen { get => _blitScreen; set => _blitScreen = value; }
 

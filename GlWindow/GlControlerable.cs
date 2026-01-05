@@ -13,7 +13,7 @@ namespace GlWindow
         void UpdateFrame(int deltaTime, int width, int height, Camera camera);
         void RenderFrame(double deltaTime, Vertex4f backcolor, Camera camera);
         void Form_Load(object sender, EventArgs e);
-        //void Form_Resize(object sender, EventArgs e);
+        void InitFinished();
         void KeyDownEvent(object sender, KeyEventArgs e);
         void KeyUpEvent(object sender, KeyEventArgs e);
         void MouseDnEvent(object sender, MouseEventArgs e);

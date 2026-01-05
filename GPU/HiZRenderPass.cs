@@ -819,7 +819,7 @@ namespace GPUDriven
                 _crossBillboardInstanceShader.LoadCurrentBatchID(batchID);
                 _crossBillboardInstanceShader.LoadBatchStartOffset(_batch.StartIndex);
                 _crossBillboardInstanceShader.LoadAtlasTexture(crossBillboardData.AtlasTexture.TextureID);
-                _crossBillboardInstanceShader.LoadNormalTexture(crossBillboardData.NormalTexture.TextureID);
+                _instancedShader.LoadMaxDepthDistance(10000.0f);
                 _crossBillboardInstanceShader.UseTexture(true);
                 Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 2, _aabbSSBO);
                 DrawArraysIndirect(_point.VAO, cmdStartIndex , 2, _visibleIndicesSSBO_LOD2);
@@ -834,13 +834,13 @@ namespace GPUDriven
             Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
             _gpuDrivenImpostorShader.Bind();
             {
-                _gpuDrivenImpostorShader.LoadModelMatrix(_unifiedTexturedModel.AABB.ModelMatrix);
-                _gpuDrivenImpostorShader.LoadCameraPosition(camera.Position);
-                _gpuDrivenImpostorShader.LoadAABBSphereRadius(_unifiedTexturedModel.AABB.Radius);
                 _gpuDrivenImpostorShader.LoadImpostorAtlas(_renderData.AtlasTextureId);
                 _gpuDrivenImpostorShader.LoadAtlasSize(_renderData.atlasSize);
                 _gpuDrivenImpostorShader.LoadIndividualSize(_renderData.individualSize);
                 _gpuDrivenImpostorShader.LoadFrameCounts(_renderData.horizontalFrames, _renderData.verticalFrames);
+                _gpuDrivenImpostorShader.LoadMaxDepthDistance(10000.0f);
+                _gpuDrivenImpostorShader.LoadAABBSphereRadius(_unifiedTexturedModel.AABB.Radius);
+                _gpuDrivenImpostorShader.LoadCameraPosition(camera.Position);
                 _gpuDrivenImpostorShader.LoadEnableEdgeLine(false);
                 _gpuDrivenImpostorShader.LoadBatchStartOffset(_batch.StartIndex);
                 DrawArraysIndirect(_point.VAO, cmdStartIndex, 3, _visibleIndicesSSBO_LOD3);

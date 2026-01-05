@@ -23,7 +23,7 @@ namespace GlWindow
             if (_useRenderTarget)
             {
                 // 렌더 타겟에 3D 씬 렌더링
-                _renderTarget.Bind();
+                _gbuffer.Bind();
                 {
                     Gl.Enable(EnableCap.CullFace);
                     Gl.CullFace(CullFaceMode.Back);
@@ -45,14 +45,14 @@ namespace GlWindow
                         _grid?.Render(_camera);
                     }
                 }
-                _renderTarget.Unbind();
+                _gbuffer.Unbind();
 
                 // 자동 화면 복사 옵션
                 if (_autoBlitToScreen)
                 {
                     Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
                     Gl.Viewport(0, 0, Width, Height);
-                    _renderTarget.BlitToScreen(Width, Height);
+                    _gbuffer.BlitToScreen(Width, Height);
                 }
             }
             else
@@ -89,21 +89,21 @@ namespace GlWindow
         /// </summary>
         public void BlitRenderTargetToScreen()
         {
-            if (_useRenderTarget && _renderTarget != null)
+            if (_useRenderTarget && _gbuffer != null)
             {
                 Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
                 Gl.Viewport(0, 0, Width, Height);
-                _renderTarget.BlitToScreen(Width, Height);
+                _gbuffer.BlitToScreen(Width, Height);
             }
         }
 
         public void BlitDebugView(RenderDepthBufferShader shader)
         {
-            if (_useRenderTarget && _renderTarget != null)
+            if (_useRenderTarget && _gbuffer != null)
             {
                 Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
                 Gl.Viewport(0, 0, Width, Height);
-                _renderTarget.BlitDebugView(Width, Height, shader);
+                _gbuffer.BlitDebugView(Width, Height, shader);
             }
         }
 

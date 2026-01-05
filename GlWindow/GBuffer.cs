@@ -12,7 +12,7 @@ namespace GlWindow
     /// - ColorAttachment3: R32F (선형 깊이 - 안개용)
     /// - DepthAttachment: Renderbuffer (깊이 테스트 전용)
     /// </summary>
-    public class RenderTarget
+    public class GBuffer
     {
         public uint FramebufferId { get; private set; }
 

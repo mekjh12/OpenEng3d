@@ -422,5 +422,10 @@ namespace FormTools
             this.Resize += new EventHandler(this.FormGPUDriven_Resize);
             MemoryProfiler.StartFrameMonitoring();
         }
+
+        public void InitFinished()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

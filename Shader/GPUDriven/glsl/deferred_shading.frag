@@ -60,7 +60,7 @@ void main()
     vec3 lightDir = normalize(-lighting.lightDirection);
     
     // Lambert diffuse
-    float diff = max(dot(normal, lightDir), 0.0);
+    float diff = max(dot(normal, lightDir), 0.3);
     vec3 diffuse = diff * lighting.lightColor * albedo.rgb;
     
     // ============================================

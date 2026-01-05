@@ -14,7 +14,6 @@ using System;
 using System.Drawing;
 using System.Windows.Forms;
 using Terrain;
-using Ui2d;
 using Ui3d;
 using ZetaExt;
 
@@ -27,8 +26,48 @@ namespace FormTools
         readonly string TITLE = "GPU드라이븐 LOD4 광원";
         private GlControl3 _glControl3;                     // OpenGL 컨트롤
 
+        string[] _objFileNames = new string[]
+            {
+                @"tree1.obj",
+                @"florida_foliage\bananaPlant1.obj",
+                @"florida_foliage\bananaPlant2.obj",
+                @"florida_foliage\bananaPlant3.obj",
+                @"florida_foliage\palm1.obj",
+                @"florida_foliage\palm2.obj",
+                @"florida_foliage\palm3.obj",
+                @"florida_foliage\bananaPlant1.obj",
+                @"florida_foliage\bananaPlant2.obj",
+                @"florida_foliage\bananaPlant3.obj",
+                @"florida_foliage\fern1.obj",
+                @"florida_foliage\fern2.obj",
+                @"florida_foliage\fern3.obj",
+                @"florida_foliage\fern4.obj",
+                @"florida_foliage\fern5.obj",
+            };
+
+        /*
+            @"tree1.obj",               
+            @"florida_foliage\bananaPlant1.obj",
+            @"florida_foliage\bananaPlant2.obj",
+            @"florida_foliage\bananaPlant3.obj",
+            @"florida_foliage\palm1.obj",
+            @"florida_foliage\palm2.obj",
+            @"florida_foliage\palm3.obj",
+            @"florida_foliage\bananaPlant1.obj",
+            @"florida_foliage\bananaPlant2.obj",
+            @"florida_foliage\bananaPlant3.obj",
+            @"florida_foliage\fern1.obj",
+            @"florida_foliage\fern2.obj",
+            @"florida_foliage\fern3.obj",
+            @"florida_foliage\fern4.obj",
+            @"florida_foliage\fern5.obj",
+         */
+
+
         // 렌더러 변수들
         private WorldAxisRenderer _worldAxisRenderer;       // 월드 축 렌더러
+        private DeferredRenderer _deferredRenderer;         // 디퍼드 렌더러
+        private GBuffer _gbuffer;                           // 렌더타겟 지버퍼
 
         // 셰이더 변수들
         private ColorShader _colorShader;                   // 컬러 셰이더
@@ -58,8 +97,6 @@ namespace FormTools
         const int DOWN_LEVEL = 1;                           // 다운샘플링 레벨
         const int MAX_INSTANCES = 100000;                   // 최대 인스턴스 수
 
-        GlWindow.RenderTarget _renderTarget;                // 렌더 타겟
-
         // 지형 관련 변수들
         TerrainRegion _terrainRegion;                       // 지형 영역
         Texture[] _levelTextureMap = null;                  // 지형 레벨 텍스쳐
@@ -74,6 +111,18 @@ namespace FormTools
         SkyRenderer _skyRenderer;                           // 하늘 렌더러
         SkyDomeTexture2dShader _skyDomeTexture2DShader;     // 스카이돔 텍스처 2D 셰이더
 
+        int _level = 0;                                     // 현재 Z 버퍼 레벨
+        uint _visibleCount = 0;                             // 가시 객체 수
+        uint _visibleCountLod0 = 0;                         // 가시 객체 수 LOD0
+        uint _visibleCountLod1 = 0;                         // 가시 객체 수 LOD1
+        uint _visibleCountLod2 = 0;                         // 가시 객체 수 LOD2
+        uint _visibleCountLod3 = 0;                         // 가시 객체 수 LOD3
+        uint _frustumPassCount = 0;                         // 프러스텀 패스 수
+        uint _lastVisibleCount = 0;                         // 이전 가시 객체 수
+        uint _lastFrustumPassCount = 0;                     // 이전 프러스텀 패스 수
+        string _visibleReport = "";                         // 가시 객체 리포트
+
+
         // 안개 효과 관련 변수들
         private bool _isFogEnabled = false;
         private int _fogType = 1;  // 0: Linear, 1: Exp, 2: Exp2
@@ -85,17 +134,6 @@ namespace FormTools
 
         private AdvancedFogShader _advancedFogShader;
         private AdvancedFogParams _fogParams;
-
-        int _level = 0;                                     // 현재 Z 버퍼 레벨
-        uint _visibleCount = 0;                             // 가시 객체 수
-        uint _visibleCountLod0 = 0;                         // 가시 객체 수 LOD0
-        uint _visibleCountLod1 = 0;                         // 가시 객체 수 LOD1
-        uint _visibleCountLod2 = 0;                         // 가시 객체 수 LOD2
-        uint _visibleCountLod3 = 0;                         // 가시 객체 수 LOD3
-        uint _frustumPassCount = 0;                         // 프러스텀 패스 수
-        uint _lastVisibleCount = 0;                         // 이전 가시 객체 수
-        uint _lastFrustumPassCount = 0;                     // 이전 프러스텀 패스 수
-        string _visibleReport = "";                         // 가시 객체 리포트
 
         // 디버깅 관련 변수들
         bool _isVisibleHiZDepthBuffer = false;              // 깊이 Z버퍼 가시화 여부
@@ -198,32 +236,9 @@ namespace FormTools
             _model3DManager = new Model3dManager(PROJECT_PATH, EXE_PATH + "\\nullTexture.jpg");
             _modelBatchManager = new ModelBatchManager();
 
-            string[] objFileNames = new string[]
+            for (int i = 0; i < _objFileNames.Length; i++)
             {
-                @"Watermill.obj",
-            };
-
-            /*
-                @"tree1.obj",               
-                @"florida_foliage\bananaPlant1.obj",
-                @"florida_foliage\bananaPlant2.obj",
-                @"florida_foliage\bananaPlant3.obj",
-                @"florida_foliage\palm1.obj",
-                @"florida_foliage\palm2.obj",
-                @"florida_foliage\palm3.obj",
-                @"florida_foliage\bananaPlant1.obj",
-                @"florida_foliage\bananaPlant2.obj",
-                @"florida_foliage\bananaPlant3.obj",
-                @"florida_foliage\fern1.obj",
-                @"florida_foliage\fern2.obj",
-                @"florida_foliage\fern3.obj",
-                @"florida_foliage\fern4.obj",
-                @"florida_foliage\fern5.obj",
-             */
-
-            for (int i = 0; i < objFileNames.Length; i++)
-            {
-                UnifiedTexturedModel model3 = _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\" + objFileNames[i]);
+                UnifiedTexturedModel model3 = _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\" + _objFileNames[i]);
                 UnifiedTexturedModelLOD model3_lod1 = model3 as UnifiedTexturedModelLOD;
                 _modelBatchManager.AddModel(model3.Name, 100, model3, model3_lod1.ModelLod1);
             }
@@ -232,47 +247,7 @@ namespace FormTools
             RegionCoord regionCoord = new RegionCoord(0, 0);
             _terrainRegion = new TerrainRegion(regionCoord, chunkSize: 100, n: 10, null);
             _terrainRegion.LoadTerrainLowResMap(regionCoord, EXE_PATH + "\\Res\\Terrain\\region0x0.png",
-                completed: () =>
-                {
-                    _terrainRenderer.SetTerrain(_terrainRegion.TerrainEntity);
-
-                    // 인스턴스 변환 행렬 생성 및 추가
-                    int gridSize = 300;
-                    float spacing = 15f;
-                    float halfSpacing = spacing / 2f;
-                    float quaterSpacing = spacing / 4f;
-                    Random rand = new Random(42);
-                    Vertex3f position = Vertex3f.Zero;
-
-                    for (int i = 0; i < MAX_INSTANCES; i++)
-                    {
-                        int x = i % gridSize;
-                        int y = i / gridSize;
-
-                        //float posX = (x - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
-                        //float posY = (y - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
-                        float posX = 2000f * (float)(rand.NextDouble() * 2.0f - 1.0f);
-                        float posY = 2000f * (float)(rand.NextDouble() * 2.0f - 1.0f);
-
-                        position.x = posX;
-                        position.y = posY;
-                        float posZ = _terrainRegion.TerrainData.GetTerrainHeight(ref position, Terrain.TerrainConstants.DEFAULT_VERTICAL_SCALE);
-
-                        float rotZ = (float)(rand.NextDouble() * Math.PI * 2);
-                        float scale = 0.5f + (float)(rand.NextDouble() * 1.0f);
-
-                        Matrix4x4f transform = Matrix4x4f.Translated(posX, posY, posZ) *
-                                        Matrix4x4f.RotatedZ(rotZ.ToDegree()) *
-                                        Matrix4x4f.Scaled(scale, scale, scale);
-                        _modelBatchManager.AddInstance((uint)(x % objFileNames.Length), transform);
-                        //_modelBatchManager.AddInstance((uint)Rand.NextInt(0, objFileNames.Length), transform);
-                    }
-
-                    Console.WriteLine($"Generated {MAX_INSTANCES} tree instances");
-                    _modelBatchManager.Finalized();
-
-                    _isLoaded = true;
-                });
+                completed: LoadTerrainRegionCompleted);
 
             // 지형 레벨 텍스쳐 로딩
             string heightMap = PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\";
@@ -323,6 +298,17 @@ namespace FormTools
             FileHashManager.SaveHashes();
         }
 
+        public void InitFinished()
+        {
+            // GPU 드리븐 렌더러 초기화
+            _gpuDriven = new HiZRenderPass(PROJECT_PATH);
+            _gpuDriven.Initialize(_modelBatchManager, _glControl3.Camera, _hiZBuffer.Levels);
+
+            // 디퍼드 렌더러 초기화
+            _gbuffer = _glControl3.GBuffer;
+            _deferredRenderer = new DeferredRenderer(_gbuffer, _deferredShadingShader);
+        }
+
         public void UpdateFrame(int deltaTime, int width, int height, Camera camera)
         {
             float duration = deltaTime * 0.001f;
@@ -331,13 +317,7 @@ namespace FormTools
             // 1회 시작시 초기화
             if (!_isStarted)
             {
-                // GPU 드리븐 렌더러 초기화
-                _gpuDriven = new HiZRenderPass(PROJECT_PATH);
-                _gpuDriven.Initialize(_modelBatchManager, _glControl3.Camera, _hiZBuffer.Levels);
-
-                // 렌더 타겟 초기화
-                _renderTarget = _glControl3.RenderTarget;
-
+                InitFinished();
                 _isStarted = true;
             }
 
@@ -374,7 +354,7 @@ namespace FormTools
                 // 3. HiZ 밉맵 생성
                 _hiZBuffer.GenerateMipmapsUsingFragment(maxLevel: -1);
 
-                _camPosText.Text = $"카메라 위치 ({camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1})";
+                //_camPosText.Text = $"카메라 위치 ({camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1})";
             }
 
             // GPU 드리븐 업데이트
@@ -391,6 +371,8 @@ namespace FormTools
                 ref _visibleCountLod3,
                 ref _frustumPassCount,
                 ref _visibleReport, _isVisibleCullingInfo);
+
+            return;
 
             // 최적화가 안되고 있음(TODO)
             if (_visibleCount != _lastVisibleCount || _frustumPassCount != _lastFrustumPassCount)
@@ -546,35 +528,7 @@ namespace FormTools
                     }
                     else
                     {
-                        // 안개 없이 그냥 출력
-                        //_glControl3.BlitRenderTargetToScreen();
-
-                        // 기본 프레임버퍼로 전환
-                        Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-                        Gl.Viewport(0, 0, w, h);
-
-                        // 깊이 테스트 비활성화 (풀스크린 쿼드)
-                        Gl.Disable(EnableCap.DepthTest);
-
-                        _deferredShadingShader.Bind();
-
-                        // G-Buffer 텍스처 바인딩
-                        _deferredShadingShader.LoadGBufferTextures(
-                            _renderTarget.ColorTextureId,
-                            _renderTarget.PositionTextureId,
-                            _renderTarget.NormalTextureId,
-                            _renderTarget.DepthTextureId
-                        );
-
-                        // 풀스크린 쿼드 렌더링
-                        Gl.DrawArrays(PrimitiveType.Points, 0, 1);
-
-                        _deferredShadingShader.Unbind();
-
-                        // 깊이 테스트 복원
-                        Gl.Enable(EnableCap.DepthTest);
-
-
+                        _deferredRenderer.Render(w, h);
                     }
                 }
             }
@@ -688,6 +642,49 @@ namespace FormTools
         private void FormLightAmbDir_Load(object sender, EventArgs e)
         {
 
+        }
+
+        private void LoadTerrainRegionCompleted()
+        {
+            // 지형 로드 완료 후 처리할 작업들
+            _terrainRenderer.SetTerrain(_terrainRegion.TerrainEntity);
+
+            // 인스턴스 변환 행렬 생성 및 추가
+            int gridSize = 300;
+            float spacing = 15f;
+            float halfSpacing = spacing / 2f;
+            float quaterSpacing = spacing / 4f;
+            Random rand = new Random(42);
+            Vertex3f position = Vertex3f.Zero;
+
+            for (int i = 0; i < MAX_INSTANCES; i++)
+            {
+                int x = i % gridSize;
+                int y = i / gridSize;
+
+                //float posX = (x - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
+                //float posY = (y - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
+                float posX = 1000f * (float)(rand.NextDouble() * 2.0f - 1.0f);
+                float posY = 1000f * (float)(rand.NextDouble() * 2.0f - 1.0f);
+
+                position.x = posX;
+                position.y = posY;
+                float posZ = _terrainRegion.TerrainData.GetTerrainHeight(ref position, Terrain.TerrainConstants.DEFAULT_VERTICAL_SCALE);
+
+                float rotZ = (float)(rand.NextDouble() * Math.PI * 2);
+                float scale = 0.5f + (float)(rand.NextDouble() * 1.0f);
+
+                Matrix4x4f transform = Matrix4x4f.Translated(posX, posY, posZ) *
+                                Matrix4x4f.RotatedZ(rotZ.ToDegree()) *
+                                Matrix4x4f.Scaled(scale, scale, scale);
+                _modelBatchManager.AddInstance((uint)(x % _objFileNames.Length), transform);
+                //_modelBatchManager.AddInstance((uint)Rand.NextInt(0, objFileNames.Length), transform);
+            }
+
+            Console.WriteLine($"Generated {MAX_INSTANCES} tree instances");
+            _modelBatchManager.Finalized();
+
+            _isLoaded = true;
         }
 
         // ----------------------------------------------------------------------------------------
