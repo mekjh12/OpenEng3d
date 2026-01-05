@@ -11,9 +11,9 @@ namespace Shader
     public class TerrainNormalLineShader : ShaderProgramBase
     {
         // 기존 지형 셰이더 파일 재사용
-        const string VERTEX_FILE = @"\Shader\TerrainShader\terrain.vert";
-        const string TCS_FILE = @"\Shader\TerrainShader\terrain.tcs.glsl";
-        const string TES_FILE = @"\Shader\TerrainShader\terrain.tes.glsl";
+        const string VERTEX_FILE = @"\Shader\TerrainShader\common\terrain.vert";
+        const string TCS_FILE = @"\Shader\TerrainShader\common\terrain.tcs.glsl";
+        const string TES_FILE = @"\Shader\TerrainShader\common\terrain.tes.glsl";
 
         // 법선 라인 전용 셰이더
         const string GEOM_FILE = @"\Shader\TerrainShader\terrain_normal_line.geom.glsl";

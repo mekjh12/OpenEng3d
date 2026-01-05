@@ -102,6 +102,7 @@ namespace FormTools
         Texture[] _levelTextureMap = null;                  // 지형 레벨 텍스쳐
         Texture _detailTextureMap = null;                   // 지형 디테일 텍스쳐
         TerrainRenderer _terrainRenderer;                   // 지형 렌더러
+        Texture _normalMapTexture;
 
         // 라이팅 관련 변수들
         LightingManager _lightingManager;                   // 라이팅 매니저
@@ -245,9 +246,17 @@ namespace FormTools
 
             // 지형 영역 초기화
             RegionCoord regionCoord = new RegionCoord(0, 0);
+            string heightMapFile = EXE_PATH + "\\Res\\Terrain\\region0x0.png";
             _terrainRegion = new TerrainRegion(regionCoord, chunkSize: 100, n: 10, null);
-            _terrainRegion.LoadTerrainLowResMap(regionCoord, EXE_PATH + "\\Res\\Terrain\\region0x0.png",
-                completed: LoadTerrainRegionCompleted);
+            _terrainRegion.LoadTerrainLowResMap(regionCoord, heightMapFile, completed: LoadTerrainRegionCompleted);
+
+            // Normal Map 생성
+            uint normalMapTexture = NormalMapGenerator.GenerateNormalMap(
+                heightMapFile,
+                heightScale: TerrainConstants.DEFAULT_VERTICAL_SCALE,
+                wrapMode: true
+            );
+            _normalMapTexture = new Texture(normalMapTexture, 2000, 2000);
 
             // 지형 레벨 텍스쳐 로딩
             string heightMap = PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\";
@@ -270,7 +279,7 @@ namespace FormTools
 
             // 지형 렌더러 초기화
             _terrainRenderer = new TerrainRenderer(_terrainShader, PROJECT_PATH);
-            _terrainRenderer.SetGroundTextures(_levelTextureMap, _detailTextureMap);
+            _terrainRenderer.SetGroundTextures(_levelTextureMap, _normalMapTexture, _detailTextureMap);
 
             // 하늘 렌더러 초기화
             _sunLight = new SunLight(0, 15);
@@ -354,7 +363,7 @@ namespace FormTools
                 // 3. HiZ 밉맵 생성
                 _hiZBuffer.GenerateMipmapsUsingFragment(maxLevel: -1);
 
-                //_camPosText.Text = $"카메라 위치 ({camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1})";
+                _camPosText.Text = $"카메라 위치 ({camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1})";
             }
 
             // GPU 드리븐 업데이트
@@ -371,8 +380,6 @@ namespace FormTools
                 ref _visibleCountLod3,
                 ref _frustumPassCount,
                 ref _visibleReport, _isVisibleCullingInfo);
-
-            return;
 
             // 최적화가 안되고 있음(TODO)
             if (_visibleCount != _lastVisibleCount || _frustumPassCount != _lastFrustumPassCount)

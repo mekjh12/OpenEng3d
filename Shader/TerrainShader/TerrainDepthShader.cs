@@ -10,9 +10,9 @@ namespace Shader
     /// </summary>
     public class TerrainDepthShader : ShaderProgramBase
     {
-        const string VERTEX_FILE = @"\Shader\TerrainShader\terrain.vert";
-        const string TCS_FILE = @"\Shader\TerrainShader\terrain.tcs.glsl";
-        const string TES_FILE = @"\Shader\TerrainShader\terrain.tes.glsl";
+        const string VERTEX_FILE = @"\Shader\TerrainShader\common\terrain.vert";
+        const string TCS_FILE = @"\Shader\TerrainShader\common\terrain.tcs.glsl";
+        const string TES_FILE = @"\Shader\TerrainShader\common\terrain.tes.glsl";
         const string FRAGMENT_FILE = @"\Shader\TerrainShader\terrain_depth.frag";
 
         // 유니폼 위치 캐싱

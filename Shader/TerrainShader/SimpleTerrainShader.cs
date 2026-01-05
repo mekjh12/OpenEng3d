@@ -9,13 +9,9 @@ namespace Shader
     /// </summary>
     public class SimpleTerrainShader : ShaderProgramBase
     {
-        /// <summary>버텍스 셰이더 파일 경로</summary>
-        const string VERTEX_FILE = @"\Shader\TerrainShader\terrain.vert";
-        /// <summary>프래그먼트 셰이더 파일 경로</summary>
+        const string VERTEX_FILE = @"\Shader\TerrainShader\common\terrain.vert";
         const string FRAGMENT_FILE = @"\Shader\TerrainShader\simple.frag";
-        /// <summary>테셀레이션 컨트롤 셰이더 파일 경로</summary>
         const string TCS_FILE = @"\Shader\TerrainShader\simple.tcs.glsl";
-        /// <summary>테셀레이션 평가 셰이더 파일 경로</summary>
         const string TES_FILE = @"\Shader\TerrainShader\simple.tes.glsl";
 
         // ✅ 유니폼 위치 캐싱 (GC 할당 없음)

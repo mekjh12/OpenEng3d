@@ -13,6 +13,7 @@ namespace Renderer
         Entity _entity;
         Texture[] _groundTextures;
         Texture _detailTexture;
+        Texture _normalTexture;
         bool _isNormalVisualization = false;
 
         public TerrainRenderer(TerrainTessellationShader shader, string projectPath)
@@ -26,10 +27,11 @@ namespace Renderer
             _entity = entity;
         }
 
-        public void SetGroundTextures(Texture[] groundTextures, Texture detailTexture)
+        public void SetGroundTextures(Texture[] groundTextures, Texture normalTexture, Texture detailTexture)
         {
             _groundTextures = groundTextures;
             _detailTexture = detailTexture;
+            _normalTexture = normalTexture;
         }
 
         public void Render(bool isDetailMap = true, float heightScale = 1.0f)
@@ -53,37 +55,27 @@ namespace Renderer
 
                 // 지형 텍스처 바인딩
                 TexturedModel modelTextured = rawModel as TexturedModel;
-                _shader.SetInt("gHeightMap", 0);
-                Gl.ActiveTexture(TextureUnit.Texture0);
-                Gl.BindTexture(TextureTarget.Texture2d, modelTextured.Texture.TextureID);
-                Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, Gl.LINEAR);
-                Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, Gl.LINEAR);
-                Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.CLAMP_TO_EDGE);
-                Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.CLAMP_TO_EDGE);
+                
+                _shader.LoadHeightAndNormalMap(
+                    modelTextured.Texture.TextureID,
+                    _normalTexture.TextureID
+                );
 
-                _shader.SetInt("gDetailMap", 1);
-                Gl.ActiveTexture(TextureUnit.Texture1);
-                Gl.BindTexture(TextureTarget.Texture2d, _detailTexture == null ? 0 : _detailTexture.TextureID);
-                Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, Gl.LINEAR_MIPMAP_LINEAR);
-                Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, Gl.LINEAR);
-                Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.NEAREST);
-                Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.NEAREST);
+                _shader.LoadDetailMap(_detailTexture == null ? 0 : _detailTexture.TextureID);
 
-                for (int i = 0; i < 5; i++)
-                {
-                    _shader.SetInt($"gTextureHeight{i}", i + 2);
-                    Gl.ActiveTexture(TextureUnit.Texture2 + i);
-                    Gl.BindTexture(TextureTarget.Texture2d, _groundTextures[i] == null ? 0 : _groundTextures[i].TextureID);
-                    Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, Gl.LINEAR_MIPMAP_LINEAR);
-                    Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, Gl.LINEAR);
-                    Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.MIRRORED_REPEAT);
-                    Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.MIRRORED_REPEAT);
-                }
+                // 지형 텍스처들
+                _shader.LoadTerrainTextures(
+                    _groundTextures[0].TextureID,
+                    _groundTextures[1].TextureID,
+                    _groundTextures[2].TextureID,
+                    _groundTextures[3].TextureID,
+                    _groundTextures[4].TextureID
+                );
 
                 // 지형 기초정보 유니폼
                 _shader.LoadIsDetailMap(isDetailMap);
                 _shader.LoadHeightScale(heightScale);
-                _shader.LoadColor(_entity.Material.Ambient);
+                //_shader.LoadColor(_entity.Material.Ambient);
                 _shader.LoadModelMatrix(_entity.ModelMatrix);
 
                 // 지형 렌더링

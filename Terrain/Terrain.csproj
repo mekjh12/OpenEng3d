@@ -55,6 +55,7 @@
     <Compile Include="ChunkCreator.cs" />
     <Compile Include="EntityBatchProcessor.cs" />
     <Compile Include="ITerrainCulling.cs" />
+    <Compile Include="NormalMapGenerator.cs" />
     <Compile Include="RecentRegionCache.cs" />
     <Compile Include="RegionCoord.cs" />
     <Compile Include="RegionManager.cs" />

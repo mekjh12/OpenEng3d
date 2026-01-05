@@ -120,7 +120,7 @@ bool projectAABB(AABB worldAABB, out vec2 minScreen, out vec2 maxScreen, out flo
     return true;
 }
 
-// HiZ 기반 계층적 오클루전 테스트
+// HiZ 기반 계층적 오클루전 테스트(테스트 통과시 true)
 bool hierarchicalOcclusionTest(vec2 minScreen, vec2 maxScreen, float minDepth)
 {
     vec2 sizeUV = maxScreen - minScreen;
@@ -128,7 +128,7 @@ bool hierarchicalOcclusionTest(vec2 minScreen, vec2 maxScreen, float minDepth)
     float maxSize = max(sizePixels.x, sizePixels.y);
     
     // 너무 작으면 무조건 렌더링
-    if (maxSize < 1.0) return true;  // ✅ false → true
+    if (maxSize < 9.0) return false;
     
     float targetMipLevel = clamp(ceil(log2(maxSize)), 0.0, float(u_maxMipLevel));
     int startMipLevel = int(targetMipLevel);

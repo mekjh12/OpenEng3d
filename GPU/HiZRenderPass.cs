@@ -143,6 +143,8 @@ namespace GPUDriven
         NormalVectorShader _normalShader;
         CrossBillboardNormalShader _crossBillboardNormalShader;
 
+        // 최적화
+        uint[] _batchStartIndices;
 
         // ------------------------------------------------------------
         // 속성
@@ -259,7 +261,7 @@ namespace GPUDriven
             {
                 var batch = _batchManager.GetBatch(i);
                 _impostor.CreateImpostorModel(
-                    ImpostorSettings.CreateSettings(batch.ModelName, 256, 16, 8),
+                    ImpostorSettings.CreateSettings(batch.ModelName, 64, 8, 6),
                     batch.Model);
             }
         }
@@ -997,8 +999,8 @@ namespace GPUDriven
                     // 샘플 인덱스 읽기
                     if (isHookIndices)
                     {
-                        uint[] batchStartIndices = _batchManager.GetBatchStarts();
-                        uint offsetInBytes = batchStartIndices[b] * 4;
+                        _batchStartIndices = _batchManager.GetBatchStarts();
+                        uint offsetInBytes = _batchStartIndices[b] * 4;
 
                         // 각 LOD별 실제 개수만큼만 읽기
                         uint readCountLOD0 = Math.Min(_countsLOD0[b], NUM_INDICES);

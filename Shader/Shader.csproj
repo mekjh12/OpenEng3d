@@ -229,6 +229,7 @@
     <None Include="SkyDomeShader\skyColorGenerator.comp" />
     <None Include="SkyDomeShader\skydome.frag" />
     <None Include="SkyDomeShader\skydome.vert" />
+    <None Include="TerrainShader\new_terrain.frag" />
     <None Include="TerrainShader\terrain_depth.frag" />
     <None Include="TerrainShader\simple.vert" />
     <None Include="TerrainShader\simple.frag" />
@@ -287,9 +288,9 @@
     <None Include="ScreenShader\screen.vert" />
     <None Include="TerrainShader\null.frag" />
     <None Include="TerrainShader\terrain.frag" />
-    <None Include="TerrainShader\terrain.tcs.glsl" />
-    <None Include="TerrainShader\terrain.tes.glsl" />
-    <None Include="TerrainShader\terrain.vert" />
+    <None Include="TerrainShader\common\terrain.tcs.glsl" />
+    <None Include="TerrainShader\common\terrain.tes.glsl" />
+    <None Include="TerrainShader\common\terrain.vert" />
     <None Include="SimpleDepthShader\null.frag" />
     <None Include="SimpleDepthShader\simple.vert" />
     <None Include="UnlitShader\unlit.frag" />

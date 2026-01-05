@@ -29,7 +29,7 @@ namespace BillBoard
 
         private List<PlaneData> _planeDataList;
 
-        // ✅ 텍스처 핸들 직접 저장
+        // 텍스처 핸들 직접 저장
         private uint _colorTexture;
         private uint _normalTexture;
         private uint _depthRenderBuffer;
@@ -71,7 +71,7 @@ namespace BillBoard
             Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
             Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
 
-            // ✅ Normal 텍스처 생성 (필드에 저장)
+            // Normal 텍스처 생성 (필드에 저장)
             _normalTexture = Gl.GenTexture();
             Gl.BindTexture(TextureTarget.Texture2d, _normalTexture);
             Gl.TexImage2D(
@@ -118,7 +118,7 @@ namespace BillBoard
                 _depthRenderBuffer
             );
 
-            // ✅ MRT 활성화
+            // MRT 활성화
             Gl.DrawBuffers(new int[] { Gl.COLOR_ATTACHMENT0, Gl.COLOR_ATTACHMENT1 });
 
             // FBO 상태 체크
@@ -158,7 +158,7 @@ namespace BillBoard
             var data = CreateCrossBillboardData(model, bounds);
 
             // 디버그 저장
-            GetAtlasTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_cb.png");
+            //GetAtlasTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_cb.png");
             //GetAtlasDepthTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_cb_depth.png");
             //GetAtlasNormalTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_normal.png");
 

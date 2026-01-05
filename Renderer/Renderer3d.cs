@@ -671,7 +671,7 @@ namespace Renderer
                 // 지형 기초정보 유니폼
                 shader.LoadIsDetailMap(isDetailMap);
                 shader.LoadHeightScale(heightScale);
-                shader.LoadColor(entity.Material.Ambient);
+                //shader.LoadColor(entity.Material.Ambient);
                 shader.LoadModelMatrix(entity.ModelMatrix);
 
                 // 지형 렌더링
@@ -746,7 +746,7 @@ namespace Renderer
                 Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.CLAMP_TO_EDGE);
                 Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.CLAMP_TO_EDGE);
 
-                shader.LoadColor(entity.Material.Ambient);
+                //shader.LoadColor(entity.Material.Ambient);
                 shader.LoadModelMatrix(entity.ModelMatrix);
 
                 Gl.BindBuffer(BufferTarget.ElementArrayBuffer, rawModel.IBO);

@@ -10,17 +10,31 @@ namespace Shader
     /// </summary>
     public class TerrainTessellationShader : ShaderProgramBase
     {
-        const string VERTEX_FILE = @"\Shader\TerrainShader\terrain.vert";
-        const string FRAGMENT_FILE = @"\Shader\TerrainShader\terrain.frag";
-        const string TCS_FILE = @"\Shader\TerrainShader\terrain.tcs.glsl";
-        const string TES_FILE = @"\Shader\TerrainShader\terrain.tes.glsl";
-        const string GEOM_FILE = @"\Shader\TerrainShader\terrain.geom.glsl";
+        const string VERTEX_FILE = @"\Shader\TerrainShader\common\terrain.vert";
+        const string TCS_FILE = @"\Shader\TerrainShader\common\terrain.tcs.glsl";
+        const string TES_FILE = @"\Shader\TerrainShader\common\terrain.tes.glsl";
+        const string FRAGMENT_FILE = @"\Shader\TerrainShader\new_terrain.frag";
+        // ⭐ Geometry Shader 제거
 
         private int loc_heightScale;
         private int loc_model;
-        private int loc_color;
-        private int loc_isTextured;
-        private int loc_gIsDetailMap;
+        private int loc_heightMap;
+        private int loc_normalMap;  // ⭐ 추가
+
+        private int loc_textureHeight0;
+        private int loc_textureHeight1;
+        private int loc_textureHeight2;
+        private int loc_textureHeight3;
+        private int loc_textureHeight4;
+        private int loc_detailMap;
+        private int loc_isDetailMap;
+
+        private int loc_height0;
+        private int loc_height1;
+        private int loc_height2;
+        private int loc_height3;
+        private int loc_height4;
+        private int loc_colorTexcoordScaling;
 
         public TerrainTessellationShader(string projectPath) : base()
         {
@@ -29,7 +43,8 @@ namespace Shader
             FragFileName = projectPath + FRAGMENT_FILE;
             TcsFileName = projectPath + TCS_FILE;
             TesFileName = projectPath + TES_FILE;
-            GeomFileName = projectPath + GEOM_FILE;  // ⭐ 추가
+            // GeomFileName 제거
+
             InitCompileShader();
         }
 
@@ -44,9 +59,25 @@ namespace Shader
         {
             loc_heightScale = GetUniformLocation("heightScale");
             loc_model = GetUniformLocation("model");
-            loc_color = GetUniformLocation("color");
-            loc_isTextured = GetUniformLocation("isTextured");
-            loc_gIsDetailMap = GetUniformLocation("gIsDetailMap");
+
+            loc_heightMap = GetUniformLocation("gHeightMap");
+            loc_normalMap = GetUniformLocation("gNormalMap");
+
+            loc_textureHeight0 = GetUniformLocation("gTextureHeight0");
+            loc_textureHeight1 = GetUniformLocation("gTextureHeight1");
+            loc_textureHeight2 = GetUniformLocation("gTextureHeight2");
+            loc_textureHeight3 = GetUniformLocation("gTextureHeight3");
+            loc_textureHeight4 = GetUniformLocation("gTextureHeight4");
+            loc_detailMap = GetUniformLocation("gDetailMap");
+            loc_isDetailMap = GetUniformLocation("gIsDetailMap");
+
+            loc_height0 = GetUniformLocation("gHeight0");
+            loc_height1 = GetUniformLocation("gHeight1");
+            loc_height2 = GetUniformLocation("gHeight2");
+            loc_height3 = GetUniformLocation("gHeight3");
+            loc_height4 = GetUniformLocation("gHeight4");
+
+            loc_colorTexcoordScaling = GetUniformLocation("gColorTexcoordScaling");
         }
 
         public void LoadHeightScale(float value)
@@ -59,27 +90,68 @@ namespace Shader
             LoadUniformMatrix4(loc_model, matrix);
         }
 
-        public void LoadColor(in Vertex4f color)
+        // ⭐ Normal Map 바인딩
+        public void LoadHeightAndNormalMap(uint heightTexture, uint normalTexture)
         {
-            Gl.Uniform4(loc_color, color.x, color.y, color.z, color.w);
+            // Height Map (Texture Unit 0)
+            Gl.Uniform1(loc_heightMap, 0);
+            Gl.ActiveTexture(TextureUnit.Texture0);
+            Gl.BindTexture(TextureTarget.Texture2d, heightTexture);
+
+            // Normal Map (Texture Unit 1)
+            Gl.Uniform1(loc_normalMap, 1);
+            Gl.ActiveTexture(TextureUnit.Texture1);
+            Gl.BindTexture(TextureTarget.Texture2d, normalTexture);
         }
 
-        public void LoadIsTextured(bool value)
+        public void LoadTerrainTextures(uint tex0, uint tex1, uint tex2, uint tex3, uint tex4)
         {
-            Gl.Uniform1(loc_isTextured, value ? 1 : 0);
+            // Texture units 2-6에 바인딩
+            Gl.Uniform1(loc_textureHeight0, 2);
+            Gl.ActiveTexture(TextureUnit.Texture2);
+            Gl.BindTexture(TextureTarget.Texture2d, tex0);
+
+            Gl.Uniform1(loc_textureHeight1, 3);
+            Gl.ActiveTexture(TextureUnit.Texture3);
+            Gl.BindTexture(TextureTarget.Texture2d, tex1);
+
+            Gl.Uniform1(loc_textureHeight2, 4);
+            Gl.ActiveTexture(TextureUnit.Texture4);
+            Gl.BindTexture(TextureTarget.Texture2d, tex2);
+
+            Gl.Uniform1(loc_textureHeight3, 5);
+            Gl.ActiveTexture(TextureUnit.Texture5);
+            Gl.BindTexture(TextureTarget.Texture2d, tex3);
+
+            Gl.Uniform1(loc_textureHeight4, 6);
+            Gl.ActiveTexture(TextureUnit.Texture6);
+            Gl.BindTexture(TextureTarget.Texture2d, tex4);
+        }
+
+        public void LoadDetailMap(uint texture)
+        {
+            Gl.Uniform1(loc_detailMap, 7);
+            Gl.ActiveTexture(TextureUnit.Texture7);
+            Gl.BindTexture(TextureTarget.Texture2d, texture);
         }
 
         public void LoadIsDetailMap(bool value)
         {
-            Gl.Uniform1(loc_gIsDetailMap, value ? 1 : 0);
+            Gl.Uniform1(loc_isDetailMap, value ? 1 : 0);
         }
 
-        public void LoadTexture(TextureUnit textureUnit, uint texture)
+        public void LoadHeightThresholds(float h0, float h1, float h2, float h3, float h4)
         {
-            int textureIndex = textureUnit - TextureUnit.Texture0;
-            Gl.Uniform1(loc_isTextured, textureIndex);
-            Gl.ActiveTexture(textureUnit);
-            Gl.BindTexture(TextureTarget.Texture2d, texture);
+            Gl.Uniform1(loc_height0, h0);
+            Gl.Uniform1(loc_height1, h1);
+            Gl.Uniform1(loc_height2, h2);
+            Gl.Uniform1(loc_height3, h3);
+            Gl.Uniform1(loc_height4, h4);
+        }
+
+        public void LoadColorTexcoordScaling(float scaling)
+        {
+            Gl.Uniform1(loc_colorTexcoordScaling, scaling);
         }
     }
 }
