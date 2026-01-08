@@ -1,0 +1,57 @@
+﻿#version 450 core
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+// DrawArraysIndirectCommand 구조체
+struct DrawArraysIndirectCommand
+{
+    uint vertexCount;
+    uint instanceCount;
+    uint first;
+    uint baseInstance;
+};
+
+// SSBO: LOD별 Indirect Command Buffer (binding 6/7/8)
+layout(std430, binding = 6) buffer IndirectCommandLOD0Buffer { DrawArraysIndirectCommand cmdLOD0; };
+layout(std430, binding = 7) buffer IndirectCommandLOD1Buffer { DrawArraysIndirectCommand cmdLOD1; };
+layout(std430, binding = 8) buffer IndirectCommandLOD2Buffer { DrawArraysIndirectCommand cmdLOD2; };
+
+// Atomic Counter: LOD별 가시 타일 개수 (binding 0/1/2)
+layout(binding = 0, offset = 0) uniform atomic_uint visibleCountLOD0;
+layout(binding = 1, offset = 0) uniform atomic_uint visibleCountLOD1;
+layout(binding = 2, offset = 0) uniform atomic_uint visibleCountLOD2;
+
+// Uniforms
+uniform int u_LODIndex;       // 0, 1, 2 중 어느 LOD를 처리할지
+uniform int u_GrassPerTile;   // 해당 LOD의 풀 개수
+
+void main()
+{
+    uint visibleCount = 0;
+    
+    // LOD에 따라 해당 Atomic Counter 읽기
+    if (u_LODIndex == 0)
+    {
+        visibleCount = atomicCounter(visibleCountLOD0);
+        cmdLOD0.vertexCount = 4;
+        cmdLOD0.instanceCount = visibleCount * u_GrassPerTile;
+        cmdLOD0.first = 0;
+        cmdLOD0.baseInstance = 0;
+    }
+    else if (u_LODIndex == 1)
+    {
+        visibleCount = atomicCounter(visibleCountLOD1);
+        cmdLOD1.vertexCount = 4;
+        cmdLOD1.instanceCount = visibleCount * u_GrassPerTile;
+        cmdLOD1.first = 0;
+        cmdLOD1.baseInstance = 0;
+    }
+    else if (u_LODIndex == 2)
+    {
+        visibleCount = atomicCounter(visibleCountLOD2);
+        cmdLOD2.vertexCount = 4;
+        cmdLOD2.instanceCount = visibleCount * u_GrassPerTile;
+        cmdLOD2.first = 0;
+        cmdLOD2.baseInstance = 0;
+    }
+}

@@ -1,0 +1,105 @@
+﻿#version 450 core
+
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+// SSBO: 후보 타일 (입력, binding 0)
+layout(std430, binding = 0) readonly buffer CandidateTilesBuffer { vec4 candidateTiles[]; };
+
+// SSBO: LOD별 가시 타일 (출력, binding 3/4/5)
+layout(std430, binding = 3) writeonly buffer VisibleTilesLOD0Buffer { vec4 visibleTilesLOD0[]; };
+layout(std430, binding = 4) writeonly buffer VisibleTilesLOD1Buffer { vec4 visibleTilesLOD1[]; };
+layout(std430, binding = 5) writeonly buffer VisibleTilesLOD2Buffer { vec4 visibleTilesLOD2[]; };
+
+// Atomic Counter: LOD별 가시 타일 개수 (binding 0/1/2)
+layout(binding = 0, offset = 0) uniform atomic_uint visibleCountLOD0;
+layout(binding = 1, offset = 0) uniform atomic_uint visibleCountLOD1;
+layout(binding = 2, offset = 0) uniform atomic_uint visibleCountLOD2;
+
+// Uniforms: Frustum 6개 평면
+uniform vec4 uFrustumPlanes[6];
+
+// Uniforms
+uniform int u_CandidateCount;
+uniform float u_TileSize;
+uniform vec3 u_CameraPos;
+
+// LOD 거리 설정
+uniform float u_LOD0Distance;
+uniform float u_LOD1Distance;
+uniform float u_LOD2Distance;
+
+// AABB-Frustum 테스트
+bool IsAABBVisible(vec3 minPos, vec3 maxPos)
+{
+    for (int i = 0; i < 6; i++)
+    {
+        vec3 normal = uFrustumPlanes[i].xyz;
+        float d = uFrustumPlanes[i].w;
+        
+        vec3 pVertex = vec3(
+            normal.x >= 0.0 ? maxPos.x : minPos.x,
+            normal.y >= 0.0 ? maxPos.y : minPos.y,
+            normal.z >= 0.0 ? maxPos.z : minPos.z
+        );
+        
+        if (dot(normal, pVertex) + d < 0.0)
+            return false;
+    }
+    return true;
+}
+
+// 거리 기반 LOD 계산
+int CalculateLOD(vec2 tileCenter, vec3 cameraPos)
+{
+    vec2 tileCenterXY = tileCenter + vec2(u_TileSize * 0.5);
+    float distance = length(tileCenterXY - cameraPos.xy);
+    
+    if (distance < u_LOD0Distance) return 0;
+    if (distance < u_LOD1Distance) return 1;
+    if (distance < u_LOD2Distance) return 2;
+    return 3;  // 컬링
+}
+
+void main()
+{
+    uint tileIndex = gl_GlobalInvocationID.x;
+    if (tileIndex >= u_CandidateCount) return;
+    
+    vec4 tileData = candidateTiles[tileIndex];
+    vec2 worldPos = tileData.xy;
+    float minZ = tileData.z, maxZ = tileData.w;
+    
+    // 1. LOD 계산
+    int lod = CalculateLOD(worldPos, u_CameraPos);
+    
+    // 2. LOD 3이면 컬링
+    if (lod >= 3)
+        return;
+    
+    // 3. AABB 생성
+    vec3 aabbMin = vec3(worldPos.x, worldPos.y, minZ);
+    vec3 aabbMax = vec3(worldPos.x + u_TileSize, worldPos.y + u_TileSize, maxZ);
+    
+    // 4. Frustum Culling
+    if (!IsAABBVisible(aabbMin, aabbMax))
+        return;
+    
+    // 5. LOD별로 출력 (분기!)
+    vec4 outputData = vec4(worldPos, u_TileSize, 0.0);  // LOD 정보 불필요 (이미 분리됨)
+    
+    if (lod == 0)
+    {
+        uint index = atomicCounterIncrement(visibleCountLOD0);
+        visibleTilesLOD0[index] = outputData;
+    }
+    else if (lod == 1)
+    {
+        uint index = atomicCounterIncrement(visibleCountLOD1);
+        visibleTilesLOD1[index] = outputData;
+    }
+    else if (lod == 2)
+    {
+        uint index = atomicCounterIncrement(visibleCountLOD2);
+        visibleTilesLOD2[index] = outputData;
+    }
+}

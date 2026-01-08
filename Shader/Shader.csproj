@@ -96,6 +96,9 @@
     <Compile Include="GPUDriven\GPUDrivenImpostorShader.cs" />
     <Compile Include="GPUDriven\GPUInstancedDepthShader.cs" />
     <Compile Include="GPUDriven\GPUInstancedShader.cs" />
+    <Compile Include="GPUDriven\GrassCullingComputeShader.cs" />
+    <Compile Include="GPUDriven\GrassCullingFinalizeComputeShader.cs" />
+    <Compile Include="GPUDriven\GrassShader.cs" />
     <Compile Include="GPUDriven\IndicesOrderCompShader.cs" />
     <Compile Include="GPUDriven\HiZOcclusionComputeShader.cs" />
     <Compile Include="GPUDriven\NormalVectorShader.cs" />
@@ -103,6 +106,7 @@
     <Compile Include="GPUDriven\SimpleQuadTestShader.cs" />
     <Compile Include="GPUDriven\UpdateIndirectCommandsComputeShader.cs" />
     <Compile Include="GPUDriven\WorldAxisShader.cs" />
+    <Compile Include="GPUDriven\GrassShaderGPUDriven.cs" />
     <Compile Include="ImpostorShader\ImpostorInstancedShader.cs" />
     <Compile Include="InstancedShader\InstancedDepthShader.cs" />
     <Compile Include="InstancedShader\InstancedShader.cs" />
@@ -171,6 +175,8 @@
     <None Include="FogShader\advanced_fog.frag" />
     <None Include="FogShader\fog.frag" />
     <None Include="FogShader\fog.vert" />
+    <None Include="GPUDriven\comp\grass_culling.comp" />
+    <None Include="GPUDriven\comp\grass_culling_finalize.comp" />
     <None Include="GPUDriven\comp\hiCulling.glsl" />
     <None Include="GPUDriven\comp\indices_ordering.comp" />
     <None Include="GPUDriven\comp\updateIndirectCommands.comp" />
@@ -196,6 +202,10 @@
     <None Include="GPUDriven\glsl\gpu_impostor.frag" />
     <None Include="GPUDriven\glsl\gpu_impostor.gem.glsl" />
     <None Include="GPUDriven\glsl\gpu_impostor.vert" />
+    <None Include="GPUDriven\glsl\grass.frag" />
+    <None Include="GPUDriven\glsl\grass.vert" />
+    <None Include="GPUDriven\glsl\grass_gpu_driven.frag" />
+    <None Include="GPUDriven\glsl\grass_gpu_driven.vert" />
     <None Include="GPUDriven\glsl\normal_vector.frag" />
     <None Include="GPUDriven\glsl\normal_vector.geom.glsl" />
     <None Include="GPUDriven\glsl\normal_vector.vert" />

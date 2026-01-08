@@ -342,6 +342,12 @@ namespace Terrain
             positionInRegionSpace.z = height;
         }
 
+        public float GetTerrainHeight(float x, float y)
+        {
+            Vertex3f pos3f = new Vertex3f(x, y, 0.0f);
+            return GetTerrainHeight(ref pos3f, TerrainConstants.DEFAULT_VERTICAL_SCALE);
+        }
+
         /// <summary>
         /// 지형의 특정 위치에서 보간된 높이값을 계산합니다.
         /// 두 맵이 모두 로딩된 경우 블렌딩 계수를 사용해 부드럽게 전환합니다.

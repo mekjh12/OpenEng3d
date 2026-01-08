@@ -13,6 +13,10 @@ namespace GlWindow
         void UpdateFrame(int deltaTime, int width, int height, Camera camera);
         void RenderFrame(double deltaTime, Vertex4f backcolor, Camera camera);
         void Form_Load(object sender, EventArgs e);
+
+        /// <summary>
+        /// 로딩을 모두 마치고 초기화가 끝났을 때 호출됩니다.
+        /// </summary>
         void InitFinished();
         void KeyDownEvent(object sender, KeyEventArgs e);
         void KeyUpEvent(object sender, KeyEventArgs e);

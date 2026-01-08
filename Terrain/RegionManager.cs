@@ -2,9 +2,7 @@
 using Geometry;
 using Lights;
 using Model3d;
-using Occlusion;
 using OpenGL;
-using Renderer;
 using Shader;
 using System;
 using System.Collections.Generic;
@@ -215,7 +213,7 @@ namespace Terrain
         public void Render(Camera camera, SimpleTerrainShader simpleTerrainShader)
         {
             // (1) 주변 9개를 렌더링한다.
-            RawModel3d quadPatch = Renderer3d.QaudPatch;
+            RawModel3d quadPatch;// = Renderer3d.QaudPatch;
 
             //Console.WriteLine("--detail-------------------------------------");
             foreach (TerrainRegion terrainRegion in _visibleRegionsCache)
@@ -232,6 +230,7 @@ namespace Terrain
                 }
                 //Console.Write("\r\n");
 
+                /*
                 Renderer3d.Render(_terrainChunkShader, quadPatch.VAO, quadPatch.IBO,
                     terrainRegion.FrustumedChunkAABB, camera, 
                     _textures, _detailMap, 
@@ -245,6 +244,7 @@ namespace Terrain
                     SEPERATE_CHUNK_SIZE,
                     SEPERATE_CHUNK_COUNT,
                     TerrainConstants.DEFAULT_VERTICAL_SCALE);
+                */
             }
 
             //Console.WriteLine("--outer-------------------------------------");

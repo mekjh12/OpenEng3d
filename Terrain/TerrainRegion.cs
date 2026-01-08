@@ -3,7 +3,6 @@ using Geometry;
 using Model3d;
 using Occlusion;
 using OpenGL;
-using Renderer;
 using Shader;
 using System;
 using System.Collections.Generic;
@@ -422,6 +421,7 @@ namespace Terrain
             // 각 가시 패치 렌더링
             foreach (Entity entity in _terrainCulling.FrustumedEntities)
             {
+                /*
                 Renderer3d.RenderByTerrainTessellationShader(terrainTessellationShader,
                     entity,
                     camera,
@@ -430,6 +430,7 @@ namespace Terrain
                     RegionManager.IsDetailMap,
                     lightDirection,
                     0); //_vegetationMap.Texture
+                */
             }
 
             // 블렌딩 설정 복원

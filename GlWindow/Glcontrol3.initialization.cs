@@ -326,12 +326,6 @@ namespace GlWindow
                     _isVisibleGrid = !_isVisibleGrid;
                     IniFile.WritePrivateProfileString("sysInfo", "visibleGrid", _isVisibleGrid.ToString());
                 }
-                else if (e.KeyCode == Keys.F2)
-                {
-                    _isVisibleDebug = !_isVisibleDebug;
-                    CLabel("debug").IsVisible = _isVisibleDebug;
-                    IniFile.WritePrivateProfileString("sysInfo", "visibleDebugWindow", _isVisibleDebug.ToString());
-                }
                 else if (e.KeyCode == Keys.P)
                 {
                     _isRunning = !_isRunning;

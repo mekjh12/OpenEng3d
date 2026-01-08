@@ -164,6 +164,12 @@
     <Compile Include="FormGPUImposterInstance.Designer.cs">
       <DependentUpon>FormGPUImposterInstance.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormGrass.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormGrass.Designer.cs">
+      <DependentUpon>FormGrass.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormHiZReUse.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -313,6 +319,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormGPUImposterInstance.resx">
       <DependentUpon>FormGPUImposterInstance.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormGrass.resx">
+      <DependentUpon>FormGrass.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormHiZReUse.resx">
       <DependentUpon>FormHiZReUse.cs</DependentUpon>
