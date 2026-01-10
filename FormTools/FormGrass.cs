@@ -57,7 +57,8 @@ namespace FormTools
         Texture[] _levelTextureMap = null;                  // 지형 레벨 텍스쳐
         Texture _detailTextureMap = null;                   // 지형 디테일 텍스쳐
         TerrainRenderer _terrainRenderer;                   // 지형 렌더러
-        Texture _normalMapTexture;
+        Texture _normalMapTexture;                          // 지형 노말맵 텍스쳐
+        Texture _rockTexture;                               // 바위 텍스쳐
 
         // 라이팅 관련 변수들
         LightingManager _lightingManager;                   // 라이팅 매니저
@@ -196,7 +197,7 @@ namespace FormTools
             string[] levelTextureMap = new string[5]
             {
                 "water1.png",
-                "grass_1.png",
+                "rocky_terrain_02.png",
                 "lowestTile.png",
                 "HighTile.png",
                 "highestTile.png"
@@ -210,9 +211,12 @@ namespace FormTools
             string detailMap = EXE_PATH + @"\Res\Terrain\blend\detailMap.png";
             _detailTextureMap = new Texture(detailMap);
 
+            _rockTexture = new Texture(PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\blend\rockTile.png");
+
             // 지형 렌더러 초기화
             _terrainRenderer = new TerrainRenderer(_terrainShader, PROJECT_PATH);
             _terrainRenderer.SetGroundTextures(_levelTextureMap, _normalMapTexture, _detailTextureMap);
+            _terrainRenderer.SetRockTexture(_rockTexture);
 
             // 풀 시스템 초기화
             _grassSystem = new GrassSystem(PROJECT_PATH);
@@ -247,6 +251,9 @@ namespace FormTools
             _grassDriven.SetHeightmapTextures(
                 _terrainRegion.TerrainData.HeightMapTextureLowRes.TextureID,
                 _terrainRegion.TerrainData.HeightMapTextureLowRes.TextureID);
+
+            _terrainRenderer.CreateFaultTexture();
+
         }
 
         public void UpdateFrame(int deltaTime, int width, int height, Camera camera)
@@ -327,14 +334,14 @@ namespace FormTools
             Gl.Clear(ClearBufferMask.ColorBufferBit);
 
             // 지형 렌더링
-            _terrainRenderer.Render(heightScale: TerrainConstants.DEFAULT_VERTICAL_SCALE);
+            _terrainRenderer.Render(camera, heightScale: TerrainConstants.DEFAULT_VERTICAL_SCALE);
 
             // GPU DRIVEN 렌더링
             //_gpuDriven?.Render(camera);
 
             // 풀 렌더링
             //_grassSystem.Render(camera , -_sunLight.Direction);
-            _grassDriven.Render(camera, -_sunLight.Direction);
+            //_grassDriven.Render(camera, -_sunLight.Direction);
 
             // 하늘 렌더링
             _skyRenderer.RenderSkyDome(camera);
@@ -539,12 +546,16 @@ namespace FormTools
             if (e.KeyCode == Keys.D0)
             {
                 Vertex3f pos = Vertex3f.Zero;
-                pos.z = _terrainRegion.TerrainData.GetTerrainHeight(ref pos, Terrain.TerrainConstants.DEFAULT_VERTICAL_SCALE);
+                pos.z = _terrainRegion.TerrainData.GetTerrainHeight(ref pos, TerrainConstants.DEFAULT_VERTICAL_SCALE);
                 _glControl3.Camera.PivotPosition = pos;
             }
             else if (e.KeyCode == Keys.D1)
             {
                 _isVisibleHiZDepthBuffer = !_isVisibleHiZDepthBuffer;
+            }
+            else if (e.KeyCode == Keys.D2)
+            {
+                _terrainRenderer.ToggleFunction();
             }
             else if (e.KeyCode == Keys.D3)
             {
@@ -553,7 +564,7 @@ namespace FormTools
             else if (e.KeyCode == Keys.D5)
             {
                 Vertex3f pos = Rand.NextColor3f * 2000.0f - new Vertex3f(1000.0f, 1000.0f, 0.0f);
-                float z = _terrainRegion.TerrainData.GetTerrainHeight(ref pos, Terrain.TerrainConstants.DEFAULT_VERTICAL_SCALE);
+                float z = _terrainRegion.TerrainData.GetTerrainHeight(ref pos, TerrainConstants.DEFAULT_VERTICAL_SCALE);
                 pos.z = z;
                 _glControl3.Camera.PivotPosition = pos;
             }

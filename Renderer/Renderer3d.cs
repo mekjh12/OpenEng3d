@@ -623,71 +623,6 @@ namespace Renderer
             */
         }
 
-        public static void RenderTerrainTessellation(TerrainTessellationShader shader,
-            Entity entity, Texture[] ground, Texture detailMap, 
-            bool isDetailMap = true, float heightScale = 1.0f)
-        {
-            if (entity is null) return;
-            if (entity.Model == null) return;
-
-            shader.Bind();
-
-            foreach (RawModel3d rawModel in entity.Model)
-            {
-                Gl.BindVertexArray(rawModel.VAO);
-                Gl.EnableVertexAttribArray(0);
-                Gl.EnableVertexAttribArray(1);
-                Gl.EnableVertexAttribArray(2);
-
-                // 지형 텍스처 바인딩
-                TexturedModel modelTextured = rawModel as TexturedModel;
-                shader.SetInt("gHeightMap", 0);
-                Gl.ActiveTexture(TextureUnit.Texture0);
-                Gl.BindTexture(TextureTarget.Texture2d, modelTextured.Texture.TextureID);
-                Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, Gl.LINEAR);
-                Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, Gl.LINEAR);
-                Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.CLAMP_TO_EDGE);
-                Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.CLAMP_TO_EDGE);
-
-                shader.SetInt("gDetailMap", 1);
-                Gl.ActiveTexture(TextureUnit.Texture1);
-                Gl.BindTexture(TextureTarget.Texture2d, detailMap == null ? 0 : detailMap.TextureID);
-                Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, Gl.LINEAR_MIPMAP_LINEAR);
-                Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, Gl.LINEAR);
-                Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.NEAREST);
-                Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.NEAREST);
-
-                for (int i = 0; i < 5; i++)
-                {
-                    shader.SetInt($"gTextureHeight{i}", i + 2);
-                    Gl.ActiveTexture(TextureUnit.Texture2 + i);
-                    Gl.BindTexture(TextureTarget.Texture2d, ground[i] == null ? 0 : ground[i].TextureID);
-                    Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, Gl.LINEAR_MIPMAP_LINEAR);
-                    Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, Gl.LINEAR);
-                    Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.MIRRORED_REPEAT);
-                    Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.MIRRORED_REPEAT);
-                }
-
-                // 지형 기초정보 유니폼
-                shader.LoadIsDetailMap(isDetailMap);
-                shader.LoadHeightScale(heightScale);
-                //shader.LoadColor(entity.Material.Ambient);
-                shader.LoadModelMatrix(entity.ModelMatrix);
-
-                // 지형 렌더링
-                Gl.BindBuffer(BufferTarget.ElementArrayBuffer, rawModel.IBO);
-                Gl.PatchParameter(PatchParameterName.PatchVertices, 4);
-                Gl.DrawElements(PrimitiveType.Patches, rawModel.VertexCount, DrawElementsType.UnsignedInt, IntPtr.Zero);
-
-                Gl.DisableVertexAttribArray(2);
-                Gl.DisableVertexAttribArray(1);
-                Gl.DisableVertexAttribArray(0);
-                Gl.BindVertexArray(0);
-            }
-
-            shader.Unbind();
-        }
-
         [Obsolete("이 메서드는 더 이상 사용되지 않습니다. TerrainTessellationShader의 Render 메서드를 사용하세요.")]
         public static void RenderByTerrainTessellationShader(TerrainTessellationShader shader, Entity entity, Camera camera, Texture[] ground,
             Texture detailMap, bool isDetailMap, Vertex3f lightDirection, uint vegetationMap, float heightScale = 1.0f)
@@ -747,7 +682,7 @@ namespace Renderer
                 Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.CLAMP_TO_EDGE);
 
                 //shader.LoadColor(entity.Material.Ambient);
-                shader.LoadModelMatrix(entity.ModelMatrix);
+                //shader.LoadModelMatrix(entity.ModelMatrix);
 
                 Gl.BindBuffer(BufferTarget.ElementArrayBuffer, rawModel.IBO);
                 Gl.PatchParameter(PatchParameterName.PatchVertices, 4);

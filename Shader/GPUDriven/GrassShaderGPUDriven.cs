@@ -5,9 +5,7 @@ using ZetaExt;
 namespace Shader
 {
     /// <summary>
-    /// GPU-Driven 풀 렌더링 셰이더
-    /// - 로컬 템플릿 + 타일 오프셋 방식
-    /// - GPU에서 높이맵 샘플링
+    /// GPU-Driven 풀 렌더링
     /// </summary>
     public class GrassShaderGPUDriven : ShaderProgramBase
     {

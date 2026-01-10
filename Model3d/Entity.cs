@@ -136,6 +136,15 @@ namespace Model3d
 
         public Matrix4x4f ModelMatrix => ((ITransformable)_transform).ModelMatrix;
 
+        public Matrix3x3f NormalMatrix
+        {
+            get
+            {
+                Matrix4x4f mat = ModelMatrix.Inversed().Transposed;
+                return ModelMatrix.Rot3x3f();
+            }
+        }
+
         public Pose Pose
         {
             get => _transform.Pose;

@@ -33,15 +33,15 @@ namespace Renderer
         // LOD별 거리 (미터)
         private const float LOD0_DISTANCE = 40.0f;   // 0~40m
         private const float LOD1_DISTANCE = 80.0f;   // 40~80m
-        private const float LOD2_DISTANCE = 320.0f;  // 80~120m
+        private const float LOD2_DISTANCE = 120.0f;  // 80~120m
                                                      // 120m 이상은 LOD 3 (컬링)
 
         // LOD별 풀 개수
         private static readonly int[] GRASS_PER_TILE_LOD = new int[]
         {
-        LOD0_WIDTH_HEIGHT * LOD0_WIDTH_HEIGHT,  // 9,801
-        LOD1_WIDTH_HEIGHT * LOD1_WIDTH_HEIGHT,  // 2,401
-        LOD2_WIDTH_HEIGHT * LOD2_WIDTH_HEIGHT   // 576
+            LOD0_WIDTH_HEIGHT * LOD0_WIDTH_HEIGHT,  // 9,801
+            LOD1_WIDTH_HEIGHT * LOD1_WIDTH_HEIGHT,  // 2,401
+            LOD2_WIDTH_HEIGHT * LOD2_WIDTH_HEIGHT   // 576
         };
 
         // ============================================================
@@ -60,8 +60,7 @@ namespace Renderer
         // ============================================================
         // 데이터
         // ============================================================
-        private List<GrassLocalTemplate>[] _localTemplates = new List<GrassLocalTemplate>[LOD_COUNT];  
-                                                    // LOD별 Template (3개)
+        private List<GrassLocalTemplate>[] _localTemplates = new List<GrassLocalTemplate>[LOD_COUNT];  // LOD별 Template (3개)
         private List<CandidateTileData> _candidateTiles;  // CPU에서 관리
 
         // 셰이더
@@ -102,6 +101,133 @@ namespace Renderer
 
             Console.WriteLine($"[GrassRendererGPUDriven] Initialized with GPU LOD");
             Console.WriteLine($"[Max Tiles] {MAX_CANDIDATE_TILES} candidates");
+        }
+
+        #region # GPU SSBO Buffer Creation
+
+        /// <summary>
+        /// LOD별 로컬 템플릿 생성 (한 번만!)
+        /// </summary>
+        private void GenerateLocalTemplates()
+        {
+            Random rand = new Random(42);  // 고정 시드
+
+            for (int lod = 0; lod < LOD_COUNT; lod++)
+            {
+                _localTemplates[lod] = new List<GrassLocalTemplate>();
+
+                int gridSize = GetGridSizeForLOD(lod);
+                float spacing = TILE_SIZE / gridSize;
+
+                for (int iy = 0; iy < gridSize; iy++)
+                {
+                    for (int ix = 0; ix < gridSize; ix++)
+                    {
+                        float gridCenterX = ix * spacing + spacing * 0.5f;
+                        float gridCenterY = iy * spacing + spacing * 0.5f;
+
+                        float jitterX = ((float)rand.NextDouble() - 0.5f) * 2.0f * JITTER_RATIO * spacing;
+                        float jitterY = ((float)rand.NextDouble() - 0.5f) * 2.0f * JITTER_RATIO * spacing;
+
+                        _localTemplates[lod].Add(new GrassLocalTemplate
+                        {
+                            LocalX = gridCenterX + jitterX,
+                            LocalY = gridCenterY + jitterY,
+                            Rotation = (float)(rand.NextDouble() * Math.PI * 2),
+                            Scale = 0.8f + (float)rand.NextDouble() * 0.4f
+                        });
+                    }
+                }
+
+                Console.WriteLine($"[Template LOD{lod}] {_localTemplates[lod].Count} grass per tile " +
+                                $"({gridSize}×{gridSize})");
+            }
+        }
+
+
+        /// <summary>
+        /// LOD 레벨에 해당하는 그리드 크기 반환
+        /// </summary>
+        private int GetGridSizeForLOD(int lod)
+        {
+            switch (lod)
+            {
+                case 0: return LOD0_WIDTH_HEIGHT;
+                case 1: return LOD1_WIDTH_HEIGHT;
+                case 2: return LOD2_WIDTH_HEIGHT;
+                default: return 0;
+            }
+        }
+
+        /// <summary>
+        /// LOD별 Template SSBO 생성 (binding 0, 1, 2)
+        /// </summary>
+        private void CreateTemplateSSBOs()
+        {
+            for (int lod = 0; lod < LOD_COUNT; lod++)
+            {
+                _templateSSBOs[lod] = Gl.GenBuffer();
+                Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _templateSSBOs[lod]);
+
+                int sizeInBytes = _localTemplates[lod].Count * Marshal.SizeOf<GrassLocalTemplate>();
+
+                unsafe
+                {
+                    fixed (GrassLocalTemplate* ptr = _localTemplates[lod].ToArray())
+                    {
+                        Gl.BufferData(
+                            BufferTarget.ShaderStorageBuffer,
+                            (uint)sizeInBytes,
+                            (IntPtr)ptr,
+                            BufferUsage.StaticDraw  // 한 번만 업로드!
+                        );
+                    }
+                }
+
+                Console.WriteLine($"[Template LOD{lod}] {sizeInBytes / 1024.0:F1} KB uploaded");
+            }
+
+            Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
+        }
+
+        /// <summary>
+        /// LOD별 Indirect Command Buffer 생성 (3개)
+        /// </summary>
+        private void CreateIndirectCommandBuffers()
+        {
+            for (int lod = 0; lod < LOD_COUNT; lod++)
+            {
+                _indirectCommandBuffers[lod] = Gl.GenBuffer();
+                Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectCommandBuffers[lod]);
+
+                DrawArraysIndirectCommand cmd = new DrawArraysIndirectCommand
+                {
+                    VertexCount = 4,
+                    InstanceCount = 0,
+                    First = 0,
+                    BaseInstance = 0
+                };
+
+                unsafe
+                {
+                    Gl.BufferData(
+                        BufferTarget.DrawIndirectBuffer,
+                        (uint)Marshal.SizeOf<DrawArraysIndirectCommand>(),
+                        new IntPtr(&cmd),
+                        BufferUsage.DynamicDraw
+                    );
+                }
+            }
+
+            Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, 0);
+            Console.WriteLine($"[Indirect Commands] {LOD_COUNT} buffers created");
+        }
+
+        private void CreateDummyVAO()
+        {
+            _dummyVAO = Gl.GenVertexArray();
+            Gl.BindVertexArray(_dummyVAO);
+            Gl.BindVertexArray(0);
         }
 
         /// <summary>
@@ -178,73 +304,7 @@ namespace Renderer
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
         }
 
-        public void Render(Camera camera, Vertex3f sunDirection, uint heightmapTexture, uint normalMapTexture)
-        {
-            Gl.Disable(EnableCap.Blend);
-
-            _renderShader.Bind();
-
-            // ============================================================
-            // 공통 Uniforms (한 번만 설정)
-            // ============================================================
-
-            // Camera vectors
-            _renderShader.LoadCameraVectors(camera.Right, new Vertex3f(0, 0, 1));
-
-            // Grass properties
-            _renderShader.LoadGrassSize(1.0f, 1.0f);
-            _renderShader.LoadGrassColors(
-                new Vertex3f(0.5f, 0.8f, 0.3f),
-                new Vertex3f(0.2f, 0.4f, 0.1f)
-            );
-
-            // Textures
-            _renderShader.LoadGrassTexture(_grassTextureID);
-            _renderShader.LoadHeightmap(heightmapTexture);
-            _renderShader.LoadNormalMap(normalMapTexture);
-
-            // Terrain properties
-            _renderShader.LoadHeightScale(TerrainConstants.DEFAULT_VERTICAL_SCALE);
-            _renderShader.LoadTerrainWorldSize(1000.0f, 1000.0f);
-
-            // Lighting
-            _renderShader.LoadSunDirection(sunDirection);
-
-            // ============================================================
-            // Template SSBO 바인딩 (3개, 모든 Draw에서 공통)
-            // ============================================================
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _templateSSBOs[0]);  // LOD 0
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _templateSSBOs[1]);  // LOD 1
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 2, _templateSSBOs[2]);  // LOD 2
-
-            // VAO 바인딩 (공통)
-            Gl.BindVertexArray(_dummyVAO);
-
-            // ============================================================
-            // LOD별로 3번 Draw! (핵심!)
-            // ============================================================
-            for (int lod = 0; lod < LOD_COUNT; lod++)
-            {
-                // 1. 현재 LOD의 Visible Tiles SSBO 바인딩 (binding 3)
-                Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 3, _visibleTilesSSBOs[lod]);
-
-                // 2. 현재 LOD 정보 Uniform 설정
-                _renderShader.LoadCurrentLOD(lod, GRASS_PER_TILE_LOD[lod]);
-
-                // 3. 해당 LOD의 Indirect Command Buffer 바인딩
-                Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectCommandBuffers[lod]);
-
-                // 4. DrawIndirect 호출
-                Gl.DrawArraysIndirect(PrimitiveType.TriangleStrip, IntPtr.Zero);
-            }
-
-            // ============================================================
-            // 언바인딩
-            // ============================================================
-            _renderShader.Unbind();
-            Gl.BindVertexArray(0);
-            Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, 0);
-        }
+        #endregion
 
         /// <summary>
         /// 매 프레임 호출 - GPU에서 Frustum Culling 수행
@@ -415,114 +475,73 @@ namespace Renderer
             Gl.BindBuffer(BufferTarget.AtomicCounterBuffer, 0);
         }
 
-        /// <summary>
-        /// LOD별 로컬 템플릿 생성 (한 번만!)
-        /// </summary>
-        private void GenerateLocalTemplates()
-        {
-            Random rand = new Random(42);  // 고정 시드
 
+        public void Render(Camera camera, Vertex3f sunDirection, uint heightmapTexture, uint normalMapTexture)
+        {
+            Gl.Disable(EnableCap.Blend);
+
+            _renderShader.Bind();
+
+            // ============================================================
+            // 공통 Uniforms (한 번만 설정)
+            // ============================================================
+
+            // Camera vectors
+            _renderShader.LoadCameraVectors(camera.Right, new Vertex3f(0, 0, 1));
+
+            // Grass properties
+            _renderShader.LoadGrassSize(1.0f, 1.0f);
+            _renderShader.LoadGrassColors(
+                new Vertex3f(0.5f, 0.8f, 0.3f),
+                new Vertex3f(0.2f, 0.4f, 0.1f)
+            );
+
+            // Textures
+            _renderShader.LoadGrassTexture(_grassTextureID);
+            _renderShader.LoadHeightmap(heightmapTexture);
+            _renderShader.LoadNormalMap(normalMapTexture);
+
+            // Terrain properties
+            _renderShader.LoadHeightScale(TerrainConstants.DEFAULT_VERTICAL_SCALE);
+            _renderShader.LoadTerrainWorldSize(1000.0f, 1000.0f);
+
+            // Lighting
+            _renderShader.LoadSunDirection(sunDirection);
+
+            // ============================================================
+            // Template SSBO 바인딩 (3개, 모든 Draw에서 공통)
+            // ============================================================
+            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _templateSSBOs[0]);  // LOD 0
+            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _templateSSBOs[1]);  // LOD 1
+            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 2, _templateSSBOs[2]);  // LOD 2
+
+            // VAO 바인딩 (공통)
+            Gl.BindVertexArray(_dummyVAO);
+
+            // ============================================================
+            // LOD별로 3번 Draw! (핵심!)
+            // ============================================================
             for (int lod = 0; lod < LOD_COUNT; lod++)
             {
-                _localTemplates[lod] = new List<GrassLocalTemplate>();
+                // 1. 현재 LOD의 Visible Tiles SSBO 바인딩 (binding 3)
+                Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 3, _visibleTilesSSBOs[lod]);
 
-                int gridSize = GetGridSizeForLOD(lod);
-                float spacing = TILE_SIZE / gridSize;
+                // 2. 현재 LOD 정보 Uniform 설정
+                _renderShader.LoadCurrentLOD(lod, GRASS_PER_TILE_LOD[lod]);
 
-                for (int iy = 0; iy < gridSize; iy++)
-                {
-                    for (int ix = 0; ix < gridSize; ix++)
-                    {
-                        float gridCenterX = ix * spacing + spacing * 0.5f;
-                        float gridCenterY = iy * spacing + spacing * 0.5f;
-
-                        float jitterX = ((float)rand.NextDouble() - 0.5f) * 2.0f * JITTER_RATIO * spacing;
-                        float jitterY = ((float)rand.NextDouble() - 0.5f) * 2.0f * JITTER_RATIO * spacing;
-
-                        _localTemplates[lod].Add(new GrassLocalTemplate
-                        {
-                            LocalX = gridCenterX + jitterX,
-                            LocalY = gridCenterY + jitterY,
-                            Rotation = (float)(rand.NextDouble() * Math.PI * 2),
-                            Scale = 0.8f + (float)rand.NextDouble() * 0.4f
-                        });
-                    }
-                }
-
-                Console.WriteLine($"[Template LOD{lod}] {_localTemplates[lod].Count} grass per tile " +
-                                $"({gridSize}×{gridSize})");
-            }
-        }
-
-        /// <summary>
-        /// LOD별 Template SSBO 생성 (binding 0, 1, 2)
-        /// </summary>
-        private void CreateTemplateSSBOs()
-        {
-            for (int lod = 0; lod < LOD_COUNT; lod++)
-            {
-                _templateSSBOs[lod] = Gl.GenBuffer();
-                Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _templateSSBOs[lod]);
-
-                int sizeInBytes = _localTemplates[lod].Count * Marshal.SizeOf<GrassLocalTemplate>();
-
-                unsafe
-                {
-                    fixed (GrassLocalTemplate* ptr = _localTemplates[lod].ToArray())
-                    {
-                        Gl.BufferData(
-                            BufferTarget.ShaderStorageBuffer,
-                            (uint)sizeInBytes,
-                            (IntPtr)ptr,
-                            BufferUsage.StaticDraw  // 한 번만 업로드!
-                        );
-                    }
-                }
-
-                Console.WriteLine($"[Template LOD{lod}] {sizeInBytes / 1024.0:F1} KB uploaded");
-            }
-
-            Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
-        }
-
-        /// <summary>
-        /// LOD별 Indirect Command Buffer 생성 (3개)
-        /// </summary>
-        private void CreateIndirectCommandBuffers()
-        {
-            for (int lod = 0; lod < LOD_COUNT; lod++)
-            {
-                _indirectCommandBuffers[lod] = Gl.GenBuffer();
+                // 3. 해당 LOD의 Indirect Command Buffer 바인딩
                 Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectCommandBuffers[lod]);
 
-                DrawArraysIndirectCommand cmd = new DrawArraysIndirectCommand
-                {
-                    VertexCount = 4,
-                    InstanceCount = 0,
-                    First = 0,
-                    BaseInstance = 0
-                };
-
-                unsafe
-                {
-                    Gl.BufferData(
-                        BufferTarget.DrawIndirectBuffer,
-                        (uint)Marshal.SizeOf<DrawArraysIndirectCommand>(),
-                        new IntPtr(&cmd),
-                        BufferUsage.DynamicDraw
-                    );
-                }
+                // 4. DrawIndirect 호출
+                Gl.DrawArraysIndirect(PrimitiveType.TriangleStrip, IntPtr.Zero);
             }
 
-            Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, 0);
-            Console.WriteLine($"[Indirect Commands] {LOD_COUNT} buffers created");
-        }
-
-        private void CreateDummyVAO()
-        {
-            _dummyVAO = Gl.GenVertexArray();
-            Gl.BindVertexArray(_dummyVAO);
+            // ============================================================
+            // 언바인딩
+            // ============================================================
+            _renderShader.Unbind();
             Gl.BindVertexArray(0);
+            Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, 0);
         }
 
         public void Dispose()
@@ -562,41 +581,6 @@ namespace Renderer
             Console.WriteLine("[GrassRendererGPUDriven] Disposed");
         }
 
-        /// <summary>
-        /// LOD 레벨에 해당하는 풀 개수 반환
-        /// </summary>
-        private int GetGrassCountForLOD(int lod)
-        {
-            if (lod < 0 || lod >= LOD_COUNT)
-                return 0;
-
-            return GRASS_PER_TILE_LOD[lod];
-        }
-
-        /// <summary>
-        /// LOD 레벨에 해당하는 그리드 크기 반환
-        /// </summary>
-        private int GetGridSizeForLOD(int lod)
-        {
-            switch (lod)
-            {
-                case 0: return LOD0_WIDTH_HEIGHT;
-                case 1: return LOD1_WIDTH_HEIGHT;
-                case 2: return LOD2_WIDTH_HEIGHT;
-                default: return 0;
-            }
-        }
-
-        /// <summary>
-        /// 거리에 따른 LOD 레벨 계산 (C# 디버깅용)
-        /// </summary>
-        private int CalculateLODLevel(float distance)
-        {
-            if (distance < LOD0_DISTANCE) return 0;
-            if (distance < LOD1_DISTANCE) return 1;
-            if (distance < LOD2_DISTANCE) return 2;
-            return 3;  // 컬링
-        }
     }
 
 }

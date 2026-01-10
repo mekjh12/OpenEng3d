@@ -3,18 +3,38 @@ using Model3d;
 using OpenGL;
 using Shader;
 using System;
+using Terrain;
 
 namespace Renderer
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class TerrainRenderer
     {
+        // 높이기반 텍스처 소스 : https://polyhaven.com/textures/terrain
+
+
         TerrainTessellationShader _shader;
         TerrainNormalLineShader _nshader;
         Entity _entity;
         Texture[] _groundTextures;
         Texture _detailTexture;
         Texture _normalTexture;
+        Texture _rockTexture;
+        Texture _faultTexture;
+
         bool _isNormalVisualization = false;
+
+
+        // 단층 파라미터 설정
+        float _faultScale = 0.0001f;           // UV 스케일 (값이 작을수록 넓은 범위 표현)
+        float _displacement = 80.0f;           // 단층으로 인한 상하/좌우 변위량 (미터 단위)
+        float _zoneWidth = 0.05f;              // 단층 경계면(각력암)의 폭
+        float _intensity = 0.1f;               // 단층 흔적의 시각적 강도
+
+        // 테스트 기능 온오프
+        bool _onFunc = true;
 
         public TerrainRenderer(TerrainTessellationShader shader, string projectPath)
         {
@@ -22,9 +42,20 @@ namespace Renderer
             _nshader = new TerrainNormalLineShader(projectPath);
         }
 
+        public void ToggleFunction()
+        {
+            _onFunc = !_onFunc;
+        }
+
         public void SetTerrain(Entity entity)
         {
             _entity = entity;
+        }
+
+        public void CreateFaultTexture()
+        {
+            _faultTexture = FaultMapGenerator.Generate(512, 512, 45);
+            //FaultMapGenerator.SaveTexture(_faultTexture, @"C:\Users\mekjh\OneDrive\바탕 화면\fault.png", 512, 512);
         }
 
         public void SetGroundTextures(Texture[] groundTextures, Texture normalTexture, Texture detailTexture)
@@ -34,7 +65,12 @@ namespace Renderer
             _normalTexture = normalTexture;
         }
 
-        public void Render(bool isDetailMap = true, float heightScale = 1.0f)
+        public void SetRockTexture(Texture rockTexture)
+        {
+            _rockTexture = rockTexture;
+        }
+
+        public void Render(Camera camera, bool isDetailMap = true, float heightScale = 1.0f)
         {
             if (_entity is null) return;
             if (_entity.Model == null) return;
@@ -72,10 +108,19 @@ namespace Renderer
                     _groundTextures[4].TextureID
                 );
 
+                _shader.LoadEnableFunc(_onFunc);
+
+                // 지형 높이 임계값
+                _shader.LoadRockTexture(_rockTexture.TextureID);
+
+                // 단층 보로누이맵
+                _shader.LoadFaultMap(_faultTexture.TextureID);
+                _shader.LoadFaultParameters(_faultScale, _displacement, _zoneWidth, _intensity);
+
                 // 지형 기초정보 유니폼
                 _shader.LoadIsDetailMap(isDetailMap);
                 _shader.LoadHeightScale(heightScale);
-                //_shader.LoadColor(_entity.Material.Ambient);
+                _shader.LoadNormalMatrix(_entity.NormalMatrix);
                 _shader.LoadModelMatrix(_entity.ModelMatrix);
 
                 // 지형 렌더링

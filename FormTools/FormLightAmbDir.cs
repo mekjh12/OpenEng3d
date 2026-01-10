@@ -32,21 +32,8 @@ namespace FormTools
 
         string[] _objFileNames = new string[]
             {
-                @"tree1.obj",
-                @"florida_foliage\bananaPlant1.obj",
-                @"florida_foliage\bananaPlant2.obj",
-                @"florida_foliage\bananaPlant3.obj",
-                @"florida_foliage\palm1.obj",
-                @"florida_foliage\palm2.obj",
-                @"florida_foliage\palm3.obj",
-                @"florida_foliage\bananaPlant1.obj",
-                @"florida_foliage\bananaPlant2.obj",
-                @"florida_foliage\bananaPlant3.obj",
-                @"florida_foliage\fern1.obj",
-                @"florida_foliage\fern2.obj",
-                @"florida_foliage\fern3.obj",
-                @"florida_foliage\fern4.obj",
-                @"florida_foliage\fern5.obj",
+                @"oak_tree.obj",
+                @"pine_tree.obj",
             };
 
         /*
@@ -103,7 +90,8 @@ namespace FormTools
         Texture[] _levelTextureMap = null;                  // 지형 레벨 텍스쳐
         Texture _detailTextureMap = null;                   // 지형 디테일 텍스쳐
         TerrainRenderer _terrainRenderer;                   // 지형 렌더러
-        Texture _normalMapTexture;
+        Texture _normalMapTexture;                          // 노말 맵 텍스쳐
+        Texture _rockTexture;                               // 바위 텍스쳐
 
         // 라이팅 관련 변수들
         LightingManager _lightingManager;                   // 라이팅 매니저
@@ -278,10 +266,12 @@ namespace FormTools
 
             string detailMap = EXE_PATH + @"\Res\Terrain\blend\detailMap.png";
             _detailTextureMap = new Texture(detailMap);
+            _rockTexture = new Texture(PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\blend\castleTowerBaseTexture.bmp");
 
             // 지형 렌더러 초기화
             _terrainRenderer = new TerrainRenderer(_terrainShader, PROJECT_PATH);
             _terrainRenderer.SetGroundTextures(_levelTextureMap, _normalMapTexture, _detailTextureMap);
+            _terrainRenderer.SetRockTexture(_rockTexture);
 
             // 하늘 렌더러 초기화
             _sunLight = new SunLight(0, 15);
@@ -420,7 +410,7 @@ namespace FormTools
             Gl.Clear(ClearBufferMask.ColorBufferBit);
 
             // 지형 렌더링
-            _terrainRenderer.Render(heightScale: TerrainConstants.DEFAULT_VERTICAL_SCALE);
+            _terrainRenderer.Render(camera, heightScale: TerrainConstants.DEFAULT_VERTICAL_SCALE);
 
             // GPU DRIVEN 렌더링
             _gpuDriven?.Render(camera);
@@ -676,8 +666,8 @@ namespace FormTools
 
                 //float posX = (x - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
                 //float posY = (y - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
-                float posX = 1000f * (float)(rand.NextDouble() * 2.0f - 1.0f);
-                float posY = 1000f * (float)(rand.NextDouble() * 2.0f - 1.0f);
+                float posX = 1000f * (float)(rand.NextDouble() * 10.0f - 5.0f);
+                float posY = 1000f * (float)(rand.NextDouble() * 10.0f - 5.0f);
 
                 position.x = posX;
                 position.y = posY;

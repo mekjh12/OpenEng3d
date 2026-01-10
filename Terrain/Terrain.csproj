@@ -54,6 +54,8 @@
   <ItemGroup>
     <Compile Include="ChunkCreator.cs" />
     <Compile Include="EntityBatchProcessor.cs" />
+    <Compile Include="FaultMapGenerator.cs" />
+    <Compile Include="FaultPoint.cs" />
     <Compile Include="ITerrainCulling.cs" />
     <Compile Include="NormalMapGenerator.cs" />
     <Compile Include="RecentRegionCache.cs" />
