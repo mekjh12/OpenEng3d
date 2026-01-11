@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using Noise;
+using OpenGL;
 using System;
 using System.Collections.Generic;
 using Terrain;

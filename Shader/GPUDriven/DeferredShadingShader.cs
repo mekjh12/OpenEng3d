@@ -5,7 +5,7 @@ namespace Shader
 {
     /// <summary>
     /// Deferred Rendering의 라이팅 패스 셰이더
-    /// G-Buffer를 읽어서 Ambient + Diffuse 라이팅 계산
+    /// G-Buffer를 읽어서 Ambient + Diffuse 라이팅 + Shadow 계산
     /// </summary>
     public class DeferredShadingShader : ShaderProgramBase
     {
@@ -13,19 +13,23 @@ namespace Shader
         const string GEOMETRY_FILE = @"\Shader\GPUDriven\glsl\post.gs.glsl";
         const string FRAGMENT_FILE = @"\Shader\GPUDriven\glsl\deferred_shading.frag";
 
+        private int loc_lightView;
+        private int loc_lightProj;
+
         public DeferredShadingShader(string projectPath) : base()
         {
             _name = this.GetType().Name;
             VertFileName = projectPath + VERTEX_FILE;
             GeomFileName = projectPath + GEOMETRY_FILE;
             FragFileName = projectPath + FRAGMENT_FILE;
-
             InitCompileShader();
         }
 
         protected override void GetAllUniformLocations()
         {
             // G-Buffer 텍스처들은 셰이더 내부에서 고정 바인딩 사용
+            loc_lightView = GetUniformLocation("lightView");
+            loc_lightProj = GetUniformLocation("lightProj");
         }
 
         protected override void BindAttributes()
@@ -57,10 +61,29 @@ namespace Shader
             Gl.ActiveTexture(TextureUnit.Texture2);
             Gl.BindTexture(TextureTarget.Texture2d, normalTexture);
 
-            // Depth (옵션)
+            // Depth
             SetInt("gDepth", 3);
             Gl.ActiveTexture(TextureUnit.Texture3);
             Gl.BindTexture(TextureTarget.Texture2d, depthTexture);
+        }
+
+        /// <summary>
+        /// Shadow Map 텍스처 바인딩
+        /// </summary>
+        public void LoadShadowMap(uint shadowMapTexture)
+        {
+            SetInt("gShadowMap", 4);
+            Gl.ActiveTexture(TextureUnit.Texture4);
+            Gl.BindTexture(TextureTarget.Texture2d, shadowMapTexture);
+        }
+
+        /// <summary>
+        /// Light Space 행렬 로드
+        /// </summary>
+        public void LoadLightMatrices(in Matrix4x4f lightView, in Matrix4x4f lightProj)
+        {
+            LoadUniformMatrix4(loc_lightView, lightView);
+            LoadUniformMatrix4(loc_lightProj, lightProj);
         }
     }
 }

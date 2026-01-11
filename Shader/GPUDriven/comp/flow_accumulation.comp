@@ -1,0 +1,197 @@
+﻿#version 430 core
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+// 입력
+layout(binding = 0, r32f) uniform readonly image2D u_HeightMap;
+
+// 출력 (Flow Accumulation Map)
+layout(binding = 1, r32ui) uniform uimage2D u_AccumulationMap;
+
+uniform int u_Width;
+uniform int u_Height;
+uniform int u_MaxIterations;       // 최대 추적 거리
+uniform float u_MinSlopeThreshold; // 최소 경사 임계값
+uniform int u_SearchRadius;        // 평지일 때 검색 반경
+uniform float u_MinStartHeight;    // ⭐ 시작점 최소 높이 (0.0~1.0)
+uniform int u_TracesPerPoint;      // ⭐ 한 점당 추적 횟수
+
+// 8방향 이웃
+const ivec2 neighbors[8] = ivec2[8](
+    ivec2(-1, -1), ivec2(0, -1), ivec2(1, -1),
+    ivec2(-1,  0),               ivec2(1,  0),
+    ivec2(-1,  1), ivec2(0,  1), ivec2(1,  1)
+);
+
+const float distances[8] = float[8](
+    1.414, 1.0, 1.414,
+    1.0,        1.0,
+    1.414, 1.0, 1.414
+);
+
+bool IsInside(ivec2 p) 
+{
+    return p.x >= 0 && p.x < u_Width && p.y >= 0 && p.y < u_Height;
+}
+
+float GetHeight(ivec2 p) 
+{
+    if (!IsInside(p)) 
+        return 999999.0;
+    
+    float h = imageLoad(u_HeightMap, p).r;
+    if (isnan(h) || isinf(h)) 
+        h = 0.5;
+    
+    return h;
+}
+
+/// <summary>
+/// 간단한 난수 생성기 (Pseudo-random)
+/// </summary>
+float Random(ivec2 co, int seed)
+{
+    float a = 12.9898;
+    float b = 78.233;
+    float c = 43758.5453;
+    float dt = dot(vec2(co.x, co.y), vec2(a, b)) + float(seed);
+    float sn = mod(dt, 3.14159);
+    return fract(sin(sn) * c);
+}
+
+/// <summary>
+/// 가장 급한 경사 방향 찾기 (확률적 변형 추가)
+/// </summary>
+int FindSteepestDescentStochastic(ivec2 pos, int seed)
+{
+    float myHeight = GetHeight(pos);
+    int steepestIdx = -1;
+    float maxSlope = 0.0;
+    float secondMaxSlope = 0.0;
+    int secondIdx = -1;
+    
+    // 가장 급한 경사와 두 번째 급한 경사 찾기
+    for (int i = 0; i < 8; i++)
+    {
+        ivec2 neighborPos = pos + neighbors[i];
+        if (!IsInside(neighborPos)) 
+            continue;
+        
+        float neighborHeight = GetHeight(neighborPos);
+        float heightDiff = myHeight - neighborHeight;
+        
+        if (heightDiff > u_MinSlopeThreshold)
+        {
+            float slope = heightDiff / distances[i];
+            
+            if (slope > maxSlope)
+            {
+                // 두 번째를 밀어내고 첫 번째로
+                secondMaxSlope = maxSlope;
+                secondIdx = steepestIdx;
+                
+                maxSlope = slope;
+                steepestIdx = i;
+            }
+            else if (slope > secondMaxSlope)
+            {
+                secondMaxSlope = slope;
+                secondIdx = i;
+            }
+        }
+    }
+    
+    // ⭐ 확률적 선택 (80% 가장 급한 곳, 20% 두 번째 급한 곳)
+    if (secondIdx >= 0 && Random(pos, seed) > 0.8)
+    {
+        return secondIdx;
+    }
+    
+    return steepestIdx;
+}
+
+/// <summary>
+/// 평지일 때 더 넓은 범위에서 가장 낮은 곳 찾기
+/// </summary>
+ivec2 FindLowestInRadius(ivec2 pos, int radius)
+{
+    float myHeight = GetHeight(pos);
+    ivec2 lowestPos = pos;
+    float lowestHeight = myHeight;
+    
+    for (int i = 0; i < 8; i++)
+    {
+        ivec2 samplePos = pos + neighbors[i] * radius;
+        
+        if (!IsInside(samplePos))
+            continue;
+        
+        float h = GetHeight(samplePos);
+        
+        if (h < lowestHeight - u_MinSlopeThreshold)
+        {
+            lowestHeight = h;
+            lowestPos = samplePos;
+        }
+    }
+    
+    return lowestPos;
+}
+
+/// <summary>
+/// 한 점에서 경로 추적 (단일 추적)
+/// </summary>
+void TracePath(ivec2 startPos, int seed)
+{
+    ivec2 currentPos = startPos;
+    int iterations = 0;
+    
+    while (iterations < u_MaxIterations)
+    {
+        // 카운트 증가
+        imageAtomicAdd(u_AccumulationMap, currentPos, 1u);
+        
+        // 가장 급한 경사 찾기 (확률적)
+        int steepestIdx = FindSteepestDescentStochastic(currentPos, seed + iterations);
+        
+        if (steepestIdx >= 0)
+        {
+            currentPos = currentPos + neighbors[steepestIdx];
+        }
+        else
+        {
+            // 평지 또는 최저점 도달
+            ivec2 nextPos = FindLowestInRadius(currentPos, u_SearchRadius);
+            
+            if (nextPos.x == currentPos.x && nextPos.y == currentPos.y)
+            {
+                // 진짜 최저점 도달
+                break;
+            }
+            
+            currentPos = nextPos;
+        }
+        
+        iterations++;
+    }
+}
+
+void main()
+{
+    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
+    
+    if (!IsInside(pos)) 
+        return;
+    
+    float height = GetHeight(pos);
+    
+    // ⭐ 높이가 임계값 이상인 점만 처리
+    if (height < u_MinStartHeight)
+        return;
+    
+    // ⭐ 한 점에서 여러 번 경로 추적
+    for (int i = 0; i < u_TracesPerPoint; i++)
+    {
+        TracePath(pos, i * 1000);  // 각 추적마다 다른 시드
+    }
+}

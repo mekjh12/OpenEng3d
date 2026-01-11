@@ -272,7 +272,22 @@
     <Compile Include="FormUnifiedModel.Designer.cs">
       <DependentUpon>FormUnifiedModel.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormValley.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormValley.Designer.cs">
+      <DependentUpon>FormValley.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormWaterFlow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormWaterFlow.Designer.cs">
+      <DependentUpon>FormWaterFlow.cs</DependentUpon>
+    </Compile>
     <Compile Include="IRenderer.cs" />
+    <Compile Include="LabeledProgressBar.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="FormAsyncTest.resx">
@@ -373,6 +388,12 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormUnifiedModel.resx">
       <DependentUpon>FormUnifiedModel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormValley.resx">
+      <DependentUpon>FormValley.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormWaterFlow.resx">
+      <DependentUpon>FormWaterFlow.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

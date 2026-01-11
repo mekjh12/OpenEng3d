@@ -1,0 +1,186 @@
+﻿#version 430 core
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+// RG32F 포맷 사용 (R: 수심, G: 유량)
+layout(binding = 0, r32f) uniform readonly image2D u_HeightMap;
+layout(binding = 1, rg32f) uniform readonly image2D u_WaterBufferRead;
+layout(binding = 2, rg32f) uniform writeonly image2D u_WaterBufferWrite;
+
+uniform float u_DeltaWater;      // 비 (Rain)
+uniform float u_FlowRate;        // 유속 (0.0 ~ 1.0)
+uniform float u_EvaporationRate; // 증발률
+uniform int u_Width;
+uniform int u_Height;
+uniform float u_MaxWaterDepth;   // ⭐ 추가: 최대 수심 제한
+
+const ivec2 neighbors[8] = ivec2[8](
+    ivec2(-1, -1), ivec2(0, -1), ivec2(1, -1),
+    ivec2(-1,  0),               ivec2(1,  0),
+    ivec2(-1,  1), ivec2(0,  1), ivec2(1,  1)
+);
+
+// 대각선 거리 보정
+const float distances[8] = float[8](
+    1.414, 1.0, 1.414,
+    1.0,        1.0,
+    1.414, 1.0, 1.414
+);
+
+/// <summary>
+/// 맵 안쪽인지 체크
+/// </summary>
+bool IsInside(ivec2 p) 
+{
+    return p.x >= 0 && p.x < u_Width && p.y >= 0 && p.y < u_Height;
+}
+
+/// <summary>
+/// 수면 높이 가져오기 (지형 + 물)
+/// </summary>
+float GetWaterLevel(ivec2 p) 
+{
+    if (!IsInside(p)) 
+        return 999999.0; // ⭐ 경계는 매우 높게 (물이 맵 밖으로 안 빠짐)
+    
+    float h = imageLoad(u_HeightMap, p).r;
+    float w = imageLoad(u_WaterBufferRead, p).r;
+    
+    // ⭐ 안전장치: NaN/Infinity 체크
+    if (isnan(h) || isinf(h)) h = 0.0;
+    if (isnan(w) || isinf(w)) w = 0.0;
+    
+    return h + w;
+}
+
+/// <summary>
+/// 수심 가져오기
+/// </summary>
+float GetWaterDepth(ivec2 p) 
+{
+    if (!IsInside(p)) 
+        return 0.0;
+    
+    float w = imageLoad(u_WaterBufferRead, p).r;
+    
+    // ⭐ 안전장치
+    if (isnan(w) || isinf(w)) 
+        return 0.0;
+    
+    return w;
+}
+
+void main()
+{
+    ivec2 coords = ivec2(gl_GlobalInvocationID.xy);
+    if (!IsInside(coords)) 
+        return;
+
+    float myHeight = imageLoad(u_HeightMap, coords).r;
+    vec2 myData = imageLoad(u_WaterBufferRead, coords).rg;
+    float myWater = myData.r;
+    float myFlux = myData.g;
+    
+    // ⭐ 안전장치: 입력값 검증
+    if (isnan(myHeight) || isinf(myHeight)) myHeight = 0.0;
+    if (isnan(myWater) || isinf(myWater)) myWater = 0.0;
+    
+    myHeight = clamp(myHeight, 0.0, 1.0);      // 높이 정규화 범위
+    myWater = clamp(myWater, 0.0, u_MaxWaterDepth);
+    
+    float myLevel = myHeight + myWater;
+    
+    // ========================================
+    // 1. 유입량 (Inflow): 이웃에서 흘러들어오는 물
+    // ========================================
+    
+    float totalInflow = 0.0;
+    
+    for (int i = 0; i < 8; i++)
+    {
+        ivec2 neighborPos = coords + neighbors[i];
+        if (!IsInside(neighborPos)) 
+            continue;
+        
+        float nLevel = GetWaterLevel(neighborPos);
+        float nWater = GetWaterDepth(neighborPos);
+        
+        // 이웃이 나보다 높은가?
+        if (nLevel > myLevel + 0.0001) // ⭐ 최소 차이 임계값
+        {
+            float diff = nLevel - myLevel;
+            diff = clamp(diff, 0.0, 1.0); // ⭐ 높이 차이 제한
+            
+            // ⭐ 단순화된 흐름 공식 (안정화)
+            float flowFactor = diff * u_FlowRate * 0.1; // ⭐ 10.0 → 0.1로 감소
+            flowFactor = clamp(flowFactor, 0.0, 1.0);
+            
+            float flowAmount = nWater * flowFactor * 0.125; // 1/8 (8개 이웃)
+            flowAmount = clamp(flowAmount, 0.0, nWater * 0.5); // ⭐ 이웃 물의 50% 이하만
+            
+            totalInflow += flowAmount;
+        }
+    }
+    
+    totalInflow = clamp(totalInflow, 0.0, u_MaxWaterDepth); // ⭐ 최대 유입량 제한
+    
+    // ========================================
+    // 2. 유출량 (Outflow): 낮은 곳으로 물 보내기
+    // ========================================
+    
+    float totalOutflow = 0.0;
+    float elevationDiffSum = 0.0;
+    
+    // 낮은 이웃들의 총 낙차 계산
+    for (int i = 0; i < 8; i++)
+    {
+        ivec2 neighborPos = coords + neighbors[i];
+        float nLevel = GetWaterLevel(neighborPos);
+        
+        if (nLevel < myLevel - 0.0001) // ⭐ 최소 차이 임계값
+        {
+            float diff = myLevel - nLevel;
+            diff = clamp(diff, 0.0, 1.0); // ⭐ 제한
+            
+            elevationDiffSum += diff / distances[i]; // 거리 보정
+        }
+    }
+    
+    // 낙차에 비례하여 물 분배
+    if (elevationDiffSum > 0.0001)
+    {
+        float potentialOutflow = myWater * u_FlowRate;
+        totalOutflow = clamp(potentialOutflow, 0.0, myWater * 0.9); // ⭐ 내 물의 90% 이하만
+    }
+    
+    // ========================================
+    // 3. 물 업데이트
+    // ========================================
+    
+    float newWater = myWater + u_DeltaWater + totalInflow - totalOutflow;
+    
+    // ⭐ 안전장치
+    newWater = max(0.0, newWater);
+    newWater = min(newWater, u_MaxWaterDepth);
+    
+    // 증발
+    newWater *= (1.0 - u_EvaporationRate);
+    
+    // ⭐ 최종 검증
+    if (isnan(newWater) || isinf(newWater))
+        newWater = 0.0;
+    
+    // ========================================
+    // 4. 유량(Flux) 계산
+    // ========================================
+    
+    float flux = (totalInflow + totalOutflow) * 0.5;
+    flux = clamp(flux, 0.0, u_MaxWaterDepth); // ⭐ 제한
+    
+    // ⭐ 최종 검증
+    if (isnan(flux) || isinf(flux))
+        flux = 0.0;
+    
+    // 결과 저장 (R: 수심, G: 유량)
+    imageStore(u_WaterBufferWrite, coords, vec4(newWater, flux, 0.0, 1.0));
+}

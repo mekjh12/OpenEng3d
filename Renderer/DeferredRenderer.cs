@@ -9,21 +9,26 @@ namespace Renderer
         DeferredShadingShader _shader;
         GBuffer _gbuffer;
 
+        // Shadow Map 정보
+        private uint _shadowMapTexture;
+        private Matrix4x4f _lightViewMatrix;
+        private Matrix4x4f _lightProjMatrix;
+
         public DeferredRenderer(GBuffer gbuffer, DeferredShadingShader shader)
         {
             _gbuffer = gbuffer;
             _shader = shader;
         }
 
-        public void Render(int w, int h)
+        public void SetShadowMap(uint shadowMapTexture, Matrix4x4f lightView, Matrix4x4f lightProj)
         {
-            // 기본 프레임버퍼로 전환
-            Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-            Gl.Viewport(0, 0, w, h);
+            _shadowMapTexture = shadowMapTexture;
+            _lightViewMatrix = lightView;
+            _lightProjMatrix = lightProj;
+        }
 
-            // 깊이 테스트 비활성화 (풀스크린 쿼드)
-            Gl.Disable(EnableCap.DepthTest);
-
+        public void Render(int width, int height)
+        {
             _shader.Bind();
 
             // G-Buffer 텍스처 바인딩
@@ -34,13 +39,14 @@ namespace Renderer
                 _gbuffer.DepthTextureId
             );
 
+            // Shadow Map 바인딩
+            _shader.LoadShadowMap(_shadowMapTexture);
+            _shader.LoadLightMatrices(_lightViewMatrix, _lightProjMatrix);
+
             // 풀스크린 쿼드 렌더링
             Gl.DrawArrays(PrimitiveType.Points, 0, 1);
 
             _shader.Unbind();
-
-            // 깊이 테스트 복원
-            Gl.Enable(EnableCap.DepthTest);
         }
     }
 

@@ -15,6 +15,8 @@ namespace Shader
         const string TES_FILE = @"\Shader\TerrainShader\common\terrain.tes.glsl";
         const string FRAGMENT_FILE = @"\Shader\TerrainShader\new_terrain.frag";
 
+        private int loc_time;
+
         private int loc_heightScale;
         private int loc_normalMatrix;
         private int loc_model;
@@ -30,6 +32,9 @@ namespace Shader
         private int loc_detailMap;
         private int loc_isDetailMap;
         private int loc_rockTexture;
+        private int loc_rockMap;
+        private int loc_riverMap;
+        private int loc_mossRockTexture;
 
         private int loc_height0;
         private int loc_height1;
@@ -67,6 +72,8 @@ namespace Shader
 
         protected override void GetAllUniformLocations()
         {
+            loc_time = GetUniformLocation("gTime");
+
             loc_heightScale = GetUniformLocation("heightScale");
             loc_normalMatrix = GetUniformLocation("normalMatrix");
             loc_model = GetUniformLocation("model");
@@ -82,6 +89,7 @@ namespace Shader
             loc_detailMap = GetUniformLocation("gDetailMap");
             loc_isDetailMap = GetUniformLocation("gIsDetailMap");
             loc_rockTexture = GetUniformLocation("gRockTexture");
+            loc_riverMap = GetUniformLocation("gRiverMap");
 
             loc_height0 = GetUniformLocation("gHeight0");
             loc_height1 = GetUniformLocation("gHeight1");
@@ -100,9 +108,16 @@ namespace Shader
             loc_faultZoneIntensity = GetUniformLocation("gFaultZoneIntensity");
 
             loc_onFunc = GetUniformLocation("onFunc");
+
+            loc_mossRockTexture = GetUniformLocation("gMossRockTexture");
         }
 
         // --- 기존 Load 메서드 생략 (유지됨) ---
+
+        public void LoadTime(float time)
+        {
+            Gl.Uniform1(loc_time, time);
+        }
 
         public void LoadHeightScale(float value) { Gl.Uniform1(loc_heightScale, value); }
         public void LoadModelMatrix(Matrix4x4f model) { LoadUniformMatrix4(loc_model, model); }
@@ -122,6 +137,13 @@ namespace Shader
         public void LoadEnableFunc(bool enable)
         {
             Gl.Uniform1(loc_onFunc, enable ? 1 : 0);
+        }
+
+        public void LoadRiverMap(uint texture)
+        {
+            Gl.Uniform1(loc_riverMap, 10);
+            Gl.ActiveTexture(TextureUnit.Texture10);
+            Gl.BindTexture(TextureTarget.Texture2d, texture);
         }
 
         // --- 단층(Fault) 관련 Load 메서드 ---
@@ -154,6 +176,15 @@ namespace Shader
             Gl.ActiveTexture(TextureUnit.Texture8);
             Gl.BindTexture(TextureTarget.Texture2d, texture);
         }
+
+        public void LoadMossRockTexture(uint texture)
+        {
+            // RockTexture는 기존 11번 유닛 유지
+            Gl.Uniform1(loc_mossRockTexture, 11);
+            Gl.ActiveTexture(TextureUnit.Texture11);
+            Gl.BindTexture(TextureTarget.Texture2d, texture);
+        }
+
 
         public void LoadTerrainTextures(uint tex0, uint tex1, uint tex2, uint tex3, uint tex4)
         {

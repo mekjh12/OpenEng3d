@@ -69,6 +69,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GPUDriven", "GPU\GPUDriven.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BillBoard", "BillBoard\BillBoard.csproj", "{D4779068-A853-49E5-8B5B-80EA6E4562A1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Noise", "Noise\Noise.csproj", "{6B789917-6A24-41C4-A85F-CE6AEDF9257F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -183,6 +185,10 @@ Global
 		{D4779068-A853-49E5-8B5B-80EA6E4562A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D4779068-A853-49E5-8B5B-80EA6E4562A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D4779068-A853-49E5-8B5B-80EA6E4562A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6B789917-6A24-41C4-A85F-CE6AEDF9257F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B789917-6A24-41C4-A85F-CE6AEDF9257F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B789917-6A24-41C4-A85F-CE6AEDF9257F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B789917-6A24-41C4-A85F-CE6AEDF9257F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

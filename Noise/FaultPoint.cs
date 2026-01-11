@@ -1,7 +1,7 @@
 ﻿using OpenGL;
 using System;
 
-namespace Terrain
+namespace Noise
 {
     /// <summary>
     /// 단층점 데이터 - 지형의 지질학적 단층을 정의하는 보로노이 셀의 중심점

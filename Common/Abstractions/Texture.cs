@@ -30,6 +30,9 @@ namespace Common.Abstractions
         private int _height;
         private TextureMapType _textureType;
 
+        public int Width => _width;
+        public int Height => _height;
+
         public TextureMapType TextureType
         {
             get => _textureType;

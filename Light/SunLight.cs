@@ -9,7 +9,7 @@ namespace Lights
     public class SunLight
     {
         private SolarAngles _angles;
-        private Vertex3f _direction;
+        private Vertex3f _direction;    // 태양에서 지표면을 향하는 벡터
 
         public struct SolarAngles
         {

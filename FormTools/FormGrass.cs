@@ -216,7 +216,7 @@ namespace FormTools
             // 지형 렌더러 초기화
             _terrainRenderer = new TerrainRenderer(_terrainShader, PROJECT_PATH);
             _terrainRenderer.SetGroundTextures(_levelTextureMap, _normalMapTexture, _detailTextureMap);
-            _terrainRenderer.SetRockTexture(_rockTexture);
+            //_terrainRenderer.SetRockTexture(_rockTexture);
 
             // 풀 시스템 초기화
             _grassSystem = new GrassSystem(PROJECT_PATH);

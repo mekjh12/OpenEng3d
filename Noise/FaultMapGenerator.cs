@@ -4,11 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.IO;
 using ZetaExt;
 
 
-namespace Terrain
+namespace Noise
 {
     /// <summary>
     /// 지형의 지질학적 단층선을 표현하는 보로노이 텍스처 생성기

@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{E5F8184D-2B9B-4E0A-A11F-523394F67292}</ProjectGuid>
+    <ProjectGuid>{6B789917-6A24-41C4-A85F-CE6AEDF9257F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Renderer</RootNamespace>
-    <AssemblyName>Renderer</AssemblyName>
+    <RootNamespace>Noise</RootNamespace>
+    <AssemblyName>Noise</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -56,69 +56,23 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AABBRenderer.cs" />
-    <Compile Include="Billboard\CrossBillboardRenderer.cs" />
-    <Compile Include="DeferredRenderer.cs" />
-    <Compile Include="Grass\GrassBaseStruct.cs" />
-    <Compile Include="Grass\GrassInstance.cs" />
-    <Compile Include="Grass\GrassInstanceData.cs" />
-    <Compile Include="Grass\GrassRenderer.cs" />
-    <Compile Include="Grass\GrassRendererGPUDriven.cs" />
-    <Compile Include="Grass\GrassSystem.cs" />
-    <Compile Include="Billboard\ImposterRenderer.cs" />
-    <Compile Include="Grass\GrassSystemGPUDriven.cs" />
-    <Compile Include="Grass\GrassTileManager.cs" />
-    <Compile Include="Grass\GrassTile.cs" />
-    <Compile Include="SimpFrameBuffer.cs" />
-    <Compile Include="Renderer3d.cs" />
+    <Compile Include="FaultMapGenerator.cs" />
+    <Compile Include="FaultPoint.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Sky\SkyRenderer.cs" />
-    <Compile Include="Terrain\ShadowMap.cs" />
-    <Compile Include="Terrain\TerrainRenderer.cs" />
-    <Compile Include="Terrain\WaterFlowSimulator.cs" />
-    <Compile Include="UnifiedModelRenderer.cs" />
-    <Compile Include="WorldAxisRenderer.cs" />
+    <Compile Include="SimplexNoise.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Camera3d\Camera3d.csproj">
-      <Project>{f5477333-11c8-4e59-8084-1bc3c01df3fe}</Project>
-      <Name>Camera3d</Name>
-    </ProjectReference>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Common\Common.csproj">
       <Project>{a88a06c4-c819-47a1-828f-db054c066bee}</Project>
       <Name>Common</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Geometry\Geometry.csproj">
-      <Project>{3f08288e-2eba-4e72-843d-7bf773d8f6cb}</Project>
-      <Name>Geometry</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\GlWindow\glWindow.csproj">
-      <Project>{03f9af52-780f-4991-9aad-4127ba96ab72}</Project>
-      <Name>glWindow</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Model3d\Model3d.csproj">
-      <Project>{7a699d36-8869-4b18-a70f-2231a948d828}</Project>
-      <Name>Model3d</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Noise\Noise.csproj">
-      <Project>{6b789917-6a24-41c4-a85f-ce6aedf9257f}</Project>
-      <Name>Noise</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Shader\Shader.csproj">
-      <Project>{3b2ecaa9-57bd-4b21-bfb8-b5de46c80d4b}</Project>
-      <Name>Shader</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Terrain\Terrain.csproj">
-      <Project>{c7531007-5419-46d3-a5bc-0a6ba926d05c}</Project>
-      <Name>Terrain</Name>
     </ProjectReference>
     <ProjectReference Include="..\ZetaExt\ZetaExt.csproj">
       <Project>{878cf1d9-16ce-4e58-a6e7-165d00c56d1f}</Project>
       <Name>ZetaExt</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

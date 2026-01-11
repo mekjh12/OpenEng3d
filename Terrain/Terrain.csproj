@@ -54,8 +54,6 @@
   <ItemGroup>
     <Compile Include="ChunkCreator.cs" />
     <Compile Include="EntityBatchProcessor.cs" />
-    <Compile Include="FaultMapGenerator.cs" />
-    <Compile Include="FaultPoint.cs" />
     <Compile Include="ITerrainCulling.cs" />
     <Compile Include="NormalMapGenerator.cs" />
     <Compile Include="RecentRegionCache.cs" />
@@ -93,6 +91,10 @@
     <ProjectReference Include="..\Model3d\Model3d.csproj">
       <Project>{7a699d36-8869-4b18-a70f-2231a948d828}</Project>
       <Name>Model3d</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Noise\Noise.csproj">
+      <Project>{6b789917-6a24-41c4-a85f-ce6aedf9257f}</Project>
+      <Name>Noise</Name>
     </ProjectReference>
     <ProjectReference Include="..\Occlusion\Occlusion.csproj">
       <Project>{00582202-d29d-472e-ac4a-02152800b298}</Project>

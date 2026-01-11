@@ -89,7 +89,9 @@
     <Compile Include="GPUDriven\CrossBillboardNormalShader.cs" />
     <Compile Include="GPUDriven\DeferredShadingShader.cs" />
     <Compile Include="GPUDriven\DrawArraysIndirectCommand.cs" />
+    <Compile Include="GPUDriven\FlowAccumulationComputeShader.cs" />
     <Compile Include="GPUDriven\FrustumCullingComputeShader.cs" />
+    <Compile Include="GPUDriven\GaussianBlurComputeShader.cs" />
     <Compile Include="GPUDriven\GPUCrossBillboard.cs" />
     <Compile Include="GPUDriven\GPUBillboardShader.cs" />
     <Compile Include="GPUDriven\DepthDebugInstancedShader.cs" />
@@ -105,6 +107,7 @@
     <Compile Include="GPUDriven\QuadTreeCullingComputeShader.cs" />
     <Compile Include="GPUDriven\SimpleQuadTestShader.cs" />
     <Compile Include="GPUDriven\UpdateIndirectCommandsComputeShader.cs" />
+    <Compile Include="GPUDriven\WaterFlowComputeShader.cs" />
     <Compile Include="GPUDriven\WorldAxisShader.cs" />
     <Compile Include="GPUDriven\GrassShaderGPUDriven.cs" />
     <Compile Include="ImpostorShader\ImpostorInstancedShader.cs" />
@@ -121,6 +124,7 @@
     <Compile Include="TerrainShader\TerrainChunkShader.cs" />
     <Compile Include="TerrainShader\SimpleTerrainShader.cs" />
     <Compile Include="TerrainShader\TerrainNormalLineShader.cs" />
+    <Compile Include="TerrainShader\shadowmap\TerrainShadowMapShader.cs" />
     <Compile Include="UnlitShader\ModelNormalShader.cs" />
     <Compile Include="VegetationBillboardShader\VegetationBillboardShader.cs" />
     <Compile Include="ImpostorShader\ImpostorShader.cs" />
@@ -175,11 +179,13 @@
     <None Include="FogShader\advanced_fog.frag" />
     <None Include="FogShader\fog.frag" />
     <None Include="FogShader\fog.vert" />
+    <None Include="GPUDriven\comp\flow_accumulation.comp" />
     <None Include="GPUDriven\comp\grass_culling.comp" />
     <None Include="GPUDriven\comp\grass_culling_finalize.comp" />
     <None Include="GPUDriven\comp\hiCulling.glsl" />
     <None Include="GPUDriven\comp\indices_ordering.comp" />
     <None Include="GPUDriven\comp\updateIndirectCommands.comp" />
+    <None Include="GPUDriven\comp\water_flow.comp" />
     <None Include="GPUDriven\glsl\aabb_instance.frag" />
     <None Include="GPUDriven\glsl\aabb_instance.gem.glsl" />
     <None Include="GPUDriven\glsl\aabb_instance.vert" />
@@ -240,6 +246,10 @@
     <None Include="SkyDomeShader\skydome.frag" />
     <None Include="SkyDomeShader\skydome.vert" />
     <None Include="TerrainShader\new_terrain.frag" />
+    <None Include="TerrainShader\shadowmap\shadowmap.frag" />
+    <None Include="TerrainShader\shadowmap\shadowmap.tcs.glsl" />
+    <None Include="TerrainShader\shadowmap\shadowmap.tes.glsl" />
+    <None Include="TerrainShader\shadowmap\shadowmap.vert" />
     <None Include="TerrainShader\terrain_depth.frag" />
     <None Include="TerrainShader\simple.vert" />
     <None Include="TerrainShader\simple.frag" />
@@ -321,6 +331,9 @@
       <Project>{a88a06c4-c819-47a1-828f-db054c066bee}</Project>
       <Name>Common</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="GPUDriven\comp\gaussian_blur.comp" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

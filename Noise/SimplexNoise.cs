@@ -1,7 +1,7 @@
 ﻿using OpenGL;
 using System;
 
-namespace Renderer
+namespace Noise
 {
     /// <summary>
     /// 2D Simplex Noise 구현

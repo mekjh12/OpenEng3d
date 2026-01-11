@@ -1,5 +1,6 @@
 ﻿using Common.Abstractions;
 using Model3d;
+using Noise;
 using OpenGL;
 using Shader;
 using System;
@@ -14,18 +15,23 @@ namespace Renderer
     {
         // 높이기반 텍스처 소스 : https://polyhaven.com/textures/terrain
 
-
         TerrainTessellationShader _shader;
         TerrainNormalLineShader _nshader;
+        TerrainShadowMapShader _shadowShader;
+        ShadowMap _shadowmap;
+
         Entity _entity;
+
         Texture[] _groundTextures;
         Texture _detailTexture;
         Texture _normalTexture;
         Texture _rockTexture;
         Texture _faultTexture;
+        Texture _riverMap;
+        Texture _mossRockTexture;
 
+        float _time = 0.0f;
         bool _isNormalVisualization = false;
-
 
         // 단층 파라미터 설정
         float _faultScale = 0.0001f;           // UV 스케일 (값이 작을수록 넓은 범위 표현)
@@ -35,11 +41,109 @@ namespace Renderer
 
         // 테스트 기능 온오프
         bool _onFunc = true;
+        private Matrix4x4f _lightProjMatrix;
+        private Matrix4x4f _lightViewMatrix;
+
+
+        public uint ShadowMapTextureID => _shadowmap.DepthTextureID;
+        public Matrix4x4f LightViewMatrix => _lightViewMatrix;
+        public Matrix4x4f LightProjMatrix => _lightProjMatrix;
 
         public TerrainRenderer(TerrainTessellationShader shader, string projectPath)
         {
             _shader = shader;
             _nshader = new TerrainNormalLineShader(projectPath);
+            _shadowShader = new TerrainShadowMapShader(projectPath);  // ⭐ 추가
+            _shadowmap = new ShadowMap(2048, 2048);  // 해상도 상향 권장
+        }
+
+        /// <summary>
+        /// 태양 관점에서 Shadow Map을 렌더링합니다.
+        /// </summary>
+        /// <param name="sunDirection">태양에서 지표로 향하는 벡터</param>
+        /// <param name="heightScale"></param>
+        public void RenderShadowMap(Vertex3f sunDirection, float heightScale = 200.0f)
+        {
+            if (_entity is null || _entity.Model == null) return;
+
+            // 지형 중심과 크기 계산
+            Vertex3f terrainCenter = new Vertex3f(0, 0, 0);
+            float terrainSize = 1000.0f;
+
+            // lightSpaceMatrix 계산 및 저장
+            CalculateLightSpaceMatrix(
+                sunDirection,
+                terrainCenter,
+                terrainSize,
+                ref _lightProjMatrix,
+                ref _lightViewMatrix
+            );
+
+            // Shadow Map FBO 바인딩
+            _shadowmap.Bind();
+
+            // 앞면만 렌더링 (뒷면 컬링)
+            Gl.Enable(EnableCap.CullFace);
+            Gl.CullFace(CullFaceMode.Back);
+
+            _shadowShader.Bind();
+            _shadowShader.LoadLightProjMatrix(_lightProjMatrix);
+            _shadowShader.LoadLightViewMatrix(_lightViewMatrix);
+            _shadowShader.LoadModelMatrix(_entity.ModelMatrix);
+            _shadowShader.LoadHeightScale(heightScale);
+
+            foreach (RawModel3d rawModel in _entity.Model)
+            {
+                Gl.BindVertexArray(rawModel.VAO);
+                Gl.EnableVertexAttribArray(0);
+                Gl.EnableVertexAttribArray(1);
+
+                TexturedModel modelTextured = rawModel as TexturedModel;
+                _shadowShader.LoadHeightMap(modelTextured.Texture.TextureID);
+
+                Gl.BindBuffer(BufferTarget.ElementArrayBuffer, rawModel.IBO);
+                Gl.PatchParameter(PatchParameterName.PatchVertices, 4);
+                Gl.DrawElements(PrimitiveType.Patches, rawModel.VertexCount, DrawElementsType.UnsignedInt, IntPtr.Zero);
+
+                Gl.DisableVertexAttribArray(1);
+                Gl.DisableVertexAttribArray(0);
+                Gl.BindVertexArray(0);
+            }
+
+            _shadowShader.Unbind();
+
+            // ⭐ 앞면만 렌더링으로 복원 (뒷면 컬링)
+            Gl.CullFace(CullFaceMode.Back);
+
+            _shadowmap.Unbind();
+        }
+
+        /// <summary>
+        /// 태양 관점의 Light Space Matrix를 계산합니다.
+        /// </summary>
+        private void CalculateLightSpaceMatrix(Vertex3f sunDirection, Vertex3f terrainCenter, float terrainSize,
+            ref Matrix4x4f lightProj, ref Matrix4x4f lightView)
+        {
+            // 태양 위치 (지형에서 충분히 멀리)
+            Vertex3f lightPos = terrainCenter - sunDirection.Normalized * terrainSize * 2.0f;
+
+            // Light View Matrix
+            lightView = Matrix4x4f.LookAt(
+                lightPos,
+                terrainCenter,
+                new Vertex3f(0, 0, 1)  // Up 벡터
+            );
+
+            // Orthographic Projection (태양은 평행광이지만 테스트)
+            // ⭐ 평행 투영 (Orthographic Projection)
+            // 태양은 평행광이므로 원근이 없는 평행투영 사용
+            float orthoSize = terrainSize * 1.3f;  // 지형을 충분히 포함하는 크기
+
+            lightProj = Matrix4x4f.Ortho(
+                -orthoSize, orthoSize,  // left, right
+                -orthoSize, orthoSize,  // bottom, top
+                0.1f, terrainSize * 4.0f  // near, far
+            );
         }
 
         public void ToggleFunction()
@@ -58,6 +162,17 @@ namespace Renderer
             //FaultMapGenerator.SaveTexture(_faultTexture, @"C:\Users\mekjh\OneDrive\바탕 화면\fault.png", 512, 512);
         }
 
+        public void LoadMossRockTexture(string fileName)
+        {
+            _mossRockTexture = new Texture(fileName);
+        }
+
+        public void LoadRiverMapTexture(string fileName)
+        {
+            _riverMap = new Texture(fileName);
+        }
+
+        [Obsolete("폐기할 예정입니다.")]
         public void SetGroundTextures(Texture[] groundTextures, Texture normalTexture, Texture detailTexture)
         {
             _groundTextures = groundTextures;
@@ -65,9 +180,33 @@ namespace Renderer
             _normalTexture = normalTexture;
         }
 
-        public void SetRockTexture(Texture rockTexture)
+        public void LoadRockTexture(string fileName)
         {
-            _rockTexture = rockTexture;
+            _rockTexture = new Texture(fileName);
+        }
+
+        public void Update(float duration)
+        {
+            _time += duration;
+        }
+
+        public void LoadTerrainLevelTextures(string path, string[] fileNames)
+        {
+            _groundTextures = new Texture[fileNames.Length];
+            for (int i = 0; i < fileNames.Length; i++)
+            {
+                _groundTextures[i] = new Texture(path + fileNames[i]);
+            }
+        }
+
+        public void LoadDetailTexture(string fileName)
+        {
+            _detailTexture = new Texture(fileName);
+        }
+
+        public void LoadTerrainNormalMap(string fileName)
+        {
+            _normalTexture = new Texture(fileName);
         }
 
         public void Render(Camera camera, bool isDetailMap = true, float heightScale = 1.0f)
@@ -81,6 +220,34 @@ namespace Renderer
             }
 
             _shader.Bind();
+            _shader.LoadTime(_time);
+            _shader.LoadDetailMap(_detailTexture == null ? 0 : _detailTexture.TextureID);
+
+            // 지형 텍스처들
+            _shader.LoadTerrainTextures(
+                _groundTextures[0].TextureID,
+                _groundTextures[1].TextureID,
+                _groundTextures[2].TextureID,
+                _groundTextures[3].TextureID,
+                _groundTextures[4].TextureID
+            );
+
+            _shader.LoadEnableFunc(_onFunc);
+
+            // 강줄기 맵
+            _shader.LoadRiverMap(_riverMap.TextureID);
+            _shader.LoadMossRockTexture(_mossRockTexture.TextureID);
+
+            // 지형 높이 임계값
+            _shader.LoadRockTexture(_rockTexture.TextureID);
+
+            // 단층 보로누이맵
+            _shader.LoadFaultMap(_faultTexture.TextureID);
+            _shader.LoadFaultParameters(_faultScale, _displacement, _zoneWidth, _intensity);
+
+            // 지형 기초정보 유니폼
+            _shader.LoadIsDetailMap(isDetailMap);
+            _shader.LoadHeightScale(heightScale);
 
             foreach (RawModel3d rawModel in _entity.Model)
             {
@@ -97,29 +264,7 @@ namespace Renderer
                     _normalTexture.TextureID
                 );
 
-                _shader.LoadDetailMap(_detailTexture == null ? 0 : _detailTexture.TextureID);
-
-                // 지형 텍스처들
-                _shader.LoadTerrainTextures(
-                    _groundTextures[0].TextureID,
-                    _groundTextures[1].TextureID,
-                    _groundTextures[2].TextureID,
-                    _groundTextures[3].TextureID,
-                    _groundTextures[4].TextureID
-                );
-
-                _shader.LoadEnableFunc(_onFunc);
-
-                // 지형 높이 임계값
-                _shader.LoadRockTexture(_rockTexture.TextureID);
-
-                // 단층 보로누이맵
-                _shader.LoadFaultMap(_faultTexture.TextureID);
-                _shader.LoadFaultParameters(_faultScale, _displacement, _zoneWidth, _intensity);
-
-                // 지형 기초정보 유니폼
-                _shader.LoadIsDetailMap(isDetailMap);
-                _shader.LoadHeightScale(heightScale);
+                // 모델행렬과 법선행렬을 바인딩
                 _shader.LoadNormalMatrix(_entity.NormalMatrix);
                 _shader.LoadModelMatrix(_entity.ModelMatrix);
 
