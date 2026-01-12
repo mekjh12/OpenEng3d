@@ -8,6 +8,12 @@ namespace Renderer
     /// </summary>
     public class ShadowMap : IDisposable
     {
+        private Matrix4x4f _lightProjMatrix;
+        private Matrix4x4f _lightViewMatrix;
+
+        public Matrix4x4f LightViewMatrix => _lightViewMatrix;
+        public Matrix4x4f LightProjMatrix => _lightProjMatrix;
+
         public uint FramebufferID { get; private set; }
         public uint DepthTextureID { get; private set; }
         public int Width { get; private set; }
@@ -18,6 +24,53 @@ namespace Renderer
             Width = width;
             Height = height;
             CreateShadowMap();
+        }
+
+        /// <summary>
+        /// 광원뷰 행렬을 계산한다.
+        /// </summary>
+        /// <param name="sunDirection"></param>
+        /// <param name="terrainCenter"></param>
+        /// <param name="terrainSize"></param>
+        public void Update(Vertex3f sunDirection, Vertex3f terrainCenter, float terrainSize)
+        {
+            // lightSpaceMatrix 계산 및 저장
+            CalculateLightSpaceMatrix(
+                sunDirection,
+                terrainCenter,
+                terrainSize,
+                ref _lightProjMatrix,
+                ref _lightViewMatrix
+
+            );
+        }
+
+        /// <summary>
+        /// 태양 관점의 Light Space Matrix를 계산합니다.
+        /// </summary>
+        private void CalculateLightSpaceMatrix(Vertex3f sunDirection, Vertex3f terrainCenter, float terrainSize,
+            ref Matrix4x4f lightProj, ref Matrix4x4f lightView)
+        {
+            // 태양 위치 (지형에서 충분히 멀리)
+            Vertex3f lightPos = terrainCenter - sunDirection.Normalized * terrainSize * 2.0f;
+
+            // Light View Matrix
+            lightView = Matrix4x4f.LookAt(
+                lightPos,
+                terrainCenter,
+                new Vertex3f(0, 0, 1)  // Up 벡터
+            );
+
+            // Orthographic Projection (태양은 평행광이지만 테스트)
+            // ⭐ 평행 투영 (Orthographic Projection)
+            // 태양은 평행광이므로 원근이 없는 평행투영 사용
+            float orthoSize = terrainSize * 1.3f;  // 지형을 충분히 포함하는 크기
+
+            lightProj = Matrix4x4f.Ortho(
+                -orthoSize, orthoSize,  // left, right
+                -orthoSize, orthoSize,  // bottom, top
+                0.1f, terrainSize * 4.0f  // near, far
+            );
         }
 
         private void CreateShadowMap()
@@ -45,9 +98,11 @@ namespace Renderer
                 IntPtr.Zero
             );
 
-            // 텍스처 파라미터 설정 (PCF를 위한 LINEAR 필터링)
+            // ⭐ Hardware PCF 설정 (중복 제거)
             Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, Gl.LINEAR);
             Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, Gl.LINEAR);
+
+            // Wrap 모드
             Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.CLAMP_TO_BORDER);
             Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.CLAMP_TO_BORDER);
 

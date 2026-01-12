@@ -419,9 +419,7 @@ namespace FormTools
                 }
                 else
                 {
-                    _deferredRenderer.SetShadowMap(_terrainRenderer.ShadowMapTextureID,
-                        _terrainRenderer.LightViewMatrix,
-                        _terrainRenderer.LightProjMatrix);
+                    _deferredRenderer.SetTerrainShadowMap(_terrainRenderer.ShadowMap);
 
                     _deferredRenderer.Render(w, h);
                 }
@@ -552,15 +550,13 @@ namespace FormTools
 
             for (int i = 0; i < MAX_INSTANCES; i++)
             {
-                break;
-
                 int x = i % gridSize;
                 int y = i / gridSize;
 
                 //float posX = (x - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
                 //float posY = (y - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
-                float posX = 1000f * (float)(rand.NextDouble() * 10.0f - 5.0f);
-                float posY = 1000f * (float)(rand.NextDouble() * 10.0f - 5.0f);
+                float posX = 1000f * (float)(rand.NextDouble() * 4.0f - 2.0f);
+                float posY = 1000f * (float)(rand.NextDouble() * 4.0f - 2.0f);
 
                 position.x = posX;
                 position.y = posY;

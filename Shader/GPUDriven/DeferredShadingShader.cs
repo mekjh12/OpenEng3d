@@ -15,6 +15,9 @@ namespace Shader
 
         private int loc_lightView;
         private int loc_lightProj;
+        private int loc_lightProj2;
+        private int loc_lightView2;
+
 
         public DeferredShadingShader(string projectPath) : base()
         {
@@ -30,6 +33,8 @@ namespace Shader
             // G-Buffer 텍스처들은 셰이더 내부에서 고정 바인딩 사용
             loc_lightView = GetUniformLocation("lightView");
             loc_lightProj = GetUniformLocation("lightProj");
+            loc_lightView2 = GetUniformLocation("lightView2");
+            loc_lightProj2 = GetUniformLocation("lightProj2");
         }
 
         protected override void BindAttributes()
@@ -70,10 +75,17 @@ namespace Shader
         /// <summary>
         /// Shadow Map 텍스처 바인딩
         /// </summary>
-        public void LoadShadowMap(uint shadowMapTexture)
+        public void LoadTerrainShadowMap(uint shadowMapTexture)
         {
-            SetInt("gShadowMap", 4);
+            SetInt("gTerrainShadowMap", 4);
             Gl.ActiveTexture(TextureUnit.Texture4);
+            Gl.BindTexture(TextureTarget.Texture2d, shadowMapTexture);
+        }
+
+        public void LoadInstancesShadowMap(uint shadowMapTexture)
+        {
+            SetInt("gInstancesShadowMap", 5);
+            Gl.ActiveTexture(TextureUnit.Texture5);
             Gl.BindTexture(TextureTarget.Texture2d, shadowMapTexture);
         }
 
@@ -85,5 +97,12 @@ namespace Shader
             LoadUniformMatrix4(loc_lightView, lightView);
             LoadUniformMatrix4(loc_lightProj, lightProj);
         }
+
+        public void LoadLightMatrices2(in Matrix4x4f lightView, in Matrix4x4f lightProj)
+        {
+            LoadUniformMatrix4(loc_lightView2, lightView);
+            LoadUniformMatrix4(loc_lightProj2, lightProj);
+        }
+
     }
 }

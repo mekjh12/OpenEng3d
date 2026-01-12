@@ -41,13 +41,11 @@ namespace Renderer
 
         // 테스트 기능 온오프
         bool _onFunc = true;
-        private Matrix4x4f _lightProjMatrix;
-        private Matrix4x4f _lightViewMatrix;
-
 
         public uint ShadowMapTextureID => _shadowmap.DepthTextureID;
-        public Matrix4x4f LightViewMatrix => _lightViewMatrix;
-        public Matrix4x4f LightProjMatrix => _lightProjMatrix;
+        public ShadowMap ShadowMap => _shadowmap;
+        public Matrix4x4f LightViewMatrix => _shadowmap.LightViewMatrix;
+        public Matrix4x4f LightProjMatrix => _shadowmap.LightProjMatrix;
 
         public TerrainRenderer(TerrainTessellationShader shader, string projectPath)
         {
@@ -66,18 +64,10 @@ namespace Renderer
         {
             if (_entity is null || _entity.Model == null) return;
 
-            // 지형 중심과 크기 계산
+            // 그림자맵을 렌더링한다.
             Vertex3f terrainCenter = new Vertex3f(0, 0, 0);
             float terrainSize = 1000.0f;
-
-            // lightSpaceMatrix 계산 및 저장
-            CalculateLightSpaceMatrix(
-                sunDirection,
-                terrainCenter,
-                terrainSize,
-                ref _lightProjMatrix,
-                ref _lightViewMatrix
-            );
+            _shadowmap.Update(sunDirection, terrainCenter, terrainSize);
 
             // Shadow Map FBO 바인딩
             _shadowmap.Bind();
@@ -87,8 +77,8 @@ namespace Renderer
             Gl.CullFace(CullFaceMode.Back);
 
             _shadowShader.Bind();
-            _shadowShader.LoadLightProjMatrix(_lightProjMatrix);
-            _shadowShader.LoadLightViewMatrix(_lightViewMatrix);
+            _shadowShader.LoadLightProjMatrix(_shadowmap.LightProjMatrix);
+            _shadowShader.LoadLightViewMatrix(_shadowmap.LightViewMatrix);
             _shadowShader.LoadModelMatrix(_entity.ModelMatrix);
             _shadowShader.LoadHeightScale(heightScale);
 
@@ -112,38 +102,10 @@ namespace Renderer
 
             _shadowShader.Unbind();
 
-            // ⭐ 앞면만 렌더링으로 복원 (뒷면 컬링)
+            // 앞면만 렌더링으로 복원 (뒷면 컬링)
             Gl.CullFace(CullFaceMode.Back);
 
             _shadowmap.Unbind();
-        }
-
-        /// <summary>
-        /// 태양 관점의 Light Space Matrix를 계산합니다.
-        /// </summary>
-        private void CalculateLightSpaceMatrix(Vertex3f sunDirection, Vertex3f terrainCenter, float terrainSize,
-            ref Matrix4x4f lightProj, ref Matrix4x4f lightView)
-        {
-            // 태양 위치 (지형에서 충분히 멀리)
-            Vertex3f lightPos = terrainCenter - sunDirection.Normalized * terrainSize * 2.0f;
-
-            // Light View Matrix
-            lightView = Matrix4x4f.LookAt(
-                lightPos,
-                terrainCenter,
-                new Vertex3f(0, 0, 1)  // Up 벡터
-            );
-
-            // Orthographic Projection (태양은 평행광이지만 테스트)
-            // ⭐ 평행 투영 (Orthographic Projection)
-            // 태양은 평행광이므로 원근이 없는 평행투영 사용
-            float orthoSize = terrainSize * 1.3f;  // 지형을 충분히 포함하는 크기
-
-            lightProj = Matrix4x4f.Ortho(
-                -orthoSize, orthoSize,  // left, right
-                -orthoSize, orthoSize,  // bottom, top
-                0.1f, terrainSize * 4.0f  // near, far
-            );
         }
 
         public void ToggleFunction()

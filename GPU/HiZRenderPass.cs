@@ -93,6 +93,12 @@ namespace GPUDriven
         private CrossBillboardInstanceShader _crossBillboardInstanceShader; // 크로스 빌보드 렌더링 셰이더
         private GPUInstancedDepthShader _depthShader;               // 깊이 렌더링 셰이더
 
+        // 그림자 관련 변수
+        private GPUInstancedShadowMapShader _gpuInstancedShadowMapShader;
+        private ShadowMap _instanceShadowMap;
+
+        // 기능 활성화 변수
+        private bool _isVisibleShadow = true;
 
         // 임포스터 관련
         private ImpostorAssets _impostor;   // 임포스터 에셋 관리자
@@ -151,7 +157,8 @@ namespace GPUDriven
         // ------------------------------------------------------------
 
         public bool IsDebugLOD1 { get => _isDebugLOD1; set => _isDebugLOD1 = value;}
-
+        public uint InstanceShadowMapTextureID => _instanceShadowMap.DepthTextureID;
+        public ShadowMap InstanceShadowMap => _instanceShadowMap;
 
         // ------------------------------------------------------------
         // 생성자
@@ -227,6 +234,10 @@ namespace GPUDriven
                 var batch = _batchManager.GetBatch(i);
                 _billboardData[i] = _generator.GenerateAtlas(_unlitShader, batch.Model);
             }
+
+            // 인스턴스 물체용 그림자맵
+            _instanceShadowMap = new ShadowMap(4096, 4096);
+
         }
 
         /// <summary>
@@ -247,6 +258,7 @@ namespace GPUDriven
             _depthShader = new GPUInstancedDepthShader(projPath);
             _normalShader = new NormalVectorShader(projPath);
             _crossBillboardNormalShader = new CrossBillboardNormalShader(projPath);
+            _gpuInstancedShadowMapShader = new GPUInstancedShadowMapShader(projPath);
         }
 
         /// <summary>
@@ -767,6 +779,60 @@ namespace GPUDriven
             {
                 RenderBatch(b, camera);
             }
+        }
+
+        public void RenderShadowLod0(Camera camera, Vertex3f sunLightDirection)
+        {
+            // 렌더 스테이트 설정
+            Gl.Disable(EnableCap.Blend);
+            Gl.Enable(EnableCap.DepthTest);
+            Gl.Enable(EnableCap.CullFace);
+
+            // Compute Shader 결과가 반영되도록 메모리 배리어
+            Gl.MemoryBarrier(MemoryBarrierMask.ShaderStorageBarrierBit |
+                             MemoryBarrierMask.CommandBarrierBit);
+
+            if (_batchManager == null) return;
+
+
+            // 세도우맵 바인딩 및 광원 뷰 행렬 계산
+            Vertex3f terrainCenter = new Vertex3f(0, 0, 0);
+            float terrainSize = 50.0f;
+            _instanceShadowMap.Bind();
+            _instanceShadowMap.Update(sunLightDirection, camera.PivotPosition, terrainSize);
+
+            // 각 배치별 렌더링
+            for (uint batchID = 0; batchID < _batchManager.ActualBatchCount; batchID++)
+            {
+                _batch = _batchManager.GetBatch(batchID);
+                string batchName = _batch.ModelName;
+                int cmdStartIndex = _batchCommandStartIndices[batchID];
+                Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectCommandBuffer);
+
+                _gpuInstancedShadowMapShader.Bind();
+                {
+                    // LOD0
+                    _gpuInstancedShadowMapShader.LoadBatchStartOffset(_batch.StartIndex);
+                    _gpuInstancedShadowMapShader.LoadTextureArray(_batch.Model.TextureIDArray);
+                    _gpuInstancedShadowMapShader.LoadEnableDebug(false);
+                    _gpuInstancedShadowMapShader.LoadMaxDepthDistance(10000.0f);
+                    _gpuInstancedShadowMapShader.LoadLightViewMatrix(_instanceShadowMap.LightViewMatrix);
+                    _gpuInstancedShadowMapShader.LoadLightProjMatrix(_instanceShadowMap.LightProjMatrix);
+                    DrawArraysIndirect(_batch.VAO, cmdStartIndex, 0, _visibleIndicesSSBO_LOD0, PrimitiveType.Triangles);
+
+                    // LOD1
+                    _gpuInstancedShadowMapShader.LoadEnableDebug(_isDebugLOD1);
+                    _gpuInstancedShadowMapShader.LoadDebugColor(COLOR_RED4);
+                    DrawArraysIndirect(_batch.VAO, cmdStartIndex, 1, _visibleIndicesSSBO_LOD1, PrimitiveType.Triangles);
+                }
+                _gpuInstancedShadowMapShader.Unbind();
+
+
+            }
+
+            // 세도우맵 바인딩 해제
+            _instanceShadowMap.Unbind();
+
         }
 
         /// <summary>

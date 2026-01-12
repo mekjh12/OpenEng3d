@@ -98,6 +98,7 @@
     <Compile Include="GPUDriven\GPUDrivenImpostorShader.cs" />
     <Compile Include="GPUDriven\GPUInstancedDepthShader.cs" />
     <Compile Include="GPUDriven\GPUInstancedShader.cs" />
+    <Compile Include="GPUDriven\GPUInstancedShadowMapShader.cs" />
     <Compile Include="GPUDriven\GrassCullingComputeShader.cs" />
     <Compile Include="GPUDriven\GrassCullingFinalizeComputeShader.cs" />
     <Compile Include="GPUDriven\GrassShader.cs" />
@@ -212,6 +213,8 @@
     <None Include="GPUDriven\glsl\grass.vert" />
     <None Include="GPUDriven\glsl\grass_gpu_driven.frag" />
     <None Include="GPUDriven\glsl\grass_gpu_driven.vert" />
+    <None Include="GPUDriven\glsl\instanced_shadow.frag" />
+    <None Include="GPUDriven\glsl\instanced_shadow.vert" />
     <None Include="GPUDriven\glsl\normal_vector.frag" />
     <None Include="GPUDriven\glsl\normal_vector.geom.glsl" />
     <None Include="GPUDriven\glsl\normal_vector.vert" />

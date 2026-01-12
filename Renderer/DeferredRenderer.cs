@@ -10,9 +10,8 @@ namespace Renderer
         GBuffer _gbuffer;
 
         // Shadow Map 정보
-        private uint _shadowMapTexture;
-        private Matrix4x4f _lightViewMatrix;
-        private Matrix4x4f _lightProjMatrix;
+        private ShadowMap _terrainShadowMap;
+        private ShadowMap _instanceShadowMap;
 
         public DeferredRenderer(GBuffer gbuffer, DeferredShadingShader shader)
         {
@@ -20,11 +19,14 @@ namespace Renderer
             _shader = shader;
         }
 
-        public void SetShadowMap(uint shadowMapTexture, Matrix4x4f lightView, Matrix4x4f lightProj)
+        public void SetTerrainShadowMap(ShadowMap terrainShadowMap)
         {
-            _shadowMapTexture = shadowMapTexture;
-            _lightViewMatrix = lightView;
-            _lightProjMatrix = lightProj;
+            _terrainShadowMap = terrainShadowMap;
+        }
+
+        public void SetInstanceShadowMap(ShadowMap instanceShadowMap)
+        {
+            _instanceShadowMap = instanceShadowMap;
         }
 
         public void Render(int width, int height)
@@ -40,8 +42,10 @@ namespace Renderer
             );
 
             // Shadow Map 바인딩
-            _shader.LoadShadowMap(_shadowMapTexture);
-            _shader.LoadLightMatrices(_lightViewMatrix, _lightProjMatrix);
+            _shader.LoadTerrainShadowMap(_terrainShadowMap.DepthTextureID);
+            _shader.LoadInstancesShadowMap(_instanceShadowMap.DepthTextureID);
+            _shader.LoadLightMatrices(_terrainShadowMap.LightViewMatrix, _terrainShadowMap.LightProjMatrix);
+            _shader.LoadLightMatrices2(_instanceShadowMap.LightViewMatrix, _instanceShadowMap.LightProjMatrix);
 
             // 풀스크린 쿼드 렌더링
             Gl.DrawArrays(PrimitiveType.Points, 0, 1);
