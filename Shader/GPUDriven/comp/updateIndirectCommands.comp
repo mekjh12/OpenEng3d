@@ -1,14 +1,14 @@
 ﻿#version 450 core
 layout(local_size_x = 1) in;
 
-// Indirect Command Buffer (바이트 단위 접근)
-layout(std430, binding = 10) writeonly buffer IndirectCommands {uint indirectCommands[];};
-
 // Visible Counts (배치별)
-layout(std430, binding = 11) readonly buffer VisibleCounts_LOD0 {uint visibleCounts_LOD0[];};
-layout(std430, binding = 12) readonly buffer VisibleCounts_LOD1 {uint visibleCounts_LOD1[];};
-layout(std430, binding = 13) readonly buffer VisibleCounts_LOD2 {uint visibleCounts_LOD2[];};
-layout(std430, binding = 14) readonly buffer VisibleCounts_LOD3 {uint visibleCounts_LOD3[];};
+layout(std430, binding = 6) readonly buffer VisibleCounts_LOD0 {uint visibleCounts_LOD0[];};
+layout(std430, binding = 8) readonly buffer VisibleCounts_LOD1 {uint visibleCounts_LOD1[];};
+layout(std430, binding = 10) readonly buffer VisibleCounts_LOD2 {uint visibleCounts_LOD2[];};
+layout(std430, binding = 12) readonly buffer VisibleCounts_LOD3 {uint visibleCounts_LOD3[];};
+
+// Indirect Command Buffer (바이트 단위 접근)
+layout(std430, binding = 13) writeonly buffer IndirectCommands {uint indirectCommands[];};
 
 uniform uint numBatches;
 uniform uint batchCommandStartIndices[64];  // 바이트 오프셋 (0, 68, 136...)

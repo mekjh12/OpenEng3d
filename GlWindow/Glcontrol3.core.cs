@@ -160,7 +160,7 @@ namespace GlWindow
         public bool IsVisibleUi2d { get => _isVisibleUi2d; set => _isVisibleUi2d = value; }
         public bool AutoBlitToScreen { get => _autoBlitToScreen; set => _autoBlitToScreen = value; }
         public uint DepthTextureId => _gbuffer?.DepthTextureId ?? 0;
-        public uint ColorTextureId => _gbuffer?.ColorTextureId ?? 0;
+        public uint AlbedoTextureId => _gbuffer?.AlbedoTextureId ?? 0;
         public uint PositionTextureId => _gbuffer?.PositionTextureId ?? 0;
         public uint NormalTextureId => _gbuffer?.NormalTextureId ?? 0;
 

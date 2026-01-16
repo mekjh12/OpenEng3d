@@ -59,10 +59,15 @@
     <Compile Include="AABB.cs" />
     <Compile Include="FrustumCullingRenderer.cs" />
     <Compile Include="GPUCullingRenderer.cs" />
-    <Compile Include="HiZRenderPass.cs" />
+    <Compile Include="GroundFogRenderer.cs" />
+    <Compile Include="PassPipeLine\GroundFogRenderPass.cs" />
+    <Compile Include="PassPipeLine\HiZRenderPass.cs" />
     <Compile Include="ModelBatchManager.cs" />
+    <Compile Include="PassPipeLine\GeometryRenderPass.cs" />
+    <Compile Include="PassPipeLine\IRenderPass.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QuadTreeGPURenderer.cs" />
+    <Compile Include="PassPipeLine\RenderPassPipeLine.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

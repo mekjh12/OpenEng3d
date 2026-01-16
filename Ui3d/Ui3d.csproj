@@ -55,8 +55,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BackgroundText2d.cs" />
     <Compile Include="Billboard3D.cs" />
-    <Compile Include="BillboardShader.cs" />
+    <Compile Include="Shader\BillboardShader.cs" />
     <Compile Include="CharacterNamePlate.cs" />
     <Compile Include="ChatBubble.cs" />
     <Compile Include="CDamageNumber.cs" />
@@ -70,9 +71,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TextAtlas\CharacterTextureAtlas.cs" />
     <Compile Include="TextAtlas\DamageNumber.cs" />
+    <Compile Include="Shader\SimpleColorShader.cs" />
     <Compile Include="TextAtlas\TextNamePlate .cs" />
     <Compile Include="TextAtlas\TextInstanceBuilder.cs" />
-    <Compile Include="TextAtlas\TextBillboardShader.cs" />
+    <Compile Include="Shader\TextBillboardShader.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

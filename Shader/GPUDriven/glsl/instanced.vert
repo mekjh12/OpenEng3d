@@ -7,8 +7,12 @@ layout(location = 2) in vec3 aNormal;
 layout(location = 3) in float materialID;
 
 struct InstanceModelMatrixData{mat4 modelMatrix; mat4 normalMatrix; };
+
+// SSBO (Shader Storage Buffer)
 layout(std430, binding = 0) buffer TransformBuffer { InstanceModelMatrixData instances[]; };
 layout(std430, binding = 1) buffer VisibleIndicesBuffer { int visibleIndices[]; };
+
+// UBO (Uniform Buffer Object)
 layout(std140, binding = 0) uniform CameraBlock {mat4 view; mat4 proj; mat4 vp; vec4 cameraPos;} camera;
 
 uniform int batchStartOffset;

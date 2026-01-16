@@ -299,7 +299,7 @@ namespace FormTools
             FileHashManager.SaveHashes();
         }
 
-        public void InitFinished()
+        public void Start()
         {
             // GPU 드리븐 렌더러 초기화
             _gpuDriven = new HiZRenderPass(PROJECT_PATH);
@@ -318,7 +318,7 @@ namespace FormTools
             // 1회 시작시 초기화
             if (!_isStarted)
             {
-                InitFinished();
+                Start();
                 _isStarted = true;
             }
 
@@ -481,7 +481,7 @@ namespace FormTools
                         _advancedFogShader.Bind();
                         {
                             // 텍스처만 별도 바인딩
-                            _advancedFogShader.LoadColorTexture(TextureUnit.Texture0, _glControl3.ColorTextureId);
+                            _advancedFogShader.LoadColorTexture(TextureUnit.Texture0, _glControl3.AlbedoTextureId);
                             _advancedFogShader.LoadPositionTexture(TextureUnit.Texture1, _glControl3.PositionTextureId);
                             _advancedFogShader.LoadDepthTexture(TextureUnit.Texture2, _glControl3.DepthTextureId);
 

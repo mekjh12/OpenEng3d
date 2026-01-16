@@ -52,7 +52,7 @@ namespace Ui3d
         private float[] _floatBuffer = new float[512 * CharInstanceData.FloatCount];  // 512글자 * 8 floats
 
         // 기본 색상
-        private static readonly Color DEFAULT_COLOR = Color.FromArgb(255, 255, 255, 255);
+        private static readonly Color DEFAULT_COLOR = Color.FromArgb(255, 255, 0, 0);
 
         // 캐시된 문자 높이
         private static float _cachedCharHeight = -1f;

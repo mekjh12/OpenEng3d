@@ -16,13 +16,14 @@ namespace GlWindow
     {
         public uint FramebufferId { get; private set; }
 
-        // ✅ G-Buffer 텍스처들
-        public uint ColorTextureId { get; private set; }      // Albedo/Color
+        public uint AlbedoTextureId{ get; private set; }      // Albedo/Color
         public uint PositionTextureId { get; private set; }   // World Position
         public uint NormalTextureId { get; private set; }     // World Normal
         public uint DepthTextureId { get; private set; }      // Linear Depth (안개용)
+        public uint StructureTextureId { get; private set; }   // Attachment4 ← 새로 추가!
 
         private uint _depthRenderbuffer;  // 깊이 테스트 전용
+
         private int _width;
         private int _height;
 
@@ -38,11 +39,9 @@ namespace GlWindow
             FramebufferId = Gl.GenFramebuffer();
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, FramebufferId);
 
-            // ============================================
-            // ColorAttachment0: RGBA8 (알베도/컬러)
-            // ============================================
-            ColorTextureId = Gl.GenTexture();
-            Gl.BindTexture(TextureTarget.Texture2d, ColorTextureId);
+            // 1. Albedo Texture (RGB: albedo, A: metallic)
+            AlbedoTextureId = Gl.GenTexture();
+            Gl.BindTexture(TextureTarget.Texture2d, AlbedoTextureId);
             Gl.TexImage2D(
                 TextureTarget.Texture2d,
                 0,
@@ -58,7 +57,7 @@ namespace GlWindow
                 FramebufferTarget.Framebuffer,
                 FramebufferAttachment.ColorAttachment0,
                 TextureTarget.Texture2d,
-                ColorTextureId,
+                AlbedoTextureId,
                 0
             );
 
@@ -155,14 +154,40 @@ namespace GlWindow
             );
 
             // ============================================
-            // MRT 드로우 버퍼 설정 (4개)
+            // ColorAttachment4: RGBA16F (Structure Buffer)
+            // R: dz/dx, G: dz/dy, B: h, A: z-h
+            // ============================================
+            StructureTextureId = Gl.GenTexture();
+            Gl.BindTexture(TextureTarget.Texture2d, StructureTextureId);
+            Gl.TexImage2D(
+                TextureTarget.Texture2d,
+                0,
+                InternalFormat.Rgba16f,
+                width, height,
+                0,
+                PixelFormat.Rgba,
+                PixelType.Float,
+                IntPtr.Zero
+            );
+            SetTextureParameters(TextureTarget.Texture2d);
+            Gl.FramebufferTexture2D(
+                FramebufferTarget.Framebuffer,
+                FramebufferAttachment.ColorAttachment4,
+                TextureTarget.Texture2d,
+                StructureTextureId,
+                0
+            );
+
+            // ============================================
+            // MRT 드로우 버퍼 설정 (5개로 증가!)
             // ============================================
             int[] drawBuffers = new int[]
             {
-                Gl.COLOR_ATTACHMENT0,  // 알베도
-                Gl.COLOR_ATTACHMENT1,  // 위치
-                Gl.COLOR_ATTACHMENT2,  // 법선
-                Gl.COLOR_ATTACHMENT3   // 선형 깊이
+            Gl.COLOR_ATTACHMENT0,  // 알베도
+            Gl.COLOR_ATTACHMENT1,  // 위치
+            Gl.COLOR_ATTACHMENT2,  // 법선
+            Gl.COLOR_ATTACHMENT3,  // 선형 깊이
+            Gl.COLOR_ATTACHMENT4   // Structure Buffer ← 추가!
             };
             Gl.DrawBuffers(drawBuffers);
 
@@ -178,18 +203,20 @@ namespace GlWindow
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
 
             Console.WriteLine($"✅ G-Buffer RenderTarget 생성 완료: {width}x{height}");
-            Console.WriteLine($"   - Attachment0: RGBA8 (알베도/컬러)");
+            Console.WriteLine($"   - Attachment0: RGBA8 (알베도)");
             Console.WriteLine($"   - Attachment1: RGBA16F (월드 위치)");
-            Console.WriteLine($"   - Attachment2: RGBA16F (법선 벡터)");
-            Console.WriteLine($"   - Attachment3: R32F (선형 깊이 - 안개용)");
-            Console.WriteLine($"   - Depth: Renderbuffer (깊이 테스트 전용)");
+            Console.WriteLine($"   - Attachment2: RGBA16F (법선)");
+            Console.WriteLine($"   - Attachment3: R32F (선형 깊이)");
+            Console.WriteLine($"   - Attachment4: RGBA16F (Structure Buffer)");
+            Console.WriteLine($"   - Depth: Renderbuffer");
 
-            // 메모리 사용량 계산 (대략)
+            // 메모리 사용량
             long memoryBytes = (long)width * height * (
                 4 +      // RGBA8
                 8 +      // RGBA16F (위치)
                 8 +      // RGBA16F (법선)
                 4 +      // R32F (깊이)
+                8 +      // RGBA16F (Structure) ← 추가!
                 4        // Depth renderbuffer
             );
             Console.WriteLine($"   - 예상 메모리: {memoryBytes / 1024.0 / 1024.0:F2} MB");
@@ -210,13 +237,14 @@ namespace GlWindow
         {
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, FramebufferId);
 
-            // ✅ MRT 드로우 버퍼 재설정 (안전성)
+            // MRT 드로우 버퍼 재설정 (5개!)
             int[] drawBuffers = new int[]
             {
                 Gl.COLOR_ATTACHMENT0,
                 Gl.COLOR_ATTACHMENT1,
                 Gl.COLOR_ATTACHMENT2,
-                Gl.COLOR_ATTACHMENT3
+                Gl.COLOR_ATTACHMENT3,
+                Gl.COLOR_ATTACHMENT4   // ← 추가!
             };
             Gl.DrawBuffers(drawBuffers);
         }
@@ -319,8 +347,9 @@ namespace GlWindow
             if (DepthTextureId != 0) Gl.DeleteTextures(DepthTextureId);
             if (NormalTextureId != 0) Gl.DeleteTextures(NormalTextureId);
             if (PositionTextureId != 0) Gl.DeleteTextures(PositionTextureId);
-            if (ColorTextureId != 0) Gl.DeleteTextures(ColorTextureId);
+            if (AlbedoTextureId != 0) Gl.DeleteTextures(AlbedoTextureId);
             if (FramebufferId != 0) Gl.DeleteFramebuffers(FramebufferId);
+            if (StructureTextureId != 0) Gl.DeleteTextures(StructureTextureId);
         }
     }
 }

@@ -17,7 +17,7 @@ namespace GlWindow
         /// <summary>
         /// 로딩을 모두 마치고 초기화가 끝났을 때 호출됩니다.
         /// </summary>
-        void InitFinished();
+        void Start();
         void KeyDownEvent(object sender, KeyEventArgs e);
         void KeyUpEvent(object sender, KeyEventArgs e);
         void MouseDnEvent(object sender, MouseEventArgs e);

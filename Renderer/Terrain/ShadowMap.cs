@@ -144,8 +144,12 @@ namespace Renderer
         {
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, FramebufferID);
             Gl.Viewport(0, 0, Width, Height);
-            Gl.Clear(ClearBufferMask.DepthBufferBit);
             Gl.DrawBuffer(DrawBufferMode.None);
+        }
+
+        public void Clear()
+        {
+            Gl.Clear(ClearBufferMask.DepthBufferBit);
         }
 
 

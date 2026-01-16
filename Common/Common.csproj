@@ -88,6 +88,8 @@
     <Compile Include="Core\GUID.cs" />
     <Compile Include="Mathematics\Pose.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Enum\StructureBufferEnum.cs" />
+    <Compile Include="StringResources.cs" />
     <Compile Include="Struct\AABB3f.cs" />
     <Compile Include="Struct\Plane.cs" />
   </ItemGroup>

@@ -23,13 +23,29 @@ namespace FormTools
     {
         readonly string PROJECT_PATH = @"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\";
         readonly string EXE_PATH = Application.StartupPath;
-        readonly string TITLE = "GPU드라이븐 지형(계곡감지)";
+        readonly string TITLE = "GPU드라이븐 지형 및 인스턴스모델 + 그림자";
 
         string[] _objFileNames = new string[]
         {
             @"oak_tree.obj",
             @"pine_tree.obj",
+            @"florida_foliage\bananaPlant1.obj",
+            @"florida_foliage\palm2.obj",
         };
+
+        /*
+               @"florida_foliage\palm2.obj",
+               @"florida_foliage\palm3.obj",
+               @"florida_foliage\bananaPlant1.obj",
+               @"florida_foliage\bananaPlant2.obj",
+               @"florida_foliage\bananaPlant3.obj",
+               @"florida_foliage\fern1.obj",
+               @"florida_foliage\fern2.obj",
+               @"florida_foliage\fern3.obj",
+               @"florida_foliage\fern4.obj",
+               @"florida_foliage\fern5.obj",            
+
+        */
 
         // GL 컨트롤 변수들
         private GlControl3 _glControl3;                     // OpenGL 컨트롤
@@ -119,12 +135,19 @@ namespace FormTools
             _glControl3.AutoBlitToScreen = false;
             _glControl3.Start();
             Controls.Add(_glControl3);
+            this.FormClosed += FormCompleteClosed;
 
             // 파일 해시 매니저 초기화
             FileHashManager.ROOT_FILE_PATH = PROJECT_PATH;
 
             // 로그 프로파일 초기화
             LogProfile.Create(PROJECT_PATH + "\\log.txt");
+        }
+
+        private void FormCompleteClosed(object sender, EventArgs e)
+        {
+            IniFile.WritePrivateProfileString("sunlight", "Azimuth", _sunLight.Azimuth);
+            IniFile.WritePrivateProfileString("sunlight", "Elevation", _sunLight.Elevation);
         }
 
         public void Init(int width, int height)
@@ -169,6 +192,7 @@ namespace FormTools
             _culledText = new Text2d("태양각", 10, (height * 0.2f), width, height,
                 Text2d.TextAlignment.Left, heightInPixels: 15);
             _culledText.Color = Color.White;
+
         }
 
         public void Init3d(int width, int height)
@@ -226,7 +250,9 @@ namespace FormTools
             _terrainRenderer.LoadMossRockTexture(PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\blend\mossy_rock.png");
 
             // 하늘 렌더러 초기화
-            _sunLight = new SunLight(0, 15);
+            float azimuth = float.Parse(IniFile.GetPrivateProfileString("sunlight", "Azimuth", "0"));
+            float elevation = float.Parse(IniFile.GetPrivateProfileString("sunlight", "elevation", "30"));
+            _sunLight = new SunLight(azimuth, elevation);
             _skyDomeTexture2DShader = new SkyDomeTexture2dShader(PROJECT_PATH);
             _skyDomeTexture2DShader.GenerateSkyTexture(_glControl3.Camera.Position, -_sunLight.Direction);
             _skyRenderer = new SkyRenderer(PROJECT_PATH, _skyDomeTexture2DShader);
@@ -245,7 +271,7 @@ namespace FormTools
             FileHashManager.SaveHashes();
         }
 
-        public void InitFinished()
+        public void Start()
         {
             _modelBatchManager.Finalized();
 
@@ -269,7 +295,7 @@ namespace FormTools
             // 1회 시작시 초기화
             if (!_isStarted)
             {
-                InitFinished();
+                Start();
                 _isStarted = true;
             }
 
@@ -367,10 +393,12 @@ namespace FormTools
             // GPU DRIVEN 렌더링
             _gpuDriven?.Render(camera);
 
-            // 월드 축 렌더링
-            if (_isVisibleWorldAxis) _worldAxisRenderer.Render(camera.VPMatrix);
-
             _gbuffer.Unbind();  // ⭐ G-Buffer 언바인드
+
+            // --------------------------------
+            // 월드 축 렌더링
+            // --------------------------------
+            if (_isVisibleWorldAxis) _worldAxisRenderer.Render(camera.VPMatrix);
         }
 
         private void BlitToScreen(int deltaTime, Camera camera)
@@ -655,7 +683,7 @@ namespace FormTools
             }
         }
 
-        private void FormGrass_Load(object sender, EventArgs e)
+        private void FormShadow_Load(object sender, EventArgs e)
         {
 
         }

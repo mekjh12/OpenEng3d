@@ -1,5 +1,4 @@
-﻿using BillBoard;
-using Common.Abstractions;
+﻿using Common.Abstractions;
 using Geometry;
 using Model3d;
 using Occlusion;
@@ -8,112 +7,109 @@ using Renderer;
 using Shader;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Runtime.InteropServices;
 
 namespace GPUDriven
 {
-    /// <summary>
-    /// GPU 드리븐 렌더링 파이프라인
-    /// - Frustum Culling (Compute Shader)
-    /// - Hi-Z Occlusion Culling (Compute Shader)
-    /// - LOD 선택 (4단계)
-    /// - Multi-Draw Indirect
-    /// </summary>
-    public unsafe class HiZRenderPass
+    public unsafe abstract class RenderPassPipeLine
     {
         // ------------------------------------------------------------
         // 상수
         // ------------------------------------------------------------
 
-        private const int MAX_INSTANCES = 100000;  // 최대 인스턴스 개수
-        private const int MAX_BATCHES = 64;        // 최대 배치 개수
-        private const int COMMAND_SIZE = 16;       // DrawArraysIndirectCommand 크기 (4 uint * 4 bytes)
-        private const int COMMAND_SIZE_ELEMENTS = 20; // DrawElementsIndirectCommand 크기
-        private const int BYTES_PER_BATCH = 68;    // 배치당 커맨드 버퍼 크기 (16 + 20 + 16 + 16)
-        private const int FRAME_COUNT_DEBUG = 60;  // 디버그 정보 갱신 주기
+        private const int COMMAND_SIZE = 16;
+        private const int COMMAND_SIZE_ELEMENTS = 20;
+        private const int BYTES_PER_BATCH = 68;
+        private const int FRAME_COUNT_DEBUG = 5;
 
         // LOD별 커맨드 오프셋 (바이트)
         private static readonly int[] LOD_OFFSETS = new int[] { 0, 16, 36, 52 };
 
         // ------------------------------------------------------------
-        // SSBO 바인딩 포인트 문서
+        // SSBO 바인딩 포인트 상수 (고정 할당)
         // ------------------------------------------------------------
-        /* 
-         * 0  - Transform Buffer (Mat4x4)
-         * 1  - Frustum Passed Indices
-         * 2  - Frustum Counter
-         * 3  - AABB Buffer
-         * 4  - Visible Indices LOD0
-         * 5  - Visible Counts LOD0
-         * 6  - Visible Indices LOD1
-         * 7  - Visible Counts LOD1
-         * 8  - Visible Indices LOD2
-         * 9  - Batch ID Buffer / Visible Counts LOD2
-         * 10 - Visible Indices LOD3 / Visible Counts LOD3
-         * 11 - Indirect Command Buffer
-         * 12 - Visible Counts LOD1 (Command용)
-         * 13 - Visible Counts LOD2 (Command용)
-         * 14 - Visible Counts LOD3 (Command용)
+        private const int BINDING_TRANSFORM = 0;
+        private const int BINDING_FRUSTUM_PASSED = 1;
+        private const int BINDING_FRUSTUM_COUNTER = 2;
+        private const int BINDING_AABB = 3;
+        private const int BINDING_BATCH_ID = 4;
+        private const int BINDING_VISIBLE_INDICES_LOD0 = 5;
+        private const int BINDING_VISIBLE_COUNTS_LOD0 = 6;
+        private const int BINDING_VISIBLE_INDICES_LOD1 = 7;
+        private const int BINDING_VISIBLE_COUNTS_LOD1 = 8;
+        private const int BINDING_VISIBLE_INDICES_LOD2 = 9;
+        private const int BINDING_VISIBLE_COUNTS_LOD2 = 10;
+        private const int BINDING_VISIBLE_INDICES_LOD3 = 11;
+        private const int BINDING_VISIBLE_COUNTS_LOD3 = 12;
+        private const int BINDING_INDIRECT_COMMAND = 13;
+
+        /* SSBO 바인딩 포인트 맵 (참조용)
+         * ================================================
+         *   Binding 0  : Transform Buffer (Mat4x4 변환 행렬)
+         *   Binding 1  : Frustum Passed Indices (프러스텀 통과 인스턴스)
+         *   Binding 2  : Frustum Counter (프러스텀 통과 개수, Atomic)
+         *   Binding 3  : AABB Buffer (바운딩 박스)
+         *   Binding 4  : Batch ID Buffer (인스턴스별 배치 ID)
+         *   Binding 5  : Visible Indices LOD0
+         *   Binding 6  : Visible Counts LOD0
+         *   Binding 7  : Visible Indices LOD1
+         *   Binding 8  : Visible Counts LOD1
+         *   Binding 9  : Visible Indices LOD2
+         *   Binding 10 : Visible Counts LOD2
+         *   Binding 11 : Visible Indices LOD3
+         *   Binding 12 : Visible Counts LOD3
+         *   Binding 13 : Indirect Command Buffer
+         * ================================================
          */
 
         // ------------------------------------------------------------
         // 멤버 변수
         // ------------------------------------------------------------
 
-        private readonly string _projPath; // 프로젝트 경로
-        private ModelBatchManager _batchManager; // 배치 매니저
+        private readonly string _projPath;              // 프로젝트 경로
+        private readonly string _name;                  // 렌더 패스 이름
+        protected ModelBatchManager _batchManager;      // 배치 매니저
+
+        // 설정 변수
+        private readonly uint _maxInstances = 100_000;   // 최대 수용 가능 인스턴스의 개수
+        private readonly uint _maxBatches = 64;        // 최대 배치모델의 개수
+        private readonly int _maxMipLevels = 10;        // HiZ 최대 밉맵 레벨
+        private uint _batchedModelCount = 0;            // 배치된 모델의 개수
 
         // GPU 버퍼 (SSBO)
-        private uint _transformSSBO;           // 모든 인스턴스의 Transform 행렬
-        private uint _aabbSSBO;                // 모든 인스턴스의 AABB
-        private uint _batchIDSSBO;             // 각 인스턴스가 속한 배치 ID
-        private uint _frustumPassedSSBO;       // 프러스텀 통과한 인스턴스 인덱스
-        private uint _frustumCounterSSBO;      // 프러스텀 통과 개수 (Atomic Counter)
-        private uint _indirectCommandBuffer;   // DrawIndirect 커맨드 버퍼
+        protected uint _transformSSBO;           // 모든 인스턴스의 Transform 행렬
+        protected uint _aabbSSBO;                // 모든 인스턴스의 AABB
+        protected uint _batchIDSSBO;             // 각 인스턴스가 속한 배치 ID
+        protected uint _frustumPassedSSBO;       // 프러스텀 통과한 인스턴스 인덱스
+        protected uint _frustumCounterSSBO;      // 프러스텀 통과 개수 (Atomic Counter)
+        protected uint _indirectCommandBuffer;   // DrawIndirect 커맨드 버퍼
 
         // LOD별 가시 인스턴스 버퍼
-        private uint _visibleIndicesSSBO_LOD0;  // LOD0 가시 인스턴스 인덱스 배열
-        private uint _visibleIndicesSSBO_LOD1;  // LOD1 가시 인스턴스 인덱스 배열
-        private uint _visibleIndicesSSBO_LOD2;  // LOD2 가시 인스턴스 인덱스 배열
-        private uint _visibleIndicesSSBO_LOD3;  // LOD3 가시 인스턴스 인덱스 배열
+        protected uint _visibleIndicesSSBO_LOD0;  // LOD0 가시 인스턴스 인덱스 배열
+        protected uint _visibleIndicesSSBO_LOD1;  // LOD1 가시 인스턴스 인덱스 배열
+        protected uint _visibleIndicesSSBO_LOD2;  // LOD2 가시 인스턴스 인덱스 배열
+        protected uint _visibleIndicesSSBO_LOD3;  // LOD3 가시 인스턴스 인덱스 배열
 
-        private uint _visibleCountsSSBO_LOD0;  // 배치별 LOD0 가시 개수
-        private uint _visibleCountsSSBO_LOD1;  // 배치별 LOD1 가시 개수
-        private uint _visibleCountsSSBO_LOD2;  // 배치별 LOD2 가시 개수
-        private uint _visibleCountsSSBO_LOD3;  // 배치별 LOD3 가시 개수
+        protected uint _visibleCountsSSBO_LOD0;  // 배치별 LOD0 가시 개수
+        protected uint _visibleCountsSSBO_LOD1;  // 배치별 LOD1 가시 개수
+        protected uint _visibleCountsSSBO_LOD2;  // 배치별 LOD2 가시 개수
+        protected uint _visibleCountsSSBO_LOD3;  // 배치별 LOD3 가시 개수
 
         // 셰이더
-        private FrustumCullingComputeShader _cullingCompute;        // 프러스텀 컬링 컴퓨트 셰이더
-        private HiZOcclusionComputeShader _hiZOcclusionCompute;     // Hi-Z 오클루전 컬링 컴퓨트 셰이더
-        private UpdateIndirectCommandsComputeShader _updateCommandsCompute; // Indirect 커맨드 업데이트 컴퓨트 셰이더
-        private GPUInstancedShader _instancedShader;                // 메시 렌더링 셰이더
-        private ImpostorInstancedShader _impostorInstancedShader;   // 임포스터 렌더링 셰이더
-        private UnlitShader _unlitShader;                           // 임포스터 생성용 셰이더
-        private GPUDrivenImpostorShader _gpuDrivenImpostorShader;   // GPU 드리븐 임포스터 렌더링 셰이더
-        private CrossBillboardInstanceShader _crossBillboardInstanceShader; // 크로스 빌보드 렌더링 셰이더
+        private FrustumCullingComputeShader _cullingCompute;    // 프러스텀 컬링 컴퓨트 셰이더
+        private HiZOcclusionComputeShader _hiZOcclusionCompute; // Hi-Z 오클루전 컬링 컴퓨트 셰이더
         private GPUInstancedDepthShader _depthShader;               // 깊이 렌더링 셰이더
-
-        // 그림자 관련 변수
         private GPUInstancedShadowMapShader _gpuInstancedShadowMapShader;
-        private ShadowMap _instanceShadowMap;
-
-        // 기능 활성화 변수
-        private bool _isVisibleShadow = true;
-
-        // 임포스터 관련
-        private ImpostorAssets _impostor;   // 임포스터 에셋 관리자
-        public BaseModel3d _point;          // 단일 포인트 모델 (인스턴싱용)
-
-        // 크로스 빌보드 관련
-        private CrossBillboardAtlasGenerator _generator;  // 크로스 빌보드 아틀라스 생성기
-        private CrossBillboardData[] _billboardData;      // 배치별 크로스 빌보드 데이터
+        private UpdateIndirectCommandsComputeShader _updateCommandsCompute; 
+                                                                // Indirect 커맨드 업데이트 컴퓨트 셰이더
 
         // DrawIndirect 관련
-        private Dictionary<uint, int> _batchCommandStartIndices; // 배치별 커맨드 시작 인덱스 (바이트 오프셋)
+        protected Dictionary<uint, int> _batchCommandStartIndices; // 배치별 커맨드 시작 인덱스 (바이트 오프셋)
         private int _totalDrawCommands;                          // 전체 DrawIndirect 커맨드 개수
 
         // 작업 버퍼
-        private uint[] _startIndices;  // Compute Shader에 전달할 시작 인덱스
+        private uint[] _startIndices;  // Compute Shader에 전달할 시작 인덱스 (예) [batchid,index] [0,0] [1,1000] ...
         private uint[] _frustumCount;  // 프러스텀 통과 개수 읽기용
         private uint[] _zeros;         // 제로 초기화 배열
         private uint[] _countsLOD0;    // LOD0 가시 개수 읽기용
@@ -128,37 +124,41 @@ namespace GPUDriven
         private uint[] _batchCounts;   // 배치별 인스턴스 개수
 
         // 렌더링 임시 변수
-        private BatchDescriptor _batch;               // 현재 렌더링 중인 배치
-        private ImpostorRenderData _renderData;       // 임포스터 렌더링 데이터
-        private UnifiedTexturedModel _unifiedTexturedModel; // 통합 텍스처 모델
+        protected BatchDescriptor _batch;     // 현재 렌더링 중인 배치
+        protected UnifiedTexturedModel _unifiedTexturedModel; // 통합 텍스처 모델
+        public BaseModel3d _point;          // 단일 포인트 모델 (인스턴싱용)
 
         // 디버그 정보 캐시
-        private uint[] _lastVisibleCount_LOD0;  // 마지막 LOD0 가시 개수
-        private uint[] _lastVisibleCount_LOD1;  // 마지막 LOD1 가시 개수
-        private uint[] _lastVisibleCount_LOD2;  // 마지막 LOD2 가시 개수
-        private uint[] _lastVisibleCount_LOD3;  // 마지막 LOD3 가시 개수
-        private uint _lastFrustumPassed = 0;    // 마지막 프러스텀 통과 개수
-        private int _frameCount = 0;            // 프레임 카운터
+        protected uint[] _lastVisibleCount_LOD0;  // 마지막 LOD0 가시 개수
+        protected uint[] _lastVisibleCount_LOD1;  // 마지막 LOD1 가시 개수
+        protected uint[] _lastVisibleCount_LOD2;  // 마지막 LOD2 가시 개수
+        protected uint[] _lastVisibleCount_LOD3;  // 마지막 LOD3 가시 개수
+        protected uint _lastFrustumPassed = 0;    // 마지막 프러스텀 통과 개수
+        protected int _frameCount = 0;            // 프레임 카운터
 
         // 디버그 옵션
-        bool _isDebugLOD1 = false;                          // LOD1 디버깅 여부 
-        Vertex4f COLOR_RED4 = new Vertex4f(1f, 0f, 0f, 1f);  // 빨간색
-        Vertex4f COLOR_GREEN4 = new Vertex4f(0f, 1f, 0f, 1f); // 초록색
-        Vertex4f COLOR_BLUE4 = new Vertex4f(0f, 0f, 1f, 1f);  // 파란색
-
-        NormalVectorShader _normalShader;
-        CrossBillboardNormalShader _crossBillboardNormalShader;
+        protected bool _isDebugLOD1 = false;                          // LOD1 디버깅 여부 
+        protected Vertex4f COLOR_RED4 = new Vertex4f(1f, 0f, 0f, 1f);  // 빨간색
+        protected Vertex4f COLOR_GREEN4 = new Vertex4f(0f, 1f, 0f, 1f); // 초록색
+        protected Vertex4f COLOR_BLUE4 = new Vertex4f(0f, 0f, 1f, 1f);  // 파란색
 
         // 최적화
         uint[] _batchStartIndices;
 
         // ------------------------------------------------------------
+        // 상속 변수 및 추상 메서드
+        // ------------------------------------------------------------
+        private bool _isInitialized = false;
+        public abstract void RenderBatchLod0(uint batchID, string batchName, int cmdStartIndex, Camera camera);
+        public abstract void RenderBatchLod1(uint batchID, string batchName, int cmdStartIndex, Camera camera);
+        public abstract void RenderBatchLod2(uint batchID, string batchName, int cmdStartIndex, Camera camera);
+        public abstract void RenderBatchLod3(uint batchID, string batchName, int cmdStartIndex, Camera camera);
+
+        // ------------------------------------------------------------
         // 속성
         // ------------------------------------------------------------
 
-        public bool IsDebugLOD1 { get => _isDebugLOD1; set => _isDebugLOD1 = value;}
-        public uint InstanceShadowMapTextureID => _instanceShadowMap.DepthTextureID;
-        public ShadowMap InstanceShadowMap => _instanceShadowMap;
+        public bool IsDebugLOD1 { get => _isDebugLOD1; set => _isDebugLOD1 = value; }
 
         // ------------------------------------------------------------
         // 생성자
@@ -167,17 +167,31 @@ namespace GPUDriven
         /// <summary>
         /// HiZRenderPass 생성자
         /// </summary>
+        /// <param name="name">렌더패스 이름</param>
         /// <param name="projPath">프로젝트 경로</param>
-        public HiZRenderPass(string projPath)
+        /// <param name="maxInstances">최대 수용 가능 인스턴스의 개수</param>
+        /// <param name="maxBatches">최대 배치모델의 개수(나무1, 나무2, 바위1, ... )</param>
+        /// <param name="maxMipLevels">HiZ 최대 밉맵 레벨 (0이면 비활성화)</param>
+        public RenderPassPipeLine(string name, string projPath, uint maxInstances = 100_000, uint maxBatches = 64, int maxMipLevels = 0)
         {
+            // 이름 설정
+            _name = name;
+
+            // 최대 수용 인스턴스 및 배치 수 설정
+            _maxInstances = maxInstances;
+            _maxBatches = maxBatches;
+            _maxMipLevels = maxMipLevels;
+            
+            // 작업 버퍼 초기화
             _projPath = projPath;
-            _zeros = new uint[MAX_BATCHES];
-            _countsLOD0 = new uint[MAX_BATCHES];
-            _countsLOD1 = new uint[MAX_BATCHES];
-            _countsLOD2 = new uint[MAX_BATCHES];
-            _countsLOD3 = new uint[MAX_BATCHES];
+            _zeros = new uint[_maxBatches];
+            _countsLOD0 = new uint[_maxBatches];
+            _countsLOD1 = new uint[_maxBatches];
+            _countsLOD2 = new uint[_maxBatches];
+            _countsLOD3 = new uint[_maxBatches];
             _frustumPassed = new uint[1];
 
+            // 단일 포인트 모델 로드
             _point = Loader3d.LoadPoint(0, 0, 0);
         }
 
@@ -185,60 +199,53 @@ namespace GPUDriven
         // 초기화
         // ------------------------------------------------------------
 
+        #region 초기화 관련 및 버퍼 생성
+
         /// <summary>
         /// 렌더러 초기화
         /// </summary>
-        /// <param name="batchManager">Finalize된 배치 매니저</param>
-        /// <param name="camera">카메라 (임포스터 생성용)</param>
         /// <param name="maxMipLevels">HiZ 최대 밉맵 레벨 (0이면 비활성화)</param>
-        public void Initialize(ModelBatchManager batchManager, Camera camera, int maxMipLevels = 0)
+        public virtual void Initialize(Camera camera, ModelBatchManager batchManager)
         {
+            // 배치 매니저 설정
             if (!batchManager.IsFinalized)
             {
                 throw new InvalidOperationException(
                     "BatchManager must be finalized before initializing renderer");
             }
 
-            if (maxMipLevels > 11)
-            {
-                throw new ArgumentException("Max mip levels exceed limit (11)");
-            }
-
             _batchManager = batchManager;
+            _batchedModelCount = _batchManager.ActualBatchCount;
 
             // 리소스 초기화
-            _lastVisibleCount_LOD0 = new uint[MAX_BATCHES];
-            _lastVisibleCount_LOD1 = new uint[MAX_BATCHES];
-            _lastVisibleCount_LOD2 = new uint[MAX_BATCHES];
-            _lastVisibleCount_LOD3 = new uint[MAX_BATCHES];
+            _lastVisibleCount_LOD0 = new uint[_maxBatches];
+            _lastVisibleCount_LOD1 = new uint[_maxBatches];
+            _lastVisibleCount_LOD2 = new uint[_maxBatches];
+            _lastVisibleCount_LOD3 = new uint[_maxBatches];
 
-            _startIndices = new uint[_batchManager.ActualBatchCount];
+            // 배치 정보 캐시
+            _startIndices = new uint[_batchedModelCount];      // 배치별 시작 인덱스(실제 배치된 인스턴스 기준)
             _frustumCount = new uint[1];
 
             // GPU 리소스 생성
             CreateSSBOs();
 
-            // 셰이더 로드
-            LoadShaders(_projPath, maxMipLevels);
-
+            // CPU -> GPU 데이터 업로드
             UploadToGPU();
 
-            // 임포스터 아틀라스 생성
-            InitializeImpostors(camera);
-
-            // 크로스 빌보드 아틀라스 생성
-            _generator = new CrossBillboardAtlasGenerator();
-            _billboardData = new CrossBillboardData[_batchManager.ActualBatchCount];
-            for (uint i = 0; i < _batchManager.ActualBatchCount; i++)
+            // 셰이더 로드
+            if (_maxMipLevels > 11)
             {
-                var batch = _batchManager.GetBatch(i);
-                _billboardData[i] = _generator.GenerateAtlas(_unlitShader, batch.Model);
+                throw new ArgumentException("Max mip levels exceed limit (11)");
             }
+            LoadShaders(_projPath, _maxMipLevels);
 
-            // 인스턴스 물체용 그림자맵
-            _instanceShadowMap = new ShadowMap(4096, 4096);
-
+            _isInitialized = true;
         }
+
+        // ------------------------------------------------------------
+        // 셰이더 로드
+        // ------------------------------------------------------------
 
         /// <summary>
         /// 모든 셰이더 로드
@@ -249,33 +256,9 @@ namespace GPUDriven
         {
             _cullingCompute = new FrustumCullingComputeShader(projPath);
             _hiZOcclusionCompute = new HiZOcclusionComputeShader(projPath, maxMipLevels);
-            _instancedShader = new GPUInstancedShader(projPath);
-            _impostorInstancedShader = new ImpostorInstancedShader(projPath);
-            _unlitShader = new UnlitShader(projPath);
             _updateCommandsCompute = new UpdateIndirectCommandsComputeShader(projPath);
-            _gpuDrivenImpostorShader = new GPUDrivenImpostorShader(projPath);
-            _crossBillboardInstanceShader = new CrossBillboardInstanceShader(projPath);
             _depthShader = new GPUInstancedDepthShader(projPath);
-            _normalShader = new NormalVectorShader(projPath);
-            _crossBillboardNormalShader = new CrossBillboardNormalShader(projPath);
             _gpuInstancedShadowMapShader = new GPUInstancedShadowMapShader(projPath);
-        }
-
-        /// <summary>
-        /// 배치별 임포스터 생성
-        /// </summary>
-        /// <param name="camera">카메라</param>
-        private void InitializeImpostors(Camera camera)
-        {
-            _impostor = new ImpostorAssets(_unlitShader, camera);
-
-            for (uint i = 0; i < _batchManager.ActualBatchCount; i++)
-            {
-                var batch = _batchManager.GetBatch(i);
-                _impostor.CreateImpostorModel(
-                    ImpostorSettings.CreateSettings(batch.ModelName, 64, 8, 6),
-                    batch.Model);
-            }
         }
 
         // ------------------------------------------------------------
@@ -302,27 +285,32 @@ namespace GPUDriven
         /// </summary>
         private void CreateSSBOs()
         {
-            // DrawIndirect 커맨드 인덱스 계산
+            // 배치별 커맨드 시작 인덱스 계산
             CalculateCommandIndices();
 
+            // 구조체 크기 정확하게 계산
+            uint instanceDataSize = (uint)Marshal.SizeOf<InstanceModelMatrixData>();  // 128
+            uint aabbSize = (uint)Marshal.SizeOf<AABB>();  // 32
+            uint batchIDSize = sizeof(uint);  // 4
+
             // 인스턴스 데이터 버퍼
-            CreateSSBOBuffer(ref _transformSSBO, 0, MAX_INSTANCES * 64, BufferUsage.StaticDraw);  // Transform (Mat4x4)
-            CreateSSBOBuffer(ref _aabbSSBO, 3, MAX_INSTANCES * 32, BufferUsage.StaticDraw);       // AABB (Min + Max = 8 floats)
-            CreateSSBOBuffer(ref _batchIDSSBO, 9, MAX_INSTANCES * 4, BufferUsage.StaticDraw);     // Batch ID (uint)
+            CreateSSBOBuffer(ref _transformSSBO, BINDING_TRANSFORM, _maxInstances * instanceDataSize, BufferUsage.StaticDraw);
+            CreateSSBOBuffer(ref _aabbSSBO, BINDING_AABB, _maxInstances * aabbSize, BufferUsage.StaticDraw);
+            CreateSSBOBuffer(ref _batchIDSSBO, BINDING_BATCH_ID, _maxInstances * batchIDSize, BufferUsage.StaticDraw);
 
             // 프러스텀 컬링 중간 버퍼
-            CreateSSBOBuffer(ref _frustumPassedSSBO, 1, MAX_INSTANCES * 4, BufferUsage.DynamicDraw);  // 프러스텀 통과 인스턴스 인덱스
-            CreateSSBOBuffer(ref _frustumCounterSSBO, 2, 4, BufferUsage.DynamicDraw);                 // 프러스텀 통과 개수 (Atomic Counter)
+            CreateSSBOBuffer(ref _frustumPassedSSBO, BINDING_FRUSTUM_PASSED, _maxInstances * sizeof(int), BufferUsage.DynamicDraw);
+            CreateSSBOBuffer(ref _frustumCounterSSBO, BINDING_FRUSTUM_COUNTER, sizeof(uint), BufferUsage.DynamicDraw);
 
-            // LOD별 가시 인스턴스 버퍼
-            CreateSSBOBuffer(ref _visibleIndicesSSBO_LOD0, 4, (uint)(MAX_INSTANCES * 4));
-            CreateSSBOBuffer(ref _visibleCountsSSBO_LOD0, 5, (uint)(MAX_BATCHES * 4));
-            CreateSSBOBuffer(ref _visibleIndicesSSBO_LOD1, 6, (uint)(MAX_INSTANCES * 4));
-            CreateSSBOBuffer(ref _visibleCountsSSBO_LOD1, 7, (uint)(MAX_BATCHES * 4));
-            CreateSSBOBuffer(ref _visibleIndicesSSBO_LOD2, 8, (uint)(MAX_INSTANCES * 4));
-            CreateSSBOBuffer(ref _visibleCountsSSBO_LOD2, 9, (uint)(MAX_BATCHES * 4));
-            CreateSSBOBuffer(ref _visibleIndicesSSBO_LOD3, 10, (uint)(MAX_INSTANCES * 4));
-            CreateSSBOBuffer(ref _visibleCountsSSBO_LOD3, 11, (uint)(MAX_BATCHES * 4));
+            // HiZ컬링 후 LOD별 가시 인스턴스 버퍼
+            CreateSSBOBuffer(ref _visibleIndicesSSBO_LOD0, BINDING_VISIBLE_INDICES_LOD0, (uint)(_maxInstances * 4));
+            CreateSSBOBuffer(ref _visibleCountsSSBO_LOD0, BINDING_VISIBLE_COUNTS_LOD0, (uint)(_maxBatches * 4));
+            CreateSSBOBuffer(ref _visibleIndicesSSBO_LOD1, BINDING_VISIBLE_INDICES_LOD1, (uint)(_maxInstances * 4));
+            CreateSSBOBuffer(ref _visibleCountsSSBO_LOD1, BINDING_VISIBLE_COUNTS_LOD1, (uint)(_maxBatches * 4));
+            CreateSSBOBuffer(ref _visibleIndicesSSBO_LOD2, BINDING_VISIBLE_INDICES_LOD2, (uint)(_maxInstances * 4));
+            CreateSSBOBuffer(ref _visibleCountsSSBO_LOD2, BINDING_VISIBLE_COUNTS_LOD2, (uint)(_maxBatches * 4));
+            CreateSSBOBuffer(ref _visibleIndicesSSBO_LOD3, BINDING_VISIBLE_INDICES_LOD3, (uint)(_maxInstances * 4));
+            CreateSSBOBuffer(ref _visibleCountsSSBO_LOD3, BINDING_VISIBLE_COUNTS_LOD3, (uint)(_maxBatches * 4));
 
             // DrawIndirect 커맨드 버퍼 생성
             CreateUnifiedIndirectBuffer();
@@ -343,21 +331,22 @@ namespace GPUDriven
             }
         }
 
+
         /// <summary>
         /// 통합 Indirect Command Buffer 생성 및 초기화
         /// LOD0, LOD1, LOD2, LOD3 커맨드를 순차적으로 배치
         /// </summary>
         private void CreateUnifiedIndirectBuffer()
         {
-            int bufferSize = (int)(_batchManager.ActualBatchCount * BYTES_PER_BATCH);
+            int bufferSize = (int)(_batchedModelCount * BYTES_PER_BATCH);
 
             _indirectCommandBuffer = Gl.GenBuffer();
             Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectCommandBuffer);
-            Gl.BufferData(BufferTarget.DrawIndirectBuffer, (uint)bufferSize,
-                          IntPtr.Zero, BufferUsage.DynamicDraw);
+            Gl.BufferData(BufferTarget.DrawIndirectBuffer, (uint)bufferSize, IntPtr.Zero, BufferUsage.DynamicDraw);
+            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, BINDING_INDIRECT_COMMAND, _indirectCommandBuffer);  // SSBO 바인딩(13)
 
             int commandOffset = 0;
-            for (uint b = 0; b < _batchManager.ActualBatchCount; b++)
+            for (uint b = 0; b < _batchedModelCount; b++)
             {
                 BatchDescriptor batch = _batchManager.GetBatch(b);
 
@@ -412,6 +401,7 @@ namespace GPUDriven
             }
         }
 
+
         /// <summary>
         /// CPU에서 준비한 인스턴스 데이터를 GPU로 업로드
         /// </summary>
@@ -425,6 +415,7 @@ namespace GPUDriven
             }
 
             InstanceModelMatrixData[] instanceData = _batchManager.GetInstanceData();
+
             AABB[] aabbs = _batchManager.GetAABBs();
             uint[] batchIDs = _batchManager.GetBatchIDs();
 
@@ -434,21 +425,25 @@ namespace GPUDriven
             int aabbSize = Marshal.SizeOf<AABB>();
             int batchIDSize = sizeof(uint);
 
+            Console.WriteLine($"----------------------------------------------------------------------");
+            Console.WriteLine($"          GPU 업로드(GPU-DRIVEN **{_name}** 모델) 정보");
+            Console.WriteLine($"----------------------------------------------------------------------");
             Console.WriteLine($"[GPU Upload] Starting...");
             Console.WriteLine($"  Total Instances: {totalInstances}");
             Console.WriteLine($"  InstanceModelMatrixData size: {instanceDataSize} bytes");
             Console.WriteLine($"  AABB size: {aabbSize} bytes");
 
-            // ✅ Transform SSBO 업로드
+            // ------------------------------
+            // Transform SSBO 업로드
+            // ------------------------------
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _transformSSBO);
 
-            // ✅ 버퍼 크기 확인
+            // 버퍼 크기 확인
             int bufferSize = 0;
             Gl.GetBufferParameter(BufferTarget.ShaderStorageBuffer, GL_BUFFER_SIZE, out bufferSize);
-            Console.WriteLine($"  Transform SSBO buffer size: {bufferSize} bytes");
+            Console.WriteLine($"Transform SSBO buffer size: {bufferSize} bytes");
 
             uint requiredSize = totalInstances * (uint)instanceDataSize;
-            Console.WriteLine($"  Required size: {requiredSize} bytes");
 
             if (bufferSize < requiredSize)
             {
@@ -467,8 +462,6 @@ namespace GPUDriven
                 {
                     uint sizeInBytes = totalInstances * (uint)instanceDataSize;
 
-                    Console.WriteLine($"  Uploading {sizeInBytes} bytes...");
-
                     Gl.BufferSubData(
                         BufferTarget.ShaderStorageBuffer,
                         IntPtr.Zero,
@@ -484,19 +477,20 @@ namespace GPUDriven
                     }
                     else
                     {
-                        Console.WriteLine($"  ✅ Transform SSBO uploaded: {sizeInBytes / 1024.0:F1} KB");
+                        Console.WriteLine($"\t[OK] Transform SSBO uploaded: {sizeInBytes / 1024.0:F1} KB");
                     }
                 }
             }
 
-            // ✅ AABB 업로드
+            // ------------------------------
+            // AABB 업로드
+            // ------------------------------
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _aabbSSBO);
 
             Gl.GetBufferParameter(BufferTarget.ShaderStorageBuffer, GL_BUFFER_SIZE, out bufferSize);
             requiredSize = totalInstances * (uint)aabbSize;
 
-            Console.WriteLine($"  AABB SSBO buffer size: {bufferSize} bytes");
-            Console.WriteLine($"  AABB Required size: {requiredSize} bytes");
+            Console.WriteLine($"AABB SSBO buffer size: {bufferSize} bytes");
 
             if (bufferSize < requiredSize)
             {
@@ -528,19 +522,20 @@ namespace GPUDriven
                     }
                     else
                     {
-                        Console.WriteLine($"  ✅ AABB SSBO uploaded: {sizeInBytes / 1024.0:F1} KB");
+                        Console.WriteLine($"\t[OK] AABB SSBO uploaded: {sizeInBytes / 1024.0:F1} KB");
                     }
                 }
             }
 
-            // ✅ Batch ID 업로드
+            // ------------------------------
+            // Batch ID 업로드
+            // ------------------------------
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _batchIDSSBO);
 
             Gl.GetBufferParameter(BufferTarget.ShaderStorageBuffer, GL_BUFFER_SIZE, out bufferSize);
             requiredSize = totalInstances * (uint)batchIDSize;
 
-            Console.WriteLine($"  BatchID SSBO buffer size: {bufferSize} bytes");
-            Console.WriteLine($"  BatchID Required size: {requiredSize} bytes");
+            Console.WriteLine($"BatchID SSBO buffer size: {bufferSize} bytes");
 
             if (bufferSize < requiredSize)
             {
@@ -572,7 +567,7 @@ namespace GPUDriven
                     }
                     else
                     {
-                        Console.WriteLine($"  ✅ BatchID SSBO uploaded: {sizeInBytes / 1024.0:F1} KB");
+                        Console.WriteLine($"\t[OK] BatchID SSBO uploaded: {sizeInBytes / 1024.0:F1} KB");
                     }
                 }
             }
@@ -580,11 +575,17 @@ namespace GPUDriven
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
 
             Console.WriteLine($"[GPU Upload] Complete! Total: {(totalInstances * (instanceDataSize + aabbSize + batchIDSize)) / 1024.0 / 1024.0:F2} MB");
+            Console.WriteLine("\r\n");
         }
+
+        #endregion
+
 
         // ------------------------------------------------------------
         // 프레임 업데이트
         // ------------------------------------------------------------
+
+        #region 업데이트 관련
 
         /// <summary>
         /// 매 프레임 컬링 및 LOD 업데이트
@@ -597,10 +598,20 @@ namespace GPUDriven
         /// <param name="hizBuffer">Hi-Z 버퍼</param>
         public void Update(Camera camera, Polyhedron viewFrustum, HierarchyZBuffer hizBuffer)
         {
+            if (!_isInitialized)
+            {
+                throw new Exception("해당 클래스를 상속하여 사용하기 위해서는 반드시 자식클래스에서 먼저 초기화를 하세요.");
+            }
+
             if (viewFrustum == null) return;
 
+            // 1. 프러스텀 컬링
             PerformFrustumCulling(camera, viewFrustum);
+
+            // 2. Hi-Z 오클루전 컬링 및 LOD 선택
             PerformHiZCulling(camera, hizBuffer);
+
+            // 3. Indirect 커맨드 버퍼 업데이트
             UpdateIndirectCommandsGPU();
 
             _frameCount++;
@@ -608,11 +619,7 @@ namespace GPUDriven
 
         /// <summary>
         /// 1단계: 프러스텀 컬링 Compute Shader 실행
-        /// 입력: 모든 인스턴스 AABB
-        /// 출력: 프러스텀 통과 인스턴스 인덱스 배열
         /// </summary>
-        /// <param name="camera">카메라</param>
-        /// <param name="viewFrustum">뷰 프러스텀</param>
         private void PerformFrustumCulling(Camera camera, Polyhedron viewFrustum)
         {
             if (_cullingCompute == null) return;
@@ -622,46 +629,48 @@ namespace GPUDriven
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _frustumCounterSSBO);
             Gl.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, 4, zero);
 
+            // 메모리 배리어 추가
+            Gl.MemoryBarrier(MemoryBarrierMask.ShaderStorageBarrierBit);
+
             _cullingCompute.Bind();
 
-            // SSBO 바인딩
+            // SSBO 바인딩 (고정 바인딩 포인트 사용)
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _aabbSSBO);
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _frustumPassedSSBO);
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 2, _frustumCounterSSBO);
 
-            // 프러스텀 평면 전달
             _cullingCompute.LoadFrustumPlanes(viewFrustum.Planes);
 
-            // Dispatch: 256 스레드씩 워크 그룹 실행
-            int numWorkGroups = (MAX_INSTANCES + 255) / 256;
+            uint totalInstances = _batchManager.TotalInstances;  // 9,073
+            _cullingCompute.LoadMaxInstanceCount((int)totalInstances);
+
+            int numWorkGroups = (int)((totalInstances + 255) / 256);
             Gl.DispatchCompute((uint)numWorkGroups, 1, 1);
 
             Gl.MemoryBarrier(MemoryBarrierMask.ShaderStorageBarrierBit);
-
             _cullingCompute.Unbind();
         }
 
         /// <summary>
-        /// 배치별 LOD 카운터 초기화
+        /// 배치별 LOD 카운터 초기화 (최적화 버전)
         /// </summary>
-        /// <param name="buffer">초기화할 버퍼 ID</param>
         private void InitializeBatchLODCount(uint buffer)
         {
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, buffer);
+
+            // 실제 사용하는 배치 개수만 초기화
+            uint actualSize = _batchedModelCount * sizeof(uint);  // 4 * 4 = 16 바이트
+
             fixed (uint* ptr = _zeros)
             {
                 Gl.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero,
-                    (uint)(MAX_BATCHES * 4), (IntPtr)ptr);
+                    actualSize, (IntPtr)ptr);
             }
         }
 
         /// <summary>
         /// 2단계: Hi-Z Occlusion Culling 및 LOD 선택 Compute Shader 실행
-        /// 입력: 프러스텀 통과 인스턴스, 카메라 위치, Hi-Z 버퍼
-        /// 출력: LOD0/LOD1/LOD2/LOD3별 가시 인스턴스 인덱스 및 배치별 개수
         /// </summary>
-        /// <param name="camera">카메라</param>
-        /// <param name="hizBuffer">Hi-Z 버퍼</param>
         private void PerformHiZCulling(Camera camera, HierarchyZBuffer hizBuffer)
         {
             // 배치별 LOD 카운터 초기화
@@ -670,9 +679,12 @@ namespace GPUDriven
             InitializeBatchLODCount(_visibleCountsSSBO_LOD2);
             InitializeBatchLODCount(_visibleCountsSSBO_LOD3);
 
+            // 메모리 배리어 추가!
+            Gl.MemoryBarrier(MemoryBarrierMask.ShaderStorageBarrierBit);
+
             _hiZOcclusionCompute.Bind();
 
-            // SSBO 바인딩
+            // SSBO 바인딩 (고정 바인딩 포인트 사용)
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _frustumPassedSSBO);
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 2, _frustumCounterSSBO);
@@ -693,11 +705,13 @@ namespace GPUDriven
             _hiZOcclusionCompute.LoadVPMatrix(camera.VPMatrix);
             _hiZOcclusionCompute.LoadCameraPosition(camera.Position);
             _hiZOcclusionCompute.LoadScreenSize(hizBuffer.Width, hizBuffer.Height);
-            _hiZOcclusionCompute.LoadMaxInstanceCount(MAX_INSTANCES);
+
+            uint totalInstances = _batchManager.TotalInstances;
+            _hiZOcclusionCompute.LoadMaxInstanceCount((int)totalInstances);
+
             _hiZOcclusionCompute.LoadCameraNearFar(camera.NEAR, camera.FAR);
             _hiZOcclusionCompute.LoadViewMatrix(camera.ViewMatrix);
 
-            // 배치별 LOD 거리 임계값 전달
             _batchLODs = _batchManager.GetBatchLODs();
             _batchStarts = _batchManager.GetBatchStarts();
             _batchCounts = _batchManager.GetBatchCounts();
@@ -709,18 +723,18 @@ namespace GPUDriven
             // 프러스텀 통과 개수 읽기
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _frustumCounterSSBO);
             Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, 4, _frustumCount);
-
-            // Dispatch: 64 스레드씩 워크 그룹 실행
             int numWorkGroups = ((int)_frustumCount[0] + 63) / 64;
+
+            // 디스패치
             Gl.DispatchCompute((uint)numWorkGroups, 1, 1);
 
             Gl.MemoryBarrier(MemoryBarrierMask.ShaderStorageBarrierBit);
+
             _hiZOcclusionCompute.Unbind();
         }
 
         /// <summary>
         /// 3단계: DrawIndirect 커맨드의 InstanceCount 필드 업데이트
-        /// GPU에서 각 배치의 가시 개수를 커맨드 버퍼에 기록
         /// </summary>
         private void UpdateIndirectCommandsGPU()
         {
@@ -728,11 +742,12 @@ namespace GPUDriven
 
             _updateCommandsCompute.Bind();
 
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 10, _indirectCommandBuffer);
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 11, _visibleCountsSSBO_LOD0);
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 12, _visibleCountsSSBO_LOD1);
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 13, _visibleCountsSSBO_LOD2);
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 14, _visibleCountsSSBO_LOD3);
+            // SSBO 바인딩 (고정 바인딩 포인트 사용)
+            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 13, _indirectCommandBuffer);
+            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 6, _visibleCountsSSBO_LOD0);
+            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 8, _visibleCountsSSBO_LOD1);
+            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 10, _visibleCountsSSBO_LOD2);
+            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 12, _visibleCountsSSBO_LOD3);
 
             for (uint b = 0; b < _batchManager.ActualBatchCount; b++)
             {
@@ -750,9 +765,13 @@ namespace GPUDriven
             _updateCommandsCompute.Unbind();
         }
 
+        #endregion
+
         // ------------------------------------------------------------
         // 렌더링
         // ------------------------------------------------------------
+
+        #region 렌더링 관련
 
         /// <summary>
         /// 모든 배치 렌더링
@@ -781,60 +800,6 @@ namespace GPUDriven
             }
         }
 
-        public void RenderShadowLod0(Camera camera, Vertex3f sunLightDirection)
-        {
-            // 렌더 스테이트 설정
-            Gl.Disable(EnableCap.Blend);
-            Gl.Enable(EnableCap.DepthTest);
-            Gl.Enable(EnableCap.CullFace);
-
-            // Compute Shader 결과가 반영되도록 메모리 배리어
-            Gl.MemoryBarrier(MemoryBarrierMask.ShaderStorageBarrierBit |
-                             MemoryBarrierMask.CommandBarrierBit);
-
-            if (_batchManager == null) return;
-
-
-            // 세도우맵 바인딩 및 광원 뷰 행렬 계산
-            Vertex3f terrainCenter = new Vertex3f(0, 0, 0);
-            float terrainSize = 50.0f;
-            _instanceShadowMap.Bind();
-            _instanceShadowMap.Update(sunLightDirection, camera.PivotPosition, terrainSize);
-
-            // 각 배치별 렌더링
-            for (uint batchID = 0; batchID < _batchManager.ActualBatchCount; batchID++)
-            {
-                _batch = _batchManager.GetBatch(batchID);
-                string batchName = _batch.ModelName;
-                int cmdStartIndex = _batchCommandStartIndices[batchID];
-                Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectCommandBuffer);
-
-                _gpuInstancedShadowMapShader.Bind();
-                {
-                    // LOD0
-                    _gpuInstancedShadowMapShader.LoadBatchStartOffset(_batch.StartIndex);
-                    _gpuInstancedShadowMapShader.LoadTextureArray(_batch.Model.TextureIDArray);
-                    _gpuInstancedShadowMapShader.LoadEnableDebug(false);
-                    _gpuInstancedShadowMapShader.LoadMaxDepthDistance(10000.0f);
-                    _gpuInstancedShadowMapShader.LoadLightViewMatrix(_instanceShadowMap.LightViewMatrix);
-                    _gpuInstancedShadowMapShader.LoadLightProjMatrix(_instanceShadowMap.LightProjMatrix);
-                    DrawArraysIndirect(_batch.VAO, cmdStartIndex, 0, _visibleIndicesSSBO_LOD0, PrimitiveType.Triangles);
-
-                    // LOD1
-                    _gpuInstancedShadowMapShader.LoadEnableDebug(_isDebugLOD1);
-                    _gpuInstancedShadowMapShader.LoadDebugColor(COLOR_RED4);
-                    DrawArraysIndirect(_batch.VAO, cmdStartIndex, 1, _visibleIndicesSSBO_LOD1, PrimitiveType.Triangles);
-                }
-                _gpuInstancedShadowMapShader.Unbind();
-
-
-            }
-
-            // 세도우맵 바인딩 해제
-            _instanceShadowMap.Unbind();
-
-        }
-
         /// <summary>
         /// 단일 배치 렌더링 (4단계 LOD)
         /// LOD0: 풀 메시
@@ -849,89 +814,36 @@ namespace GPUDriven
             _batch = _batchManager.GetBatch(batchID);
             string batchName = _batch.ModelName;
             int cmdStartIndex = _batchCommandStartIndices[batchID];
-            _renderData = _impostor.GetImpostorRenderData(batchName);
-            _unifiedTexturedModel = _impostor.UnifiedTexturedModel(batchName);
-            CrossBillboardData crossBillboardData = _billboardData[batchID];
 
             Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectCommandBuffer);
 
+            _batch = _batchManager.GetBatch(batchID);
+
             // LOD0: 풀 메시 렌더링
-            Gl.Disable(EnableCap.CullFace);
-            _instancedShader.Bind();
-            {
-                _instancedShader.LoadBatchStartOffset(_batch.StartIndex);
-                _instancedShader.LoadTextureArray(_batch.Model.TextureIDArray);
-                _instancedShader.LoadEnableDebug(false);
-                _instancedShader.LoadMaxDepthDistance(10000.0f);
-                DrawArraysIndirect(_batch.VAO, cmdStartIndex, 0, _visibleIndicesSSBO_LOD0, PrimitiveType.Triangles);
-            }
-            _instancedShader.Unbind();
+            RenderBatchLod0( batchID, batchName, cmdStartIndex, camera);
 
             // LOD1: 인덱스 메시 렌더링 (단순화된 메시)
-            Gl.Disable(EnableCap.CullFace);
-            _instancedShader.Bind();
-            {
-                _instancedShader.LoadBatchStartOffset(_batch.StartIndex);
-                _instancedShader.LoadTextureArray(_batch.Model.TextureIDArray);
-                _instancedShader.LoadEnableDebug(_isDebugLOD1);
-                _instancedShader.LoadMaxDepthDistance(10000.0f);
-                _instancedShader.LoadDebugColor(COLOR_RED4);
-                DrawArraysIndirect(_batch.VAO, cmdStartIndex, 1, _visibleIndicesSSBO_LOD1, PrimitiveType.Triangles);
-            }
-            _instancedShader.Unbind();
+            RenderBatchLod1(batchID, batchName, cmdStartIndex, camera);
 
             // LOD2: 크로스 빌보드 렌더링
-            Gl.Disable(EnableCap.CullFace);
-            _crossBillboardInstanceShader.Bind();
-            {
-                _crossBillboardInstanceShader.LoadCurrentBatchID(batchID);
-                _crossBillboardInstanceShader.LoadBatchStartOffset(_batch.StartIndex);
-                _crossBillboardInstanceShader.LoadAtlasTexture(crossBillboardData.AtlasTexture.TextureID);
-                _instancedShader.LoadMaxDepthDistance(10000.0f);
-                _crossBillboardInstanceShader.UseTexture(true);
-                Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 2, _aabbSSBO);
-                DrawArraysIndirect(_point.VAO, cmdStartIndex , 2, _visibleIndicesSSBO_LOD2);
-            }
-            _crossBillboardInstanceShader.Unbind();
+            RenderBatchLod2(batchID, batchName, cmdStartIndex, camera);
 
             // LOD3: 임포스터 렌더링
-            int[] previousModeArray = new int[1];
-            Gl.Get(GetPName.PolygonMode, previousModeArray);
-            PolygonMode previousMode = (PolygonMode)previousModeArray[0];
-
-            Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
-            _gpuDrivenImpostorShader.Bind();
-            {
-                _gpuDrivenImpostorShader.LoadImpostorAtlas(_renderData.AtlasTextureId);
-                _gpuDrivenImpostorShader.LoadAtlasSize(_renderData.atlasSize);
-                _gpuDrivenImpostorShader.LoadIndividualSize(_renderData.individualSize);
-                _gpuDrivenImpostorShader.LoadFrameCounts(_renderData.horizontalFrames, _renderData.verticalFrames);
-                _gpuDrivenImpostorShader.LoadMaxDepthDistance(10000.0f);
-                _gpuDrivenImpostorShader.LoadAABBSphereRadius(_unifiedTexturedModel.AABB.Radius);
-                _gpuDrivenImpostorShader.LoadCameraPosition(camera.Position);
-                _gpuDrivenImpostorShader.LoadEnableEdgeLine(false);
-                _gpuDrivenImpostorShader.LoadBatchStartOffset(_batch.StartIndex);
-                DrawArraysIndirect(_point.VAO, cmdStartIndex, 3, _visibleIndicesSSBO_LOD3);
-            }
-            _gpuDrivenImpostorShader.Unbind();
-            Gl.PolygonMode(MaterialFace.FrontAndBack, previousMode);
-
+            RenderBatchLod3(batchID, batchName, cmdStartIndex, camera);
         }
+
 
         /// <summary>
         /// 이전 프레임의 LOD0, LOD1 깊이만 렌더링
-        /// 기존 RenderBatch 코드와 거의 동일, 셰이더만 교체
         /// </summary>
         public void RenderDepthPrePassFromPrevFrame(Camera camera)
         {
             Gl.Disable(EnableCap.CullFace);
 
-            // 깊이 전용 셰이더 사용
             _depthShader.Bind();
             {
                 Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectCommandBuffer);
 
-                // 각 배치별로 렌더링
                 for (uint b = 0; b < _batchManager.ActualBatchCount; b++)
                 {
                     BatchDescriptor batch = _batchManager.GetBatch(b);
@@ -940,6 +852,7 @@ namespace GPUDriven
                     _depthShader.LoadTextureArray(batch.Model.TextureIDArray);
                     _depthShader.LoadBatchStartOffset(batch.StartIndex);
 
+                    // 고정 바인딩 포인트 사용
                     Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
 
                     // LOD0 렌더링
@@ -956,32 +869,110 @@ namespace GPUDriven
             _depthShader.Unbind();
         }
 
+        public void RenderShadowMap(ShadowMap shadowMap, Camera camera, Vertex3f sunLightDirection, bool isClearBuffer = false)
+        {
+            // 렌더 스테이트 설정
+            Gl.Disable(EnableCap.Blend);
+            Gl.Enable(EnableCap.DepthTest);
+            Gl.Enable(EnableCap.CullFace);
+
+            if (_batchManager == null) return;
+
+            // 세도우맵 바인딩 및 광원 뷰 행렬 계산
+            Vertex3f terrainCenter = new Vertex3f(0, 0, 0);
+            float terrainSize = 50.0f;
+            shadowMap.Bind();
+
+            // 지우기 옵션
+            if (isClearBuffer) shadowMap.Clear();
+
+            shadowMap.Update(sunLightDirection, camera.PivotPosition, terrainSize);
+
+            // 각 배치별 렌더링
+            for (uint batchID = 0; batchID < _batchManager.ActualBatchCount; batchID++)
+            {
+                _batch = _batchManager.GetBatch(batchID);
+                string batchName = _batch.ModelName;
+                int cmdStartIndex = _batchCommandStartIndices[batchID];
+                Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, _indirectCommandBuffer);
+
+                _gpuInstancedShadowMapShader.Bind();
+                {
+                    // LOD0
+                    _gpuInstancedShadowMapShader.LoadBatchStartOffset(_batch.StartIndex);
+                    _gpuInstancedShadowMapShader.LoadTextureArray(_batch.Model.TextureIDArray);
+                    _gpuInstancedShadowMapShader.LoadEnableDebug(false);
+                    _gpuInstancedShadowMapShader.LoadMaxDepthDistance(10000.0f);
+                    _gpuInstancedShadowMapShader.LoadLightViewMatrix(shadowMap.LightViewMatrix);
+                    _gpuInstancedShadowMapShader.LoadLightProjMatrix(shadowMap.LightProjMatrix);
+                    DrawArraysIndirect(_batch.VAO, cmdStartIndex, 0, _visibleIndicesSSBO_LOD0, PrimitiveType.Triangles);
+
+                    // LOD1
+                    _gpuInstancedShadowMapShader.LoadEnableDebug(_isDebugLOD1);
+                    _gpuInstancedShadowMapShader.LoadDebugColor(COLOR_RED4);
+                    DrawArraysIndirect(_batch.VAO, cmdStartIndex, 1, _visibleIndicesSSBO_LOD1, PrimitiveType.Triangles);
+                }
+                _gpuInstancedShadowMapShader.Unbind();
+            }
+
+            // 세도우맵 바인딩 해제
+            shadowMap.Unbind();
+
+        }
+
         /// <summary>
         /// DrawArraysIndirect 호출
         /// </summary>
-        /// <param name="vao">VAO ID</param>
-        /// <param name="cmdStartIndex">커맨드 시작 인덱스 (바이트 오프셋)</param>
-        /// <param name="lodIndex">LOD 인덱스 (0~3)</param>
-        /// <param name="ssboIndex">가시 인스턴스 SSBO 인덱스</param>
-        /// <param name="primitiveType">프리미티브 타입</param>
-        private void DrawArraysIndirect(
+        protected void DrawArraysIndirect(
             uint vao,
             int cmdStartIndex,
             uint lodIndex,
             uint ssboIndex,
             PrimitiveType primitiveType = PrimitiveType.Points)
         {
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, ssboIndex);
             Gl.BindVertexArray(vao);
-
             int byteOffset = cmdStartIndex + LOD_OFFSETS[lodIndex];
             Gl.DrawArraysIndirect(primitiveType, (IntPtr)byteOffset);
         }
 
+        #endregion
+
+
+        // ------------------------------------------------------------
+        // 리소스 정리
+        // ------------------------------------------------------------
+
+        #region 리소스 정리 관련
+
+        /// <summary>
+        /// GPU 리소스 해제
+        /// </summary>
+        public void Dispose()
+        {
+            Gl.DeleteBuffers(_transformSSBO);
+            Gl.DeleteBuffers(_aabbSSBO);
+            Gl.DeleteBuffers(_batchIDSSBO);
+            Gl.DeleteBuffers(_frustumPassedSSBO);
+            Gl.DeleteBuffers(_frustumCounterSSBO);
+            Gl.DeleteBuffers(_visibleIndicesSSBO_LOD0);
+            Gl.DeleteBuffers(_visibleCountsSSBO_LOD0);
+            Gl.DeleteBuffers(_visibleIndicesSSBO_LOD1);
+            Gl.DeleteBuffers(_visibleCountsSSBO_LOD1);
+            Gl.DeleteBuffers(_visibleIndicesSSBO_LOD2);
+            Gl.DeleteBuffers(_visibleCountsSSBO_LOD2);
+            Gl.DeleteBuffers(_visibleIndicesSSBO_LOD3);
+            Gl.DeleteBuffers(_visibleCountsSSBO_LOD3);
+            Gl.DeleteBuffers(_indirectCommandBuffer);
+        }
+
+        #endregion
+
+
         // ------------------------------------------------------------
         // 디버그 정보 조회
         // ------------------------------------------------------------
+
+        #region 디버그 정보 관련
 
         // 멤버 변수에 추가
         const int NUM_INDICES = 30;
@@ -989,6 +980,7 @@ namespace GPUDriven
         private uint[] _visibleIndicesSample_LOD1 = new uint[NUM_INDICES];  // LOD1 샘플 인덱스
         private uint[] _visibleIndicesSample_LOD2 = new uint[NUM_INDICES];  // LOD2 샘플 인덱스
         private uint[] _visibleIndicesSample_LOD3 = new uint[NUM_INDICES];  // LOD3 샘플 인덱스
+
 
         /// <summary>
         /// 디버그용 가시 객체 개수 및 샘플 인덱스 조회
@@ -1001,42 +993,47 @@ namespace GPUDriven
             ref uint visibleCountLod2,
             ref uint visibleCountLod3,
             ref uint frustumPassCount,
-            ref string report,  bool isHookIndices = false)
+            ref string report, bool isHookIndices = false)
         {
             if (_frameCount % FRAME_COUNT_DEBUG == 0)
             {
+                report = "";
+
                 // 프러스텀 통과 개수
                 Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _frustumCounterSSBO);
                 Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, 4, _frustumPassed);
                 _lastFrustumPassed = _frustumPassed[0];
+
+                report += $"프러스텀: {_lastFrustumPassed}개\n";
+                report += "\n";
 
                 // 배치별 LOD 개수 읽기
                 Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleCountsSSBO_LOD0);
                 fixed (uint* ptr = _countsLOD0)
                 {
                     Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero,
-                        (uint)(MAX_BATCHES * 4), (IntPtr)ptr);
+                        (uint)(_maxBatches * 4), (IntPtr)ptr);
                 }
 
                 Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleCountsSSBO_LOD1);
                 fixed (uint* ptr = _countsLOD1)
                 {
                     Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero,
-                        (uint)(MAX_BATCHES * 4), (IntPtr)ptr);
+                        (uint)(_maxBatches * 4), (IntPtr)ptr);
                 }
 
                 Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleCountsSSBO_LOD2);
                 fixed (uint* ptr = _countsLOD2)
                 {
                     Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero,
-                        (uint)(MAX_BATCHES * 4), (IntPtr)ptr);
+                        (uint)(_maxBatches * 4), (IntPtr)ptr);
                 }
 
                 Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibleCountsSSBO_LOD3);
                 fixed (uint* ptr = _countsLOD3)
                 {
                     Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero,
-                        (uint)(MAX_BATCHES * 4), (IntPtr)ptr);
+                        (uint)(_maxBatches * 4), (IntPtr)ptr);
                 }
 
                 // 캐시 저장 및 합산
@@ -1046,8 +1043,7 @@ namespace GPUDriven
                 uint lod2 = 0;
                 uint lod3 = 0;
 
-                report = "";
-                for (uint b = 0; b < _batchManager.ActualBatchCount; b++)
+                for (uint b = 0; b < _batchedModelCount; b++)
                 {
                     _lastVisibleCount_LOD0[b] = _countsLOD0[b];
                     _lastVisibleCount_LOD1[b] = _countsLOD1[b];
@@ -1055,7 +1051,7 @@ namespace GPUDriven
                     _lastVisibleCount_LOD3[b] = _countsLOD3[b];
                     totalVisible += _countsLOD0[b] + _countsLOD1[b] + _countsLOD2[b] + _countsLOD3[b];
 
-                    report += $"({b}){_countsLOD0[b]}/{_countsLOD1[b]}/{_countsLOD2[b]}/{_countsLOD3[b]} \n";
+                    report += $"[ID={b}]{_countsLOD0[b]}/{_countsLOD1[b]}/{_countsLOD2[b]}/{_countsLOD3[b]} \n";
 
                     if (b == 0) lod0 += _countsLOD0[b];
                     if (b == 1) lod1 += _countsLOD1[b];
@@ -1123,6 +1119,9 @@ namespace GPUDriven
                     }
                 }
 
+                report += "\n";
+                report += $"총 가시 객체: {totalVisible}개\n";
+
                 visibleCountLod0 = lod0;
                 visibleCountLod1 = lod1;
                 visibleCountLod2 = lod2;
@@ -1143,31 +1142,10 @@ namespace GPUDriven
                 visibleCount = totalVisible;
                 frustumPassCount = _lastFrustumPassed;
             }
+
         }
 
-        // ------------------------------------------------------------
-        // 리소스 정리
-        // ------------------------------------------------------------
+        #endregion
 
-        /// <summary>
-        /// GPU 리소스 해제
-        /// </summary>
-        public void Dispose()
-        {
-            Gl.DeleteBuffers(_transformSSBO);
-            Gl.DeleteBuffers(_aabbSSBO);
-            Gl.DeleteBuffers(_batchIDSSBO);
-            Gl.DeleteBuffers(_frustumPassedSSBO);
-            Gl.DeleteBuffers(_frustumCounterSSBO);
-            Gl.DeleteBuffers(_visibleIndicesSSBO_LOD0);
-            Gl.DeleteBuffers(_visibleCountsSSBO_LOD0);
-            Gl.DeleteBuffers(_visibleIndicesSSBO_LOD1);
-            Gl.DeleteBuffers(_visibleCountsSSBO_LOD1);
-            Gl.DeleteBuffers(_visibleIndicesSSBO_LOD2);
-            Gl.DeleteBuffers(_visibleCountsSSBO_LOD2);
-            Gl.DeleteBuffers(_visibleIndicesSSBO_LOD3);
-            Gl.DeleteBuffers(_visibleCountsSSBO_LOD3);
-            Gl.DeleteBuffers(_indirectCommandBuffer);
-        }
     }
 }

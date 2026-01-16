@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Cloud
+namespace Noise
 {
     public class FractalBrownianNoise3D
     {

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Cloud
+namespace Noise
 {
     public class PerlinNoise3D
     {

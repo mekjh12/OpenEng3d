@@ -5,6 +5,7 @@ layout(location = 0) out vec4 gAlbedo;
 layout(location = 1) out vec4 gPosition;
 layout(location = 2) out vec4 gNormal;
 layout(location = 3) out float gDepth;
+layout(location = 4) out vec4 gStructure;
 
 // UBO: 카메라
 layout(std140, binding = 0) uniform CameraBlock { 
@@ -15,6 +16,7 @@ layout(std140, binding = 0) uniform CameraBlock {
 in vec2 Tex3;
 in vec4 fragPos;
 in float viewDepth;
+in vec3 viewPosOut;
 
 // 텍스처들
 uniform sampler2D gHeightMap;
@@ -68,6 +70,18 @@ vec4 GetTriplanarTextureAdvanced(sampler2D tex, vec3 worldPos, vec3 normal, floa
 float DetectValleyCurvature(vec2 uv, float currentHeight);
 vec4 ApplyValleyTexturing(vec2 uv, vec3 normalWorld, vec3 riverMask, vec4 baseColor);
 
+vec4 CalculateStructureOutput(float z)
+{
+    uint zBits = floatBitsToUint(z);
+    uint hBits = zBits & 0xFFFFE000u;
+    float h = uintBitsToFloat(hBits);
+    
+    float dzdx = dFdx(z) * 64.0;
+    float dzdy = dFdy(z) * 64.0;
+    
+    return vec4(dzdx, dzdy, h, z - h);
+}
+
 //-----------------------------------------------------------------------------
 // 메인 함수
 //-----------------------------------------------------------------------------
@@ -99,6 +113,10 @@ void main()
     gPosition = vec4(fragPos.xyz, 1.0);
     gNormal = vec4(normalWorld, 1.0);
     gDepth = viewDepth / 10000.0;
+
+    // Structure에 기록하기
+    float z = viewPosOut.z;
+    gStructure = CalculateStructureOutput(z);
 }
 
 //-----------------------------------------------------------------------------

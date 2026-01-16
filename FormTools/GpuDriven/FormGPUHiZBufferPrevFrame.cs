@@ -400,7 +400,7 @@ namespace FormTools
                     _fogShader.Bind();
                     {
                         // 원본 색상 텍스처 (MRT location 0)
-                        _fogShader.LoadColorTexture(TextureUnit.Texture0, _glControl3.ColorTextureId);
+                        _fogShader.LoadColorTexture(TextureUnit.Texture0, _glControl3.AlbedoTextureId);
 
                         // 선형 깊이 텍스처 (MRT location 1)
                         _fogShader.LoadLinearDepthTexture(TextureUnit.Texture1, _glControl3.DepthTextureId);
@@ -538,7 +538,7 @@ namespace FormTools
 
         }
 
-        public void InitFinished()
+        public void Start()
         {
             throw new NotImplementedException();
         }

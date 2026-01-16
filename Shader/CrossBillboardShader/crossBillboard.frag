@@ -26,6 +26,14 @@ layout(std140, binding = 0) uniform CameraBlock {
 
 void main()
 {
+
+    
+    vec4 texColor = texture(atlasTexture, fTexCoord);
+
+    fragColor = vec4(1, 1, 1, texColor.a);
+    return;
+
+
     // ✅ 엣지 라인 디버깅
     if (enableEdgeLine)
     {
@@ -38,8 +46,6 @@ void main()
             return;
         }
     }
-    
-    vec4 texColor = texture(atlasTexture, fTexCoord);
     if (texColor.a < 0.45) discard;
     
     // ✅ Normal Texture에서 노멀 샘플링

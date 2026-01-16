@@ -619,7 +619,6 @@ namespace Common
         public void Bind()
         {
             Gl.UseProgram(_programID);
-
         }
 
         public void Unbind()

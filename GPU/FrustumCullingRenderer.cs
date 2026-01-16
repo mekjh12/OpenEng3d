@@ -20,7 +20,7 @@ namespace GPUDriven
     {
         #region 상수 정의
 
-        private const int MAX_INSTANCES = 100000;  // 최대 인스턴스 개수
+        private const int MAX_INSTANCES = 1_000_000;  // 최대 인스턴스 개수
         private const int MAX_BATCHES = 64;        // 최대 배치 개수
         private const int COMMAND_SIZE = 16;       // DrawArraysIndirectCommand 크기 (4 uint * 4 bytes)
         private const int FRAME_COUNT_DEBUG = 2;   // 디버그 정보 갱신 주기
@@ -420,6 +420,7 @@ namespace GPUDriven
 
             // 프러스텀 평면 전달
             _cullingCompute.LoadFrustumPlanes(viewFrustum.Planes);
+            _cullingCompute.LoadMaxInstanceCount(MAX_INSTANCES);
 
             // Dispatch: 256 스레드씩 워크 그룹 실행
             int numWorkGroups = (MAX_INSTANCES + 255) / 256;

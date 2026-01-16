@@ -85,6 +85,7 @@
     <Compile Include="FogShader\FogShader.cs" />
     <Compile Include="GlobalUniformBuffers.cs" />
     <Compile Include="GPUDriven\AABBInstanceShader.cs" />
+    <Compile Include="GPUDriven\BillboardInstancedShader.cs" />
     <Compile Include="GPUDriven\CrossBillboardInstanceShader.cs" />
     <Compile Include="GPUDriven\CrossBillboardNormalShader.cs" />
     <Compile Include="GPUDriven\DeferredShadingShader.cs" />
@@ -115,12 +116,14 @@
     <Compile Include="InstancedShader\InstancedDepthShader.cs" />
     <Compile Include="InstancedShader\InstancedShader.cs" />
     <Compile Include="RenderDepthBufferShader\RenderDepthBufferShader.cs" />
+    <Compile Include="DisplayShader\DisplayShader.cs" />
     <Compile Include="ShaderManager.cs" />
     <Compile Include="SkyDomeShader\CloudShader.cs" />
     <Compile Include="SkyDomeShader\SkyDomeRenderShader.cs" />
     <Compile Include="SkyDomeShader\SkyDomeTexture2dShader.cs" />
     <Compile Include="SkyDomeShader\SkyColorShader.cs" />
     <Compile Include="SkyDomeShader\VolumetricCloudShader.cs" />
+    <Compile Include="DebugShaders\StructureDebugShader.cs" />
     <Compile Include="TerrainShader\HzbComputeShader.cs" />
     <Compile Include="TerrainShader\TerrainChunkShader.cs" />
     <Compile Include="TerrainShader\SimpleTerrainShader.cs" />
@@ -177,6 +180,10 @@
     <None Include="AxisShader\axis.vert" />
     <None Include="AABBShader\aabb.frag" />
     <None Include="AABBShader\aabb.vert" />
+    <None Include="DebugShaders\structure_debug.frag" />
+    <None Include="DebugShaders\structure_debug.vert" />
+    <None Include="DisplayShader\display.frag" />
+    <None Include="DisplayShader\display.vert" />
     <None Include="FogShader\advanced_fog.frag" />
     <None Include="FogShader\fog.frag" />
     <None Include="FogShader\fog.vert" />
@@ -192,6 +199,9 @@
     <None Include="GPUDriven\glsl\aabb_instance.vert" />
     <None Include="GPUDriven\glsl\billboard.vert" />
     <None Include="GPUDriven\glsl\billboard.frag" />
+    <None Include="GPUDriven\glsl\billboard_instance.frag" />
+    <None Include="GPUDriven\glsl\billboard_instance.geom" />
+    <None Include="GPUDriven\glsl\billboard_instance.vert" />
     <None Include="GPUDriven\glsl\crossBillboardInstance.frag" />
     <None Include="GPUDriven\glsl\crossBillboardInstance.gem.glsl" />
     <None Include="GPUDriven\glsl\crossBillboardInstance.vert" />

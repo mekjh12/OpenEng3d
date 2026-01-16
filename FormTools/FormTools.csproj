@@ -80,6 +80,18 @@
     <Compile Include="2025\FormAsyncTest.Designer.cs">
       <DependentUpon>FormAsyncTest.cs</DependentUpon>
     </Compile>
+    <Compile Include="2026\FormTerrainGenerator.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="2026\FormTerrainGenerator.Designer.cs">
+      <DependentUpon>FormTerrainGenerator.cs</DependentUpon>
+    </Compile>
+    <Compile Include="2026\FormNoise2d.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="2026\FormNoise2d.Designer.cs">
+      <DependentUpon>FormNoise2d.cs</DependentUpon>
+    </Compile>
     <Compile Include="2026\FormShadow.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -115,6 +127,12 @@
     </Compile>
     <Compile Include="2025\FormCulling.Designer.cs">
       <DependentUpon>FormCulling.cs</DependentUpon>
+    </Compile>
+    <Compile Include="2026\FormStructureBuffer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="2026\FormStructureBuffer.Designer.cs">
+      <DependentUpon>FormStructureBuffer.cs</DependentUpon>
     </Compile>
     <Compile Include="GpuDriven\FormGPUDriveHiZ.cs">
       <SubType>Form</SubType>
@@ -291,13 +309,19 @@
       <DependentUpon>FormWaterFlow.cs</DependentUpon>
     </Compile>
     <Compile Include="IRenderer.cs" />
-    <Compile Include="CustomControl\LabeledProgressBar.cs">
+    <Compile Include="CustomControl\LabeledSlider.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="2025\FormAsyncTest.resx">
       <DependentUpon>FormAsyncTest.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="2026\FormTerrainGenerator.resx">
+      <DependentUpon>FormTerrainGenerator.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="2026\FormNoise2d.resx">
+      <DependentUpon>FormNoise2d.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="2026\FormShadow.resx">
       <DependentUpon>FormShadow.cs</DependentUpon>
@@ -316,6 +340,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="2025\FormCulling.resx">
       <DependentUpon>FormCulling.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="2026\FormStructureBuffer.resx">
+      <DependentUpon>FormStructureBuffer.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GpuDriven\FormGPUDriveHiZ.resx">
       <DependentUpon>FormGPUDriveHiZ.cs</DependentUpon>
@@ -480,6 +507,10 @@
     <ProjectReference Include="..\Model3d\Model3d.csproj">
       <Project>{7a699d36-8869-4b18-a70f-2231a948d828}</Project>
       <Name>Model3d</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Noise\Noise.csproj">
+      <Project>{6b789917-6a24-41c4-a85f-ce6aedf9257f}</Project>
+      <Name>Noise</Name>
     </ProjectReference>
     <ProjectReference Include="..\Occlusion\Occlusion.csproj">
       <Project>{00582202-d29d-472e-ac4a-02152800b298}</Project>

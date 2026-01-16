@@ -35,17 +35,24 @@ namespace Renderer
 
             // G-Buffer 텍스처 바인딩
             _shader.LoadGBufferTextures(
-                _gbuffer.ColorTextureId,
+                _gbuffer.AlbedoTextureId,
                 _gbuffer.PositionTextureId,
                 _gbuffer.NormalTextureId,
                 _gbuffer.DepthTextureId
             );
 
             // Shadow Map 바인딩
-            _shader.LoadTerrainShadowMap(_terrainShadowMap.DepthTextureID);
-            _shader.LoadInstancesShadowMap(_instanceShadowMap.DepthTextureID);
-            _shader.LoadLightMatrices(_terrainShadowMap.LightViewMatrix, _terrainShadowMap.LightProjMatrix);
-            _shader.LoadLightMatrices2(_instanceShadowMap.LightViewMatrix, _instanceShadowMap.LightProjMatrix);
+            if (_terrainShadowMap != null)
+            {
+                _shader.LoadTerrainShadowMap(_terrainShadowMap.DepthTextureID);
+                _shader.LoadLightMatrices(_terrainShadowMap.LightViewMatrix, _terrainShadowMap.LightProjMatrix);
+            }
+
+            if (_instanceShadowMap != null)
+            {
+                _shader.LoadInstancesShadowMap(_instanceShadowMap.DepthTextureID);
+                _shader.LoadLightMatrices2(_instanceShadowMap.LightViewMatrix, _instanceShadowMap.LightProjMatrix);
+            }
 
             // 풀스크린 쿼드 렌더링
             Gl.DrawArrays(PrimitiveType.Points, 0, 1);

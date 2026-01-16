@@ -245,7 +245,7 @@ namespace FormTools
             FileHashManager.SaveHashes();
         }
 
-        public void InitFinished()
+        public void Start()
         {
             _modelBatchManager.Finalized();
 
@@ -269,7 +269,7 @@ namespace FormTools
             // 1회 시작시 초기화
             if (!_isStarted)
             {
-                InitFinished();
+                Start();
                 _isStarted = true;
             }
 

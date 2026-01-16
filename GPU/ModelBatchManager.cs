@@ -125,14 +125,14 @@ namespace GPUDriven
     /// </summary>
     public class ModelBatchManager
     {
-        private const uint MAX_INSTANCES = 100000;
+        private const uint MAX_INSTANCES = 100_000;
         private const uint MAX_BATCHES = 64;
 
         private List<ModelInfo> _models;
         private uint _nextModelID;
         private List<TempInstance> _tempInstances;
 
-        // ✅ 최종 데이터 (InstanceModelMatrixData 배열)
+        // 최종 데이터 (InstanceModelMatrixData 배열)
         private InstanceModelMatrixData[] _finalInstanceData;
         private AABB[] _finalAABBs;
         private uint[] _finalBatchIDs;

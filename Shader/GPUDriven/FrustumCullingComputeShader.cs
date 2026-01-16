@@ -9,6 +9,7 @@ namespace Shader
         const string COMPUTE_FILE = @"\Shader\GPUDriven\comp\frustum_culling.comp";
 
         private int[] loc_frustumPlanes = new int[6];
+        private int loc_maxInstanceCount = -1;
 
         public FrustumCullingComputeShader(string projectPath) : base()
         {
@@ -23,11 +24,18 @@ namespace Shader
             {
                 loc_frustumPlanes[i] = GetUniformLocation($"uFrustumPlanes[{i}]");
             }
+
+            loc_maxInstanceCount = GetUniformLocation("u_maxInstanceCount");
         }
 
         protected override void BindAttributes()
         {
             // Compute Shader는 애트리뷰트 불필요
+        }
+
+        public void LoadMaxInstanceCount(int count)
+        {
+            Gl.Uniform1(loc_maxInstanceCount, count);
         }
 
         public void LoadFrustumPlanes(Plane[] planes)

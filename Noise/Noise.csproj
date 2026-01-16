@@ -58,10 +58,20 @@
   <ItemGroup>
     <Compile Include="FaultMapGenerator.cs" />
     <Compile Include="FaultPoint.cs" />
+    <Compile Include="FractalBrownianNoise3D.cs" />
+    <Compile Include="GPU\NoiseTextureComputeShader.cs" />
+    <Compile Include="GPU\TerrainHeightmapComputeShader.cs" />
+    <Compile Include="GPU\WorleyNoiseComputeShader.cs" />
+    <Compile Include="Perlin.cs" />
+    <Compile Include="PerlinNoise.cs" />
+    <Compile Include="PerlinNoise3D.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SimplexNoise.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="GPU\comp\noise_texture.comp" />
+    <None Include="GPU\comp\terrain_heightmap.comp" />
+    <None Include="GPU\comp\worley_noise.comp" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

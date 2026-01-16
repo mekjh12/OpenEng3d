@@ -16,6 +16,7 @@ in vec2 Tex2[];
 out vec2 Tex3;
 out vec4 fragPos;
 out float viewDepth;
+out vec3 viewPosOut;  // Structure Buffer용 카메라 공간 위치
 
 uniform sampler2D gHeightMap;
 uniform mat4 model;
@@ -50,5 +51,6 @@ void main()
     fragPos = model * p;
     vec4 viewPos = camera.view * fragPos;
     viewDepth = viewPos.z;
+    viewPosOut = viewPos.xyz;
     gl_Position = camera.vp * fragPos;
 }

@@ -60,7 +60,7 @@ namespace Renderer
         /// </summary>
         /// <param name="sunDirection">태양에서 지표로 향하는 벡터</param>
         /// <param name="heightScale"></param>
-        public void RenderShadowMap(Vertex3f sunDirection, float heightScale = 200.0f)
+        public void RenderShadowMap(Vertex3f sunDirection, float heightScale = 200.0f, bool isClearBuffer = false)
         {
             if (_entity is null || _entity.Model == null) return;
 
@@ -71,6 +71,9 @@ namespace Renderer
 
             // Shadow Map FBO 바인딩
             _shadowmap.Bind();
+
+            // 지우기 옵션
+            if (isClearBuffer) _shadowmap.Clear();
 
             // 앞면만 렌더링 (뒷면 컬링)
             Gl.Enable(EnableCap.CullFace);
@@ -108,9 +111,10 @@ namespace Renderer
             _shadowmap.Unbind();
         }
 
-        public void ToggleFunction()
+        public bool ToggleFunction()
         {
             _onFunc = !_onFunc;
+            return _onFunc;
         }
 
         public void SetTerrain(Entity entity)

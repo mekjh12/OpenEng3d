@@ -1,0 +1,390 @@
+﻿#version 430 core
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0, r32f) uniform writeonly image2D u_HeightmapTexture;
+
+uniform int u_Width;
+uniform int u_Height;
+uniform float u_Scale;         // 전체 스케일
+uniform int u_Seed;
+uniform float u_OffsetX;
+uniform float u_OffsetY;
+
+// 지형 생성 파라미터
+uniform int u_Octaves;
+uniform float u_Lacunarity;
+uniform float u_Gain;
+uniform int u_TerrainType;     // 0=Terrain, 1=Canyon, 2=Volcanic, 3=Island, 4=Desert, 5=Mountain
+uniform float u_HeightScale;   // 높이 강도
+uniform float u_Roughness;     // 거칠기 (0.0 ~ 1.0)
+
+// ============================================================================
+// 해시 함수
+// ============================================================================
+
+vec2 hash2(vec2 p)
+{
+    p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+    return fract(sin(p) * 43758.5453123);
+}
+
+vec3 hash3(vec3 p)
+{
+    p = vec3(
+        dot(p, vec3(127.1, 311.7, 74.7)),
+        dot(p, vec3(269.5, 183.3, 246.1)),
+        dot(p, vec3(113.5, 271.9, 124.6))
+    );
+    return fract(sin(p) * 43758.5453123);
+}
+
+// ============================================================================
+// Perlin Noise
+// ============================================================================
+
+float perlinNoise(vec2 p)
+{
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    
+    float a = dot(hash2(i + vec2(0.0, 0.0)) * 2.0 - 1.0, f - vec2(0.0, 0.0));
+    float b = dot(hash2(i + vec2(1.0, 0.0)) * 2.0 - 1.0, f - vec2(1.0, 0.0));
+    float c = dot(hash2(i + vec2(0.0, 1.0)) * 2.0 - 1.0, f - vec2(0.0, 1.0));
+    float d = dot(hash2(i + vec2(1.0, 1.0)) * 2.0 - 1.0, f - vec2(1.0, 1.0));
+    
+    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y) * 0.5 + 0.5;
+}
+
+// ============================================================================
+// Worley Noise (거리 기반)
+// ============================================================================
+
+float worleyNoise(vec3 pos)
+{
+    vec3 cellPos = floor(pos);
+    vec3 localPos = fract(pos);
+    
+    float minDist = 10000.0;
+    
+    for (int z = -1; z <= 1; z++)
+    {
+        for (int y = -1; y <= 1; y++)
+        {
+            for (int x = -1; x <= 1; x++)
+            {
+                vec3 neighborCell = cellPos + vec3(x, y, z);
+                vec3 randomPoint = hash3(neighborCell + vec3(u_Seed * 0.1));
+                vec3 pointPos = vec3(x, y, z) + randomPoint;
+                
+                float dist = length(localPos - pointPos);
+                minDist = min(minDist, dist);
+            }
+        }
+    }
+    
+    return clamp(minDist * 0.7, 0.0, 1.0);
+}
+
+// ============================================================================
+// Perlin FBM
+// ============================================================================
+
+float perlinFBM(vec2 pos)
+{
+    float value = 0.0;
+    float amplitude = 1.0;
+    float frequency = 1.0;
+    float maxValue = 0.0;
+    
+    for (int i = 0; i < u_Octaves; i++)
+    {
+        value += perlinNoise(pos * frequency) * amplitude;
+        maxValue += amplitude;
+        
+        amplitude *= u_Gain;
+        frequency *= u_Lacunarity;
+    }
+    
+    return value / maxValue;
+}
+
+// ============================================================================
+// Ridged Multifractal (산맥)
+// ============================================================================
+
+float ridgedMultifractal(vec3 pos)
+{
+    float value = 0.0;
+    float amplitude = 1.0;
+    float frequency = 1.0;
+    float weight = 1.0;
+    
+    for (int i = 0; i < u_Octaves; i++)
+    {
+        float n = worleyNoise(pos * frequency);
+        n = 1.0 - abs(n * 2.0 - 1.0);
+        n = n * n * weight;
+        
+        weight = clamp(n * 2.0, 0.0, 1.0);
+        
+        value += n * amplitude;
+        amplitude *= 0.5;
+        frequency *= 2.0;
+    }
+    
+    return value;
+}
+
+// ============================================================================
+// Domain Warping
+// ============================================================================
+
+vec2 getDomainWarp(vec2 pos, float strength)
+{
+    vec2 warp = vec2(
+        perlinNoise(pos + vec2(0.0, 0.0)) * 2.0 - 1.0,
+        perlinNoise(pos + vec2(5.2, 1.3)) * 2.0 - 1.0
+    ) * strength;
+    
+    return pos + warp;
+}
+
+// ============================================================================
+// Terrain (일반 지형: 산 + 평야)
+// ============================================================================
+
+float terrainHeightmap(vec3 pos)
+{
+    // 1. 기본 지형: Perlin FBM
+    float baseHeight = perlinFBM(pos.xy * 0.5);
+    
+    // 2. 산맥: Ridged Multifractal
+    float mountains = ridgedMultifractal(pos);
+    
+    // 3. Domain Warping
+    vec2 warpedPos = getDomainWarp(pos.xy, 0.15 * u_Roughness);
+    
+    // 4. 고주파 디테일
+    float detail = worleyNoise(vec3(warpedPos * 8.0, pos.z)) * 0.05;
+    
+    // 5. 산과 평야 혼합
+    float heightMask = smoothstep(0.3, 0.7, baseHeight);
+    float terrain = mix(baseHeight, mountains, heightMask * u_Roughness);
+    
+    // 6. 디테일 추가
+    terrain += detail;
+    
+    return terrain;
+}
+
+// ============================================================================
+// Canyon (협곡)
+// ============================================================================
+
+float canyonTerrain(vec3 pos)
+{
+    // Ridged로 협곡 생성
+    float canyon = ridgedMultifractal(pos);
+    
+    // 강의 흐름
+    float river = abs(perlinNoise(pos.xy * 0.2) * 2.0 - 1.0);
+    river = 1.0 - river;
+    river = pow(river, 3.0);
+    
+    // 협곡 벽의 층 (strata)
+    float strata = fract(canyon * 10.0);
+    strata = smoothstep(0.4, 0.6, strata);
+    
+    // 최종 조합
+    float result = canyon - river * 0.4;
+    result = mix(result, result * strata, 0.3);
+    
+    return max(result, 0.0);
+}
+
+// ============================================================================
+// Volcanic (화산)
+// ============================================================================
+
+float volcanicTerrain(vec3 pos)
+{
+    vec2 center = vec2(0.5, 0.5);
+    float dist = length(pos.xy - center);
+    
+    // 원뿔 모양
+    float cone = 1.0 - smoothstep(0.0, 0.5, dist);
+    cone = pow(cone, 2.0);
+    
+    // 분화구
+    float crater = smoothstep(0.0, 0.1, dist) * smoothstep(0.2, 0.1, dist);
+    
+    // 용암 흐름 (방사형)
+    float angle = atan(pos.y - center.y, pos.x - center.x);
+    float radialNoise = perlinNoise(vec2(angle * 5.0, dist * 10.0));
+    float lava = radialNoise * 0.1 * (1.0 - dist);
+    
+    // 표면 거칠기
+    float roughness = worleyNoise(pos * 5.0) * 0.05;
+    
+    return (cone - crater * 0.5) + lava + roughness;
+}
+
+// ============================================================================
+// Island (섬)
+// ============================================================================
+
+float islandTerrain(vec3 pos)
+{
+    vec2 center = vec2(0.5, 0.5);
+    float dist = length(pos.xy - center);
+    
+    // 섬 마스크 (가장자리는 바다)
+    float mask = 1.0 - smoothstep(0.2, 0.5, dist);
+    
+    // 기본 지형
+    float terrain = terrainHeightmap(pos);
+    
+    // 해안가는 부드럽게
+    float beach = smoothstep(0.35, 0.4, dist);
+    terrain = mix(terrain * 0.1, terrain, beach);
+    
+    return terrain * mask;
+}
+
+// ============================================================================
+// Desert (사막 - 모래언덕)
+// ============================================================================
+
+float desertTerrain(vec3 pos)
+{
+    // 큰 모래언덕
+    float dunes = 0.0;
+    float amp = 1.0;
+    float freq = 0.5;
+    
+    for (int i = 0; i < u_Octaves; i++)
+    {
+        float n = perlinNoise(pos.xy * freq);
+        // 부드러운 곡선 (모래언덕)
+        n = sin(n * 3.14159) * 0.5 + 0.5;
+        dunes += n * amp;
+        
+        amp *= 0.6;
+        freq *= 2.0;
+    }
+    
+    // 바람 패턴 (Domain Warping)
+    vec2 windWarp = vec2(
+        perlinNoise(pos.xy * 0.3) * 2.0 - 1.0,
+        perlinNoise(pos.xy * 0.3 + vec2(3.7, 8.2)) * 2.0 - 1.0
+    ) * 0.2;
+    
+    vec2 warpedPos = pos.xy + windWarp;
+    float windPattern = perlinNoise(warpedPos * 2.0) * 0.1;
+    
+    // 작은 잔물결
+    float ripples = worleyNoise(pos * 15.0) * 0.02;
+    
+    return (dunes + windPattern + ripples) * 0.5;
+}
+
+// ============================================================================
+// Mountain (고산지대 - 날카로운 봉우리)
+// ============================================================================
+
+float mountainTerrain(vec3 pos)
+{
+    // 매우 날카로운 Ridged
+    float peaks = 0.0;
+    float amp = 1.0;
+    float freq = 1.0;
+    float weight = 1.0;
+    
+    for (int i = 0; i < u_Octaves; i++)
+    {
+        float n = worleyNoise(pos * freq);
+        n = 1.0 - abs(n * 2.0 - 1.0);
+        n = pow(n, 3.0);  // 더욱 날카롭게
+        n *= weight;
+        
+        weight = clamp(n * 3.0, 0.0, 1.0);
+        
+        peaks += n * amp;
+        amp *= 0.45;
+        freq *= 2.5;
+    }
+    
+    // 설선 (snow line) - 높은 곳은 평평하게
+    peaks = smoothstep(0.0, 1.0, peaks);
+    
+    // 바위 디테일
+    float rocks = worleyNoise(pos * 8.0) * 0.05;
+    
+    return peaks + rocks;
+}
+
+// ============================================================================
+// Main
+// ============================================================================
+
+void main()
+{
+    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
+    
+    if (pos.x >= u_Width || pos.y >= u_Height)
+        return;
+    
+    vec2 uv = vec2(pos) / vec2(u_Width, u_Height);
+    
+    vec3 samplePos = vec3(
+        (uv.x + u_OffsetX) * u_Scale,
+        (uv.y + u_OffsetY) * u_Scale,
+        float(u_Seed) * 0.1
+    );
+    
+    float height;
+    
+    if (u_TerrainType == 0)
+    {
+        // Terrain (일반 지형)
+        height = terrainHeightmap(samplePos);
+    }
+    else if (u_TerrainType == 1)
+    {
+        // Canyon (협곡)
+        height = canyonTerrain(samplePos);
+    }
+    else if (u_TerrainType == 2)
+    {
+        // Volcanic (화산)
+        height = volcanicTerrain(samplePos);
+    }
+    else if (u_TerrainType == 3)
+    {
+        // Island (섬)
+        height = islandTerrain(samplePos);
+    }
+    else if (u_TerrainType == 4)
+    {
+        // Desert (사막)
+        height = desertTerrain(samplePos);
+    }
+    else if (u_TerrainType == 5)
+    {
+        // Mountain (고산지대)
+        height = mountainTerrain(samplePos);
+    }
+    else
+    {
+        height = 0.0;
+    }
+    
+    // 높이 스케일 적용
+    height *= u_HeightScale;
+    height = clamp(height, 0.0, 1.0);
+    
+    imageStore(u_HeightmapTexture, pos, vec4(height, 0.0, 0.0, 1.0));
+}

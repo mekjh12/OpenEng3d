@@ -37,6 +37,7 @@
             this.ClientSize = new System.Drawing.Size(644, 435);
             this.Name = "FormShadow";
             this.Text = "FormShadow";
+            this.Load += new System.EventHandler(this.FormShadow_Load);
             this.ResumeLayout(false);
 
         }

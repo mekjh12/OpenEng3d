@@ -325,7 +325,7 @@ namespace FormTools
 
         }
 
-        public void InitFinished()
+        public void Start()
         {
             throw new NotImplementedException();
         }

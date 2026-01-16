@@ -1,12 +1,12 @@
 ﻿// grass.frag (또는 vegetation.frag)
 #version 430 core
 
-// 입력
-in vec3 vNormal;
-in vec2 vTexCoord;
-in vec3 vWorldPos;
-in float vMaterialID;
-in vec3 vViewPos;
+// ✅ G-Buffer MRT 출력 (지형과 동일)
+layout(location = 0) out vec4 gAlbedo;      // 알베도/컬러
+layout(location = 1) out vec4 gPosition;    // 월드 위치
+layout(location = 2) out vec4 gNormal;      // 법선 벡터
+layout(location = 3) out float gDepth;      // 선형 깊이
+layout(location = 4) out vec4 gStructure;
 
 // 라이팅 UBO
 layout(std140, binding = 1) uniform LightingBlock {
@@ -15,11 +15,12 @@ layout(std140, binding = 1) uniform LightingBlock {
     vec3 lightColor;
 } lighting;
 
-// ✅ G-Buffer MRT 출력 (지형과 동일)
-layout(location = 0) out vec4 gAlbedo;      // 알베도/컬러
-layout(location = 1) out vec4 gPosition;    // 월드 위치
-layout(location = 2) out vec4 gNormal;      // 법선 벡터
-layout(location = 3) out float gDepth;      // 선형 깊이
+// 입력
+in vec3 vNormal;
+in vec2 vTexCoord;
+in vec3 vWorldPos;
+in float vMaterialID;
+in vec3 vViewPos;
 
 // Uniform
 uniform sampler2D textures[32];
@@ -27,6 +28,18 @@ uniform int textureCount;
 uniform vec4 debugColor;
 uniform bool enableDebug;
 uniform float gMaxDepthDistance = 10000.0;  // ✅ 깊이 정규화 거리
+
+vec4 CalculateStructureOutput(float z)
+{
+    uint zBits = floatBitsToUint(z);
+    uint hBits = zBits & 0xFFFFE000u;
+    float h = uintBitsToFloat(hBits);
+    
+    float dzdx = dFdx(z) * 64.0;
+    float dzdy = dFdy(z) * 64.0;
+    
+    return vec4(dzdx, dzdy, h, z - h);
+}
 
 void main() 
 {   
@@ -66,4 +79,8 @@ void main()
     gPosition = vec4(vWorldPos, 1.0);           // 월드 위치
     gNormal = vec4(normal, 1.0);                // 법선 벡터
     gDepth = length(vViewPos) / gMaxDepthDistance;  // 정규화된 선형 깊이
+
+    // Structure에 기록하기
+    float z = vViewPos.z;
+    gStructure = CalculateStructureOutput(z);
 }

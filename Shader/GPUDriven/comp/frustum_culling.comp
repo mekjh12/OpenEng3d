@@ -14,6 +14,7 @@ layout(std430, binding = 2) buffer FrustumCounterBuffer { uint frustumPassedCoun
 
 // 유니폼
 uniform vec4 uFrustumPlanes[6];
+uniform int u_maxInstanceCount;
 
 bool ContactTestAABBPlane(AABB aabb, vec4 plane) 
 {
@@ -38,13 +39,24 @@ bool IsInsideFrustum(AABB aabb)
 void main() 
 {
     uint index = gl_GlobalInvocationID.x;
-    if (index >= 100000) return;
+    if (index >= u_maxInstanceCount) return;
     
-    // ✅ Frustum 테스트만 수행 (LOD 구분 없음)
+    AABB aabb = aabbs[index];
+    
+    // ✅ 유효하지 않은 AABB 필터링 (min > max는 무효)
+    if (aabb.min.x > aabb.max.x || 
+        aabb.min.y > aabb.max.y || 
+        aabb.min.z > aabb.max.z) return;
+    
+    // ✅ 너무 큰 AABB도 필터링 (쓰레기 데이터)
+    vec3 size = aabb.max - aabb.min;
+    if (size.x > 1000.0 || size.y > 1000.0 || size.z > 1000.0) return;
+    
+    // Frustum 테스트만 수행 (LOD 구분 없음)
     if (IsInsideFrustum(aabbs[index])) 
     {
         uint slot = atomicAdd(frustumPassedCount, 1);
-        if (slot < 100000) {
+        if (slot < u_maxInstanceCount) {
             frustumPassedIndices[slot] = int(index);
         }
     }

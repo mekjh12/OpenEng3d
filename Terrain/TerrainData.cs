@@ -7,6 +7,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using ZetaExt;
 
 namespace Terrain
 {
@@ -741,6 +742,61 @@ namespace Terrain
                 bitmap.Dispose();
             }
         }
+
+        /// <summary>
+        /// 지정된 위치에서 지형의 정규화된 법선 벡터를 계산합니다.
+        /// </summary>
+        /// <param name="x">X 좌표 (리전 공간)</param>
+        /// <param name="y">Y 좌표 (리전 공간)</param>
+        /// <param name="sampleDistance">샘플링 거리 (기본값: 1.0m)</param>
+        /// <returns>정규화된 법선 벡터</returns>
+        public Vertex3f GetTerrainNormal(float x, float y, float sampleDistance = 1.0f)
+        {
+            // 주변 4방향의 높이를 샘플링하여 gradient 계산
+            float heightCenter = GetTerrainHeight(x, y);
+            float heightLeft = GetTerrainHeight(x - sampleDistance, y);
+            float heightRight = GetTerrainHeight(x + sampleDistance, y);
+            float heightDown = GetTerrainHeight(x, y - sampleDistance);
+            float heightUp = GetTerrainHeight(x, y + sampleDistance);
+
+            // 편미분 계산 (중심 차분법)
+            float dhdx = (heightRight - heightLeft) / (2.0f * sampleDistance);
+            float dhdy = (heightUp - heightDown) / (2.0f * sampleDistance);
+
+            // 법선 벡터 = (-dh/dx, -dh/dy, 1)
+            Vertex3f normal = new Vertex3f(-dhdx, -dhdy, 1.0f);
+
+            // 정규화
+            float length = (float)Math.Sqrt(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
+            if (length > 0.0f)
+            {
+                normal.x /= length;
+                normal.y /= length;
+                normal.z /= length;
+            }
+
+            return normal;
+        }
+
+        /// <summary>
+        /// 지정된 위치에서 지형의 경사도를 계산합니다.
+        /// </summary>
+        /// <param name="x">X 좌표 (리전 공간)</param>
+        /// <param name="y">Y 좌표 (리전 공간)</param>
+        /// <param name="sampleDistance">샘플링 거리 (기본값: 1.0m)</param>
+        /// <returns>경사도 (0~90도)</returns>
+        public float GetTerrainSlope(float x, float y, float sampleDistance = 1.0f)
+        {
+            Vertex3f normal = GetTerrainNormal(x, y, sampleDistance);
+
+            // 법선 벡터의 z 성분으로부터 경사도 계산
+            // normal.z = cos(slope), slope = acos(normal.z)
+            float slopeRadians = (float)Math.Acos(normal.z.Clamp(-1.0f, 1.0f));
+            float slopeDegrees = slopeRadians * (180.0f / (float)Math.PI);
+
+            return slopeDegrees;
+        }
+
         /// <summary>
         /// 지정된 위치의 높이값으로 청크의 최대/최소 높이를 업데이트합니다.
         /// </summary>
