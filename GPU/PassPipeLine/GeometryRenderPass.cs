@@ -63,6 +63,8 @@ namespace GPUDriven
 
         public override void RenderBatchLod0(uint batchID, string batchName, int cmdStartIndex, Camera camera)
         {
+            Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
+
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD0);
 
@@ -80,6 +82,8 @@ namespace GPUDriven
 
         public override void RenderBatchLod1(uint batchID, string batchName, int cmdStartIndex, Camera camera)
         {
+            Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
+
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD1);
 

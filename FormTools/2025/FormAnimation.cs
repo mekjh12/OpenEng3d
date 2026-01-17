@@ -297,7 +297,7 @@ namespace FormTools
             _glControl3.CameraStepLength = 0.01f;
 
             // 셰이더 해시정보는 파일로 저장
-            FileHashManager.SaveHashes();
+            FileHashManager.Finalize();
         }
 
         private Vertex3f GetGroundVertex3f(Vertex3f position)

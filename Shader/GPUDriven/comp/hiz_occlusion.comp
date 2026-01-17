@@ -3,7 +3,7 @@ layout(local_size_x = 64) in;
 
 #define MAX_BATCHES 64
 const float MAX_DEPTH_METERS = 10000.0;
-const float DEPTH_EPSILON_BASE = 0.0005;  // 5m
+const float DEPTH_EPSILON_BASE = 0.001;  // 10m
 
 // ===== 구조체 정의 =====
 struct AABB {vec3 min; float padding1; vec3 max; float padding2;};
@@ -50,9 +50,9 @@ uniform float u_cameraNear;
 uniform float u_cameraFar;
 
 // ===== Batch 관련 Uniform =====
-uniform float batchLODs[64];        // 각 Batch의 LOD 거리
-uniform uint batchStarts[64];       // 각 Batch의 시작 인덱스
-uniform uint batchCounts[64];       // 각 Batch의 최대 개수
+uniform float batchLODs[64];
+uniform uint batchStarts[64];
+uniform uint batchCounts[64];
 
 // mip level에 따라 적절한 텍스처에서 샘플링
 float sampleHiZTexture(int mipLevel, vec2 uv)
@@ -95,14 +95,16 @@ bool projectAABB(AABB worldAABB, out vec2 minScreen, out vec2 maxScreen, out flo
         vec4 viewPos = view * vec4(corners[i], 1.0);
         vec4 clipPos = vp * vec4(corners[i], 1.0);
         
+        // ✅ 카메라 뒤의 점 명시적으로 제외
+        if (viewPos.z >= 0.0) continue;  // OpenGL: 양수 = 뒤
+        
+        // 클립 공간 체크 (안전장치)
         if (clipPos.w <= 0.01) continue;
         
         vec3 ndc = clipPos.xyz / clipPos.w;
         
-        //if (abs(ndc.x) > 21.2 || abs(ndc.y) > 21.2)  continue;
-        
-        // 각 점의 선형 깊이 계산
-        float linearDepth = clamp(abs(viewPos.z) / MAX_DEPTH_METERS, 0.0, 1.0);
+        // ✅ 깊이 계산 (이제 abs() 불필요, 항상 음수)
+        float linearDepth = clamp(-viewPos.z / MAX_DEPTH_METERS, 0.0, 1.0);
         
         // NDC를 스크린 좌표(0~1)로 변환
         vec2 uv = ndc.xy * 0.5 + 0.5;
@@ -112,8 +114,6 @@ bool projectAABB(AABB worldAABB, out vec2 minScreen, out vec2 maxScreen, out flo
         minDepth = min(minDepth, linearDepth);
         validCount++;
     }
-
-    //if (validCount == 0) return false; // 가까이 오면 너무 빨리 오클루전이 되어서 제외함.
     
     minScreen = clamp(minScreen, 0.0, 1.0);
     maxScreen = clamp(maxScreen, 0.0, 1.0);
@@ -121,65 +121,69 @@ bool projectAABB(AABB worldAABB, out vec2 minScreen, out vec2 maxScreen, out flo
     return true;
 }
 
-// HiZ 기반 계층적 오클루전 테스트(테스트 통과시 true)
+// ✅ HiZ 기반 계층적 오클루전 테스트
 bool hierarchicalOcclusionTest(vec2 minScreen, vec2 maxScreen, float minDepth)
 {
+    return true;
+
+    // 1. 화면 크기 계산
     vec2 sizeUV = maxScreen - minScreen;
     vec2 sizePixels = sizeUV * u_screenSize;
     float maxSize = max(sizePixels.x, sizePixels.y);
-    
-    // ✅ 1픽셀 이하만 컬링
+
+    // 너무 작으면 컬링
     if (maxSize <= 1.0) return false;
     
-    // ✅ 보수적 밉맵 레벨 (floor 사용)
-    float targetMipLevel = clamp(floor(log2(maxSize)), 0.0, float(u_maxMipLevel));
-    int startMipLevel = int(targetMipLevel);
-    
-    vec2 center = (minScreen + maxScreen) * 0.5;
-    vec2 extent = (maxScreen - minScreen) * 0.5;
-    
-    // ✅ 거리 기반 Epsilon (먼 곳일수록 큰 여유)
+    // 2. 거리 기반 Adaptive Epsilon
     float adaptiveEpsilon = max(minDepth * 0.015, DEPTH_EPSILON_BASE);
     
-    const int HALF_GRID = 2;  // 5x5 샘플 (49→25개로 감소)
+    // 3. 4개 코너 샘플 포인트 준비
+    vec2 samples[4];
+    samples[0] = minScreen;
+    samples[1] = vec2(maxScreen.x, minScreen.y);
+    samples[2] = vec2(minScreen.x, maxScreen.y);
+    samples[3] = maxScreen;
     
-    for (int mip = startMipLevel; mip >= 0; mip--)
+    // ✅ 4. 낮은 해상도(높은 mip)부터 테스트!
+    for (int mip = u_maxMipLevel; mip >= 0; mip--)
     {
-        for (int y = -HALF_GRID; y <= HALF_GRID; y++) {
-            for (int x = -HALF_GRID; x <= HALF_GRID; x++) {
-                vec2 offset = vec2(x, y) * extent / float(HALF_GRID);
-                vec2 samplePos = clamp(center + offset, 0.0, 1.0);
-                
-                float hizDepth = sampleHiZTexture(mip, samplePos);
-                
-                if (minDepth <= hizDepth + adaptiveEpsilon) {
-                    return true;
-                }
+        bool anyVisible = false;
+        
+        // 4개 코너 샘플링
+        for (int i = 0; i < 4; i++) {
+            float hizDepth = sampleHiZTexture(mip, samples[i]);
+            
+            // ✅ 올바른 비교: 객체가 HiZ보다 앞에 있으면 보임
+            if (minDepth <= hizDepth + adaptiveEpsilon) {
+                anyVisible = true;
+                break;
             }
+        }
+        
+        // ✅ 이 레벨에서 모두 가려졌으면 즉시 컬링!
+        if (!anyVisible) {
+            return false;
         }
     }
     
-    return false;
+    // ✅ 모든 레벨을 통과했으면 렌더링
+    return true;
 }
 
 void main()
 {
-    // 글로벌 ID 계산(50,000개)
     uint gid = gl_GlobalInvocationID.x;
     if (gid >= frustumPassedCount) return;
     
-    // 프러스텀 테스트 통과한 인스턴스 인덱스
     int instanceIdx = frustumPassedIndices[gid];
     if (instanceIdx < 0 || instanceIdx >= u_maxInstanceCount) return;
     
-    // 배치(모델) 정보 가져오기
     uint batchID = batchIDs[instanceIdx];    
     if (batchID >= MAX_BATCHES) return;
 
-    // 배치별 LOD 거리 및 슬롯 정보
     float lodDistance = batchLODs[batchID];
-    uint batchStart = batchStarts[batchID];      // 이 배치의 시작 슬롯
-    uint batchMaxCount = batchCounts[batchID];   // 이 배치의 최대 개수
+    uint batchStart = batchStarts[batchID];
+    uint batchMaxCount = batchCounts[batchID];
     
     // ===== AABB 투영 =====
     AABB worldAABB = worldAABBs[instanceIdx];
@@ -187,26 +191,24 @@ void main()
     float minDepth;
     vec3 worldCenter;
     
-    // AABB를 화면에 투영 [투영 실패 (카메라 뒤, 화면 밖 등)]
-    if (!projectAABB(worldAABB, minScreen, maxScreen, minDepth, worldCenter)) return; 
+    if (!projectAABB(worldAABB, minScreen, maxScreen, minDepth, worldCenter)) return;
 
-    // HiZ 테스트 수행
-    if (!hierarchicalOcclusionTest(minScreen, maxScreen, minDepth)) return; // 가려짐
+    // ===== HiZ 테스트 =====
+    if (!hierarchicalOcclusionTest(minScreen, maxScreen, minDepth)) return;
 
-    // ===== LOD 결정 및 결과 기록 =====
+    // ===== LOD 결정 =====
     float distance = length(u_cameraPosition - worldCenter);
     bool isLOD0 =   0 < distance && distance <= 50;
     bool isLOD1 =  50 < distance && distance <= 150;
     bool isLOD2 = 150 < distance && distance <= 450;
     bool isLOD3 = 450 < distance;
 
-    // 결과 기록
+    // ===== 결과 기록 =====
     if (isLOD0) 
     {        
-        uint relativeSlot = atomicAdd(visibleCounts_LOD0[batchID], 1);        
+        uint relativeSlot = atomicAdd(visibleCounts_LOD0[batchID], 1);
         if (relativeSlot < batchMaxCount) 
         {
-            // 절대 위치 = 배치 시작점 + 상대 슬롯
             uint absoluteSlot = batchStart + relativeSlot;
             visibleIndices_LOD0[absoluteSlot] = instanceIdx;
         }
@@ -214,7 +216,7 @@ void main()
 
     if (isLOD1)  
     {
-        uint relativeSlot = atomicAdd(visibleCounts_LOD1[batchID], 1);        
+        uint relativeSlot = atomicAdd(visibleCounts_LOD1[batchID], 1);
         if (relativeSlot < batchMaxCount) 
         {
             uint absoluteSlot = batchStart + relativeSlot;
@@ -224,7 +226,7 @@ void main()
 
     if (isLOD2)  
     {
-        uint relativeSlot = atomicAdd(visibleCounts_LOD2[batchID], 1);        
+        uint relativeSlot = atomicAdd(visibleCounts_LOD2[batchID], 1);
         if (relativeSlot < batchMaxCount) 
         {
             uint absoluteSlot = batchStart + relativeSlot;
@@ -234,12 +236,11 @@ void main()
 
     if (isLOD3)  
     {
-        uint relativeSlot = atomicAdd(visibleCounts_LOD3[batchID], 1);        
+        uint relativeSlot = atomicAdd(visibleCounts_LOD3[batchID], 1);
         if (relativeSlot < batchMaxCount) 
         {
             uint absoluteSlot = batchStart + relativeSlot;
             visibleIndices_LOD3[absoluteSlot] = instanceIdx;
         }
     }
-
 }

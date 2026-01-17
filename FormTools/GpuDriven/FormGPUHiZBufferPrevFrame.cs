@@ -250,7 +250,7 @@ namespace FormTools
             TextBillboardShader.Initialize();
 
             // 셰리더 해시정보는 파일로 저장
-            FileHashManager.SaveHashes();
+            FileHashManager.Finalize();
         }
 
         public void UpdateFrame(int deltaTime, int width, int height, Camera camera)

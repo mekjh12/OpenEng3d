@@ -195,7 +195,7 @@ namespace FormTools
             */
 
             // 셰이더 해시정보는 파일로 저장
-            FileHashManager.SaveHashes();
+            FileHashManager.Finalize();
         }
 
         /// <summary>

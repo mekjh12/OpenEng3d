@@ -50,7 +50,7 @@ void main()
     
     fragPos = model * p;
     vec4 viewPos = camera.view * fragPos;
-    viewDepth = viewPos.z;
+    viewDepth = viewPos.z; // 카메라 공간 깊이 
     viewPosOut = viewPos.xyz;
     gl_Position = camera.vp * fragPos;
 }

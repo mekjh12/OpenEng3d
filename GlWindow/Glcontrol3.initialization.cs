@@ -383,7 +383,7 @@ namespace GlWindow
                         IniFile.WritePrivateProfileString("camera", "pitch", camera.CameraPitch);
                         IniFile.WritePrivateProfileString("camera", "dist", (camera as OrbitCamera).Distance);
 
-                        FileHashManager.SaveHashes();
+                        FileHashManager.Finalize();
 
                         Application.Exit();
                     }

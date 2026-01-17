@@ -283,12 +283,13 @@ namespace FormTools
             TextBillboardShader.Initialize();
             SimpleColorShader.Initialize();
 
-            // 셰리더 해시정보는 파일로 저장
-            FileHashManager.SaveHashes();
         }
 
         public void Start()
         {
+            // 셰리더 해시정보는 파일로 저장
+            FileHashManager.Finalize();
+
             _modelBatchManager.Finalized();
 
             // GPU 드리븐 렌더러 초기화
@@ -642,7 +643,7 @@ namespace FormTools
 
                 float slope = _terrainRegion.TerrainData.GetTerrainSlope(posX, posY);
 
-                if (slope < 15)
+                if (slope < 90)
                 {
                     float posZ = _terrainRegion.TerrainData.GetTerrainHeight(ref position, TerrainConstants.DEFAULT_VERTICAL_SCALE);
 
@@ -729,12 +730,14 @@ namespace FormTools
                 _level = Math.Min(_level + 1, _hiZBuffer.Levels - 1);
                 _isDebugTextDirty = true;
                 _culledText.Text = $"HiZBuffer 레벨 {_level}";
+                Console.WriteLine(_level);
             }
             else if (e.KeyCode == Keys.Oemplus)
             {
                 _level = Math.Max(_level - 1, 0);
                 _isDebugTextDirty = true;
                 _culledText.Text = $"HiZBuffer 레벨 {_level}";
+                Console.WriteLine(_level);
             }
             else if (e.KeyCode == Keys.OemQuestion)
             {

@@ -225,7 +225,7 @@ namespace FormTools
             _hzbuffer = new HierarchyZBuffer(width >> DOWN_LEVEL, height >> DOWN_LEVEL, PROJECT_PATH);
 
             // 셰리더 해시정보는 파일로 저장
-            FileHashManager.SaveHashes();
+            FileHashManager.Finalize();
         }
 
         public void UpdateFrame(int deltaTime, int width, int height, Camera camera)
