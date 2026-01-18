@@ -81,7 +81,7 @@ namespace FormTools
         HierarchyZBuffer _hiZBuffer;                        // 계층적 Z 버퍼
         GeometryRenderPass _gpuDriven;                      // GPU 드리븐 렌더러
         const int DOWN_LEVEL = 2;                           // 다운샘플링 레벨
-        const int MAX_INSTANCES = 100_000;                    // 최대 인스턴스 수
+        const int MAX_INSTANCES = 30_000;                    // 최대 인스턴스 수
 
         // 지형 관련 변수들
         TerrainRenderer _terrainRenderer;                   // 지형 렌더러
@@ -386,6 +386,7 @@ namespace FormTools
               
             }
 
+            /*
             // 테스트 후 지울 것
             _gpuDriven.GetVisibleCountDebug(ref _visibleCount,
                    ref _visibleCountLod0,
@@ -398,6 +399,7 @@ namespace FormTools
             _lastFrustumPassCount = _frustumPassCount;
             _culledText.Text = _visibleReport;
             _isDebugTextDirty = true;
+            */
         }
 
         public void RenderFrame(double deltaTime, Vertex4f backcolor, Camera camera)

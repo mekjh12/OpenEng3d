@@ -28,6 +28,7 @@ layout(std430, binding = 9) buffer VisibleIndicesLOD2Buffer {int visibleIndices_
 layout(std430, binding = 10) buffer VisibleCountsLOD2Buffer {uint visibleCounts_LOD2[];};
 layout(std430, binding = 11) buffer VisibleIndicesLOD3Buffer {int visibleIndices_LOD3[];};
 layout(std430, binding = 12) buffer VisibleCountsLOD3Buffer {uint visibleCounts_LOD3[];};
+layout(std430, binding = 16) buffer VisibilityBuffer { float visibility[]; };  // 0.0 ~ 1.0
 
 // ===== HiZ 텍스처 =====
 uniform sampler2D u_hizTexture0;
@@ -54,6 +55,11 @@ uniform float u_cameraFar;
 uniform float batchLODs[64];
 uniform uint batchStarts[64];
 uniform uint batchCounts[64];
+
+// Visibility 제어 상수
+const float FADE_IN_SPEED = 0.35;   // 빠르게 나타남 (약 3프레임)
+const float FADE_OUT_SPEED = 0.02;  // 천천히 사라짐 (약 8프레임)
+const float MIN_VISIBILITY_THRESHOLD = 0.05;  // 5% 미만이면 컬링
 
 // mip level에 따라 적절한 텍스처에서 샘플링
 float sampleHiZTexture(int mipLevel, vec2 uv)
@@ -207,10 +213,36 @@ void main()
     float minDepth;
     vec3 worldCenter;
     
-    if (!projectAABB(worldAABB, minScreen, maxScreen, minDepth, worldCenter)) return;
+    // 투영 실패 시 visibility 감소
+    if (!projectAABB(worldAABB, minScreen, maxScreen, minDepth, worldCenter)) 
+    {
+        float currentVis = visibility[instanceIdx];
+        visibility[instanceIdx] = max(0.0, currentVis - FADE_OUT_SPEED);
+        return;
+    }
 
     // ===== HiZ 테스트 =====
-    if (!hierarchicalOcclusionTest(minScreen, maxScreen, minDepth)) return;
+    bool passedHiZTest = hierarchicalOcclusionTest(minScreen, maxScreen, minDepth);
+    
+    // ===== 가시성 업데이트 =====
+    float currentVis = visibility[instanceIdx];
+
+    if (passedHiZTest)
+    {
+        // HiZ 테스트 통과 → visibility 증가 (빠르게 나타남)
+        visibility[instanceIdx] = min(1.0, currentVis + FADE_IN_SPEED);
+    }
+    else
+    {
+        // HiZ 테스트 실패 → visibility 감소 (천천히 사라짐)
+        visibility[instanceIdx] = max(0.0, currentVis - FADE_OUT_SPEED);
+    }
+
+    // 임계값 체크 : visibility가 너무 낮으면 렌더링 리스트에 추가하지 않음
+    if (visibility[instanceIdx] < MIN_VISIBILITY_THRESHOLD)
+    {
+        return;  // 컬링!
+    }
 
     // ===== LOD 결정 =====
     float distance = length(u_cameraPosition - worldCenter);

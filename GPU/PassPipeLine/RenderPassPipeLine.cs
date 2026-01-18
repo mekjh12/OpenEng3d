@@ -7,7 +7,6 @@ using Renderer;
 using Shader;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Runtime.InteropServices;
 
 namespace GPUDriven
@@ -43,6 +42,7 @@ namespace GPUDriven
         private const int BINDING_VISIBLE_INDICES_LOD3 = 11;
         private const int BINDING_VISIBLE_COUNTS_LOD3 = 12;
         private const int BINDING_INDIRECT_COMMAND = 13;
+        private const int BINDING_VISIBILITY = 16;
 
         /* SSBO 바인딩 포인트 맵 (참조용)
          * ================================================
@@ -60,6 +60,7 @@ namespace GPUDriven
          *   Binding 11 : Visible Indices LOD3
          *   Binding 12 : Visible Counts LOD3
          *   Binding 13 : Indirect Command Buffer
+         *   Binding 16 : Visibility Buffer (Temporal Dithering)
          * ================================================
          */
 
@@ -95,6 +96,9 @@ namespace GPUDriven
         protected uint _visibleCountsSSBO_LOD1;  // 배치별 LOD1 가시 개수
         protected uint _visibleCountsSSBO_LOD2;  // 배치별 LOD2 가시 개수
         protected uint _visibleCountsSSBO_LOD3;  // 배치별 LOD3 가시 개수
+
+        // Visibility 버퍼 추가 
+        protected uint _visibilitySSBO;  // 인스턴스별 visibility 값 (0.0~1.0) (binding 16)
 
         // 셰이더
         private FrustumCullingComputeShader _cullingCompute;    // 프러스텀 컬링 컴퓨트 셰이더
@@ -240,6 +244,14 @@ namespace GPUDriven
             LoadShaders(_projPath, _maxMipLevels);
 
             _isInitialized = true;
+
+            Console.WriteLine("\n========== Visibility Buffer Test ==========");
+            Console.WriteLine($"Buffer ID: {_visibilitySSBO}");
+            Console.WriteLine($"Max Instances: {_maxInstances}");
+            Console.WriteLine($"Buffer Size: {_maxInstances * 4 / 1024.0:F1} KB");
+            // 처음 5개 값 확인
+            DebugPrintVisibility(5);
+            Console.WriteLine("===========================================\n");
         }
 
         // ------------------------------------------------------------
@@ -311,8 +323,72 @@ namespace GPUDriven
             CreateSSBOBuffer(ref _visibleIndicesSSBO_LOD3, BINDING_VISIBLE_INDICES_LOD3, (uint)(_maxInstances * 4));
             CreateSSBOBuffer(ref _visibleCountsSSBO_LOD3, BINDING_VISIBLE_COUNTS_LOD3, (uint)(_maxBatches * 4));
 
+            // Visibility 버퍼 생성(인스턴스당 float 1개 = 4 bytes)
+            CreateSSBOBuffer(ref _visibilitySSBO, BINDING_VISIBILITY, _maxInstances * sizeof(float), BufferUsage.DynamicDraw);
+
+            // Visibility 버퍼 0.0으로 초기화
+            InitializeVisibilityBuffer();
+
             // DrawIndirect 커맨드 버퍼 생성
             CreateUnifiedIndirectBuffer();
+        }
+
+        /// <summary>
+        /// Visibility 버퍼를 0.0으로 초기화
+        /// </summary>
+        private void InitializeVisibilityBuffer()
+        {
+            float[] initialVisibility = new float[_maxInstances];
+            // 모두 0.0으로 초기화 (처음엔 안 보임)
+            for (int i = 0; i < _maxInstances; i++)
+            {
+                initialVisibility[i] = 0.0f;
+            }
+
+            Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibilitySSBO);
+
+            unsafe
+            {
+                fixed (float* ptr = initialVisibility)
+                {
+                    Gl.BufferSubData(
+                        BufferTarget.ShaderStorageBuffer,
+                        IntPtr.Zero,
+                        (uint)(_maxInstances * sizeof(float)),
+                        (IntPtr)ptr
+                    );
+                }
+            }
+
+            Console.WriteLine($"[Visibility] Buffer initialized: {_maxInstances} instances ({_maxInstances * 4 / 1024.0:F1} KB)");
+        }
+
+        /// <summary>
+        /// Visibility 버퍼 리셋 (씬 변경 시)
+        /// </summary>
+        public void ResetVisibility()
+        {
+            if (_visibilitySSBO == 0) return;
+
+            float[] resetData = new float[_maxInstances];
+
+            // 모두 0.0으로 리셋
+            Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibilitySSBO);
+
+            unsafe
+            {
+                fixed (float* ptr = resetData)
+                {
+                    Gl.BufferSubData(
+                        BufferTarget.ShaderStorageBuffer,
+                        IntPtr.Zero,
+                        (uint)(_maxInstances * sizeof(float)),
+                        (IntPtr)ptr
+                    );
+                }
+            }
+
+            // Console.WriteLine("[Visibility] Buffer reset to 0.0");
         }
 
         /// <summary>
@@ -614,6 +690,21 @@ namespace GPUDriven
             UpdateIndirectCommandsGPU();
 
             _frameCount++;
+
+            // 60프레임마다 디버그 출력
+            /*
+            if (_frameCount % 60 == 0)
+            {
+                Console.WriteLine($"\n========== Frame {_frameCount} ==========");
+                DebugPrintVisibility(10);
+
+                // 더 자세한 통계는 300프레임마다
+                if (_frameCount % 300 == 0)
+                {
+                    DebugVisibilityStatistics();
+                }
+            }
+            */
         }
 
         /// <summary>
@@ -697,6 +788,7 @@ namespace GPUDriven
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 10, _visibleCountsSSBO_LOD2);
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 11, _visibleIndicesSSBO_LOD3);
             Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 12, _visibleCountsSSBO_LOD3);
+            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 16, _visibilitySSBO);
 
             // Uniform 전달
             _hiZOcclusionCompute.LoadHiZTextures(hizBuffer.HiZTexture);
@@ -886,7 +978,7 @@ namespace GPUDriven
             shadowMap.Update(sunLightDirection, camera.PivotPosition, terrainSize);
 
             // 각 배치별 렌더링
-            for (uint batchID = 0; batchID < _batchManager.ActualBatchCount; batchID++)
+            for (uint batchID = 0; batchID < _batchedModelCount; batchID++)
             {
                 _batch = _batchManager.GetBatch(batchID);
                 string batchName = _batch.ModelName;
@@ -896,6 +988,10 @@ namespace GPUDriven
                 _gpuInstancedShadowMapShader.Bind();
                 {
                     // LOD0
+
+                    Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
+                    Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD0);
+
                     _gpuInstancedShadowMapShader.LoadBatchStartOffset(_batch.StartIndex);
                     _gpuInstancedShadowMapShader.LoadTextureArray(_batch.Model.TextureIDArray);
                     _gpuInstancedShadowMapShader.LoadEnableDebug(false);
@@ -905,6 +1001,10 @@ namespace GPUDriven
                     DrawArraysIndirect(_batch.VAO, cmdStartIndex, 0, _visibleIndicesSSBO_LOD0, PrimitiveType.Triangles);
 
                     // LOD1
+
+                    Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
+                    Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD1);
+
                     _gpuInstancedShadowMapShader.LoadEnableDebug(_isDebugLOD1);
                     _gpuInstancedShadowMapShader.LoadDebugColor(COLOR_RED4);
                     DrawArraysIndirect(_batch.VAO, cmdStartIndex, 1, _visibleIndicesSSBO_LOD1, PrimitiveType.Triangles);
@@ -960,6 +1060,7 @@ namespace GPUDriven
             Gl.DeleteBuffers(_visibleIndicesSSBO_LOD3);
             Gl.DeleteBuffers(_visibleCountsSSBO_LOD3);
             Gl.DeleteBuffers(_indirectCommandBuffer);
+            Gl.DeleteBuffers(_visibilitySSBO);
         }
 
         #endregion
@@ -1140,6 +1241,96 @@ namespace GPUDriven
                 frustumPassCount = _lastFrustumPassed;
             }
 
+        }
+
+        /// <summary>
+        /// Visibility 값 디버그 출력
+        /// </summary>
+        /// <param name="count">출력할 인스턴스 개수</param>
+        public void DebugPrintVisibility(int count = 20)
+        {
+            if (_visibilitySSBO == 0)
+            {
+                Console.WriteLine("[Visibility Debug] Buffer not initialized!");
+                return;
+            }
+
+            float[] visData = new float[count];
+
+            Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibilitySSBO);
+
+            unsafe
+            {
+                fixed (float* ptr = visData)
+                {
+                    Gl.GetBufferSubData(
+                        BufferTarget.ShaderStorageBuffer,
+                        IntPtr.Zero,
+                        (uint)(count * sizeof(float)),
+                        (IntPtr)ptr
+                    );
+                }
+            }
+
+            Console.WriteLine("========== Visibility Debug ==========");
+            for (int i = 0; i < count; i++)
+            {
+                Console.WriteLine($"Instance[{i}]: visibility = {visData[i]:F3}");
+            }
+            Console.WriteLine("======================================");
+        }
+
+        /// <summary>
+        /// Visibility 통계 출력
+        /// </summary>
+        public void DebugVisibilityStatistics()
+        {
+            if (_visibilitySSBO == 0) return;
+
+            float[] visData = new float[_maxInstances];
+
+            Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _visibilitySSBO);
+
+            unsafe
+            {
+                fixed (float* ptr = visData)
+                {
+                    Gl.GetBufferSubData(
+                        BufferTarget.ShaderStorageBuffer,
+                        IntPtr.Zero,
+                        (uint)(_maxInstances * sizeof(float)),
+                        (IntPtr)ptr
+                    );
+                }
+            }
+
+            // 통계 계산
+            int countZero = 0;
+            int countLow = 0;    // 0.0 < v <= 0.3
+            int countMid = 0;    // 0.3 < v <= 0.7
+            int countHigh = 0;   // 0.7 < v < 1.0
+            int countFull = 0;   // v == 1.0
+
+            for (int i = 0; i < _batchManager.TotalInstances; i++)
+            {
+                float v = visData[i];
+
+                if (v == 0.0f) countZero++;
+                else if (v <= 0.3f) countLow++;
+                else if (v <= 0.7f) countMid++;
+                else if (v < 1.0f) countHigh++;
+                else if (v == 1.0f) countFull++;
+            }
+
+            Console.WriteLine("========== Visibility Statistics ==========");
+            Console.WriteLine($"Total Instances: {_batchManager.TotalInstances}");
+            Console.WriteLine($"  Zero (0.0):        {countZero,6} ({100.0f * countZero / _batchManager.TotalInstances:F1}%)");
+            Console.WriteLine($"  Low (0.0~0.3):     {countLow,6} ({100.0f * countLow / _batchManager.TotalInstances:F1}%)");
+            Console.WriteLine($"  Mid (0.3~0.7):     {countMid,6} ({100.0f * countMid / _batchManager.TotalInstances:F1}%)");
+            Console.WriteLine($"  High (0.7~1.0):    {countHigh,6} ({100.0f * countHigh / _batchManager.TotalInstances:F1}%)");
+            Console.WriteLine($"  Full (1.0):        {countFull,6} ({100.0f * countFull / _batchManager.TotalInstances:F1}%)");
+            Console.WriteLine($"  Rendering (>0.05): {countLow + countMid + countHigh + countFull,6}");
+            Console.WriteLine("===========================================");
         }
 
         #endregion
