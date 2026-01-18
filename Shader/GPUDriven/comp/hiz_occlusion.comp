@@ -3,7 +3,10 @@ layout(local_size_x = 64) in;
 
 #define MAX_BATCHES 64
 const float MAX_DEPTH_METERS = 10000.0;
-const float DEPTH_EPSILON_BASE = 0.001;  // 10m
+const float DEPTH_EPSILON_BASE = 0.005;  // 10m
+
+// UBO (Uniform Buffer Object)
+layout(std140, binding = 0) uniform CameraBlock {mat4 view; mat4 proj; mat4 vp; vec4 cameraPos;} camera;
 
 // ===== 구조체 정의 =====
 struct AABB {vec3 min; float padding1; vec3 max; float padding2;};
@@ -40,8 +43,6 @@ uniform sampler2D u_hizTexture9;
 uniform sampler2D u_hizTexture10;
 
 // ===== Uniform 변수 =====
-uniform mat4 vp;
-uniform mat4 view;
 uniform int u_maxMipLevel;
 uniform vec3 u_cameraPosition;
 uniform vec2 u_screenSize;
@@ -92,11 +93,11 @@ bool projectAABB(AABB worldAABB, out vec2 minScreen, out vec2 maxScreen, out flo
 
     for (int i = 0; i < 8; i++)
     {
-        vec4 viewPos = view * vec4(corners[i], 1.0);
-        vec4 clipPos = vp * vec4(corners[i], 1.0);
+        vec4 viewPos = camera.view * vec4(corners[i], 1.0);
+        vec4 clipPos = camera.vp * vec4(corners[i], 1.0);
         
         // ✅ 카메라 뒤의 점 명시적으로 제외
-        if (viewPos.z >= 0.0) continue;  // OpenGL: 양수 = 뒤
+        if (viewPos.z <= 0.0) continue;  // OpenGL: 양수 = 뒤
         
         // 클립 공간 체크 (안전장치)
         if (clipPos.w <= 0.01) continue;
@@ -104,7 +105,7 @@ bool projectAABB(AABB worldAABB, out vec2 minScreen, out vec2 maxScreen, out flo
         vec3 ndc = clipPos.xyz / clipPos.w;
         
         // ✅ 깊이 계산 (이제 abs() 불필요, 항상 음수)
-        float linearDepth = clamp(-viewPos.z / MAX_DEPTH_METERS, 0.0, 1.0);
+        float linearDepth = clamp(viewPos.z / MAX_DEPTH_METERS, 0.0, 1.0);
         
         // NDC를 스크린 좌표(0~1)로 변환
         vec2 uv = ndc.xy * 0.5 + 0.5;
@@ -121,47 +122,62 @@ bool projectAABB(AABB worldAABB, out vec2 minScreen, out vec2 maxScreen, out flo
     return true;
 }
 
-// ✅ HiZ 기반 계층적 오클루전 테스트
+// ✅ HiZ 기반 계층적 오클루전 테스트 (적응형 샘플링)
 bool hierarchicalOcclusionTest(vec2 minScreen, vec2 maxScreen, float minDepth)
 {
-    return true;
-
-    // 1. 화면 크기 계산
+    // 1. 경계 확장 (보수적 테스트를 위해)
     vec2 sizeUV = maxScreen - minScreen;
+    vec2 expand = sizeUV * 0.1;  // 10% 확장 (조절 가능)
+    
+    minScreen = max(vec2(0.0), minScreen - expand);
+    maxScreen = min(vec2(1.0), maxScreen + expand);
+    
+    // 2. 화면 크기 재계산
+    sizeUV = maxScreen - minScreen;
     vec2 sizePixels = sizeUV * u_screenSize;
     float maxSize = max(sizePixels.x, sizePixels.y);
 
     // 너무 작으면 컬링
-    if (maxSize <= 1.0) return false;
+    if (maxSize <= 4.0) return false;
     
-    // 2. 거리 기반 Adaptive Epsilon
-    float adaptiveEpsilon = max(minDepth * 0.015, DEPTH_EPSILON_BASE);
+    // 3. 크기에 따른 샘플 개수 결정
+    int sampleCount;
+    if (maxSize <= 4.0) sampleCount = 4;   // 2x2
+    else                sampleCount = 9;   // 3x3이상
     
-    // 3. 4개 코너 샘플 포인트 준비
-    vec2 samples[4];
-    samples[0] = minScreen;
-    samples[1] = vec2(maxScreen.x, minScreen.y);
-    samples[2] = vec2(minScreen.x, maxScreen.y);
-    samples[3] = maxScreen;
+    // 4. 3x3 그리드 샘플 포인트 (9개)
+    vec2 samples[9];
+    samples[0] = minScreen + sizeUV * vec2(0.0, 0.0);  // 좌상
+    samples[1] = minScreen + sizeUV * vec2(0.5, 0.0);  // 상중
+    samples[2] = minScreen + sizeUV * vec2(1.0, 0.0);  // 우상
+    samples[3] = minScreen + sizeUV * vec2(0.0, 0.5);  // 좌중
+    samples[4] = minScreen + sizeUV * vec2(0.5, 0.5);  // 중앙
+    samples[5] = minScreen + sizeUV * vec2(1.0, 0.5);  // 우중
+    samples[6] = minScreen + sizeUV * vec2(0.0, 1.0);  // 좌하
+    samples[7] = minScreen + sizeUV * vec2(0.5, 1.0);  // 하중
+    samples[8] = minScreen + sizeUV * vec2(1.0, 1.0);  // 우하
     
-    // ✅ 4. 낮은 해상도(높은 mip)부터 테스트!
+    // ✅ 5. 낮은 해상도(높은 mip)부터 테스트
     for (int mip = u_maxMipLevel; mip >= 0; mip--)
     {
         bool anyVisible = false;
         
-        // 4개 코너 샘플링
-        for (int i = 0; i < 4; i++) {
+        // 필요한 개수만큼만 샘플링
+        for (int i = 0; i < sampleCount; i++)
+        {
             float hizDepth = sampleHiZTexture(mip, samples[i]);
             
-            // ✅ 올바른 비교: 객체가 HiZ보다 앞에 있으면 보임
-            if (minDepth <= hizDepth + adaptiveEpsilon) {
+            // ✅ 객체가 HiZ보다 앞에 있으면 보임
+            if (minDepth <= hizDepth + DEPTH_EPSILON_BASE)
+            {
                 anyVisible = true;
                 break;
             }
         }
         
-        // ✅ 이 레벨에서 모두 가려졌으면 즉시 컬링!
-        if (!anyVisible) {
+        // ✅ 이 레벨에서 모두 가려졌으면 즉시 컬링
+        if (!anyVisible)
+        {
             return false;
         }
     }

@@ -692,12 +692,10 @@ namespace GPUDriven
             // Uniform 전달
             _hiZOcclusionCompute.LoadHiZTextures(hizBuffer.HiZTexture);
             _hiZOcclusionCompute.LoadMaxMipLevel(hizBuffer.Levels - 1);
-            _hiZOcclusionCompute.LoadVPMatrix(camera.VPMatrix);
             _hiZOcclusionCompute.LoadCameraPosition(camera.Position);
             _hiZOcclusionCompute.LoadScreenSize(hizBuffer.Width, hizBuffer.Height);
             _hiZOcclusionCompute.LoadMaxInstanceCount(MAX_INSTANCES);
             _hiZOcclusionCompute.LoadCameraNearFar(camera.NEAR, camera.FAR);
-            _hiZOcclusionCompute.LoadViewMatrix(camera.ViewMatrix);
 
             // 배치별 LOD 거리 임계값 전달
             _batchLODs = _batchManager.GetBatchLODs();

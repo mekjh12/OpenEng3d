@@ -9,8 +9,6 @@ namespace Shader
 
         // 기존 Uniform 위치
         private int[] loc_hizTextures;
-        private int loc_viewProjMatrix;
-        private int loc_viewMatrix;
         private int loc_maxMipLevel;
         private int loc_cameraPosition;
         private int loc_screenSize;
@@ -44,14 +42,12 @@ namespace Shader
             }
 
             // 기존 Uniform
-            loc_viewProjMatrix = GetUniformLocation("vp");
             loc_maxMipLevel = GetUniformLocation("u_maxMipLevel");
             loc_cameraPosition = GetUniformLocation("u_cameraPosition");
             loc_screenSize = GetUniformLocation("u_screenSize");
             loc_maxInstanceCount = GetUniformLocation("u_maxInstanceCount");
             loc_cameraNear = GetUniformLocation("u_cameraNear");
             loc_cameraFar = GetUniformLocation("u_cameraFar");
-            loc_viewMatrix = GetUniformLocation("view");
             loc_isDebugMode = GetUniformLocation("u_isDebugMode");
 
             // ===== 추가: Batch 관련 Uniform =====
@@ -82,11 +78,6 @@ namespace Shader
             Gl.Uniform1(loc_isDebugMode, isDebug ? 1 : 0);
         }
 
-        public void LoadViewMatrix(Matrix4x4f matrix)
-        {
-            LoadUniformMatrix4(loc_viewMatrix, matrix);
-        }
-
         public void LoadCameraNearFar(float near, float far)
         {
             Gl.Uniform1(loc_cameraNear, near);
@@ -108,11 +99,6 @@ namespace Shader
         public void LoadMaxInstanceCount(int maxInstanceCount)
         {
             Gl.Uniform1(loc_maxInstanceCount, maxInstanceCount);
-        }
-
-        public void LoadVPMatrix(Matrix4x4f vpMatrix)
-        {
-            Gl.UniformMatrix4f(loc_viewProjMatrix, 1, false, vpMatrix);
         }
 
         public void LoadCameraPosition(Vertex3f position)

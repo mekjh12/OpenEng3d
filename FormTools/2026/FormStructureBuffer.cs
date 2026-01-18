@@ -31,19 +31,21 @@ namespace FormTools
             @"pine_tree.obj",
             @"florida_foliage\bananaPlant1.obj",
             @"florida_foliage\palm2.obj",
+            @"florida_foliage\palm2.obj",
+            @"florida_foliage\palm3.obj",
+            @"florida_foliage\bananaPlant1.obj",
+            @"florida_foliage\bananaPlant2.obj",
+            @"florida_foliage\bananaPlant3.obj",
+            @"florida_foliage\fern1.obj",
+            @"florida_foliage\fern2.obj",
+            @"florida_foliage\fern3.obj",
+            @"florida_foliage\fern4.obj",
+            @"florida_foliage\fern5.obj",
         };
 
         /*
-               @"florida_foliage\palm2.obj",
-               @"florida_foliage\palm3.obj",
-               @"florida_foliage\bananaPlant1.obj",
-               @"florida_foliage\bananaPlant2.obj",
-               @"florida_foliage\bananaPlant3.obj",
-               @"florida_foliage\fern1.obj",
-               @"florida_foliage\fern2.obj",
-               @"florida_foliage\fern3.obj",
-               @"florida_foliage\fern4.obj",
-               @"florida_foliage\fern5.obj",            
+              
+                          
 
         */
 
@@ -78,8 +80,8 @@ namespace FormTools
         ModelBatchManager _modelBatchManager;               // 모델 배치 매니저
         HierarchyZBuffer _hiZBuffer;                        // 계층적 Z 버퍼
         GeometryRenderPass _gpuDriven;                      // GPU 드리븐 렌더러
-        const int DOWN_LEVEL = 1;                           // 다운샘플링 레벨
-        const int MAX_INSTANCES = 50_000;                    // 최대 인스턴스 수
+        const int DOWN_LEVEL = 2;                           // 다운샘플링 레벨
+        const int MAX_INSTANCES = 100_000;                    // 최대 인스턴스 수
 
         // 지형 관련 변수들
         TerrainRenderer _terrainRenderer;                   // 지형 렌더러
@@ -327,7 +329,7 @@ namespace FormTools
             _lightingManager.Update();
 
             // 카메라 위치가 변경되었는지 확인
-            if (true) //camera.IsCameraFrameMoved) //해결해야 할 부분 
+            if (camera.IsCameraFrameMoved) //해결해야 할 부분 
             {
                 // 뷰 프러스텀 업데이트
                 _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
@@ -408,15 +410,13 @@ namespace FormTools
             // ========================================
 
             // 지형 세도우맵 갱신
-            /*
             _terrainRenderer.RenderShadowMap(
                 _sunLight.Direction,
                 heightScale: TerrainConstants.DEFAULT_VERTICAL_SCALE, isClearBuffer: true
             );
-            */
 
             // 물체 세도우맵 갱신
-            //_gpuDriven.RenderShadowMap(_sunShadowMap, camera, _sunLight.Direction, isClearBuffer: true);
+            _gpuDriven.RenderShadowMap(_sunShadowMap, camera, _sunLight.Direction, isClearBuffer: true);
             //_groundFogRenderer.RenderShadowMap(_sunShadowMap, camera, _sunLight.Direction, isClearBuffer: false);
 
             // ========================================
@@ -503,8 +503,8 @@ namespace FormTools
                 else
                 {
                     // ✅ 1. Deferred Shading (불투명 객체들)
-                    //_deferredRenderer.SetTerrainShadowMap(_terrainRenderer.ShadowMap);
-                    //_deferredRenderer.SetInstanceShadowMap(_sunShadowMap);
+                    _deferredRenderer.SetTerrainShadowMap(_terrainRenderer.ShadowMap);
+                    _deferredRenderer.SetInstanceShadowMap(_sunShadowMap);
                     _deferredRenderer.Render(w, h);
 
                 }
@@ -627,11 +627,12 @@ namespace FormTools
             float quaterSpacing = spacing / 4f;
             Random rand = new Random(42);
             Vertex3f position = Vertex3f.Zero;
+            int numInstance = 0;
 
-            for (int i = 0; i < MAX_INSTANCES; i++)
+            while (true)
             {
-                int x = i % gridSize;
-                int y = i / gridSize;
+                //int x = i % gridSize;
+                //int y = i / gridSize;
 
                 //float posX = (x - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
                 //float posY = (y - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
@@ -643,7 +644,7 @@ namespace FormTools
 
                 float slope = _terrainRegion.TerrainData.GetTerrainSlope(posX, posY);
 
-                if (slope < 90)
+                if (slope < 15)
                 {
                     float posZ = _terrainRegion.TerrainData.GetTerrainHeight(ref position, TerrainConstants.DEFAULT_VERTICAL_SCALE);
 
@@ -653,9 +654,12 @@ namespace FormTools
                     Matrix4x4f transform = Matrix4x4f.Translated(posX, posY, posZ) *
                                     Matrix4x4f.RotatedZ(rotZ.ToDegree()) *
                                     Matrix4x4f.Scaled(scale, scale, scale);
-                    _modelBatchManager.AddInstance((uint)(x % _objFileNames.Length), transform);
+                    _modelBatchManager.AddInstance((uint)(numInstance % _objFileNames.Length), transform);
                     //_modelBatchManager.AddInstance((uint)Rand.NextInt(0, objFileNames.Length), transform);
+                    numInstance++;
                 }
+
+                if (numInstance >= MAX_INSTANCES) break;
             }
 
             Console.WriteLine($"Generated {MAX_INSTANCES} tree instances");

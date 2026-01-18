@@ -11,6 +11,8 @@ void main()
 {
     int texIndex = int(vMaterialID);
     
+    //if (texIndex == 0) discard;
+
     // ✅ 범위 체크 - discard로 변경
     if (texIndex < 0 || texIndex >= textureCount)
     {

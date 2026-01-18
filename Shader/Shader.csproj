@@ -214,8 +214,8 @@
     <None Include="GPUDriven\glsl\depth_debug_instanced.vert" />
     <None Include="GPUDriven\comp\quadtree_culling.comp" />
     <None Include="GPUDriven\glsl\dummy.vert" />
-    <None Include="GPUDriven\glsl\gpuInstancedDepth.frag" />
-    <None Include="GPUDriven\glsl\gpuInstancedDepth.vert" />
+    <None Include="GPUDriven\glsl\gpu_InstancedDepth.frag" />
+    <None Include="GPUDriven\glsl\gpu_InstancedDepth.vert" />
     <None Include="GPUDriven\glsl\gpu_impostor.frag" />
     <None Include="GPUDriven\glsl\gpu_impostor.gem.glsl" />
     <None Include="GPUDriven\glsl\gpu_impostor.vert" />

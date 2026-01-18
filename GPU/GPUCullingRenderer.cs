@@ -453,12 +453,10 @@ namespace GPUDriven
             // Uniform 설정
             _hizCullingCompute.LoadHiZTextures(hzBuffer.HiZTexture);
             _hizCullingCompute.LoadMaxMipLevel(hzBuffer.Levels - 1);
-            _hizCullingCompute.LoadVPMatrix(camera.VPMatrix);
             _hizCullingCompute.LoadCameraPosition(camera.Position);
             _hizCullingCompute.LoadScreenSize(hzBuffer.Width, hzBuffer.Height);
             _hizCullingCompute.LoadMaxInstanceCount(MAX_INSTANCES);
             _hizCullingCompute.LoadCameraNearFar(camera.NEAR, camera.FAR);
-            _hizCullingCompute.LoadViewMatrix(camera.ViewMatrix);
             _hizCullingCompute.LoadIsDebugMode(_debugDepthMode);
 
             // ===== Batch 메타데이터 전달 =====

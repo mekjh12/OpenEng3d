@@ -9,8 +9,8 @@ namespace Shader
     /// </summary>
     public class GPUInstancedDepthShader : ShaderProgramBase
     {
-        const string VERTEX_FILE = @"\Shader\GPUDriven\glsl\gpuInstancedDepth.vert";
-        const string FRAGMENT_FILE = @"\Shader\GPUDriven\glsl\gpuInstancedDepth.frag";
+        const string VERTEX_FILE = @"\Shader\GPUDriven\glsl\gpu_InstancedDepth.vert";
+        const string FRAGMENT_FILE = @"\Shader\GPUDriven\glsl\gpu_InstancedDepth.frag";
         private const int MAX_TEXTURES = 32;
 
         private int loc_batchStartOffset;

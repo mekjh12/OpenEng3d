@@ -172,7 +172,7 @@ namespace GPUDriven
         /// <param name="maxInstances">최대 수용 가능 인스턴스의 개수</param>
         /// <param name="maxBatches">최대 배치모델의 개수(나무1, 나무2, 바위1, ... )</param>
         /// <param name="maxMipLevels">HiZ 최대 밉맵 레벨 (0이면 비활성화)</param>
-        public RenderPassPipeLine(string name, string projPath, uint maxInstances = 100_000, uint maxBatches = 64, int maxMipLevels = 0)
+        public RenderPassPipeLine(string name, string projPath, uint maxInstances = 100_000, uint maxBatches = 64, int maxMipLevels = 7)
         {
             // 이름 설정
             _name = name;
@@ -204,7 +204,6 @@ namespace GPUDriven
         /// <summary>
         /// 렌더러 초기화
         /// </summary>
-        /// <param name="maxMipLevels">HiZ 최대 밉맵 레벨 (0이면 비활성화)</param>
         public virtual void Initialize(Camera camera, ModelBatchManager batchManager)
         {
             // 배치 매니저 설정
@@ -702,7 +701,6 @@ namespace GPUDriven
             // Uniform 전달
             _hiZOcclusionCompute.LoadHiZTextures(hizBuffer.HiZTexture);
             _hiZOcclusionCompute.LoadMaxMipLevel(hizBuffer.Levels - 1);
-            _hiZOcclusionCompute.LoadVPMatrix(camera.VPMatrix);
             _hiZOcclusionCompute.LoadCameraPosition(camera.Position);
             _hiZOcclusionCompute.LoadScreenSize(hizBuffer.Width, hizBuffer.Height);
 
@@ -710,7 +708,6 @@ namespace GPUDriven
             _hiZOcclusionCompute.LoadMaxInstanceCount((int)totalInstances);
 
             _hiZOcclusionCompute.LoadCameraNearFar(camera.NEAR, camera.FAR);
-            _hiZOcclusionCompute.LoadViewMatrix(camera.ViewMatrix);
 
             _batchLODs = _batchManager.GetBatchLODs();
             _batchStarts = _batchManager.GetBatchStarts();
