@@ -4,8 +4,8 @@
 layout(location = 0) in vec3 aPosition;
 
 struct AABB{vec3 min; float pad1; vec3 max; float pad2;};
-
 struct InstanceModelMatrixData{mat4 modelMatrix; mat4 normalMatrix; };
+
 layout(std430, binding = 0) buffer TransformBuffer { InstanceModelMatrixData instances[]; };
 layout(std430, binding = 1) buffer VisibleIndicesBuffer {int visibleIndices[];};
 layout(std430, binding = 2) buffer AABBBuffer {AABB aabbs[]; };
@@ -19,6 +19,7 @@ out VS_OUT {
     float horizontalSize;  // ✅ XY 평면 크기
     float verticalSize;    // ✅ Z 높이
     mat4 transform;
+    mat4 normalMat;
 } vs_out;
 
 void main() 
@@ -47,16 +48,7 @@ void main()
     vs_out.verticalSize = extents.z * 0.5;
     
     vs_out.transform = model;
-    
-    if (currentBatchID == 0u) {
-        vs_out.color = vec3(1.0, 0.0, 0.0);
-    } else if (currentBatchID == 1u) {
-        vs_out.color = vec3(0.0, 1.0, 0.0);
-    } else if (currentBatchID == 2u) {
-        vs_out.color = vec3(0.0, 0.0, 1.0);
-    } else {
-        vs_out.color = vec3(1.0, 1.0, 0.0);
-    }
-    
+    vs_out.normalMat = inst.normalMatrix;
+
     gl_Position = vec4(vs_out.worldPos, 1.0);
 }

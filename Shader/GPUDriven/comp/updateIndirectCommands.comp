@@ -11,7 +11,7 @@ layout(std430, binding = 12) readonly buffer VisibleCounts_LOD3 {uint visibleCou
 layout(std430, binding = 13) writeonly buffer IndirectCommands {uint indirectCommands[];};
 
 uniform uint numBatches;
-uniform uint batchCommandStartIndices[64];  // 바이트 오프셋 (0, 68, 136...)
+uniform uint batchCommandStartIndices[64];  // 바이트 오프셋 (0, 64, 128...)
 
 void main() {
     uint batchID = gl_GlobalInvocationID.x;
@@ -28,17 +28,17 @@ void main() {
     
     // LOD0: 바이트 오프셋 + 0, 16바이트 (4 uints)
     // instanceCount는 두 번째 uint
-    indirectCommands[baseIndex + 1] = visibleLOD0;
+    indirectCommands[baseIndex + 0 + 1] = visibleLOD0;
     
-    // LOD1: 바이트 오프셋 + 16, 20바이트 (5 uints)
+    // LOD1: 바이트 오프셋 + 16, 16바이트 (4 uints)
     // 16 bytes = 4 uints, instanceCount는 두 번째 uint
     indirectCommands[baseIndex + 4 + 1] = visibleLOD1;
     
-    // LOD2: 바이트 오프셋 + 36, 16바이트 (4 uints)
-    // 36 bytes = 9 uints
-    indirectCommands[baseIndex + 9 + 1] = visibleLOD2;
+    // LOD2: 바이트 오프셋 + 32, 16바이트 (4 uints)
+    // 32 bytes = 8 uints
+    indirectCommands[baseIndex + 8 + 1] = visibleLOD2;
     
-    // LOD3: 바이트 오프셋 + 52, 16바이트 (4 uints)
-    // 52 bytes = 13 uints
-    indirectCommands[baseIndex + 13 + 1] = visibleLOD3;
+    // LOD3: 바이트 오프셋 + 48, 16바이트 (4 uints)
+    // 48 bytes = 12 uints
+    indirectCommands[baseIndex + 12 + 1] = visibleLOD3;
 }

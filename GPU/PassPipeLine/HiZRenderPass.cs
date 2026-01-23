@@ -274,9 +274,12 @@ namespace GPUDriven
             for (uint i = 0; i < _batchManager.ActualBatchCount; i++)
             {
                 var batch = _batchManager.GetBatch(i);
+
+                /*
                 _impostor.CreateImpostorModel(
                     ImpostorSettings.CreateSettings(batch.ModelName, 64, 8, 6),
                     batch.Model);
+                */
             }
         }
 
@@ -702,10 +705,6 @@ namespace GPUDriven
             _batchStarts = _batchManager.GetBatchStarts();
             _batchCounts = _batchManager.GetBatchCounts();
 
-            _hiZOcclusionCompute.LoadBatchLODs(_batchLODs);
-            _hiZOcclusionCompute.LoadBatchStarts(_batchStarts);
-            _hiZOcclusionCompute.LoadBatchCounts(_batchCounts);
-
             // 프러스텀 통과 개수 읽기
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _frustumCounterSSBO);
             Gl.GetBufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, 4, _frustumCount);
@@ -907,7 +906,7 @@ namespace GPUDriven
                 _gpuDrivenImpostorShader.LoadIndividualSize(_renderData.individualSize);
                 _gpuDrivenImpostorShader.LoadFrameCounts(_renderData.horizontalFrames, _renderData.verticalFrames);
                 _gpuDrivenImpostorShader.LoadMaxDepthDistance(10000.0f);
-                _gpuDrivenImpostorShader.LoadAABBSphereRadius(_unifiedTexturedModel.AABB.Radius);
+                //_gpuDrivenImpostorShader.LoadAABBSphereRadius(_unifiedTexturedModel.AABB.Radius);
                 _gpuDrivenImpostorShader.LoadCameraPosition(camera.Position);
                 _gpuDrivenImpostorShader.LoadEnableEdgeLine(false);
                 _gpuDrivenImpostorShader.LoadBatchStartOffset(_batch.StartIndex);

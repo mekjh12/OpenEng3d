@@ -27,6 +27,10 @@ namespace Shader
         private int loc_aabbCenterPosition;
         private int loc_horizontalFrames;
         private int loc_verticalFrames;
+        private int loc_verticalBoundAngle;
+
+        // 임시 변수
+        private Vertex3f _aabbCenter;
 
         public ImpostorShader(string projectPath) : base()
         {
@@ -61,6 +65,8 @@ namespace Shader
             // 경계 상자(AABB) 관련
             loc_aabbSphereRadius = GetUniformLocation("aabbSphereRadius");
             loc_aabbCenterPosition = GetUniformLocation("aabbCenterPosition");
+
+            loc_verticalBoundAngle = GetUniformLocation("verticalBoundAngle");
         }
 
         protected override void BindAttributes()
@@ -69,6 +75,11 @@ namespace Shader
         }
 
         // === Load 메서드들 ===
+
+        public void LoadVerticalBoundAngle(float minAngle, float maxAngle)
+        {
+            Gl.Uniform2f(loc_verticalBoundAngle, 1, new Vertex2f(minAngle, maxAngle));
+        }
 
         /// <summary>
         /// 아틀라스의 가로 프레임 수 설정
@@ -156,9 +167,12 @@ namespace Shader
         /// <summary>
         /// 엔티티 AABB 중심점 설정
         /// </summary>
-        public void LoadAABBCenterPosition(Vertex3f center)
+        public void LoadAABBCenterPosition(float x, float y, float z)
         {
-            Gl.Uniform3f(loc_aabbCenterPosition, 1, center);
+            _aabbCenter.x = x;
+            _aabbCenter.y = y;
+            _aabbCenter.z = z;
+            Gl.Uniform3f(loc_aabbCenterPosition, 1, _aabbCenter);
         }
     }
 }

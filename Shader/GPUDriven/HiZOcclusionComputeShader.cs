@@ -17,11 +17,12 @@ namespace Shader
         private int loc_cameraFar;
         private int loc_isDebugMode;
 
-        // ===== 추가: Batch 관련 Uniform =====
-        private int loc_batchLODs;
-        private int loc_batchStarts;
-        private int loc_batchCounts;
+        private int loc_distance0;
+        private int loc_distance1;
+        private int loc_distance2;
+        private int loc_actualBatchCount;
 
+        // ===== 기타 멤버 =====
         private int _maxMipLevels;
 
         public HiZOcclusionComputeShader(string projectPath, int maxMipLevels) : base()
@@ -49,16 +50,13 @@ namespace Shader
             loc_cameraNear = GetUniformLocation("u_cameraNear");
             loc_cameraFar = GetUniformLocation("u_cameraFar");
             loc_isDebugMode = GetUniformLocation("u_isDebugMode");
+            loc_actualBatchCount = GetUniformLocation("u_actualBatchCount");
 
-            // ===== 추가: Batch 관련 Uniform =====
-            loc_batchLODs = GetUniformLocation("batchLODs");
-            loc_batchStarts = GetUniformLocation("batchStarts");
-            loc_batchCounts = GetUniformLocation("batchCounts");
+            // 추가: 거리 임계값 Uniform
+            loc_distance0 = GetUniformLocation("u_distance0");
+            loc_distance1 = GetUniformLocation("u_distance1");
+            loc_distance2 = GetUniformLocation("u_distance2");
 
-            System.Console.WriteLine($"[{_name}] Uniform Locations:");
-            System.Console.WriteLine($"  batchLODs: {loc_batchLODs}");
-            System.Console.WriteLine($"  batchStarts: {loc_batchStarts}");
-            System.Console.WriteLine($"  batchCounts: {loc_batchCounts}");
         }
 
         protected override void BindAttributes()
@@ -76,6 +74,13 @@ namespace Shader
         public void LoadIsDebugMode(bool isDebug)
         {
             Gl.Uniform1(loc_isDebugMode, isDebug ? 1 : 0);
+        }
+
+        public void LoadDistanceThresholds(float distance0 = 50.0f, float distance1 = 150.0f, float distance2 = 450.0f)
+        {
+            Gl.Uniform1(loc_distance0, distance0);
+            Gl.Uniform1(loc_distance1, distance1);
+            Gl.Uniform1(loc_distance2, distance2);
         }
 
         public void LoadCameraNearFar(float near, float far)
@@ -111,85 +116,9 @@ namespace Shader
             Gl.Uniform2(loc_screenSize, new float[] { width, height });
         }
 
-        // ===== 추가: Batch 관련 메서드 =====
-
-        /// <summary>
-        /// Batch별 LOD 거리 배열 로드
-        /// </summary>
-        public void LoadBatchLODs(float[] batchLODs)
+        public void LoadActualBatchCount(int count)
         {
-            if (batchLODs == null || batchLODs.Length == 0)
-            {
-                System.Console.WriteLine("Warning: Empty batchLODs array");
-                return;
-            }
-
-            if (batchLODs.Length > 64)
-            {
-                throw new System.ArgumentException(
-                    $"Max 64 batches supported, got {batchLODs.Length}");
-            }
-
-            if (loc_batchLODs < 0)
-            {
-                System.Console.WriteLine("Warning: batchLODs uniform not found");
-                return;
-            }
-
-            Gl.Uniform1(loc_batchLODs, batchLODs);
+            Gl.Uniform1(loc_actualBatchCount, count);            
         }
-
-        /// <summary>
-        /// Batch별 시작 인덱스 배열 로드
-        /// </summary>
-        public void LoadBatchStarts(uint[] batchStarts)
-        {
-            if (batchStarts == null || batchStarts.Length == 0)
-            {
-                System.Console.WriteLine("Warning: Empty batchStarts array");
-                return;
-            }
-
-            if (batchStarts.Length > 64)
-            {
-                throw new System.ArgumentException(
-                    $"Max 64 batches supported, got {batchStarts.Length}");
-            }
-
-            if (loc_batchStarts < 0)
-            {
-                System.Console.WriteLine("Warning: batchStarts uniform not found");
-                return;
-            }
-
-            Gl.Uniform1(loc_batchStarts, batchStarts);
-        }
-
-        /// <summary>
-        /// Batch별 인스턴스 개수 배열 로드
-        /// </summary>
-        public void LoadBatchCounts(uint[] batchCounts)
-        {
-            if (batchCounts == null || batchCounts.Length == 0)
-            {
-                System.Console.WriteLine("Warning: Empty batchCounts array");
-                return;
-            }
-
-            if (batchCounts.Length > 64)
-            {
-                throw new System.ArgumentException(
-                    $"Max 64 batches supported, got {batchCounts.Length}");
-            }
-
-            if (loc_batchCounts < 0)
-            {
-                System.Console.WriteLine("Warning: batchCounts uniform not found");
-                return;
-            }
-
-            Gl.Uniform1(loc_batchCounts, batchCounts);
-        }
-
     }
 }

@@ -37,6 +37,7 @@
             this.ClientSize = new System.Drawing.Size(625, 470);
             this.Name = "FormStructureBuffer";
             this.Text = "FormStructureBuffer";
+            this.Load += new System.EventHandler(this.FormStructureBuffer_Load);
             this.ResumeLayout(false);
 
         }

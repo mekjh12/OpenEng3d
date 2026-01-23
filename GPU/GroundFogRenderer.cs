@@ -31,7 +31,6 @@ namespace GPUDriven
         public float HeightThreshold { get; set; } = 50.0f;      // 이 높이 이하에만 생성
         public float SlopeThreshold { get; set; } = 15.0f;       // 이 경사 이하에만 생성
         public float Spacing { get; set; } = 25.0f;              // 연무 간격
-        public int MaxPatches { get; set; } = 5000;              // 최대 패치 수
         public float HeightOffset { get; set; } = 0.3f;          // 지면에서 띄우는 높이
 
         // 렌더링 파라미터
@@ -44,13 +43,13 @@ namespace GPUDriven
         public GroundFogRenderer(BillboardShader shader, string projPath)
         {
             _shader = shader;
-            _renderPass = new GroundFogRenderPass("낮은연무 렌더패스", projPath);
-            _batchManager = new ModelBatchManager();
+            //_renderPass = new GroundFogRenderPass("낮은연무 렌더패스", projPath);
+            _batchManager = new ModelBatchManager(maxInstances: 5_000, maxBatches: 2);
             _model3DManager = new Model3dManager(StrRes.PROJECT_PATH, "");
 
             string[] _objFileNames = new string[]
             {
-                @"tree1.obj"
+                @"Big_rock1.obj"
             };
 
             // 모델 배치 매니저에 모델 추가
@@ -79,23 +78,17 @@ namespace GPUDriven
             else
             {
                 Console.WriteLine($"✅ 연무 텍스처 로드 성공: ID={_textureID}");
-                _renderPass.SetFogTexture(_textureID);
+                //_renderPass.SetFogTexture(_textureID);
             }
         }
 
         public void BatchInstances(TerrainData terrainData)
         {
             // 인스턴스 변환 행렬 생성 및 추가
-            int gridSize = 300;
-            float spacing = 15f;
-            float halfSpacing = spacing / 2f;
-            float quaterSpacing = spacing / 4f;
             Random rand = new Random(533);
 
             for (int i = 0; i < 5_000; i++)
             {
-                int x = i % gridSize;
-                int y = i / gridSize;
                 float posX = 1000f * (float)(rand.NextDouble() * 2.0f - 1.0f);
                 float posY = 1000f * (float)(rand.NextDouble() * 2.0f - 1.0f);
                 float posZ = terrainData.GetTerrainHeight(posX, posY);
@@ -113,27 +106,37 @@ namespace GPUDriven
 
         public void Init(Camera camera)
         {
-            _renderPass.Initialize(camera, _batchManager);
+            //_renderPass.Initialize(camera, _batchManager);
         }
 
         public void Update(Camera camera, Polyhedron viewFrustum, HierarchyZBuffer hizBuffer)
         {
-            _renderPass.Update(camera, viewFrustum, hizBuffer);
+            //_renderPass.Update(camera, viewFrustum, hizBuffer);
         }
 
         public void Render(Camera camera)
         {
-           _renderPass.Render(camera);
+           //_renderPass.Render(camera);
+        }
+
+
+        string txt = "";
+
+        public string GetDebugInfo()
+        {
+            uint a = 0;
+            //_renderPass.GetVisibleCountDebug(ref a, ref a, ref a, ref a, ref a, ref a, ref txt);
+            return txt;
         }
 
         public void RenderDepthPrePassFromPrevFrame(Camera camera)
         {
-            _renderPass.RenderDepthPrePassFromPrevFrame(camera);
+            //_renderPass.RenderDepthPrePassFromPrevFrame(camera);
         }
 
         public void RenderShadowMap(ShadowMap shadowMap, Camera camera, Vertex3f sunLightDirection, bool isClearBuffer = false)
         {
-            _renderPass.RenderShadowMap(shadowMap, camera, sunLightDirection, isClearBuffer);
+            //_renderPass.RenderShadowMap(shadowMap, camera, sunLightDirection, 50.0f,  isClearBuffer);
         }
 
     }

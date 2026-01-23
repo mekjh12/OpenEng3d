@@ -188,12 +188,14 @@ namespace GPUDriven
 
             for (uint i = 0; i < _batchManager.ActualBatchCount; i++)
             {
+                /*
                 var batch = _batchManager.GetBatch(i);
                 _impostor.CreateImpostorModel(
                     ImpostorSettings.CreateSettings(batch.ModelName, 256, 16, 8),
                     batch.Model);
 
                 Console.WriteLine($"Created impostor for: {batch.ModelName}");
+                */
             }
         }
 

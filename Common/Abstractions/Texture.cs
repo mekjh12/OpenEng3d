@@ -89,11 +89,17 @@ namespace Common.Abstractions
             _height = height;
         }
 
-        public Texture(Bitmap bitmap)
+        public Texture(Bitmap bitmap, bool flipY = false)
         {
             _textureType = TextureMapType.Diffuse;
             _width = bitmap.Width;
             _height = bitmap.Height;
+
+            // 이 부분 추가
+            if (flipY)
+            {
+                bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
+            }
 
             _textureID = Gl.GenTexture();
             Gl.BindTexture(TextureTarget.Texture2d, _textureID);
@@ -131,7 +137,7 @@ namespace Common.Abstractions
         /// </summary>
         /// <param name="fileName"></param>
         /// <param name="typeName"></param>
-        public Texture(string fileName, TextureMapType textureMapType = TextureMapType.Diffuse)
+        public Texture(string fileName, TextureMapType textureMapType = TextureMapType.Diffuse, bool flipY = false)
         {
             _fileName = fileName;
 
@@ -142,6 +148,12 @@ namespace Common.Abstractions
             if (_textureType.HasFlag(TextureMapType.Diffuse))
             {
                 Bitmap bitmap = (Bitmap)Bitmap.FromFile(fileName);
+
+                if (flipY)
+                {
+                    bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                }
+
                 _width = bitmap.Width;
                 _height = bitmap.Height;
 
@@ -168,6 +180,12 @@ namespace Common.Abstractions
                 if (File.Exists(normalMapFileName))
                 {
                     Bitmap bitmap = (Bitmap)Bitmap.FromFile(normalMapFileName);
+
+                    if (flipY)
+                    {
+                        bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                    }
+
                     _width = bitmap.Width;
                     _height = bitmap.Height;
 
@@ -199,6 +217,12 @@ namespace Common.Abstractions
                 if (File.Exists(specularMapFileName))
                 {
                     Bitmap bitmap = (Bitmap)Bitmap.FromFile(specularMapFileName);
+
+                    if (flipY)
+                    {
+                        bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                    }
+
                     _width = bitmap.Width;
                     _height = bitmap.Height;
 
@@ -231,6 +255,12 @@ namespace Common.Abstractions
                 if (File.Exists(depthMapFileName))
                 {
                     Bitmap bitmap = (Bitmap)Bitmap.FromFile(depthMapFileName);
+
+                    if (flipY)
+                    {
+                        bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                    }
+
                     _width = bitmap.Width;
                     _height = bitmap.Height;
 

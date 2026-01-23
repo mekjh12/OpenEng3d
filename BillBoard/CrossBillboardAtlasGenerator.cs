@@ -160,7 +160,7 @@ namespace BillBoard
             // 디버그 저장
             //GetAtlasTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_cb.png");
             //GetAtlasDepthTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_cb_depth.png");
-            //GetAtlasNormalTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_normal.png");
+            GetAtlasNormalTexture(true).Save($@"C:\Users\mekjh\OneDrive\바탕 화면\{model.Name}_cross_normal.png");
 
             return data;
         }

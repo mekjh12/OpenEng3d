@@ -51,7 +51,7 @@ namespace GPUDriven
     /// <summary>
     /// 임시 인스턴스 데이터 (정렬 전) 모델행렬만 있어도 됨.
     /// </summary>
-    internal struct TempInstance
+    public struct TempInstance
     {
         public uint ModelID;
         public Matrix4x4f Transform;
@@ -125,8 +125,8 @@ namespace GPUDriven
     /// </summary>
     public class ModelBatchManager
     {
-        private const uint MAX_INSTANCES = 100_000;
-        private const uint MAX_BATCHES = 64;
+        private readonly uint MAX_INSTANCES = 100_000;
+        private readonly uint MAX_BATCHES = 64;
 
         private List<ModelInfo> _models;
         private uint _nextModelID;
@@ -149,12 +149,19 @@ namespace GPUDriven
         public uint ActualBatchCount => _actualBatchCount;
         public bool IsFinalized => _isFinalized;
 
-        float[] _lods = new float[MAX_BATCHES];
-        uint[] _counts = new uint[MAX_BATCHES];
-        uint[] _starts = new uint[MAX_BATCHES];
+        float[] _lods;
+        uint[] _counts;
+        uint[] _starts;
 
-        public ModelBatchManager()
+        public ModelBatchManager(int maxInstances = 1_000, int maxBatches = 64)
         {
+            MAX_INSTANCES = (uint)maxInstances;
+            MAX_BATCHES = (uint)maxBatches;
+
+            _lods = new float[MAX_BATCHES];
+            _counts = new uint[MAX_BATCHES];
+            _starts = new uint[MAX_BATCHES];
+
             _models = new List<ModelInfo>();
             _tempInstances = new List<TempInstance>();
             _nextModelID = 0;
@@ -252,9 +259,9 @@ namespace GPUDriven
                 return;
             }
 
-            Console.WriteLine("\n=== Starting Finalization (with NormalMatrix) ===");
-            Console.WriteLine($"Total Models: {_models.Count}");
-            Console.WriteLine($"Total Instances (unsorted): {_tempInstances.Count}");
+            //Console.WriteLine("\n=== Starting Finalization (with NormalMatrix) ===");
+            //Console.WriteLine($"Total Models: {_models.Count}");
+            //Console.WriteLine($"Total Instances (unsorted): {_tempInstances.Count}");
 
             if (_tempInstances.Count == 0)
             {
@@ -304,10 +311,10 @@ namespace GPUDriven
             // ✅ 핵심: 실제 인스턴스 수 저장
             _finalInstanceCount = currentIndex;
 
-            Console.WriteLine("\n=== Finalization Complete ===");
-            Console.WriteLine($"Total Instances (sorted): {_finalInstanceCount}");  // ✅ 수정
-            Console.WriteLine($"Active Batches: {_actualBatchCount}");
-            Console.WriteLine($"Total GPU Memory: {_finalInstanceCount * Marshal.SizeOf<InstanceModelMatrixData>() / 1024.0 / 1024.0:F2} MB");
+            //Console.WriteLine("\n=== Finalization Complete ===");
+            //Console.WriteLine($"Total Instances (sorted): {_finalInstanceCount}");  // ✅ 수정
+            //Console.WriteLine($"Active Batches: {_actualBatchCount}");
+            //Console.WriteLine($"Total GPU Memory: {_finalInstanceCount * Marshal.SizeOf<InstanceModelMatrixData>() / 1024.0 / 1024.0:F2} MB");
 
             // ✅ 메모리 낭비 경고
             if (_finalInstanceCount < MAX_INSTANCES / 2)
@@ -315,14 +322,14 @@ namespace GPUDriven
                 Console.WriteLine($"⚠️ Warning: Using only {_finalInstanceCount}/{MAX_INSTANCES} slots ({_finalInstanceCount * 100.0 / MAX_INSTANCES:F1}%)");
             }
 
-            Console.WriteLine("\n=== Batch Summary ===");
+            //Console.WriteLine("\n=== Batch Summary ===");
             foreach (var modelID in usedModelIDs)
             {
                 BatchDescriptor batch = _batches[modelID];
-                Console.WriteLine($"Batch {modelID}: {batch.ModelName}");
-                Console.WriteLine($"  Range: [{batch.StartIndex} ~ {batch.StartIndex + batch.Count - 1}]");
-                Console.WriteLine($"  Count: {batch.Count}");
-                Console.WriteLine($"  LOD: {batch.LODDistance}m");
+                //Console.WriteLine($"Batch {modelID}: {batch.ModelName}");
+                //Console.WriteLine($"  Range: [{batch.StartIndex} ~ {batch.StartIndex + batch.Count - 1}]");
+                //Console.WriteLine($"  Count: {batch.Count}");
+                //Console.WriteLine($"  LOD: {batch.LODDistance}m");
             }
 
             _isFinalized = true;

@@ -130,7 +130,7 @@ namespace Occlusion
             Gl.BindTexture(TextureTarget.Texture2d, 0);
 
             // 각 레벨별 HZB 텍스처 생성 (32비트 부동소수점 포맷)
-            Console.WriteLine("-----------------------------------------------------");
+            Console.WriteLine("-----------------[HZB Texture]------------------");
             for (int i = 0; i < _levels; i++)
             {
                 _hzbTextures[i] = Gl.GenTexture();

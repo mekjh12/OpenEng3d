@@ -48,10 +48,11 @@ namespace BillBoard
     /// </summary>
     public class RenderTarget2D : IDisposable
     {
-        private uint _frameBuffer;      // 프레임버퍼 객체(FBO)
-        private uint _textureHandle;    // 컬러 텍스처 핸들
-        private uint _depthHandle;      // 깊이 버퍼 핸들
-        private bool _hasDepth;         // 깊이 버퍼 사용 여부
+        private uint _frameBuffer;          // 프레임버퍼 객체(FBO)
+        private uint[] _colorTextures;      // 다중 컬러 텍스처
+        private int _colorAttachmentCount;  // 컬러 어태치먼트 개수
+        private uint _depthHandle;          // 깊이 버퍼 핸들
+        private bool _hasDepth;             // 깊이 버퍼 사용 여부
 
         public int Width { get; private set; }
         public int Height { get; private set; }
@@ -66,9 +67,11 @@ namespace BillBoard
 
         public uint TextureHandle
         {
-            get => _textureHandle; 
-            set => _textureHandle = value;
+            get => _colorTextures[0];  // 기존 호환성
+            set => _colorTextures[0] = value;
         }
+
+        public uint GetColorTexture(int index) => _colorTextures[index];
 
         public uint DepthHandle
         {
@@ -80,13 +83,18 @@ namespace BillBoard
         /// 렌더 타겟 초기화
         /// </summary>
         public RenderTarget2D(int width, int height, bool generateMips,
-            SurfaceFormat format, DepthFormat depthFormat)
+            SurfaceFormat format, DepthFormat depthFormat, int colorAttachmentCount = 1)
         {
+            // 속성 설정
             Width = width;
             Height = height;
             Format = format;
             DepthFormat = depthFormat;
             _hasDepth = depthFormat != DepthFormat.None;
+
+            // 컬러 어태치먼트 개수 설정
+            _colorAttachmentCount = colorAttachmentCount;
+            _colorTextures = new uint[colorAttachmentCount];
 
             CreateRenderTarget(generateMips);
         }
@@ -100,36 +108,47 @@ namespace BillBoard
             FrameBuffer = Gl.GenFramebuffer();
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, FrameBuffer);
 
-            // 컬러 텍스처 생성 및 설정
-            TextureHandle = Gl.GenTexture();
-            Gl.BindTexture(TextureTarget.Texture2d, TextureHandle);
-
-            InternalFormat internalFormat = GetInternalFormat();
-            PixelFormat pixelFormat = GetPixelFormat();
-            PixelType pixelType = GetPixelType();
-
-            Gl.TexImage2D(TextureTarget.Texture2d, 0, internalFormat,
-                Width, Height, 0, pixelFormat, pixelType, IntPtr.Zero);
-
-            // 텍스처 파라미터 설정
-            Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter,
-                (int)(generateMips ? TextureMinFilter.LinearMipmapLinear : TextureMinFilter.Linear));
-            Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter,
-                (int)TextureMagFilter.Linear);
-            Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureWrapS,
-                (int)TextureWrapMode.ClampToEdge);
-            Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureWrapT,
-                (int)TextureWrapMode.ClampToEdge);
-
-            if (generateMips)
+            for (int i = 0; i < _colorAttachmentCount; i++)
             {
-                Gl.GenerateMipmap(TextureTarget.Texture2d);
+                // 컬러 텍스처 생성
+                _colorTextures[i] = Gl.GenTexture();
+                Gl.BindTexture(TextureTarget.Texture2d, _colorTextures[i]);
+
+                InternalFormat internalFormat = GetInternalFormat();
+                PixelFormat pixelFormat = GetPixelFormat();
+                PixelType pixelType = GetPixelType();
+
+                Gl.TexImage2D(TextureTarget.Texture2d, 0, internalFormat,
+                    Width, Height, 0, pixelFormat, pixelType, IntPtr.Zero);
+
+                // 텍스처 파라미터 설정
+                Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter,
+                    (int)(generateMips ? TextureMinFilter.LinearMipmapLinear : TextureMinFilter.Linear));
+                Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter,
+                    (int)TextureMagFilter.Linear);
+                Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureWrapS,
+                    (int)TextureWrapMode.ClampToEdge);
+                Gl.TexParameter(TextureTarget.Texture2d, TextureParameterName.TextureWrapT,
+                    (int)TextureWrapMode.ClampToEdge);
+
+                if (generateMips)
+                {
+                    Gl.GenerateMipmap(TextureTarget.Texture2d);
+                }
+
+                // 프레임버퍼에 텍스처 연결
+                Gl.FramebufferTexture2D(FramebufferTarget.Framebuffer,
+                    FramebufferAttachment.ColorAttachment0 + i,
+                    TextureTarget.Texture2d, _colorTextures[i], 0);
             }
 
-            // 프레임버퍼에 텍스처 연결
-            Gl.FramebufferTexture2D(FramebufferTarget.Framebuffer,
-                FramebufferAttachment.ColorAttachment0,
-                TextureTarget.Texture2d, TextureHandle, 0);
+            // DrawBuffers 설정 추가
+            int[] drawBuffers = new int[_colorAttachmentCount];
+            for (int i = 0; i < _colorAttachmentCount; i++)
+            {
+                drawBuffers[i] = (int)(FramebufferAttachment.ColorAttachment0 + i);
+            }
+            Gl.DrawBuffers(drawBuffers);
 
             // 깊이 버퍼 생성 (필요한 경우)
             if (_hasDepth)
@@ -245,16 +264,16 @@ namespace BillBoard
                 FrameBuffer = 0;
             }
 
-            if (TextureHandle != 0)
-            {
-                Gl.DeleteTextures(new uint[] { TextureHandle });
-                TextureHandle = 0;
-            }
-
             if (_depthHandle != 0)
             {
                 Gl.DeleteRenderbuffers(new uint[] { _depthHandle });
                 _depthHandle = 0;
+            }
+
+            foreach (uint tex in _colorTextures)
+            {
+                if (tex != 0)
+                    Gl.DeleteTextures(new uint[] { tex });
             }
         }
     }

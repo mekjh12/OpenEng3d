@@ -101,7 +101,7 @@ namespace Renderer
             // 인스턴스 속성 설정 (최초 1회)
             if (!_isAABBBoxSetup)
             {
-                shader.SetupInstancedAttributes(_aabbCenterVAO);
+                //shader.SetupInstancedAttributes(_aabbCenterVAO);
                 _isAABBBoxSetup = true;
             }
 
@@ -115,7 +115,7 @@ namespace Renderer
             }
 
             // GPU에 데이터 업로드
-            shader.UploadInstanceData(_aabbCenters, _aabbHalfSizes, _aabbColors, count);
+            //shader.UploadInstanceData(_aabbCenters, _aabbHalfSizes, _aabbColors, count);
 
             // 렌더링
             Gl.Enable(EnableCap.Blend);
@@ -123,7 +123,7 @@ namespace Renderer
             Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
             shader.Bind();
-            shader.LoadUniform(AABBBoxShader.UNIFORM_NAME.vp, camera.VPMatrix);
+            //shader.LoadUniform(AABBBoxShader.UNIFORM_NAME.vp, camera.VPMatrix);
 
             Gl.BindVertexArray(_aabbCenterVAO);
 

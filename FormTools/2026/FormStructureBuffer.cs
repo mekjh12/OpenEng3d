@@ -27,10 +27,14 @@ namespace FormTools
 
         string[] _objFileNames = new string[]
         {
+            @"Watermill.obj",
+            @"florida_foliage\bananaPlant1.obj",
+        };
+
+        /*            
             @"oak_tree.obj",
             @"pine_tree.obj",
-            @"florida_foliage\bananaPlant1.obj",
-            @"florida_foliage\palm2.obj",
+            @"florida_foliage\palm1.obj",
             @"florida_foliage\palm2.obj",
             @"florida_foliage\palm3.obj",
             @"florida_foliage\bananaPlant1.obj",
@@ -41,12 +45,6 @@ namespace FormTools
             @"florida_foliage\fern3.obj",
             @"florida_foliage\fern4.obj",
             @"florida_foliage\fern5.obj",
-        };
-
-        /*
-              
-                          
-
         */
 
         // GL 컨트롤 변수들
@@ -81,7 +79,7 @@ namespace FormTools
         HierarchyZBuffer _hiZBuffer;                        // 계층적 Z 버퍼
         GeometryRenderPass _gpuDriven;                      // GPU 드리븐 렌더러
         const int DOWN_LEVEL = 2;                           // 다운샘플링 레벨
-        const int MAX_INSTANCES = 30_000;                    // 최대 인스턴스 수
+        const int MAX_INSTANCES = 100_000;                    // 최대 인스턴스 수
 
         // 지형 관련 변수들
         TerrainRenderer _terrainRenderer;                   // 지형 렌더러
@@ -175,12 +173,13 @@ namespace FormTools
             ShaderManager.Instance.AddShader(new TerrainTessellationShader(StrRes.PROJECT_PATH));
             ShaderManager.Instance.AddShader(new RenderDepthBufferShader(StrRes.PROJECT_PATH));
             ShaderManager.Instance.AddShader(new DeferredShadingShader(StrRes.PROJECT_PATH));
+            ShaderManager.Instance.AddShader(new StructureDebugShader(StrRes.PROJECT_PATH));
+
             _colorShader = ShaderManager.Instance.GetShader<ColorShader>();
             _hzmDepthShader = ShaderManager.Instance.GetShader<HzmDepthShader>();
             _terrainShader = ShaderManager.Instance.GetShader<TerrainTessellationShader>();
             _renderDepthShader = ShaderManager.Instance.GetShader<RenderDepthBufferShader>();
             _deferredShadingShader = ShaderManager.Instance.GetShader<DeferredShadingShader>();
-
             _structureBufferShader = new StructureDebugShader(StrRes.PROJECT_PATH);
 
             // 앱 시작 시 한 번만 초기화
@@ -222,7 +221,7 @@ namespace FormTools
 
             // 3D 모델 매니저 초기화 및 모델 로드
             _model3DManager = new Model3dManager(StrRes.PROJECT_PATH, EXE_PATH + "\\nullTexture.jpg");
-            _modelBatchManager = new ModelBatchManager();
+            _modelBatchManager = new ModelBatchManager(MAX_INSTANCES, 16);
 
             for (int i = 0; i < _objFileNames.Length; i++)
             {
@@ -233,7 +232,7 @@ namespace FormTools
 
             // 지형 영역 초기화
             RegionCoord regionCoord = new RegionCoord(0, 0);
-            string heightMapFile = EXE_PATH + "\\Res\\Terrain\\0x0.png";
+            string heightMapFile = EXE_PATH + "\\Res\\Terrain\\1x1.png";
             _terrainRegion = new TerrainRegion(regionCoord, chunkSize: 100, n: 10, null);
             _terrainRegion.LoadTerrainLowResMap(regionCoord, heightMapFile, completed: LoadTerrainRegionCompleted);
 
@@ -258,7 +257,6 @@ namespace FormTools
             _groundFogRenderer = new GroundFogRenderer(_billboardShader, StrRes.PROJECT_PATH);
             _groundFogRenderer.HeightThreshold = 50.0f;
             _groundFogRenderer.SlopeThreshold = 15.0f;
-            _groundFogRenderer.MaxPatches = 1000;
 
             //_groundFogRenderer.CreateTestTexture();
             _groundFogRenderer.LoadTexture(EXE_PATH + @"\Res\Terrain\fog_noise.png");
@@ -284,7 +282,6 @@ namespace FormTools
             CharacterTextureAtlas.Initialize();
             TextBillboardShader.Initialize();
             SimpleColorShader.Initialize();
-
         }
 
         public void Start()
@@ -296,7 +293,7 @@ namespace FormTools
 
             // GPU 드리븐 렌더러 초기화
             _gpuDriven = new GeometryRenderPass("초목용 렌더패스", StrRes.PROJECT_PATH);
-            _gpuDriven.Initialize(_glControl3.Camera, _modelBatchManager);
+            _gpuDriven.Initialize(_glControl3.Camera, _modelBatchManager, distance0: 50, distance1: 150, distance2: 150);
 
             // 디퍼드 렌더러 초기화
             _gbuffer = _glControl3.GBuffer;
@@ -386,7 +383,6 @@ namespace FormTools
               
             }
 
-            /*
             // 테스트 후 지울 것
             _gpuDriven.GetVisibleCountDebug(ref _visibleCount,
                    ref _visibleCountLod0,
@@ -394,12 +390,12 @@ namespace FormTools
                    ref _visibleCountLod2,
                    ref _visibleCountLod3,
                    ref _frustumPassCount, ref _visibleReport);
-
+           
             _lastVisibleCount = _visibleCount;
             _lastFrustumPassCount = _frustumPassCount;
-            _culledText.Text = _visibleReport;
+            _culledText.Text = _visibleReport;// _groundFogRenderer.GetDebugInfo();
             _isDebugTextDirty = true;
-            */
+
         }
 
         public void RenderFrame(double deltaTime, Vertex4f backcolor, Camera camera)
@@ -418,7 +414,7 @@ namespace FormTools
             );
 
             // 물체 세도우맵 갱신
-            _gpuDriven.RenderShadowMap(_sunShadowMap, camera, _sunLight.Direction, isClearBuffer: true);
+            _gpuDriven.RenderShadowMap(_sunShadowMap, camera, _sunLight.Direction, lightViewWidth: camera.Distance * 0.8f, isClearBuffer: true);
             //_groundFogRenderer.RenderShadowMap(_sunShadowMap, camera, _sunLight.Direction, isClearBuffer: false);
 
             // ========================================
@@ -504,7 +500,7 @@ namespace FormTools
                 }
                 else
                 {
-                    // ✅ 1. Deferred Shading (불투명 객체들)
+                    // Deferred Shading (불투명 객체들)
                     _deferredRenderer.SetTerrainShadowMap(_terrainRenderer.ShadowMap);
                     _deferredRenderer.SetInstanceShadowMap(_sunShadowMap);
                     _deferredRenderer.Render(w, h);
@@ -654,7 +650,7 @@ namespace FormTools
                     float scale = 0.5f + (float)(rand.NextDouble() * 1.0f);
 
                     Matrix4x4f transform = Matrix4x4f.Translated(posX, posY, posZ) *
-                                    Matrix4x4f.RotatedZ(rotZ.ToDegree()) *
+                                    Matrix4x4f.RotatedZ(rotZ.ToDegree()) * 
                                     Matrix4x4f.Scaled(scale, scale, scale);
                     _modelBatchManager.AddInstance((uint)(numInstance % _objFileNames.Length), transform);
                     //_modelBatchManager.AddInstance((uint)Rand.NextInt(0, objFileNames.Length), transform);
@@ -799,6 +795,11 @@ namespace FormTools
 
             Gl.Viewport(0, 0, screenWidth, screenHeight);
             Gl.Enable(EnableCap.DepthTest);
+        }
+
+        private void FormStructureBuffer_Load(object sender, EventArgs e)
+        {
+
         }
     }
 }

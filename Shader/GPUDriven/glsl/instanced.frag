@@ -74,7 +74,7 @@ void main()
         albedo *= debugColor.rgb;
     }
     
-    // ✅ 5. G-Buffer 출력  
+    // 5. G-Buffer 출력  
     gAlbedo = vec4(albedo, texColor.a);         // 알베도 (라이팅 전)
     gPosition = vec4(vWorldPos, 1.0);           // 월드 위치
     gNormal = vec4(normal, 1.0);                // 법선 벡터

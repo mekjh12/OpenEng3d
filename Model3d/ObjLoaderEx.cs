@@ -88,10 +88,8 @@ namespace Model3d
             UnifiedTexturedModel model = MergeIntoSingleMesh(modelName, meshDataList, textureFiles);
             model.AABB = new AABB3f(min, max);
 
-            Console.WriteLine($"    * 통합 완료: {model.VertexCount}개 정점, " +
+            Console.WriteLine($" 통합 완료: {model.Name}, {model.VertexCount}개 정점, " +
                              $"{model.IndexCount}개 인덱스, {model.Textures.Count}개 텍스처");
-
-            Console.WriteLine("---------------------------");
 
             return model;
         }
@@ -116,7 +114,7 @@ namespace Model3d
 
                     MeshData data = ExtractMeshData(mesh, material);
                     meshDataList.Add(data);
-                    Console.WriteLine($"    메시 수집: {mesh.Name}, 정점={mesh.VertexCount}, 재질={material.Name}");
+                    //VAO 생성:Console.WriteLine($"    메시 수집: {mesh.Name}, 정점={mesh.VertexCount}, 재질={material.Name}");
                 }
 
                 for (int i = 0; i < node.ChildCount; i++)
@@ -309,7 +307,7 @@ namespace Model3d
 
             Gl.BindVertexArray(0);
 
-            Console.WriteLine($"    VAO 생성: ID={vaoID}");
+            //Console.WriteLine($"    VAO 생성: ID={vaoID}");
 
             return vaoID;
         }

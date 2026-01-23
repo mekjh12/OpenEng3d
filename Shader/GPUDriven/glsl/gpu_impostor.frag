@@ -1,63 +1,82 @@
 ﻿#version 450 core
-
-in GS_OUT 
-{
+in GS_OUT {
     vec2 texCoord;
     vec2 atlasOffset;
     vec3 viewPos;
-    vec3 worldPos;  // ✅ 추가
+    vec3 worldPos;
+    vec3 tangent;
+    vec3 bitangent;
+    vec3 normal;
 } fs_in;
 
-// ✅ G-Buffer MRT 출력 (GPUInstancedShader, CrossBillboard와 동일)
-layout(location = 0) out vec4 gAlbedo;      // 알베도/컬러
-layout(location = 1) out vec4 gPosition;    // 월드 위치
-layout(location = 2) out vec4 gNormal;      // 법선 벡터
-layout(location = 3) out float gDepth;      // 선형 깊이
+layout(location = 0) out vec4 gAlbedo;
+layout(location = 1) out vec4 gPosition;
+layout(location = 2) out vec4 gNormal;
+layout(location = 3) out float gDepth;
 
 uniform sampler2D impostorAtlas;
+uniform sampler2D normalAtlas;
 uniform float atlasSize;
 uniform float individualSize;
-uniform int enableEdgeLine;
-uniform float gMaxDepthDistance = 10000.0;  // ✅ 동적 조정 가능
+uniform int enableEdgeLine = 1;
+uniform int enableNormalMap = 1;
+uniform float gMaxDepthDistance = 10000.0;
 
-const float EDGE_THRESHOLD = 0.01;
-const float ALPHA_THRESHOLD = 0.05;
+const float EDGE_THRESHOLD = 0.03;
+const float ALPHA_THRESHOLD = 0.5; // Impostor는 보통 0.5 정도로 컷팅해야 윤곽이 깨끗함
 
 void main()
 {
-    // 1. 디버그 모드 - 엣지 라인
+    // 1. 아틀라스 UV 계산
+    float uvScale = individualSize / atlasSize;
+    vec2 localUV = fs_in.texCoord * uvScale;
+    vec2 finalUV = fs_in.atlasOffset + localUV; // ✅ Offset은 이미 정규화된 좌표여야 함
+
+    // 2. 디버그 모드 (텍스처 샘플링 전 수행하여 성능 절약 가능, but discard 로직 고려 필요)
     if (enableEdgeLine == 1)
     {
         bool isEdge = any(lessThan(fs_in.texCoord, vec2(EDGE_THRESHOLD))) || 
                       any(greaterThan(fs_in.texCoord, vec2(1.0 - EDGE_THRESHOLD)));
         if (isEdge)
         {
-            // ✅ G-Buffer 디버그 출력
-            gAlbedo = vec4(1.0, 1.0, 0.0, 1.0);     // 노란색 엣지
+            gAlbedo = vec4(1.0, 1.0, 0.0, 1.0);
             gPosition = vec4(fs_in.worldPos, 1.0);
-            gNormal = vec4(0.0, 0.0, 1.0, 1.0);     // Z축 법선
+            gNormal = vec4(0.0, 0.0, 1.0, 1.0);
             gDepth = length(fs_in.viewPos) / gMaxDepthDistance;
             return;
         }
     }
-    
-    // 2. 아틀라스 UV 계산
-    float uvScale = individualSize / atlasSize;
-    vec2 localUV = fs_in.texCoord * uvScale;
-    vec2 finalUV = fs_in.atlasOffset + localUV;
-    
-    // 3. 텍스처 샘플링 및 Alpha Test
+
+    // 3. 알베도 샘플링
     vec4 color = texture(impostorAtlas, finalUV);
     if (color.a < ALPHA_THRESHOLD) discard;
+
+    // 4. 노멀 맵 처리
+    vec3 finalNormal;
     
-    // ✅ 4. G-Buffer 출력 (라이팅은 Deferred Pass에서 처리)
-    // Impostor는 이미 라이팅이 베이크된 텍스처이므로 알베도를 그대로 출력
-    gAlbedo = vec4(color.rgb, color.a);
+    if (enableNormalMap == 1) {
+        // Normal Map은 [0,1] 범위이므로 decoding 필요
+        vec3 rawNormal = texture(normalAtlas, finalUV).rgb;
+        vec3 tangentNormal = rawNormal * 2.0 - 1.0;
+
+        // TBN 구성 (Column-Major: T가 1열, B가 2열, N이 3열)
+        mat3 TBN = mat3(
+            normalize(fs_in.tangent),
+            normalize(fs_in.bitangent),
+            normalize(fs_in.normal)
+        );
+
+        // Tangent Space -> World Space 변환
+        finalNormal = -normalize(TBN * tangentNormal);
+    } else {
+        finalNormal = normalize(fs_in.normal);
+    }
+
+    // 5. 출력
+    gAlbedo = vec4(color.rgb, 1.0); // Alpha Test 통과했으므로 1.0 (Blending 안 할 경우)
     gPosition = vec4(fs_in.worldPos, 1.0);
+    gNormal = vec4(finalNormal, 1.0);
     
-    // 임포스터는 빌보드이므로 법선을 단순화 (CrossBillboard와 동일)
-    // 방향광원이 Z축과의 각도(남중고도)만을 고려
-    gNormal = vec4(0.0, 0.0, 1.0, 1.0);
-    
-    gDepth = length(fs_in.viewPos) / gMaxDepthDistance;  // 정규화된 선형 깊이
+    // Linear Depth 계산
+    gDepth = length(fs_in.viewPos) / gMaxDepthDistance; 
 }

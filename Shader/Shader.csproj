@@ -112,6 +112,7 @@
     <Compile Include="GPUDriven\WaterFlowComputeShader.cs" />
     <Compile Include="GPUDriven\WorldAxisShader.cs" />
     <Compile Include="GPUDriven\GrassShaderGPUDriven.cs" />
+    <Compile Include="ImpostorShader\ImpostorBakingShader.cs" />
     <Compile Include="ImpostorShader\ImpostorInstancedShader.cs" />
     <Compile Include="InstancedShader\InstancedDepthShader.cs" />
     <Compile Include="InstancedShader\InstancedShader.cs" />
@@ -161,6 +162,8 @@
     <None Include="AABBShader\aabb_depth.gem.glsl" />
     <None Include="AABBShader\aabb_depth.vert" />
     <None Include="AABBShader\aabb.gem.glsl" />
+    <None Include="AABBShader\aabb_simple.frag" />
+    <None Include="AABBShader\aabb_simple.geom" />
     <None Include="AnimateShader\ani.frag" />
     <None Include="AnimateShader\ani.vert" />
     <None Include="AtmosphericScatteringLUT\scattering.comp" />
@@ -238,6 +241,8 @@
     <None Include="GPUDriven\glsl\world_axis.frag" />
     <None Include="GPUDriven\glsl\world_axis.geom.glsl" />
     <None Include="GPUDriven\glsl\world_axis.vert" />
+    <None Include="ImpostorShader\impostor_baking.frag" />
+    <None Include="ImpostorShader\impostor_baking.vert" />
     <None Include="ImpostorShader\impostor_instanced.vert" />
     <None Include="ImpostorShader\impostor_instanced.gem.glsl" />
     <None Include="ImpostorShader\impostor_instanced.frag" />
@@ -347,6 +352,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="GPUDriven\comp\gaussian_blur.comp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="AABBShader\aabb_simple.vert" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

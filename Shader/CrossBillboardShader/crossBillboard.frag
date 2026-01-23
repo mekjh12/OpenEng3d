@@ -12,27 +12,13 @@ uniform mat4 model;
 const float EDGE_THRESHOLD = 0.01;
 
 // 라이팅 UBO
-layout(std140, binding = 1) uniform LightingBlock {
-    vec3 ambientColor;
-    vec3 lightDirection;
-    vec3 lightColor;
-} lighting;
+layout(std140, binding = 1) uniform LightingBlock {    vec3 ambientColor;    vec3 lightDirection;    vec3 lightColor;} lighting;
 
-layout(std140, binding = 0) uniform CameraBlock {
-    mat4 view; 
-    mat4 proj; 
-    mat4 vp;
-} camera;
+layout(std140, binding = 0) uniform CameraBlock {    mat4 view;     mat4 proj;     mat4 vp;} camera;
 
 void main()
 {
-
-    
     vec4 texColor = texture(atlasTexture, fTexCoord);
-
-    fragColor = vec4(1, 1, 1, texColor.a);
-    return;
-
 
     // ✅ 엣지 라인 디버깅
     if (enableEdgeLine)
@@ -46,6 +32,7 @@ void main()
             return;
         }
     }
+
     if (texColor.a < 0.45) discard;
     
     // ✅ Normal Texture에서 노멀 샘플링

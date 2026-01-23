@@ -169,8 +169,8 @@ namespace FormTools
 
             // 임포스터 LOD 시스템 초기화
             _impostor = new ImpostorAssets(_unlitShader, _glControl3.Camera);
-            _impostor.CreateImpostorModel(ImpostorSettings.CreateSettings("tree1", 256, 16, 9), _unifiedModel);
-            _impostor.CreateImpostorModel(ImpostorSettings.CreateSettings("Palm1", 256, 16, 9), _unifiedModel2);
+            //_impostor.CreateImpostorModel(ImpostorSettings.CreateSettings("tree1", 256, 16, 9), _unifiedModel);
+            //_impostor.CreateImpostorModel(ImpostorSettings.CreateSettings("Palm1", 256, 16, 9), _unifiedModel2);
 
             // 임포스터 렌더러 초기화
             var renderData = _impostor.GetImpostorRenderData("tree1");

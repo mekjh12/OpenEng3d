@@ -1,13 +1,10 @@
 ﻿#version 450 core
 layout(local_size_x = 256) in;
 
-struct AABB {
-    vec3 min;
-    float padding1;
-    vec3 max;
-    float padding2;
-};
+// 버퍼 정의
+struct AABB {vec3 min; float padding1; vec3 max; float padding2;};
 
+// 버퍼 바인딩
 layout(std430, binding = 0) buffer AABBBuffer { AABB aabbs[];};
 layout(std430, binding = 1) buffer FrustumPassedBuffer { int frustumPassedIndices[];};
 layout(std430, binding = 2) buffer FrustumCounterBuffer { uint frustumPassedCount;};

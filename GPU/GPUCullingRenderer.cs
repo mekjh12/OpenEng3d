@@ -182,7 +182,7 @@ namespace GPUDriven
             {
                 var batch = _batchManager.GetBatch(i);
 
-                _impostor.CreateImpostorModel(ImpostorSettings.CreateSettings(batch.ModelName, 256, 16, 8), batch.Model);
+                //_impostor.CreateImpostorModel(ImpostorSettings.CreateSettings(batch.ModelName, 256, 16, 8), batch.Model);
 
                 Console.WriteLine($"Created impostor for: {batch.ModelName}");
             }
@@ -473,11 +473,6 @@ namespace GPUDriven
                     Console.WriteLine($"  Batch {b}: Start={batchStarts[b]}, Count={batchCounts[b]}, LOD={batchLODs[b]}");
                 }
             }
-
-            // Uniform 전달
-            _hizCullingCompute.LoadBatchLODs(batchLODs);
-            _hizCullingCompute.LoadBatchStarts(batchStarts);
-            _hizCullingCompute.LoadBatchCounts(batchCounts);
 
             // Frustum 통과 개수 가져오기
             Gl.BindBuffer(BufferTarget.ShaderStorageBuffer, _frustumCounterSSBO);

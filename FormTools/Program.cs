@@ -19,7 +19,9 @@ namespace FormTools
             //Application.Run(new FormGPUDriveHiZ());               // 작동됨(실패)
             //Application.Run(new FormGPUDriven());                 // 작동됨(이전버전으로 폐기)
 
-            Application.Run(new FormStructureBuffer());
+
+            Application.Run(new FormImposterBaker());
+            //Application.Run(new FormStructureBuffer());
             //Application.Run(new FormTerrainGenerator());                  // 작동됨 = 지형기반 지면안개 GPU드리븐 테스트
             //Application.Run(new FormNoise2d());
             //Application.Run(new FormShadow());                      // 작동됨 = LOD0,1 그림자 도입

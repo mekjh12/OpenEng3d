@@ -32,6 +32,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="OpenGL.Net, Version=0.8.4.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\OpenGL.Net.0.8.4\lib\net461\OpenGL.Net.dll</HintPath>
     </Reference>
@@ -56,12 +59,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BoundingInfo.cs" />
     <Compile Include="CrossBillboardAtlasGenerator.cs" />
     <Compile Include="CrossBillboardAtlasLayout.cs" />
     <Compile Include="CrossBillboardData.cs" />
+    <Compile Include="ImposterSaver.cs" />
     <Compile Include="ImpostorAtlasGenerator.cs" />
+    <Compile Include="ImpostorBaker.cs" />
     <Compile Include="ImpostorData.cs" />
     <Compile Include="ImpostorAssets.cs" />
+    <Compile Include="ImpostorMetadata.cs" />
+    <Compile Include="ImpostorMetadataLoader.cs" />
     <Compile Include="ImpostorSettings.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RenderTarget2D.cs" />

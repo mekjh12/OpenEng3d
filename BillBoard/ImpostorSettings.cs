@@ -1,132 +1,78 @@
 ﻿namespace BillBoard
 {
     /// <summary>
-    /// 임포스터 생성 및 렌더링에 필요한 공통 설정값들
+    /// 임포스터 베이킹 설정 (단순화 버전)
+    /// 하단 피벗 제거, AABB 중심 기준
     /// </summary>
-    /// <remarks>
-    /// 이 구조체는 3D 모델의 임포스터를 생성하고 렌더링하는 데 필요한 설정을 관리합니다.
-    /// 
-    /// 사용법:
-    /// 1. 기본 설정으로 인스턴스 생성:
-    ///    ImpostorSettings settings = ImpostorSettings.CreateDefault();
-    /// 
-    /// 2. 사용자 정의 설정으로 인스턴스 생성:
-    ///    ImpostorSettings settings = new ImpostorSettings
-    ///    {
-    ///        AtlasSize = 4096,
-    ///        IndividualSize = 512,
-    ///        HorizontalAngles = 16,
-    ///        VerticalAngles = 8,
-    ///        VerticalAngleMin = -30,
-    ///        VerticalAngleMax = 90
-    ///    };
-    /// 
-    /// 3. 설정 유효성 검사:
-    ///    if (!settings.Validate())
-    ///    {
-    ///        Console.WriteLine("Invalid impostor settings!");
-    ///    }
-    /// 
-    /// 4. 설정 사용 예시:
-    ///    ImpostorGenerator generator = new ImpostorGenerator(settings);
-    ///    generator.GenerateImpostor(model);
-    /// 
-    /// 주의사항:
-    /// - AtlasSize는 IndividualSize의 배수여야 합니다.
-    /// - AtlasSize / IndividualSize 의 제곱은 HorizontalAngles * VerticalAngles 이상이어야 합니다.
-    /// - VerticalAngleMin은 VerticalAngleMax보다 작아야 하며, VerticalAngleMax는 90도를 초과할 수 없습니다.
-    /// - HorizontalAngles와 VerticalAngles는 1 이상이어야 합니다.
-    /// </remarks>
     public struct ImpostorSettings
     {
-        /// <summary>
-        /// 임포스터 설정 이름
-        /// </summary>
         public string Name { get; set; }
 
-        /// <summary>
-        /// 전체 아틀라스 텍스처의 해상도
-        /// </summary>
-        public int AtlasSize { get; set; }
+        // 아틀라스 설정
+        public int AtlasSize { get; set; }          // 전체 아틀라스 크기 (예: 1024)
+        public int IndividualSize { get; set; }     // 개별 프레임 크기 (예: 128)
+
+        // 각도 설정
+        public int HorizontalAngles { get; set; }   // 수평 분할 (예: 8)
+        public int VerticalAngles { get; set; }     // 수직 분할 (예: 6)
+        public float VerticalAngleMin { get; set; } // 수직 최소 각도 (예: -30°)
+        public float VerticalAngleMax { get; set; } // 수직 최대 각도 (예: 60°)
+
+        // 바운딩 설정
+        public float PaddingFactor { get; set; }    // AABB 패딩 (예: 0.01 = 1%)
 
         /// <summary>
-        /// 각 방향별 뷰의 텍스처 해상도
+        /// 기본 설정 생성
         /// </summary>
-        public int IndividualSize { get; set; }
-
-        /// <summary>
-        /// 수평 방향으로 캡처할 각도 수 (예: 8)
-        /// </summary>
-        public int HorizontalAngles { get; set; }
-
-        /// <summary>
-        /// 수직 방향으로 캡처할 각도 수 (예: 4)
-        /// </summary>
-        public int VerticalAngles { get; set; }
-
-        /// <summary>
-        /// 수직 방향 최소 각도 (하단, 예: 0)
-        /// </summary>
-        public float VerticalAngleMin { get; set; }
-
-        /// <summary>
-        /// 수직 방향 최대 각도 (상단, 예: 60)
-        /// </summary>
-        public float VerticalAngleMax { get; set; }
-
-        /// <summary>
-        /// 기본값으로 설정된 임포스터 설정을 생성합니다.
-        /// </summary>
-        public static ImpostorSettings CreateDefault()
-        {
-            return new ImpostorSettings
-            {
-                Name = "default",           // 모델 이름
-                AtlasSize = 512,            // 512x512 아틀라스
-                IndividualSize = 64,        // 64x64 개별 뷰
-                HorizontalAngles = 8,       // 45도 간격으로 8방향
-                VerticalAngles = 4,         // 4개의 수직 각도
-                VerticalAngleMin = -88,       // 최하단 각도
-                VerticalAngleMax = 88       // 최상단 각도
-            };
-        }
-
-        public static ImpostorSettings CreateSettings(string modelName, int individualSize = 128, int horizontalAngles = 8, int verticalAngles = 6)
+        public static ImpostorSettings CreateDefault(string modelName)
         {
             return new ImpostorSettings
             {
                 Name = modelName,
-                AtlasSize = individualSize * horizontalAngles,
-                IndividualSize = individualSize,
-                HorizontalAngles = horizontalAngles,
-                VerticalAngles = verticalAngles,
-                VerticalAngleMin = -90f,      // 최하단 각도
-                VerticalAngleMax = 90f        // 최상단 각도
+                AtlasSize = 1024,
+                IndividualSize = 128,
+                HorizontalAngles = 8,
+                VerticalAngles = 6,
+                VerticalAngleMin = -30f,
+                VerticalAngleMax = 60f,
+                PaddingFactor = 0.01f
             };
         }
 
         /// <summary>
-        /// 설정값의 유효성을 검증합니다.
+        /// 고품질 설정 생성
         /// </summary>
-        public bool Validate()
+        public static ImpostorSettings CreateHighQuality(string modelName)
         {
-            // 이름이 비어있지 않아야 함
-            if (Name == "" || Name == null) return false;
+            return new ImpostorSettings
+            {
+                Name = modelName,
+                AtlasSize = 2048,
+                IndividualSize = 128,
+                HorizontalAngles = 16,
+                VerticalAngles = 16,
+                VerticalAngleMin = -30f,
+                VerticalAngleMax = 89f,
+                PaddingFactor = 0.001f
+            };
+        }
 
-            // 아틀라스 크기는 개별 크기의 배수여야 함
-            if (AtlasSize % IndividualSize != 0) return false;
-
-            // 아틀라스는 모든 뷰를 수용할 수 있어야 함
-            if ((AtlasSize / IndividualSize) * (AtlasSize / IndividualSize) < HorizontalAngles * VerticalAngles) return false;
-
-            // 각도 범위 검증
-            if (VerticalAngleMin >= VerticalAngleMax) return false;
-            if (VerticalAngleMax > 90) return false;
-
-            // 각도 수는 최소 1 이상이어야 함
-            if (HorizontalAngles < 1 || VerticalAngles < 1) return false;
-
-            return true;
+        /// <summary>
+        /// 저품질 설정 생성 (LOD용)
+        /// </summary>
+        public static ImpostorSettings CreateLowQuality(string modelName)
+        {
+            return new ImpostorSettings
+            {
+                Name = modelName,
+                AtlasSize = 512,
+                IndividualSize = 64,
+                HorizontalAngles = 4,
+                VerticalAngles = 4,
+                VerticalAngleMin = -20f,
+                VerticalAngleMax = 50f,
+                PaddingFactor = 0.01f
+            };
         }
     }
 }

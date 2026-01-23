@@ -16,6 +16,7 @@ layout(std430, binding = 1) buffer VisibleIndicesBuffer { int visibleIndices[]; 
 layout(std140, binding = 0) uniform CameraBlock {mat4 view; mat4 proj; mat4 vp; vec4 cameraPos;} camera;
 
 uniform int batchStartOffset;
+
 out vec3 vNormal;
 out vec2 vTexCoord;
 out vec3 vWorldPos;

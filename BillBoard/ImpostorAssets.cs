@@ -10,6 +10,7 @@ namespace BillBoard
     public class ImpostorAssets
     {
         Dictionary<string, uint> _dicImpostorAtlas;                     // 임포스터 아틀라스 딕셔너리
+        Dictionary<string, uint> _dicNormalImpostorAtlas;               // 노말 임포스터 아틀라스 딕셔너리
         Dictionary<string, ImpostorSettings> _impostorSettings;         // 임포스터 셋팅 딕셔너리
         Dictionary<string, UnifiedTexturedModel> _unifiedTexturedModel; // 통합 텍스처 모델 딕셔너리
 
@@ -37,6 +38,7 @@ namespace BillBoard
             _camera = camera;
             _atlasGenerator = new ImpostorAtlasGenerator();
             _dicImpostorAtlas = new Dictionary<string, uint>();
+            _dicNormalImpostorAtlas = new Dictionary<string, uint>();
             _impostorSettings = new Dictionary<string, ImpostorSettings>();
             _unifiedTexturedModel = new Dictionary<string, UnifiedTexturedModel>();
         }
@@ -57,7 +59,10 @@ namespace BillBoard
             {
                 uint textureId = _atlasGenerator.GenerateAtlas(_shader, settings, settings.Name,
                     texturedModels, _camera);
+
                 _dicImpostorAtlas.Add(settings.Name, textureId);
+                _dicNormalImpostorAtlas.Add(settings.Name, textureId);
+
                 _unifiedTexturedModel.Add(settings.Name, texturedModels);
 
                 // 임포스터 렌더링 데이터 설정
@@ -79,9 +84,14 @@ namespace BillBoard
             return _dicImpostorAtlas.ContainsKey(modelName) ? _dicImpostorAtlas[modelName] : 0;
         }
 
+        private uint GetNormalAtlasTexture(string modelName)
+        {
+            return _dicNormalImpostorAtlas.ContainsKey(modelName) ? _dicNormalImpostorAtlas[modelName] : 0;
+        }
+
         private ImpostorSettings GetImpostorSettings(string modelName)
         {
-            return _impostorSettings.ContainsKey(modelName) ? _impostorSettings[modelName] : ImpostorSettings.CreateDefault();
+            return _impostorSettings.ContainsKey(modelName) ? _impostorSettings[modelName] : ImpostorSettings.CreateDefault(modelName);
         }
 
         public ImpostorRenderData GetImpostorRenderData(string modelName)
@@ -95,6 +105,7 @@ namespace BillBoard
                 verticalFrames = settings.VerticalAngles,
                 enableEdgeLine = false,
                 AtlasTextureId = GetAtlasTexture(modelName),
+                NormalAtlasTextureId = GetNormalAtlasTexture(modelName),
             };
             return renderData;
         }

@@ -18,6 +18,7 @@ namespace Shader
         private int loc_batchStartOffset;
         private int loc_currentBatchID;
         private int loc_atlasTexture;
+        private int loc_normalTexture;
         private int loc_useTexture;
         private int loc_gMaxDepthDistance;
 
@@ -35,8 +36,9 @@ namespace Shader
             loc_batchStartOffset = GetUniformLocation("batchStartOffset");
             loc_currentBatchID = GetUniformLocation("currentBatchID");
             loc_atlasTexture = GetUniformLocation("atlasTexture");
+            loc_normalTexture = GetUniformLocation("normalTexture");
             loc_useTexture = GetUniformLocation("useTexture");
-            loc_gMaxDepthDistance = GetUniformLocation("gMaxDepthDistance");  // ✅
+            loc_gMaxDepthDistance = GetUniformLocation("gMaxDepthDistance");
         }
 
         protected override void BindAttributes()
@@ -60,6 +62,13 @@ namespace Shader
             Gl.ActiveTexture(TextureUnit.Texture0);
             Gl.BindTexture(TextureTarget.Texture2d, textureID);
             Gl.Uniform1(loc_atlasTexture, 0);
+        }
+
+        public void LoadNormalTexture(uint textureID)
+        {
+            Gl.ActiveTexture(TextureUnit.Texture1);
+            Gl.BindTexture(TextureTarget.Texture2d, textureID);
+            Gl.Uniform1(loc_normalTexture, 1);
         }
 
         // 렌더링 모드

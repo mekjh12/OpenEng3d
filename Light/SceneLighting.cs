@@ -16,7 +16,7 @@ namespace Light
         public SceneLighting()
         {
             // 기본값
-            AmbientColor = new Vertex3f(0.4f, 0.4f, 0.5f);
+            AmbientColor = new Vertex3f(0.5f, 0.5f, 0.6f);
             AmbientIntensity = 1.0f;
 
             SunDirection = new Vertex3f(0.3f, 0.5f, -0.8f).Normalized;

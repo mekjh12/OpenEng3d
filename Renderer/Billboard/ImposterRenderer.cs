@@ -20,6 +20,7 @@ namespace Renderer
         public Vertex3f CenterPosition;
         public float ModelSphereRadius;
         public uint AtlasTextureId;
+        public uint NormalAtlasTextureId;
 
         // 계산 프로퍼티 (매번 계산하지 않도록)
         public Vertex2f FrameSize => new Vertex2f(
@@ -39,7 +40,8 @@ namespace Renderer
                 ModelMatrix = Matrix4x4f.Identity,
                 CenterPosition = Vertex3f.Zero,
                 ModelSphereRadius = 1.0f,
-                AtlasTextureId = 0
+                AtlasTextureId = 0,
+                NormalAtlasTextureId = 0
             };
         }
     }
@@ -100,7 +102,7 @@ namespace Renderer
             // 불변 데이터 (내부 캐시)
             _shader.LoadImpostorAtlas(TextureUnit.Texture0, _renderData.AtlasTextureId);
             _shader.LoadAABBSphereRadius(_renderData.ModelSphereRadius);
-            _shader.LoadAABBCenterPosition(_renderData.CenterPosition);
+            //_shader.LoadAABBCenterPosition(_renderData.CenterPosition);
             _shader.LoadModelMatrix(_renderData.ModelMatrix);
             _shader.LoadAtlasSize(_renderData.atlasSize);
             _shader.LoadIndividualSize(_renderData.individualSize);

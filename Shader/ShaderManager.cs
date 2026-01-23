@@ -30,12 +30,17 @@ namespace Shader
             if (!_shaders.ContainsKey(shaderName))
             {
                 _shaders[shaderName] = shader;
-                Console.WriteLine($"* 셰이더 추가됨: {shaderName}");
+                //Console.WriteLine($"* 셰이더 추가됨: {shaderName}");
             }
             else
             {
                 Console.WriteLine($"! 셰이더 이미 존재: {shaderName}");
             }
+        }
+
+        public bool HasShader(string shaderName)
+        {
+            return _shaders.ContainsKey(shaderName);
         }
 
         // 셰이더 가져오기 (제네릭 사용)
