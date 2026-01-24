@@ -12,6 +12,7 @@ out VS_OUT
 {
     vec3 worldPosition;
     mat4 modelMatrix;
+    mat3 normalMatrix;
     int baseInfoIndex;
 } vs_out;
 
@@ -39,7 +40,7 @@ void main()
     // 월드 위치 추출
     vs_out.worldPosition = vec3(model[3][0], model[3][1], model[3][2]);
     vs_out.modelMatrix = model;
-    
+    vs_out.normalMatrix = mat3(inst.normalMatrix);
     vs_out.baseInfoIndex = int(batchID);
 
     gl_Position = vec4(vs_out.worldPosition, 1.0);

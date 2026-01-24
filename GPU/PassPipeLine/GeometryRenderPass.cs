@@ -39,25 +39,6 @@ namespace GPUDriven
         {
             // 기본 초기화(반드시 호출)
             base.Initialize(camera, batchManager, distance0, distance1, distance2);
-
-            /*
-            // 크로스 빌보드 아틀라스 생성
-            _generator = new CrossBillboardAtlasGenerator();
-            _billboardData = new CrossBillboardData[_batchManager.ActualBatchCount];
-            for (uint i = 0; i < _batchManager.ActualBatchCount; i++)
-            {
-                var batch = _batchManager.GetBatch(i);
-                _billboardData[i] = _generator.GenerateAtlas(_unlitShader, batch.Model);
-            }
-
-            for (uint i = 0; i < _batchManager.ActualBatchCount; i++)
-            {
-                var batch = _batchManager.GetBatch(i);
-                _impostor.CreateImpostorModel(
-                    ImpostorSettings.CreateSettings(batch.ModelName, 256, 8, 8, useBottomPivot : true),
-                    batch.Model);
-            }
-            */
         }
 
         /// <summary>

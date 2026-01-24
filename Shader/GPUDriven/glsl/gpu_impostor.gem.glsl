@@ -16,6 +16,7 @@ in VS_OUT
 {
     vec3 worldPosition;
     mat4 modelMatrix;
+    mat3 normalMatrix;  // ← VS에서 받음
     int baseInfoIndex;
 } gs_in[];
 
@@ -23,9 +24,7 @@ out GS_OUT
 {
     vec3 viewPos;
     vec3 worldPos;
-    vec3 tangent;
-    vec3 bitangent;
-    vec3 normal;
+    mat3 normalMatrix;  // ← TBN 대신 normalMatrix 전달
     flat float atlasSize;
     flat float individualSize;
     vec2 texCoord;
@@ -41,16 +40,6 @@ layout(std140, binding = 0) uniform CameraBlock {
 
 const float PI = 3.14159265359;
 
-// 모델 행렬에서 회전 행렬 추출 (스케일 제거)
-mat3 getRotationMatrix(mat4 modelMatrix, vec3 scale)
-{
-    mat3 rotation;
-    rotation[0] = vec3(modelMatrix[0][0], modelMatrix[0][1], modelMatrix[0][2]) / scale.x;
-    rotation[1] = vec3(modelMatrix[1][0], modelMatrix[1][1], modelMatrix[1][2]) / scale.y;
-    rotation[2] = vec3(modelMatrix[2][0], modelMatrix[2][1], modelMatrix[2][2]) / scale.z;
-    return rotation;
-}
-
 // 모델 행렬에서 스케일 추출
 vec3 extractScale(mat4 modelMatrix)
 {
@@ -59,6 +48,16 @@ vec3 extractScale(mat4 modelMatrix)
     vec3 scaleZ = vec3(modelMatrix[2][0], modelMatrix[2][1], modelMatrix[2][2]);
     
     return vec3(length(scaleX), length(scaleY), length(scaleZ));
+}
+
+// 모델 행렬에서 회전 행렬 추출 (스케일 제거)
+mat3 getRotationMatrix(mat4 modelMatrix, vec3 scale)
+{
+    mat3 rotation;
+    rotation[0] = vec3(modelMatrix[0][0], modelMatrix[0][1], modelMatrix[0][2]) / scale.x;
+    rotation[1] = vec3(modelMatrix[1][0], modelMatrix[1][1], modelMatrix[1][2]) / scale.y;
+    rotation[2] = vec3(modelMatrix[2][0], modelMatrix[2][1], modelMatrix[2][2]) / scale.z;
+    return rotation;
 }
 
 // 모델 행렬에서 forward 벡터 추출 (-Y축, 정규화)
@@ -109,9 +108,10 @@ vec2 calculateAtlasOffset(vec3 localViewDir, float minAngle, float maxAngle, int
 
 void main() 
 {
-    vec3 worldPosition = gs_in[0].worldPosition;    // 월드 위치 받기
-    mat4 modelMatrix = gs_in[0].modelMatrix;        // 모델 매트릭스 받기
-    int baseIdx = gs_in[0].baseInfoIndex;           // 인덱스 받기
+    vec3 worldPosition = gs_in[0].worldPosition;
+    mat4 modelMatrix = gs_in[0].modelMatrix;
+    mat3 normalMatrix = gs_in[0].normalMatrix;  // ← VS에서 받은 normalMatrix
+    int baseIdx = gs_in[0].baseInfoIndex;
 
     // SSBO에서 데이터 읽기
     ImpostorBaseInfo baseInfo = baseInfos[baseIdx];
@@ -120,33 +120,32 @@ void main()
     float individualSize = float(baseInfo.individualSize);
     int horizontalFrames = baseInfo.horizontalAngles;
     int verticalFrames = baseInfo.verticalAngles;
-    float totalFrames = float(baseInfo.totalFrames);
     float verticalAngleMin = baseInfo.verticalAngleMin;
     float verticalAngleMax = baseInfo.verticalAngleMax;
     
     // 1. 모델 스케일 추출
     vec3 modelScale = extractScale(modelMatrix);
-    float scaled = modelScale.x; // x축 스케일 사용 (균일 스케일 가정)
+    float scaled = modelScale.x;
 
     // 2. 회전 행렬 추출
     mat3 rotationMatrix = getRotationMatrix(modelMatrix, modelScale);
 
-    // 3. AABB 중심을 월드 공간으로 변환 (스케일 → 회전 → 이동)
+    // 3. AABB 중심을 월드 공간으로 변환
     vec3 scaledCenter = baseInfo.aabbCenter * scaled;
     vec3 rotatedCenter = rotationMatrix * scaledCenter;
     vec3 worldCenter = worldPosition + rotatedCenter;
 
-    // 4. 카메라 방향 계산 (월드 중심 기준)
+    // 4. 카메라 방향 계산
     vec3 camPos = camera.cameraPos.xyz; 
     vec3 toCamera = normalize(camPos - worldCenter);
     
-    // 5. 모델의 회전을 고려한 로컬 뷰 방향 계산 및 atlas offset 계산
+    // 5. 로컬 뷰 방향 계산 및 atlas offset 계산
     vec3 localViewDir = getLocalViewDirection(modelMatrix, toCamera);
     vec2 instanceAtlasOffset = calculateAtlasOffset(localViewDir, 
         verticalAngleMin, verticalAngleMax,
         horizontalFrames, verticalFrames,
         atlasSize, individualSize
-        );
+    );
      
     // 6. 빌보드 방향 벡터 계산
     vec3 worldUp = vec3(0.0, 0.0, 1.0);
@@ -158,17 +157,11 @@ void main()
         rightLength = length(tempRight);
     }
     
-    // 수정: 스케일이 적용된 반지름 사용 (정사각형!)
     float scaledAABBRadius = baseInfo.boundingSphereRadius * scaled;
     vec3 right = (tempRight / rightLength) * scaledAABBRadius;
     vec3 up = normalize(cross(toCamera, right)) * scaledAABBRadius;
-    
-    // TBN 계산
-    vec3 billboardTangent = normalize(right);
-    vec3 billboardBitangent = normalize(up);
-    vec3 billboardNormal = toCamera;
 
-    // 7. 빌보드 네 모서리 위치 (worldCenter 기준)
+    // 7. 빌보드 네 모서리 위치
     vec3 positions[4];
     positions[0] = worldCenter - right - up;  // Bottom Left
     positions[1] = worldCenter + right - up;  // Bottom Right
@@ -191,9 +184,7 @@ void main()
         gs_out.viewPos = (camera.view * vec4(positions[i], 1.0)).xyz;
         gs_out.worldPos = positions[i];
         
-        gs_out.tangent = billboardTangent;
-        gs_out.bitangent = billboardBitangent;
-        gs_out.normal = billboardNormal;
+        gs_out.normalMatrix = normalMatrix;  // ← normalMatrix 전달
 
         EmitVertex();
     }

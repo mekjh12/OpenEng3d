@@ -119,7 +119,7 @@ void main()
     );
     
     // 천정과 지평선 사이의 혼합
-    float skyBlend = sin(altitude); // 천정(1)에서 지평선(0)으로
+    float skyBlend = (sin(altitude)); // 천정(1)에서 지평선(0)으로
     
     // 하늘 색상 계산
     vec3 finalColor = calculateSkyColor(pixelDir, skyBlend);

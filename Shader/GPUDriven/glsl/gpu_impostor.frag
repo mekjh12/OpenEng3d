@@ -2,9 +2,7 @@
 in GS_OUT {
     vec3 viewPos;
     vec3 worldPos;
-    vec3 tangent;
-    vec3 bitangent;
-    vec3 normal;
+    mat3 normalMatrix;  // ← normalMatrix 받기
     flat float atlasSize;
     flat float individualSize;
     vec2 texCoord;
@@ -18,22 +16,28 @@ layout(location = 3) out float gDepth;
 
 uniform sampler2D impostorAtlas;
 uniform sampler2D normalAtlas;
-
 uniform int enableEdgeLine = 0;
 uniform int enableNormalMap = 1;
 uniform float gMaxDepthDistance = 10000.0;
 
+layout(std140, binding = 0) uniform CameraBlock {
+    mat4 view; 
+    mat4 proj; 
+    mat4 vp;
+    vec3 cameraPos;
+} camera;
+
 const float EDGE_THRESHOLD = 0.03;
-const float ALPHA_THRESHOLD = 0.5; // Impostor는 보통 0.5 정도로 컷팅해야 윤곽이 깨끗함
+const float ALPHA_THRESHOLD = 0.5;
 
 void main()
 {
-    // 1. 아틀라스 UV 계산 (fs_in에서 받은 값 사용)
+    // 1. UV 계산
     float uvScale = fs_in.individualSize / fs_in.atlasSize;
     vec2 localUV = fs_in.texCoord * uvScale;
     vec2 finalUV = fs_in.atlasOffset + localUV;
-
-    // 2. 디버그 모드 (텍스처 샘플링 전 수행하여 성능 절약 가능, but discard 로직 고려 필요)
+    
+    // 2. 디버그 모드
     if (enableEdgeLine == 1)
     {
         bool isEdge = any(lessThan(fs_in.texCoord, vec2(EDGE_THRESHOLD))) || 
@@ -47,37 +51,33 @@ void main()
             return;
         }
     }
-
+    
     // 3. 알베도 샘플링
     vec4 color = texture(impostorAtlas, finalUV);
     if (color.a < ALPHA_THRESHOLD) discard;
-
-    // 4. 노멀 맵 처리
+    
+    // 4. 노멀 처리 (일반 메시와 동일한 방식!)
     vec3 finalNormal;
     
-    if (enableNormalMap == 1) {
-        // Normal Map은 [0,1] 범위이므로 decoding 필요
+    if (enableNormalMap == 1) 
+    {
+        // Normal Map 샘플링 및 디코딩 [0,1] -> [-1,1]
         vec3 rawNormal = texture(normalAtlas, finalUV).rgb;
         vec3 tangentNormal = rawNormal * 2.0 - 1.0;
-
-        // TBN 구성 (Column-Major: T가 1열, B가 2열, N이 3열)
-        mat3 TBN = mat3(
-            normalize(fs_in.tangent),
-            normalize(fs_in.bitangent),
-            normalize(fs_in.normal)
-        );
-
-        // Tangent Space -> World Space 변환
-        finalNormal = -normalize(TBN * tangentNormal);
-    } else {
-        finalNormal = normalize(fs_in.normal);
+        
+        // normalMatrix로 변환 (일반 메시와 동일!)
+        finalNormal = normalize(fs_in.normalMatrix * tangentNormal);
+    } 
+    else 
+    {
+        // Normal Map 비활성화 시 카메라 방향
+        vec3 viewDir = normalize(fs_in.worldPos - camera.cameraPos);
+        finalNormal = -viewDir;
     }
-
+    
     // 5. 출력
-    gAlbedo = vec4(color.rgb, 1.0); // Alpha Test 통과했으므로 1.0 (Blending 안 할 경우)
+    gAlbedo = vec4(color.rgb, 1.0);
     gPosition = vec4(fs_in.worldPos, 1.0);
     gNormal = vec4(finalNormal, 1.0);
-    
-    // Linear Depth 계산
     gDepth = length(fs_in.viewPos) / gMaxDepthDistance; 
 }

@@ -255,7 +255,7 @@ void main()
     bool isLOD0 =   0 < distance && distance <= u_distance0;
     bool isLOD1 = u_distance0 < distance && distance <= u_distance1;
     bool isLOD2 = u_distance1 < distance && distance <= u_distance2;
-    bool isLOD3 = u_distance2 < distance;
+    bool isLOD3 = u_distance2 < distance && distance <= 800;
 
     // ===== 결과 기록 =====
     if (isLOD0) 
