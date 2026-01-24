@@ -66,8 +66,10 @@
     <Compile Include="ImposterSaver.cs" />
     <Compile Include="ImpostorAtlasGenerator.cs" />
     <Compile Include="ImpostorBaker.cs" />
+    <Compile Include="ImpostorBaseInfo.cs" />
     <Compile Include="ImpostorData.cs" />
     <Compile Include="ImpostorAssets.cs" />
+    <Compile Include="ImpostorManager.cs" />
     <Compile Include="ImpostorMetadata.cs" />
     <Compile Include="ImpostorMetadataLoader.cs" />
     <Compile Include="ImpostorSettings.cs" />

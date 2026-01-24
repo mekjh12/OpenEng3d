@@ -902,9 +902,6 @@ namespace GPUDriven
             _gpuDrivenImpostorShader.Bind();
             {
                 _gpuDrivenImpostorShader.LoadImpostorAtlas(_renderData.AtlasTextureId);
-                _gpuDrivenImpostorShader.LoadAtlasSize(_renderData.atlasSize);
-                _gpuDrivenImpostorShader.LoadIndividualSize(_renderData.individualSize);
-                _gpuDrivenImpostorShader.LoadFrameCounts(_renderData.horizontalFrames, _renderData.verticalFrames);
                 _gpuDrivenImpostorShader.LoadMaxDepthDistance(10000.0f);
                 //_gpuDrivenImpostorShader.LoadAABBSphereRadius(_unifiedTexturedModel.AABB.Radius);
                 _gpuDrivenImpostorShader.LoadCameraPosition(camera.Position);

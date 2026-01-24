@@ -85,6 +85,7 @@
     <Compile Include="Abstractions\Light.cs" />
     <Compile Include="Abstractions\ShaderProgram.cs" />
     <Compile Include="Abstractions\UniformLoader.cs" />
+    <Compile Include="Constants.cs" />
     <Compile Include="Core\GUID.cs" />
     <Compile Include="Mathematics\Pose.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

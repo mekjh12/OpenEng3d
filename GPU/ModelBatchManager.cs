@@ -1,4 +1,5 @@
-﻿using Model3d;
+﻿using BillBoard;
+using Model3d;
 using OpenGL;
 using System;
 using System.Collections.Generic;
@@ -125,8 +126,8 @@ namespace GPUDriven
     /// </summary>
     public class ModelBatchManager
     {
-        private readonly uint MAX_INSTANCES = 100_000;
-        private readonly uint MAX_BATCHES = 64;
+        private readonly uint MAX_INSTANCES = 0;
+        private readonly uint MAX_BATCHES = 0;
 
         private List<ModelInfo> _models;
         private uint _nextModelID;
@@ -142,12 +143,16 @@ namespace GPUDriven
         private bool _isFinalized;
         private uint _finalInstanceCount;
 
+        // 임포스터 관련
+        private ImpostorManager _impostorManager;
+
         public IReadOnlyList<ModelInfo> Models => _models.AsReadOnly();
         public IReadOnlyList<BatchDescriptor> Batches =>
             _batches != null ? _batches.Take((int)_actualBatchCount).ToList().AsReadOnly() : null;
         public uint TotalInstances => _isFinalized ? _finalInstanceCount : (uint)_tempInstances.Count;
         public uint ActualBatchCount => _actualBatchCount;
         public bool IsFinalized => _isFinalized;
+        public ImpostorManager ImpostorManager => _impostorManager;
 
         float[] _lods;
         uint[] _counts;
@@ -168,6 +173,9 @@ namespace GPUDriven
             _actualBatchCount = 0;
             _isFinalized = false;
             _finalInstanceCount = 0;
+
+            // 하드코딩 수정 필요
+            _impostorManager = new ImpostorManager(@"C:\Users\mekjh\OneDrive\바탕 화면\OpenEng3d\FormTools\bin\Debug\Res\imposter");
 
             Console.WriteLine("--------------------------------------------------------------------");
             Console.WriteLine("# 모델 배치매니저");
@@ -215,6 +223,8 @@ namespace GPUDriven
             Console.WriteLine($"[Model {modelID}] Added: {modelName}"
                 + $"  AABB: Min{modelInfo.LocalModelAABB.Min} Max{modelInfo.LocalModelAABB.Max}");
 
+            _impostorManager.AddImpostors(model, modelID);
+
             return modelID;
         }
 
@@ -248,11 +258,22 @@ namespace GPUDriven
             }
         }
 
+        public void ImposterFinalize()
+        {
+            _impostorManager.Finalized();
+            
+            // 임포스터 검증
+            //_impostorManager.VerifyBaseInfoSSBO();
+        }
+
+        public uint ImpostorBaseInfoSSBO => _impostorManager.BaseInfoSSBO;
+
         /// <summary>
         /// 최종화 및 정렬 (NormalMatrix 계산 포함)
         /// </summary>
         public void Finalized()
         {
+            // 중복 호출 방지
             if (_isFinalized)
             {
                 Console.WriteLine("Already finalized");

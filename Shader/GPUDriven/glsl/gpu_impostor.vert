@@ -1,17 +1,18 @@
 ﻿#version 450 core
 layout(location = 0) in vec3 aPosition;
 
-struct InstanceModelMatrixData{mat4 modelMatrix; mat4 normalMatrix; };
+struct InstanceModelMatrixData{mat4 modelMatrix; mat4 normalMatrix; }; // 128 bytes
 layout(std430, binding = 0) buffer TransformBuffer { InstanceModelMatrixData instances[]; };
 layout(std430, binding = 1) buffer VisibleIndicesBuffer {int visibleIndices[];};
+layout(std430, binding = 4) buffer BatchIDBuffer {uint batchIDs[];};
 
 uniform int batchStartOffset;
-uniform mat4 model;			// 모델 변환 행렬
 
 out VS_OUT 
 {
     vec3 worldPosition;
     mat4 modelMatrix;
+    int baseInfoIndex;
 } vs_out;
 
 void main() 
@@ -32,9 +33,14 @@ void main()
     InstanceModelMatrixData inst = instances[instanceIndex];
     mat4 model = inst.modelMatrix;
     
+    // ✅ 핵심: 인스턴스의 BatchID를 SSBO에서 읽기
+    uint batchID = batchIDs[instanceIndex];
+
     // 월드 위치 추출
     vs_out.worldPosition = vec3(model[3][0], model[3][1], model[3][2]);
     vs_out.modelMatrix = model;
     
+    vs_out.baseInfoIndex = int(batchID);
+
     gl_Position = vec4(vs_out.worldPosition, 1.0);
 }

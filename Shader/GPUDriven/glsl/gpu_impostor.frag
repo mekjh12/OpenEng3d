@@ -1,12 +1,14 @@
 ﻿#version 450 core
 in GS_OUT {
-    vec2 texCoord;
-    vec2 atlasOffset;
     vec3 viewPos;
     vec3 worldPos;
     vec3 tangent;
     vec3 bitangent;
     vec3 normal;
+    flat float atlasSize;
+    flat float individualSize;
+    vec2 texCoord;
+    vec2 atlasOffset;
 } fs_in;
 
 layout(location = 0) out vec4 gAlbedo;
@@ -16,9 +18,8 @@ layout(location = 3) out float gDepth;
 
 uniform sampler2D impostorAtlas;
 uniform sampler2D normalAtlas;
-uniform float atlasSize;
-uniform float individualSize;
-uniform int enableEdgeLine = 1;
+
+uniform int enableEdgeLine = 0;
 uniform int enableNormalMap = 1;
 uniform float gMaxDepthDistance = 10000.0;
 
@@ -27,10 +28,10 @@ const float ALPHA_THRESHOLD = 0.5; // Impostor는 보통 0.5 정도로 컷팅해
 
 void main()
 {
-    // 1. 아틀라스 UV 계산
-    float uvScale = individualSize / atlasSize;
+    // 1. 아틀라스 UV 계산 (fs_in에서 받은 값 사용)
+    float uvScale = fs_in.individualSize / fs_in.atlasSize;
     vec2 localUV = fs_in.texCoord * uvScale;
-    vec2 finalUV = fs_in.atlasOffset + localUV; // ✅ Offset은 이미 정규화된 좌표여야 함
+    vec2 finalUV = fs_in.atlasOffset + localUV;
 
     // 2. 디버그 모드 (텍스처 샘플링 전 수행하여 성능 절약 가능, but discard 로직 고려 필요)
     if (enableEdgeLine == 1)

@@ -4,6 +4,7 @@ using OpenGL;
 using Renderer;
 using Shader;
 using System;
+using System.Collections.Generic;
 
 namespace GPUDriven
 {
@@ -11,16 +12,7 @@ namespace GPUDriven
     {
         private GPUInstancedShader _instancedShader;                        // 메시 렌더링 셰이더
         private GPUDrivenImpostorShader _gpuDrivenImpostorShader;           // GPU 드리븐 임포스터 렌더링 셰이더
-        private CrossBillboardInstanceShader _crossBillboardInstanceShader; // 크로스 빌보드 렌더링 셰이더
-        private UnlitShader _unlitShader;                                   // 임포스터 생성용 셰이더
-
-        // 크로스 빌보드 관련
-        private CrossBillboardAtlasGenerator _generator;  // 크로스 빌보드 아틀라스 생성기
-        private CrossBillboardData[] _billboardData;      // 배치별 크로스 빌보드 데이터
-
-        // 임포스터 관련
-        protected ImpostorRenderData _renderData;       // 임포스터 렌더링 데이터
-        private ImpostorAssets _impostor;               // 임포스터 에셋 관리자
+        private Dictionary<int, Vertex3i> _dicTextures;
 
         // 최적화용
         private BatchDescriptor _batchTemp;
@@ -33,9 +25,13 @@ namespace GPUDriven
         {
             // 기본 세이더 초기화
             _instancedShader = new GPUInstancedShader(projPath);
-            _crossBillboardInstanceShader = new CrossBillboardInstanceShader(projPath);
-            _unlitShader = new UnlitShader(projPath);
             _gpuDrivenImpostorShader = new GPUDrivenImpostorShader(projPath);
+        }
+
+        public void AddTexture(int batchID, uint albedoTextureId, uint normalTextureId, uint depthTextureId)
+        {
+            
+            _dicTextures.Add(batchID, new Vertex3i((int)albedoTextureId, (int)normalTextureId, (int)depthTextureId));
         }
 
         public override void Initialize(Camera camera, ModelBatchManager batchManager,
@@ -44,6 +40,7 @@ namespace GPUDriven
             // 기본 초기화(반드시 호출)
             base.Initialize(camera, batchManager, distance0, distance1, distance2);
 
+            /*
             // 크로스 빌보드 아틀라스 생성
             _generator = new CrossBillboardAtlasGenerator();
             _billboardData = new CrossBillboardData[_batchManager.ActualBatchCount];
@@ -52,19 +49,15 @@ namespace GPUDriven
                 var batch = _batchManager.GetBatch(i);
                 _billboardData[i] = _generator.GenerateAtlas(_unlitShader, batch.Model);
             }
-                        
-            // 임포스터 에셋 초기화
-            _impostor = new ImpostorAssets(_unlitShader, camera);
 
             for (uint i = 0; i < _batchManager.ActualBatchCount; i++)
             {
-                /*
                 var batch = _batchManager.GetBatch(i);
                 _impostor.CreateImpostorModel(
                     ImpostorSettings.CreateSettings(batch.ModelName, 256, 8, 8, useBottomPivot : true),
                     batch.Model);
-                */
             }
+            */
         }
 
         /// <summary>
@@ -144,7 +137,6 @@ namespace GPUDriven
                 _gpuInstancedShadowMapShader.Bind();
                 {
                     // LOD0
-
                     Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
                     Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD0);
 
@@ -209,54 +201,30 @@ namespace GPUDriven
 
         public override void RenderBatchLod2(uint batchID, BatchDescriptor batch, string batchName, int cmdStartIndex, Camera camera)
         {
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD2);
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 2, _aabbSSBO);
-
-            CrossBillboardData crossBillboardData = _billboardData[batchID];
-
-            // LOD2: 크로스 빌보드 렌더링
-            Gl.Disable(EnableCap.CullFace);
-            _crossBillboardInstanceShader.Bind();
-            {
-                _crossBillboardInstanceShader.LoadCurrentBatchID(batchID);
-                _crossBillboardInstanceShader.LoadBatchStartOffset(batch.StartIndex);
-                _crossBillboardInstanceShader.LoadAtlasTexture(crossBillboardData.AtlasTexture.TextureID);
-                _crossBillboardInstanceShader.LoadNormalTexture(crossBillboardData.NormalTexture.TextureID);
-                _crossBillboardInstanceShader.LoadMaxDepthDistance(10000.0f);
-                _crossBillboardInstanceShader.UseTexture(true);
-                DrawArraysIndirect(_point.VAO, cmdStartIndex, 2, _visibleIndicesSSBO_LOD2);
-            }
-            _crossBillboardInstanceShader.Unbind();
+            
         }
+
+        ImpostorBaseInfo _baseInfo;
 
         public override void RenderBatchLod3(uint batchID, BatchDescriptor batch, string batchName, int cmdStartIndex, Camera camera)
         {
-            _renderData = _impostor.GetImpostorRenderData(batchName);
-            _unifiedTexturedModel = _impostor.UnifiedTexturedModel(batchName);
-
-            float billboardWidth = 2.63358426f * 2.0f;
-            float billboardHeight = 4.425063f; // 임포스터 모델의 높이 (하단 피벗 기준)
-
             //Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
+
+            _baseInfo = _batchManager.ImpostorManager.GetBaseInfo(batch.ModelID);
+
             _gpuDrivenImpostorShader.Bind();
             {
                 Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
                 Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD3);
+                Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 2, _batchManager.ImpostorBaseInfoSSBO);
 
-                _gpuDrivenImpostorShader.LoadImpostorAtlas(_renderData.AtlasTextureId);
-                _gpuDrivenImpostorShader.LoadNormalAtlas(_renderData.NormalAtlasTextureId);
-
-                _gpuDrivenImpostorShader.LoadAtlasSize(_renderData.atlasSize);
-                _gpuDrivenImpostorShader.LoadIndividualSize(_renderData.individualSize);
-                _gpuDrivenImpostorShader.LoadFrameCounts(_renderData.horizontalFrames, _renderData.verticalFrames);
-                _gpuDrivenImpostorShader.LoadMaxDepthDistance(10000.0f);
-                _gpuDrivenImpostorShader.LoadBillboardSize(billboardWidth, billboardHeight);
-                _gpuDrivenImpostorShader.LoadFrameCounts(8, 8);
-                _gpuDrivenImpostorShader.LoadCameraPosition(camera.Position);
-                _gpuDrivenImpostorShader.LoadEnableEdgeLine(false);
+                _gpuDrivenImpostorShader.LoadImpostorAtlas(_baseInfo.AlbedoTextureID);
+                _gpuDrivenImpostorShader.LoadNormalAtlas(_baseInfo.NormalTextureID);
                 _gpuDrivenImpostorShader.LoadBatchStartOffset(batch.StartIndex);
-                DrawArraysIndirect(_point.VAO, cmdStartIndex, 3, _visibleIndicesSSBO_LOD3);
+                _gpuDrivenImpostorShader.LoadMaxDepthDistance(10000.0f);
+                _gpuDrivenImpostorShader.LoadCameraPosition(camera.Position);
+
+                DrawArraysIndirect(_point.VAO, cmdStartIndex, lodIndex: 3, ssboIndex: _visibleIndicesSSBO_LOD3);
             }
             _gpuDrivenImpostorShader.Unbind();
         }

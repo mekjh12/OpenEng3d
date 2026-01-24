@@ -27,8 +27,20 @@ namespace FormTools
 
         string[] _objFileNames = new string[]
         {
-            @"Watermill.obj",
+            @"Big_rock1.obj",
+            @"Medieval_House.obj",
+            @"florida_foliage\palm1.obj",
+            @"florida_foliage\palm2.obj",
+            @"florida_foliage\palm3.obj",
+            @"florida_foliage\palm4.obj",
             @"florida_foliage\bananaPlant1.obj",
+            @"florida_foliage\bananaPlant2.obj",
+            @"florida_foliage\bananaPlant3.obj",
+            @"florida_foliage\fern1.obj",
+            @"florida_foliage\fern2.obj",
+            @"florida_foliage\fern3.obj",
+            @"florida_foliage\fern4.obj",
+            @"florida_foliage\fern5.obj",
         };
 
         /*            
@@ -36,7 +48,6 @@ namespace FormTools
             @"pine_tree.obj",
             @"florida_foliage\palm1.obj",
             @"florida_foliage\palm2.obj",
-            @"florida_foliage\palm3.obj",
             @"florida_foliage\bananaPlant1.obj",
             @"florida_foliage\bananaPlant2.obj",
             @"florida_foliage\bananaPlant3.obj",
@@ -79,7 +90,6 @@ namespace FormTools
         HierarchyZBuffer _hiZBuffer;                        // 계층적 Z 버퍼
         GeometryRenderPass _gpuDriven;                      // GPU 드리븐 렌더러
         const int DOWN_LEVEL = 2;                           // 다운샘플링 레벨
-        const int MAX_INSTANCES = 100_000;                    // 최대 인스턴스 수
 
         // 지형 관련 변수들
         TerrainRenderer _terrainRenderer;                   // 지형 렌더러
@@ -120,14 +130,14 @@ namespace FormTools
         private int _debugMode = 0;  // 0~5
         private float _depthRange = 500.0f;
 
-        private GroundFogRenderer _groundFogRenderer;
+        //private GroundFogRenderer _groundFogRenderer;
         private Shader.BillboardShader _billboardShader;  // ✅ BillboardShader로 변경
 
 
         public FormStructureBuffer()
         {
             InitializeComponent();
-
+            
             // GL 생성
             this.Text = TITLE;
             _glControl3 = new GlControl3(TITLE, Application.StartupPath, StrRes.FONT_RESOURCES_FILENAME, @"\Res\", true);
@@ -221,7 +231,7 @@ namespace FormTools
 
             // 3D 모델 매니저 초기화 및 모델 로드
             _model3DManager = new Model3dManager(StrRes.PROJECT_PATH, EXE_PATH + "\\nullTexture.jpg");
-            _modelBatchManager = new ModelBatchManager(MAX_INSTANCES, 16);
+            _modelBatchManager = new ModelBatchManager(Constants.MAX_INSTANCES, Constants.MAX_BATCHES);
 
             for (int i = 0; i < _objFileNames.Length; i++)
             {
@@ -230,16 +240,18 @@ namespace FormTools
                 _modelBatchManager.AddModel(model3.Name, 100, model3, model3_lod1.ModelLod1);
             }
 
+            _modelBatchManager.ImposterFinalize();
+
             // 지형 영역 초기화
             RegionCoord regionCoord = new RegionCoord(0, 0);
-            string heightMapFile = EXE_PATH + "\\Res\\Terrain\\1x1.png";
+            string heightMapFile = EXE_PATH + "\\Res\\Terrain\\0x0.png";
             _terrainRegion = new TerrainRegion(regionCoord, chunkSize: 100, n: 10, null);
             _terrainRegion.LoadTerrainLowResMap(regionCoord, heightMapFile, completed: LoadTerrainRegionCompleted);
 
             // 지형 노말맵 생성
             uint normalMapTexture = NormalMapGenerator.GenerateNormalMap(
                 heightMapFile,
-                heightScale: TerrainConstants.DEFAULT_VERTICAL_SCALE,
+                heightScale: Constants.TERRAIN_VERTICAL_SCALE,
                 wrapMode: true
             );
 
@@ -254,12 +266,12 @@ namespace FormTools
 
             // 낮은 안개 렌더러 초기화
             _billboardShader = new Shader.BillboardShader(StrRes.PROJECT_PATH);
-            _groundFogRenderer = new GroundFogRenderer(_billboardShader, StrRes.PROJECT_PATH);
-            _groundFogRenderer.HeightThreshold = 50.0f;
-            _groundFogRenderer.SlopeThreshold = 15.0f;
+            //_groundFogRenderer = new GroundFogRenderer(_billboardShader, StrRes.PROJECT_PATH);
+            //_groundFogRenderer.HeightThreshold = 50.0f;
+            //_groundFogRenderer.SlopeThreshold = 15.0f;
 
             //_groundFogRenderer.CreateTestTexture();
-            _groundFogRenderer.LoadTexture(EXE_PATH + @"\Res\Terrain\fog_noise.png");
+            //_groundFogRenderer.LoadTexture(EXE_PATH + @"\Res\Terrain\fog_noise.png");
 
             // 하늘 렌더러 초기화
             float azimuth = float.Parse(IniFile.GetPrivateProfileString("sunlight", "Azimuth", "0"));
@@ -289,7 +301,7 @@ namespace FormTools
             // 셰리더 해시정보는 파일로 저장
             FileHashManager.Finalize();
 
-            _modelBatchManager.Finalized();
+            //_modelBatchManager.Finalized();
 
             // GPU 드리븐 렌더러 초기화
             _gpuDriven = new GeometryRenderPass("초목용 렌더패스", StrRes.PROJECT_PATH);
@@ -303,10 +315,10 @@ namespace FormTools
             _terrainRenderer.CreateFaultTexture();
 
             // 연무 패치 배치
-            _groundFogRenderer.BatchInstances(_terrainRegion.TerrainData);
+            //_groundFogRenderer.BatchInstances(_terrainRegion.TerrainData);
 
             // 연무 만들기
-            _groundFogRenderer.Init(_glControl3.Camera);
+            //_groundFogRenderer.Init(_glControl3.Camera);
 
         }
 
@@ -346,7 +358,7 @@ namespace FormTools
 
                 // 지형 깊이 렌더링
                 _hiZBuffer.RenderTerrainDepth(
-                    TerrainConstants.DEFAULT_VERTICAL_SCALE,
+                    Constants.TERRAIN_VERTICAL_SCALE,
                     _terrainRegion.TerrainEntity
                 );
 
@@ -410,7 +422,7 @@ namespace FormTools
             // 지형 세도우맵 갱신
             _terrainRenderer.RenderShadowMap(
                 _sunLight.Direction,
-                heightScale: TerrainConstants.DEFAULT_VERTICAL_SCALE, isClearBuffer: true
+                heightScale: Constants.TERRAIN_VERTICAL_SCALE, isClearBuffer: true
             );
 
             // 물체 세도우맵 갱신
@@ -434,7 +446,7 @@ namespace FormTools
 
             // 지형 렌더링 (G-Buffer에 기록)
             Gl.PolygonMode(MaterialFace.FrontAndBack, _glControl3.PolygonMode);
-            _terrainRenderer.Render(camera, heightScale: TerrainConstants.DEFAULT_VERTICAL_SCALE);
+            _terrainRenderer.Render(camera, heightScale: Constants.TERRAIN_VERTICAL_SCALE);
 
             // GPU DRIVEN 렌더링
             _gpuDriven?.Render(camera);
@@ -644,7 +656,7 @@ namespace FormTools
 
                 if (slope < 15)
                 {
-                    float posZ = _terrainRegion.TerrainData.GetTerrainHeight(ref position, TerrainConstants.DEFAULT_VERTICAL_SCALE);
+                    float posZ = _terrainRegion.TerrainData.GetTerrainHeight(ref position, Constants.TERRAIN_VERTICAL_SCALE);
 
                     float rotZ = (float)(rand.NextDouble() * Math.PI * 2);
                     float scale = 0.5f + (float)(rand.NextDouble() * 1.0f);
@@ -657,10 +669,10 @@ namespace FormTools
                     numInstance++;
                 }
 
-                if (numInstance >= MAX_INSTANCES) break;
+                if (numInstance >= Constants.MAX_INSTANCES) break;
             }
 
-            Console.WriteLine($"Generated {MAX_INSTANCES} tree instances");
+            Console.WriteLine($"Generated {Constants.MAX_INSTANCES} tree instances");
             _modelBatchManager.Finalized();
 
             _isLoaded = true;
@@ -693,7 +705,7 @@ namespace FormTools
             if (e.KeyCode == Keys.O)
             {
                 Vertex3f pos = Vertex3f.Zero;
-                pos.z = _terrainRegion.TerrainData.GetTerrainHeight(ref pos, TerrainConstants.DEFAULT_VERTICAL_SCALE);
+                pos.z = _terrainRegion.TerrainData.GetTerrainHeight(ref pos, Constants.TERRAIN_VERTICAL_SCALE);
                 _glControl3.Camera.PivotPosition = pos;
             }
             else if (e.KeyCode == Keys.D1)
@@ -723,7 +735,7 @@ namespace FormTools
             else if (e.KeyCode == Keys.D0)
             {
                 Vertex3f pos = Rand.NextColor3f * 2000.0f - new Vertex3f(1000.0f, 1000.0f, 0.0f);
-                float z = _terrainRegion.TerrainData.GetTerrainHeight(ref pos, TerrainConstants.DEFAULT_VERTICAL_SCALE);
+                float z = _terrainRegion.TerrainData.GetTerrainHeight(ref pos, Constants.TERRAIN_VERTICAL_SCALE);
                 pos.z = z;
                 _glControl3.Camera.PivotPosition = pos;
             }
