@@ -13,9 +13,8 @@ namespace GPUDriven
         private BillboardInstancedShader _billboardShader;
         private GPUInstancedShader _instancedShader;
 
-        private CrossBillboardAtlasGenerator _generator;  // 크로스 빌보드 아틀라스 생성기
-        private CrossBillboardData[] _billboardData;      // 배치별 크로스 빌보드 데이터
         private uint _fogTextureID;
+        private uint _structureBuffer = 0;
 
         public GroundFogRenderPass(string name, string projPath) : base(name, projPath)
         {
@@ -33,14 +32,51 @@ namespace GPUDriven
         {
             // 기본 초기화(반드시 호출)
             base.Initialize(camera, batchManager, distance0, distance1, distance2);
-
-            // 
         }
 
+        /// <summary>
+        /// 스트럭처 버퍼를 설정
+        /// </summary>
+        /// <param name="structureBuffer"></param>
+        public void SetStructureBuffer(uint structureBuffer)
+        {
+            _structureBuffer = structureBuffer;
+        }
+
+        /// <summary>
+        /// 통합 Indirect Command Buffer 생성 및 초기화, LOD0, LOD1, LOD2, LOD3 커맨드를 순차적으로 배치
+        /// </summary>
         public override void CreateUnifiedIndirectBuffer()
         {
+            int bufferSize = (int)(_batchedModelCount * BYTES_PER_BATCH);
 
+            if (_indirectCommandBuffer < 0)
+                _indirectCommandBuffer = (int)Gl.GenBuffer();
+
+            Gl.BindBuffer(BufferTarget.DrawIndirectBuffer, (uint)_indirectCommandBuffer);
+            Gl.BufferData(BufferTarget.DrawIndirectBuffer, (uint)bufferSize, IntPtr.Zero, BufferUsage.DynamicDraw);
+            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, BINDING_INDIRECT_COMMAND, (uint)_indirectCommandBuffer);  // SSBO 바인딩(13)
+
+            int commandOffset = 0;
+            for (uint b = 0; b < _batchedModelCount; b++)
+            {
+                BatchDescriptor batch = _batchManager.GetBatch(b);
+
+                // LOD0 커맨드 (DrawArraysIndirect)
+                BufferSubDataDrawArraysIndirectCommand(1, ref commandOffset);
+
+                // LOD1 커맨드 (DrawArraysIndirect)
+                BufferSubDataDrawArraysIndirectCommand((uint)batch.Model.VertexCount, ref commandOffset);
+
+                // LOD2 커맨드 (DrawArraysIndirect - 포인트 인스턴싱)
+                BufferSubDataDrawArraysIndirectCommand(1, ref commandOffset);
+
+                // LOD3 커맨드 (DrawArraysIndirect - 포인트 인스턴싱)
+                BufferSubDataDrawArraysIndirectCommand(1, ref commandOffset);
+            }
         }
+
+
 
         public void SetFogTexture(uint textureID)
         {
@@ -49,7 +85,10 @@ namespace GPUDriven
 
         public override void RenderBatchLod0(uint batchID, BatchDescriptor batch, string batchName, int cmdStartIndex, Camera camera)
         {
-            /*
+            // SSBO 바인딩
+            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
+            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD0);
+
             // 알파 블렌딩 설정
             Gl.Enable(EnableCap.Blend);
             Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
@@ -58,110 +97,42 @@ namespace GPUDriven
 
             _billboardShader.Bind();
             {
-                // VP 행렬
-                _billboardShader.LoadVPMatrix(camera.VPMatrix);
-
-                // 카메라 위치
-                _billboardShader.LoadCameraPosition(
-                    camera.Position.x,
-                    camera.Position.y,
-                    camera.Position.z
-                );
-
                 // 배치 오프셋
-                _billboardShader.LoadBatchStartOffset(_batch.StartIndex);
+                _billboardShader.LoadBatchStartOffset(batch.StartIndex);
+                _billboardShader.LoadScreenSize(camera.Width, camera.Height);
 
-                // 노이즈 텍스처
-                _billboardShader.LoadFogTexture((int)_fogTextureID);
+                // 안개 텍스처 바인딩 (텍스처 유닛 0)
+                _billboardShader.LoadFogTexture( TextureUnit.Texture0, _fogTextureID);
 
-                // 연무 파라미터
+                // 스트럭처 텍스처 바인딩 (텍스처 유닛 1)
+                _billboardShader.LoadStructureTexture( TextureUnit.Texture1,_structureBuffer);
+
+                // 안개 파라미터
                 _billboardShader.LoadFogColor(0.8f, 0.85f, 0.9f);
                 _billboardShader.LoadFogDensity(0.6f);
                 _billboardShader.LoadAlphaThreshold(0.05f);
 
-                // SSBO 바인딩
-                Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
-                Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD0);
-
-                // Point 렌더링 (Geometry Shader가 확장)
-                DrawArraysIndirect(_batch.VAO, cmdStartIndex, 0, _visibleIndicesSSBO_LOD0, PrimitiveType.Points);
+                // Point 렌더링 (Geometry Shader가 3개 쿼드로 확장)
+                DrawArraysIndirect(batch.VAO, cmdStartIndex, 0, _visibleIndicesSSBO_LOD0, PrimitiveType.Points);
             }
             _billboardShader.Unbind();
 
             // 상태 복원
             Gl.DepthMask(true);
             Gl.Disable(EnableCap.Blend);
-
-            */
-
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD0);
-
-            Gl.Disable(EnableCap.CullFace);
-            _instancedShader.Bind();
-            {
-                _instancedShader.LoadBatchStartOffset(batch.StartIndex);
-                _instancedShader.LoadTextureArray(batch.Model.TextureIDArray);
-                _instancedShader.LoadEnableDebug(false);
-                _instancedShader.LoadMaxDepthDistance(10000.0f);
-                DrawArraysIndirect(batch.VAO, cmdStartIndex, 0, _visibleIndicesSSBO_LOD0, PrimitiveType.Triangles);
-            }
-            _instancedShader.Unbind();
+            Gl.Enable(EnableCap.CullFace);
         }
 
         public override void RenderBatchLod1(uint batchID, BatchDescriptor batch, string batchName, int cmdStartIndex, Camera camera)
         {
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD1);
+           
 
-            Gl.Disable(EnableCap.CullFace);
-            _instancedShader.Bind();
-            {
-                _instancedShader.LoadBatchStartOffset(batch.StartIndex);
-                _instancedShader.LoadTextureArray(batch.Model.TextureIDArray);
-                _instancedShader.LoadEnableDebug(false);
-                _instancedShader.LoadMaxDepthDistance(10000.0f);
-                DrawArraysIndirect(batch.VAO, cmdStartIndex, 1, _visibleIndicesSSBO_LOD1, PrimitiveType.Triangles);
-            }
-            _instancedShader.Unbind();
         }
 
         public override void RenderBatchLod2(uint batchID, BatchDescriptor batch, string batchName, int cmdStartIndex, Camera camera)
         {
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD2);
+            
 
-            Gl.Disable(EnableCap.CullFace);
-            _instancedShader.Bind();
-            {
-                _instancedShader.LoadBatchStartOffset(batch.StartIndex);
-                _instancedShader.LoadTextureArray(batch.Model.TextureIDArray);
-                _instancedShader.LoadEnableDebug(false);
-                _instancedShader.LoadMaxDepthDistance(10000.0f);
-                DrawArraysIndirect(batch.VAO, cmdStartIndex, 2, _visibleIndicesSSBO_LOD2, PrimitiveType.Triangles);
-            }
-            _instancedShader.Unbind();
-
-            /*
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD2);
-            Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 2, _aabbSSBO);
-
-            CrossBillboardData crossBillboardData = _billboardData[batchID];
-
-            // LOD2: 크로스 빌보드 렌더링
-            Gl.Disable(EnableCap.CullFace);
-            _crossBillboardInstanceShader.Bind();
-            {
-                _crossBillboardInstanceShader.LoadCurrentBatchID(batchID);
-                _crossBillboardInstanceShader.LoadBatchStartOffset(batch.StartIndex);
-                _crossBillboardInstanceShader.LoadAtlasTexture(crossBillboardData.AtlasTexture.TextureID);
-                _crossBillboardInstanceShader.LoadMaxDepthDistance(10000.0f);
-                _crossBillboardInstanceShader.UseTexture(true);
-                DrawArraysIndirect(_point.VAO, cmdStartIndex, 2, _visibleIndicesSSBO_LOD2);
-            }
-            _crossBillboardInstanceShader.Unbind();
-            */
         }
 
         public override void RenderBatchLod3(uint batchID, BatchDescriptor batch, string batchName, int cmdStartIndex, Camera camera)

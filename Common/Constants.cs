@@ -10,5 +10,7 @@
         public const int MAX_BATCHES = 64;              // 최대 배치 수
 
         public const float TERRAIN_VERTICAL_SCALE = 200.0f;
+
+        public const int GROUND_FOG_MAX_INSTANCES = 5_000;
     }
 }

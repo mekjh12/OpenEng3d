@@ -28,12 +28,6 @@ namespace GPUDriven
             _gpuDrivenImpostorShader = new GPUDrivenImpostorShader(projPath);
         }
 
-        public void AddTexture(int batchID, uint albedoTextureId, uint normalTextureId, uint depthTextureId)
-        {
-            
-            _dicTextures.Add(batchID, new Vertex3i((int)albedoTextureId, (int)normalTextureId, (int)depthTextureId));
-        }
-
         public override void Initialize(Camera camera, ModelBatchManager batchManager,
                    float distance0 = 50.0f, float distance1 = 150.0f, float distance2 = 450.0f)
         {
@@ -62,20 +56,16 @@ namespace GPUDriven
                 BatchDescriptor batch = _batchManager.GetBatch(b);
 
                 // LOD0 커맨드 (DrawArraysIndirect)
-                BufferSubDataDrawArraysIndirectCommand(batch.VertexCount, commandOffset);
-                commandOffset += COMMAND_SIZE;
+                BufferSubDataDrawArraysIndirectCommand(batch.VertexCount, ref commandOffset);
 
                 // LOD1 커맨드 (DrawArraysIndirect)
-                BufferSubDataDrawArraysIndirectCommand((uint)batch.Model_LOD1.VertexCount, commandOffset);
-                commandOffset += COMMAND_SIZE;
+                BufferSubDataDrawArraysIndirectCommand((uint)batch.Model_LOD1.VertexCount, ref commandOffset);
 
                 // LOD2 커맨드 (DrawArraysIndirect - 포인트 인스턴싱)
-                BufferSubDataDrawArraysIndirectCommand(1, commandOffset);
-                commandOffset += COMMAND_SIZE;
+                BufferSubDataDrawArraysIndirectCommand(1, ref commandOffset);
 
                 // LOD3 커맨드 (DrawArraysIndirect - 포인트 인스턴싱)
-                BufferSubDataDrawArraysIndirectCommand(1, commandOffset);
-                commandOffset += COMMAND_SIZE;
+                BufferSubDataDrawArraysIndirectCommand(1, ref commandOffset);
             }
         }
 

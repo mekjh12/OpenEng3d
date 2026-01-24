@@ -27,20 +27,10 @@ namespace FormTools
 
         string[] _objFileNames = new string[]
         {
-            @"Big_rock1.obj",
             @"Medieval_House.obj",
-            @"florida_foliage\palm1.obj",
-            @"florida_foliage\palm2.obj",
-            @"florida_foliage\palm3.obj",
-            @"florida_foliage\palm4.obj",
             @"florida_foliage\bananaPlant1.obj",
-            @"florida_foliage\bananaPlant2.obj",
-            @"florida_foliage\bananaPlant3.obj",
+            @"florida_foliage\palm1.obj",
             @"florida_foliage\fern1.obj",
-            @"florida_foliage\fern2.obj",
-            @"florida_foliage\fern3.obj",
-            @"florida_foliage\fern4.obj",
-            @"florida_foliage\fern5.obj",
         };
 
         /*            
@@ -130,7 +120,7 @@ namespace FormTools
         private int _debugMode = 0;  // 0~5
         private float _depthRange = 500.0f;
 
-        //private GroundFogRenderer _groundFogRenderer;
+        private GroundFogRenderer _groundFogRenderer;
         private Shader.BillboardShader _billboardShader;  // ✅ BillboardShader로 변경
 
 
@@ -266,12 +256,12 @@ namespace FormTools
 
             // 낮은 안개 렌더러 초기화
             _billboardShader = new Shader.BillboardShader(StrRes.PROJECT_PATH);
-            //_groundFogRenderer = new GroundFogRenderer(_billboardShader, StrRes.PROJECT_PATH);
-            //_groundFogRenderer.HeightThreshold = 50.0f;
-            //_groundFogRenderer.SlopeThreshold = 15.0f;
+            _groundFogRenderer = new GroundFogRenderer(_billboardShader, StrRes.PROJECT_PATH);
+            _groundFogRenderer.HeightThreshold = 50.0f;
+            _groundFogRenderer.SlopeThreshold = 15.0f;
 
             //_groundFogRenderer.CreateTestTexture();
-            //_groundFogRenderer.LoadTexture(EXE_PATH + @"\Res\Terrain\fog_noise.png");
+            _groundFogRenderer.LoadTexture(EXE_PATH + @"\Res\Terrain\fog_noise.png");
 
             // 하늘 렌더러 초기화
             float azimuth = float.Parse(IniFile.GetPrivateProfileString("sunlight", "Azimuth", "0"));
@@ -301,8 +291,6 @@ namespace FormTools
             // 셰리더 해시정보는 파일로 저장
             FileHashManager.Finalize();
 
-            //_modelBatchManager.Finalized();
-
             // GPU 드리븐 렌더러 초기화
             _gpuDriven = new GeometryRenderPass("초목용 렌더패스", StrRes.PROJECT_PATH);
             _gpuDriven.Initialize(_glControl3.Camera, _modelBatchManager, distance0: 50, distance1: 150, distance2: 150);
@@ -315,11 +303,11 @@ namespace FormTools
             _terrainRenderer.CreateFaultTexture();
 
             // 연무 패치 배치
-            //_groundFogRenderer.BatchInstances(_terrainRegion.TerrainData);
+            _groundFogRenderer.BatchInstances(_terrainRegion.TerrainData);
+            _groundFogRenderer.SetStructureBuffer(_gbuffer.StructureTextureId);
 
             // 연무 만들기
-            //_groundFogRenderer.Init(_glControl3.Camera);
-
+            _groundFogRenderer.Init(_glControl3.Camera);
         }
 
         public void UpdateFrame(int deltaTime, int width, int height, Camera camera)
@@ -384,7 +372,7 @@ namespace FormTools
             _gpuDriven?.Update(camera, _viewFrustum, _hiZBuffer);
 
             // 연무 렌더러 업데이트
-            //_groundFogRenderer.Update(camera, _viewFrustum, _hiZBuffer);
+            _groundFogRenderer.Update(camera, _viewFrustum, _hiZBuffer);
 
             // 렌더링 루프에서
             _fpsText.Text = $"FPS: {FramePerSecond.FPS:F1}";
@@ -405,7 +393,7 @@ namespace FormTools
            
             _lastVisibleCount = _visibleCount;
             _lastFrustumPassCount = _frustumPassCount;
-            _culledText.Text = _visibleReport;// _groundFogRenderer.GetDebugInfo();
+            _culledText.Text = _groundFogRenderer.GetDebugInfo();
             _isDebugTextDirty = true;
 
         }
@@ -452,7 +440,7 @@ namespace FormTools
             _gpuDriven?.Render(camera);
 
             // 연무 렌더링 (한 줄!)
-            //_groundFogRenderer.Render(camera);
+            _groundFogRenderer.Render(camera);
 
             // 월드 축 렌더링
             if (_isVisibleWorldAxis) _worldAxisRenderer.Render(camera.VPMatrix);
@@ -515,6 +503,7 @@ namespace FormTools
                     // Deferred Shading (불투명 객체들)
                     _deferredRenderer.SetTerrainShadowMap(_terrainRenderer.ShadowMap);
                     _deferredRenderer.SetInstanceShadowMap(_sunShadowMap);
+
                     _deferredRenderer.Render(w, h);
 
                 }

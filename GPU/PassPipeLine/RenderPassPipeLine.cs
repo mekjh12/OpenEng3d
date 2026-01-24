@@ -27,7 +27,9 @@ namespace GPUDriven
         private readonly uint MAX_INSTANCES = 1_000_000;    // 최대 수용 가능 인스턴스의 개수
         private readonly int _maxMipLevels = 10;        // HiZ 최대 밉맵 레벨
 
-        // LOD별 커맨드 오프셋 (바이트)
+        /// <summary>
+        /// LOD 커맨드 오프셋 배열 (바이트)
+        /// </summary>
         private static readonly int[] LOD_OFFSETS = new int[] { 0, 16, 32, 48 };
 
         // ------------------------------------------------------------
@@ -852,9 +854,9 @@ namespace GPUDriven
         }
 
 
-        protected void BufferSubDataDrawArraysIndirectCommand(uint vertexCount, int commandOffset)
+        protected void BufferSubDataDrawArraysIndirectCommand(uint vertexCount, ref int commandOffset)
         {
-            DrawArraysIndirectCommand cmdLOD0 = new DrawArraysIndirectCommand
+            DrawArraysIndirectCommand cmd = new DrawArraysIndirectCommand
             {
                 VertexCount = vertexCount,
                 InstanceCount = 0,
@@ -862,7 +864,7 @@ namespace GPUDriven
                 BaseInstance = 0
             };
             Gl.BufferSubData(BufferTarget.DrawIndirectBuffer,
-                           (IntPtr)commandOffset, COMMAND_SIZE, cmdLOD0);
+                           (IntPtr)commandOffset, COMMAND_SIZE, cmd);
             commandOffset += COMMAND_SIZE;
         }
 

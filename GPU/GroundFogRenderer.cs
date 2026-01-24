@@ -43,8 +43,8 @@ namespace GPUDriven
         public GroundFogRenderer(BillboardShader shader, string projPath)
         {
             _shader = shader;
-            //_renderPass = new GroundFogRenderPass("낮은연무 렌더패스", projPath);
-            _batchManager = new ModelBatchManager(maxInstances: 5_000, maxBatches: 2);
+            _renderPass = new GroundFogRenderPass("낮은연무 렌더패스", projPath);
+            _batchManager = new ModelBatchManager(maxInstances: Constants.GROUND_FOG_MAX_INSTANCES, maxBatches: 1);
             _model3DManager = new Model3dManager(StrRes.PROJECT_PATH, "");
 
             string[] _objFileNames = new string[]
@@ -59,7 +59,11 @@ namespace GPUDriven
                 UnifiedTexturedModelLOD model3_lod1 = model3 as UnifiedTexturedModelLOD;
                 _batchManager.AddModel(model3.Name, 100, model3, model3_lod1.ModelLod1);
             }
+        }
 
+        public void SetStructureBuffer(uint structureBuffer)
+        {
+            _renderPass.SetStructureBuffer(structureBuffer);
         }
 
         /// <summary>
@@ -78,7 +82,7 @@ namespace GPUDriven
             else
             {
                 Console.WriteLine($"✅ 연무 텍스처 로드 성공: ID={_textureID}");
-                //_renderPass.SetFogTexture(_textureID);
+                _renderPass.SetFogTexture(_textureID);
             }
         }
 
@@ -87,7 +91,7 @@ namespace GPUDriven
             // 인스턴스 변환 행렬 생성 및 추가
             Random rand = new Random(533);
 
-            for (int i = 0; i < 5_000; i++)
+            for (int i = 0; i < Constants.GROUND_FOG_MAX_INSTANCES; i++)
             {
                 float posX = 1000f * (float)(rand.NextDouble() * 2.0f - 1.0f);
                 float posY = 1000f * (float)(rand.NextDouble() * 2.0f - 1.0f);
@@ -106,32 +110,31 @@ namespace GPUDriven
 
         public void Init(Camera camera)
         {
-            //_renderPass.Initialize(camera, _batchManager);
+            _renderPass.Initialize(camera, _batchManager, 300, 400, 500);
         }
 
         public void Update(Camera camera, Polyhedron viewFrustum, HierarchyZBuffer hizBuffer)
         {
-            //_renderPass.Update(camera, viewFrustum, hizBuffer);
+            _renderPass.Update(camera, viewFrustum, hizBuffer);
         }
 
         public void Render(Camera camera)
         {
-           //_renderPass.Render(camera);
+           _renderPass.Render(camera);
         }
-
 
         string txt = "";
 
         public string GetDebugInfo()
         {
             uint a = 0;
-            //_renderPass.GetVisibleCountDebug(ref a, ref a, ref a, ref a, ref a, ref a, ref txt);
+            _renderPass?.GetVisibleCountDebug(ref a, ref a, ref a, ref a, ref a, ref a, ref txt);
             return txt;
         }
 
         public void RenderDepthPrePassFromPrevFrame(Camera camera)
         {
-            //_renderPass.RenderDepthPrePassFromPrevFrame(camera);
+            _renderPass.RenderDepthPrePassFromPrevFrame(camera);
         }
 
         public void RenderShadowMap(ShadowMap shadowMap, Camera camera, Vertex3f sunLightDirection, bool isClearBuffer = false)

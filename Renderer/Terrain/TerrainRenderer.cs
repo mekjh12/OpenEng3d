@@ -42,10 +42,18 @@ namespace Renderer
         // 테스트 기능 온오프
         bool _onFunc = true;
 
+        // --------------------------------------------------------
+        // 속성
+        // --------------------------------------------------------
+
         public uint ShadowMapTextureID => _shadowmap.DepthTextureID;
         public ShadowMap ShadowMap => _shadowmap;
         public Matrix4x4f LightViewMatrix => _shadowmap.LightViewMatrix;
         public Matrix4x4f LightProjMatrix => _shadowmap.LightProjMatrix;
+
+        // --------------------------------------------------------
+        // 생성자
+        // --------------------------------------------------------
 
         public TerrainRenderer(TerrainTessellationShader shader, string projectPath)
         {
