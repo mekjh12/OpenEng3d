@@ -140,6 +140,12 @@
     <Compile Include="2026\FormStructureBuffer.Designer.cs">
       <DependentUpon>FormStructureBuffer.cs</DependentUpon>
     </Compile>
+    <Compile Include="2026\FormTerrainRegion.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="2026\FormTerrainRegion.Designer.cs">
+      <DependentUpon>FormTerrainRegion.cs</DependentUpon>
+    </Compile>
     <Compile Include="GpuDriven\FormGPUDriveHiZ.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -352,6 +358,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="2026\FormStructureBuffer.resx">
       <DependentUpon>FormStructureBuffer.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="2026\FormTerrainRegion.resx">
+      <DependentUpon>FormTerrainRegion.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GpuDriven\FormGPUDriveHiZ.resx">
       <DependentUpon>FormGPUDriveHiZ.cs</DependentUpon>

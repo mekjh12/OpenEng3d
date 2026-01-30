@@ -451,7 +451,6 @@ Worley 노이즈:
 
             _displayShader.Bind();
             _displayShader.LoadNoiseTexture(TextureUnit.Texture0, _texture);
-            _displayShader.LoadUseColorMap(_isColorMode);
 
             Gl.BindVertexArray(_quadVAO);
             Gl.DrawArrays(PrimitiveType.Triangles, 0, 6);

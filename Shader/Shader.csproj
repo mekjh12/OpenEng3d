@@ -93,6 +93,7 @@
     <Compile Include="GPUDriven\FlowAccumulationComputeShader.cs" />
     <Compile Include="GPUDriven\FrustumCullingComputeShader.cs" />
     <Compile Include="GPUDriven\GaussianBlurComputeShader.cs" />
+    <Compile Include="GPUDriven\GroundFogCrossBillboardShader.cs" />
     <Compile Include="GPUDriven\GPUCrossBillboard.cs" />
     <Compile Include="GPUDriven\GPUBillboardShader.cs" />
     <Compile Include="GPUDriven\DepthDebugInstancedShader.cs" />
@@ -109,6 +110,7 @@
     <Compile Include="GPUDriven\QuadTreeCullingComputeShader.cs" />
     <Compile Include="GPUDriven\SimpleQuadTestShader.cs" />
     <Compile Include="GPUDriven\UpdateIndirectCommandsComputeShader.cs" />
+    <Compile Include="GPUDriven\WaterDebugShader.cs" />
     <Compile Include="GPUDriven\WaterFlowComputeShader.cs" />
     <Compile Include="GPUDriven\WorldAxisShader.cs" />
     <Compile Include="GPUDriven\GrassShaderGPUDriven.cs" />
@@ -202,9 +204,9 @@
     <None Include="GPUDriven\glsl\aabb_instance.vert" />
     <None Include="GPUDriven\glsl\billboard.vert" />
     <None Include="GPUDriven\glsl\billboard.frag" />
-    <None Include="GPUDriven\glsl\billboard_instance.frag" />
-    <None Include="GPUDriven\glsl\billboard_instance.geom" />
-    <None Include="GPUDriven\glsl\billboard_instance.vert" />
+    <None Include="GPUDriven\glsl\groundfog_crossbillboard_instance.frag" />
+    <None Include="GPUDriven\glsl\groundfog_crossbillboard_instance.geom" />
+    <None Include="GPUDriven\glsl\groundfog_crossbillboard_instance.vert" />
     <None Include="GPUDriven\glsl\crossBillboardInstance.frag" />
     <None Include="GPUDriven\glsl\crossBillboardInstance.gem.glsl" />
     <None Include="GPUDriven\glsl\crossBillboardInstance.vert" />
@@ -238,6 +240,9 @@
     <None Include="GPUDriven\glsl\instanced.frag" />
     <None Include="GPUDriven\glsl\instanced.vert" />
     <None Include="GPUDriven\comp\frustum_culling.comp" />
+    <None Include="GPUDriven\glsl\water_debug.geom" />
+    <None Include="GPUDriven\glsl\water_debug.frag" />
+    <None Include="GPUDriven\glsl\water_debug.vert" />
     <None Include="GPUDriven\glsl\world_axis.frag" />
     <None Include="GPUDriven\glsl\world_axis.geom.glsl" />
     <None Include="GPUDriven\glsl\world_axis.vert" />

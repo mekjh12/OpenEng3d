@@ -605,11 +605,12 @@ namespace Common
             else
             {
                 string shaderName = Path.GetFileName(shortFileName);
-                Console.WriteLine($"(성공) {_name} GLSL 빌드 {shaderName} {type} [{shaderID}]");
+                Console.WriteLine($"**성공** {_name} GLSL 빌드 {shaderName} {type} [{shaderID}]");
             }
 
             return shaderID;
         }
+
 
         protected void BindAttribute(uint attribute, string variableName)
         {

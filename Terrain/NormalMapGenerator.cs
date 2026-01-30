@@ -1,6 +1,8 @@
 ﻿using OpenGL;
+using System;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Runtime.CompilerServices;
 using ZetaExt;
 
@@ -21,22 +23,72 @@ namespace Terrain
         /// <returns>생성된 Normal Map 텍스처 ID</returns>
         public static uint GenerateNormalMap(string heightMapPath, float heightScale = 1.0f, bool wrapMode = true)
         {
-            // 높이맵 로드
-            using (var heightImage = System.Drawing.Image.FromFile(heightMapPath))
-            using (var heightBitmap = new System.Drawing.Bitmap(heightImage))
+            // Normal Map PNG 저장 경로 생성
+            string filenameWithoutExt = Path.Combine(
+                Path.GetDirectoryName(heightMapPath),
+                Path.GetFileNameWithoutExtension(heightMapPath)
+            );
+
+            string normalPngPath = filenameWithoutExt + "_normal.png";
+
+            // 이미 존재하면 PNG 파일에서 직접 로드
+            if (File.Exists(normalPngPath))
             {
-                int width = heightBitmap.Width;
-                int height = heightBitmap.Height;
+                uint textureId = LoadNormalMapFromPng(normalPngPath);
+                return textureId;
+            }
+            else
+            {
+                // 노말맵이 없으면 생성
+                using (var heightImage = System.Drawing.Image.FromFile(heightMapPath))
+                using (var heightBitmap = new System.Drawing.Bitmap(heightImage))
+                {
+                    int width = heightBitmap.Width;
+                    int height = heightBitmap.Height;
 
-                // 높이 데이터 추출
-                float[] heightData = ExtractHeightData(heightBitmap);
+                    // 높이 데이터 추출
+                    float[] heightData = ExtractHeightData(heightBitmap);
 
-                // Normal Map 데이터 생성
+                    // Normal Map 데이터 생성
+                    byte[] normalData = new byte[width * height * 4];
+                    GenerateNormalData(heightData, normalData, width, height, heightScale, wrapMode);
+
+                    // PNG 파일로 저장
+                    SaveNormalMapToPng(normalPngPath, heightData, width, height, heightScale);
+
+                    // OpenGL 텍스처 생성 및 반환
+                    return CreateNormalTexture(normalData, width, height);
+                }
+            }            
+        }
+
+        /// <summary>
+        /// PNG 파일에서 Normal Map 텍스처 로드
+        /// </summary>
+        private static uint LoadNormalMapFromPng(string pngPath)
+        {
+            using (var image = System.Drawing.Image.FromFile(pngPath))
+            using (var bitmap = new System.Drawing.Bitmap(image))
+            {
+                int width = bitmap.Width;
+                int height = bitmap.Height;
+
+                // RGBA 데이터 추출
                 byte[] normalData = new byte[width * height * 4];
-                GenerateNormalData(heightData, normalData, width, height, heightScale, wrapMode);
 
-                // 디버깅용으로 Normal Map PNG 저장
-                SaveNormalMapToPng(heightMapPath + "_normal.png", heightData, width, height, heightScale);
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++)
+                    {
+                        var pixel = bitmap.GetPixel(x, y);
+                        int idx = (y * width + x) * 4;
+
+                        normalData[idx + 0] = pixel.R;
+                        normalData[idx + 1] = pixel.G;
+                        normalData[idx + 2] = pixel.B;
+                        normalData[idx + 3] = pixel.A;
+                    }
+                }
 
                 // OpenGL 텍스처 생성
                 return CreateNormalTexture(normalData, width, height);

@@ -59,14 +59,14 @@ namespace ZetaExt
         public static string GetPrivateProfileString(string section, string key, string defalut)
         {
             StringBuilder sb = new StringBuilder();
-            GetPrivateProfileString(section, key, defalut, sb, 32, IniFile.s_FILENAME);
+            GetPrivateProfileString(section, key, defalut, sb, 128, IniFile.s_FILENAME);
             return sb.ToString();
         }
 
         public static float GetPrivateProfileFloat(string section, string key, float defalut = 0.0f)
         {
             StringBuilder sb = new StringBuilder();
-            GetPrivateProfileString(section, key, "", sb, 32, IniFile.s_FILENAME);
+            GetPrivateProfileString(section, key, "", sb, 128, IniFile.s_FILENAME);
             string res = sb.ToString().Trim();
             return (res == "") ? defalut : float.Parse(res);
         }
@@ -74,7 +74,7 @@ namespace ZetaExt
         public static float[] GetPrivateProfileFloatArray(string section, string key)
         {
             StringBuilder sb = new StringBuilder();
-            GetPrivateProfileString(section, key, "", sb, 32, IniFile.s_FILENAME);
+            GetPrivateProfileString(section, key, "", sb, 128, IniFile.s_FILENAME);
             string[] cols = sb.ToString().Split(new char[] { ',' });
             List<float> result = new List<float>();
             for (int i = 0; i < cols.Length; i++)

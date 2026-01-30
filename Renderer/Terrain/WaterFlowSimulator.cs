@@ -345,11 +345,10 @@ namespace Renderer
             bool useBuffer0 = true;
 
             _shader.Bind();
-            _shader.LoadTextureSize(_width, _height);
 
             // Phase 1: Rain
             Console.WriteLine("[Phase 1] 물 뿌리기 시작...");
-            _shader.LoadSimulationParams(deltaWater, flowRate, evaporationRate, maxWaterDepth);
+            //_shader.LoadSimulationParams(deltaWater, flowRate, evaporationRate, maxWaterDepth);
 
             for (int i = 0; i < rainIterations; i++)
             {
@@ -370,7 +369,7 @@ namespace Renderer
             if (flowIterations > 0)
             {
                 Console.WriteLine("[Phase 2] 물 흐르기 시작...");
-                _shader.LoadSimulationParams(0.0f, flowRate, evaporationRate, maxWaterDepth);
+                //_shader.LoadSimulationParams(0.0f, flowRate, evaporationRate, maxWaterDepth);
 
                 for (int i = 0; i < flowIterations; i++)
                 {

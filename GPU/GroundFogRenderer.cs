@@ -19,7 +19,6 @@ namespace GPUDriven
     public class GroundFogRenderer
     {
         private GroundFogRenderPass _renderPass;
-        private BillboardShader _shader;
         private ModelBatchManager _batchManager;
         private Model3dManager _model3DManager;
 
@@ -40,9 +39,8 @@ namespace GPUDriven
 
         public bool IsEnabled { get; set; } = true;
 
-        public GroundFogRenderer(BillboardShader shader, string projPath)
+        public GroundFogRenderer(string projPath)
         {
-            _shader = shader;
             _renderPass = new GroundFogRenderPass("낮은연무 렌더패스", projPath);
             _batchManager = new ModelBatchManager(maxInstances: Constants.GROUND_FOG_MAX_INSTANCES, maxBatches: 1);
             _model3DManager = new Model3dManager(StrRes.PROJECT_PATH, "");
@@ -59,11 +57,6 @@ namespace GPUDriven
                 UnifiedTexturedModelLOD model3_lod1 = model3 as UnifiedTexturedModelLOD;
                 _batchManager.AddModel(model3.Name, 100, model3, model3_lod1.ModelLod1);
             }
-        }
-
-        public void SetStructureBuffer(uint structureBuffer)
-        {
-            _renderPass.SetStructureBuffer(structureBuffer);
         }
 
         /// <summary>

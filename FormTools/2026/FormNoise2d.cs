@@ -213,7 +213,6 @@ namespace FormTools
             _displayShader.Bind();
             _displayShader.LoadNoiseTexture(TextureUnit.Texture0, _noiseTexture);
             _displayShader.LoadFlip(this.chkFlip.Checked);
-            _displayShader.LoadUseColorMap(_isColorMode);
 
             // 쿼드 그리기
             Gl.BindVertexArray(_quadVAO);

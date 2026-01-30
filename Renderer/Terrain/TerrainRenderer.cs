@@ -24,7 +24,7 @@ namespace Renderer
 
         Texture[] _groundTextures;
         Texture _detailTexture;
-        Texture _normalTexture;
+        uint _normalTexture;
         Texture _rockTexture;
         Texture _faultTexture;
         Texture _riverMap;
@@ -132,8 +132,9 @@ namespace Renderer
 
         public void CreateFaultTexture()
         {
+
             _faultTexture = FaultMapGenerator.Generate(512, 512, 45);
-            //FaultMapGenerator.SaveTexture(_faultTexture, @"C:\Users\mekjh\OneDrive\바탕 화면\fault.png", 512, 512);
+            FaultMapGenerator.SaveTexture(_faultTexture, @"C:\Users\mekjh\OneDrive\바탕 화면\fault.png", 512, 512);
         }
 
         public void LoadMossRockTexture(string fileName)
@@ -151,7 +152,7 @@ namespace Renderer
         {
             _groundTextures = groundTextures;
             _detailTexture = detailTexture;
-            _normalTexture = normalTexture;
+            _normalTexture = normalTexture.TextureID;
         }
 
         public void LoadRockTexture(string fileName)
@@ -178,9 +179,9 @@ namespace Renderer
             _detailTexture = new Texture(fileName);
         }
 
-        public void LoadTerrainNormalMap(string fileName)
+        public void LoadTerrainNormalMap(uint textureId)
         {
-            _normalTexture = new Texture(fileName);
+            _normalTexture = textureId;
         }
 
         public void Render(Camera camera, bool isDetailMap = true, float heightScale = 1.0f)
@@ -235,7 +236,7 @@ namespace Renderer
                 
                 _shader.LoadHeightAndNormalMap(
                     modelTextured.Texture.TextureID,
-                    _normalTexture.TextureID
+                    _normalTexture
                 );
 
                 // 모델행렬과 법선행렬을 바인딩

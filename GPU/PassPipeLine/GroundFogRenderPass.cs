@@ -10,20 +10,19 @@ namespace GPUDriven
 {
     public class GroundFogRenderPass : RenderPassPipeLine, IRenderPass
     {
-        private BillboardInstancedShader _billboardShader;
+        private GroundFogCrossBillboardShader _fogShader;
         private GPUInstancedShader _instancedShader;
 
         private uint _fogTextureID;
-        private uint _structureBuffer = 0;
 
         public GroundFogRenderPass(string name, string projPath) : base(name, projPath)
         {
-            if (!ShaderManager.Instance.HasShader("BillboardInstancedShader"))
-                ShaderManager.Instance.AddShader(new BillboardInstancedShader(StrRes.PROJECT_PATH));
+            if (!ShaderManager.Instance.HasShader("GroundFogCrossBillboardShader"))
+                ShaderManager.Instance.AddShader(new GroundFogCrossBillboardShader(StrRes.PROJECT_PATH));
             if (!ShaderManager.Instance.HasShader("GPUInstancedShader"))
                 ShaderManager.Instance.AddShader(new GPUInstancedShader(StrRes.PROJECT_PATH));
 
-            _billboardShader = ShaderManager.Instance.GetShader<BillboardInstancedShader>();
+            _fogShader = ShaderManager.Instance.GetShader<GroundFogCrossBillboardShader>();
             _instancedShader = ShaderManager.Instance.GetShader<GPUInstancedShader>();
         }
 
@@ -32,15 +31,6 @@ namespace GPUDriven
         {
             // 기본 초기화(반드시 호출)
             base.Initialize(camera, batchManager, distance0, distance1, distance2);
-        }
-
-        /// <summary>
-        /// 스트럭처 버퍼를 설정
-        /// </summary>
-        /// <param name="structureBuffer"></param>
-        public void SetStructureBuffer(uint structureBuffer)
-        {
-            _structureBuffer = structureBuffer;
         }
 
         /// <summary>
@@ -95,27 +85,29 @@ namespace GPUDriven
             Gl.DepthMask(false);
             Gl.Disable(EnableCap.CullFace);
 
-            _billboardShader.Bind();
+            _fogShader.Bind();
             {
+                // 카메라 가로, 세로
+                _fogShader.LoadScreenSize(camera.Width, camera.Height);
+
                 // 배치 오프셋
-                _billboardShader.LoadBatchStartOffset(batch.StartIndex);
-                _billboardShader.LoadScreenSize(camera.Width, camera.Height);
+                _fogShader.LoadBatchStartOffset(batch.StartIndex);
 
                 // 안개 텍스처 바인딩 (텍스처 유닛 0)
-                _billboardShader.LoadFogTexture( TextureUnit.Texture0, _fogTextureID);
+                _fogShader.LoadFogTexture( TextureUnit.Texture0, _fogTextureID);
 
                 // 스트럭처 텍스처 바인딩 (텍스처 유닛 1)
-                _billboardShader.LoadStructureTexture( TextureUnit.Texture1,_structureBuffer);
+                _fogShader.LoadStructureTexture( TextureUnit.Texture1, ShareBuffer.StructureBufferId);
 
                 // 안개 파라미터
-                _billboardShader.LoadFogColor(0.8f, 0.85f, 0.9f);
-                _billboardShader.LoadFogDensity(0.6f);
-                _billboardShader.LoadAlphaThreshold(0.05f);
+                _fogShader.LoadFogColor(0.8f, 0.85f, 0.9f);
+                _fogShader.LoadFogDensity(0.6f);
+                _fogShader.LoadAlphaThreshold(0.05f);
 
                 // Point 렌더링 (Geometry Shader가 3개 쿼드로 확장)
                 DrawArraysIndirect(batch.VAO, cmdStartIndex, 0, _visibleIndicesSSBO_LOD0, PrimitiveType.Points);
             }
-            _billboardShader.Unbind();
+            _fogShader.Unbind();
 
             // 상태 복원
             Gl.DepthMask(true);

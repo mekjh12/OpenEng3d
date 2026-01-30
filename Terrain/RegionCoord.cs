@@ -61,7 +61,9 @@ namespace Terrain
 
         #endregion
 
-        public override string ToString() => $"({X}, {Y})";
+        public override string ToString() => $"{X}x{Y}";
+        public string FileName => $"{X}x{Y}";
+
 
         #region 정적 방향 배열
 

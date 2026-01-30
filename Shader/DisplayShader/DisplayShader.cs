@@ -1,5 +1,5 @@
-﻿using OpenGL;
-using Common;
+﻿using Common;
+using OpenGL;
 
 namespace Shader
 {
@@ -14,8 +14,10 @@ namespace Shader
 
         // 유니폼 위치 캐싱
         private int loc_noiseTexture;
-        private int loc_useColorMap;
+        private int loc_heightMapTexture;
         private int loc_flip;
+        private int loc_scaled;
+        private int loc_useHeightMap;
 
         /// <summary>
         /// 디스플레이 셰이더를 초기화합니다.
@@ -38,13 +40,20 @@ namespace Shader
         protected override void GetAllUniformLocations()
         {
             loc_noiseTexture = GetUniformLocation("noiseTexture");
-            loc_useColorMap = GetUniformLocation("useColorMap");
+            loc_heightMapTexture = GetUniformLocation("heightMapTexture");
             loc_flip = GetUniformLocation("flip");
+            loc_scaled = GetUniformLocation("scaled");
+            loc_useHeightMap = GetUniformLocation("useHeightMap");
         }
 
-        public void LoadUseColorMap(bool useColorMap)
+        public void LoadUseHeightMap(bool useHeightMap)
         {
-            Gl.Uniform1(loc_useColorMap, useColorMap ? 1 : 0);
+            Gl.Uniform1(loc_useHeightMap, useHeightMap ? 1 : 0);
+        }
+
+        public void LoadScaled(float scaled)
+        {
+            Gl.Uniform1(loc_scaled, scaled);
         }
 
         public void LoadFlip(bool flip)
@@ -69,9 +78,18 @@ namespace Shader
         public void LoadNoiseTexture(TextureUnit textureUnit, uint texture)
         {
             int textureIndex = textureUnit - TextureUnit.Texture0;
-            LoadUniform1i(loc_noiseTexture, textureIndex);
+            Gl.Uniform1(loc_noiseTexture, textureIndex);
             Gl.ActiveTexture(textureUnit);
             Gl.BindTexture(TextureTarget.Texture2d, texture);
         }
+
+        public void LoadHeightMapTexture(TextureUnit textureUnit, uint texture)
+        {
+            int textureIndex = textureUnit - TextureUnit.Texture0;
+            Gl.Uniform1(loc_heightMapTexture, textureIndex);
+            Gl.ActiveTexture(textureUnit);
+            Gl.BindTexture(TextureTarget.Texture2d, texture);
+        }
+
     }
 }

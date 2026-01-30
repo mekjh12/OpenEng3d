@@ -220,7 +220,7 @@ namespace FormTools
             _terrainRenderer = new TerrainRenderer(_terrainShader, PROJECT_PATH);
             _terrainRenderer.LoadTerrainLevelTextures(EXE_PATH + @"\Res\Terrain\blend\", levelTextureMap);
             _terrainRenderer.LoadDetailTexture(EXE_PATH + @"\Res\Terrain\blend\detailMap.png");
-            _terrainRenderer.LoadTerrainNormalMap(PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\0x0_normal.png");
+            //_terrainRenderer.LoadTerrainNormalMap(PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\0x0_normal.png");
             _terrainRenderer.LoadRockTexture(PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\blend\rockTile.png");
             _terrainRenderer.LoadRiverMapTexture(PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\0x0_river.png");
             _terrainRenderer.LoadMossRockTexture(PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\blend\mossy_rock.png");
@@ -652,6 +652,11 @@ namespace FormTools
         }
 
         private void FormGrass_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void FormValley_Load(object sender, EventArgs e)
         {
 
         }

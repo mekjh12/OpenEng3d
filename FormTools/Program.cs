@@ -19,13 +19,15 @@ namespace FormTools
             //Application.Run(new FormGPUDriveHiZ());               // 작동됨(실패)
             //Application.Run(new FormGPUDriven());                 // 작동됨(이전버전으로 폐기)
 
+            //Application.Run(new FormTerrainRegion());
+            Application.Run(new FormWaterFlow());                   // 지형에서 계곡감지[미완성]
+
 
             //Application.Run(new FormImposterBaker());
-            Application.Run(new FormStructureBuffer());
+            //Application.Run(new FormStructureBuffer());
             //Application.Run(new FormTerrainGenerator());                  // 작동됨 = 지형기반 지면안개 GPU드리븐 테스트
             //Application.Run(new FormNoise2d());
             //Application.Run(new FormShadow());                      // 작동됨 = LOD0,1 그림자 도입
-            //Application.Run(new FormWaterFlow());                   // 지형에서 계곡감지[미완성]
             //Application.Run(new FormValley());                      // 작동됨 = 계곡 감지
             //Application.Run(new FormGrass());                     // 작동됨 = Grass GPU드리븐 테스트
             //Application.Run(new FormLightAmbDir());               // 작동됨 = GPU드리븐 라이트 시스템 도입

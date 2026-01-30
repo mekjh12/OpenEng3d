@@ -1,6 +1,6 @@
 ﻿namespace FormTools
 {
-    partial class FormValley
+    partial class FormTerrainRegion
     {
         /// <summary>
         /// Required designer variable.
@@ -30,14 +30,14 @@
         {
             this.SuspendLayout();
             // 
-            // FormValley
+            // FormTerrainRegion
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(649, 422);
-            this.Name = "FormValley";
-            this.Text = "FormValley";
-            this.Load += new System.EventHandler(this.FormValley_Load);
+            this.ClientSize = new System.Drawing.Size(718, 500);
+            this.Name = "FormTerrainRegion";
+            this.Text = "FormTerrainRegion";
+            this.Load += new System.EventHandler(this.FormTerrainRegion_Load);
             this.ResumeLayout(false);
 
         }

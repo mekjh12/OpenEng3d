@@ -1,4 +1,5 @@
-﻿using OpenGL;
+﻿using Common;
+using OpenGL;
 using Shader;
 using System;
 
@@ -177,6 +178,7 @@ namespace GlWindow
                 StructureTextureId,
                 0
             );
+            ShareBuffer.StructureBufferId = StructureTextureId; // 공유 버퍼 ID 설정
 
             // ============================================
             // MRT 드로우 버퍼 설정 (5개로 증가!)

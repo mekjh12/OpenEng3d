@@ -70,6 +70,7 @@
     <Compile Include="TerrainRegion.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VegetationMap.cs" />
+    <Compile Include="WaterFlowGenerator.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Camera3d\Camera3d.csproj">

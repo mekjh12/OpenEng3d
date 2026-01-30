@@ -1,186 +1,477 @@
 ﻿#version 430 core
 
+// ============================================================================
+// 워크그룹 설정
+// ============================================================================
+// 16x16 = 256 스레드로 구성된 워크그룹
+// GPU는 이 단위로 병렬 처리를 수행합니다
 layout(local_size_x = 16, local_size_y = 16) in;
 
-// RG32F 포맷 사용 (R: 수심, G: 유량)
-layout(binding = 0, r32f) uniform readonly image2D u_HeightMap;
-layout(binding = 1, rg32f) uniform readonly image2D u_WaterBufferRead;
-layout(binding = 2, rg32f) uniform writeonly image2D u_WaterBufferWrite;
+// ============================================================================
+// 이미지 버퍼 바인딩
+// ============================================================================
+// 각 텍스처는 특정 binding point에 연결되어 GPU 메모리에서 접근됩니다
+layout(r32f, binding = 0) readonly uniform image2D heightMap;      // 지형 높이맵 (읽기 전용)
+layout(rgba32f, binding = 1) readonly uniform image2D waterBufferRead;   // 현재 프레임 물 정보 (읽기)
+layout(rgba32f, binding = 2) writeonly uniform image2D waterBufferWrite; // 다음 프레임 물 정보 (쓰기)
+layout(rgba32f, binding = 3) uniform image2D supportBuffer;        // 보조 버퍼 (현재 미사용)
+layout(rgba32f, binding = 4) uniform image2D fluxBuffer;           // 유량 버퍼 (4방향 flux)
 
-uniform float u_DeltaWater;      // 비 (Rain)
-uniform float u_FlowRate;        // 유속 (0.0 ~ 1.0)
-uniform float u_EvaporationRate; // 증발률
-uniform int u_Width;
-uniform int u_Height;
-uniform float u_MaxWaterDepth;   // ⭐ 추가: 최대 수심 제한
+// ============================================================================
+// 유니폼 변수
+// ============================================================================
+uniform vec2 target;                          // 물 추가 대상 위치
+uniform float radius;                         // 물 추가 반경
+uniform int mode;                             // 실행 모드 선택
+uniform float flowVelocityConstant = 3.0f;    // 유속 상수 (물의 흐름 속도)
+uniform float rainWaterAmount = 0.001f;       // 비/물 추가량
+uniform float evaporationBaseRate = 0.001f;   // 기본 증발률 (0.1%)
 
-const ivec2 neighbors[8] = ivec2[8](
-    ivec2(-1, -1), ivec2(0, -1), ivec2(1, -1),
-    ivec2(-1,  0),               ivec2(1,  0),
-    ivec2(-1,  1), ivec2(0,  1), ivec2(1,  1)
-);
+// ============================================================================
+// 모드 설명
+// ============================================================================
+// mode 0: 물 추가 (사각형 영역)
+// mode 1: 물 추가 (원형 영역)
+// mode 2: 그라디언트 계산 (경사 방향)
+// mode 3: 유량(Flux) 계산 - 파이프 모델의 첫 번째 단계
+// mode 4: 실제 물 이동 - 파이프 모델의 두 번째 단계
 
-// 대각선 거리 보정
-const float distances[8] = float[8](
-    1.414, 1.0, 1.414,
-    1.0,        1.0,
-    1.414, 1.0, 1.414
-);
+// ============================================================================
+// 이론적 배경: 파이프 모델 (Pipe Model)
+// ============================================================================
+// 물 시뮬레이션은 "Pipe Model"을 기반으로 합니다.
+// 
+// 핵심 개념:
+// 1. 각 셀은 4개의 가상 파이프로 인접 셀과 연결됨 (상/하/좌/우)
+// 2. Flux(유량): 각 파이프를 통해 흐르는 물의 양
+// 3. 높이 차이가 유량을 발생시킴 (수압 차이)
+//
+// 물리적 원리:
+// - F(t+dt) = max(0, F(t) + dt × g × ΔH / L)
+//   여기서:
+//   F = 유량 (flux)
+//   g = 중력 상수
+//   ΔH = 높이 차이
+//   L = 파이프 길이 (픽셀 간 거리)
+//
+// 2단계 프로세스:
+// Pass 1 (mode 3): 모든 셀의 유량 계산
+// Pass 2 (mode 4): 계산된 유량으로 실제 물 이동
+//
+// 이렇게 분리하는 이유:
+// - 데이터 레이스 방지 (race condition)
+// - 물리적으로 정확한 시뮬레이션
+// - 물의 보존 법칙 준수
+// ============================================================================
 
-/// <summary>
-/// 맵 안쪽인지 체크
-/// </summary>
-bool IsInside(ivec2 p) 
+// ============================================================================
+// 경계 처리 함수
+// ============================================================================
+// 맵 경계를 벗어난 위치에 대한 높이를 처리하는 함수
+// 
+// 경계 처리 전략:
+// - 경계 밖 = 매우 낮은 가상 높이 반환
+// - 이를 통해 물이 자연스럽게 맵 밖으로 배수됨
+// - 실제 게임에서는 "오션 레벨"로 설정 가능
+float getHeightWithBoundary(ivec2 pos, ivec2 size, float currentHeight) 
 {
-    return p.x >= 0 && p.x < u_Width && p.y >= 0 && p.y < u_Height;
+    // 경계 검사: x, y가 0 ~ size-1 범위 내에 있는지 확인
+    if (pos.x < 0 || pos.x >= size.x || pos.y < 0 || pos.y >= size.y) {
+        // 경계 밖: 현재 높이보다 100 유닛 낮은 가상 높이
+        // → 물이 이쪽으로 흐르도록 유도
+        return currentHeight - 100.0;
+    }
+    
+    // 경계 안: 실제 지형 높이 + 물 높이
+    // 총 높이 = 지형(heightMap) + 물 깊이(waterBuffer.r)
+    return imageLoad(heightMap, pos).r + imageLoad(waterBufferRead, pos).r;
 }
 
-/// <summary>
-/// 수면 높이 가져오기 (지형 + 물)
-/// </summary>
-float GetWaterLevel(ivec2 p) 
+// ============================================================================
+// 메인 함수
+// ============================================================================
+void main() 
 {
-    if (!IsInside(p)) 
-        return 999999.0; // ⭐ 경계는 매우 높게 (물이 맵 밖으로 안 빠짐)
-    
-    float h = imageLoad(u_HeightMap, p).r;
-    float w = imageLoad(u_WaterBufferRead, p).r;
-    
-    // ⭐ 안전장치: NaN/Infinity 체크
-    if (isnan(h) || isinf(h)) h = 0.0;
-    if (isnan(w) || isinf(w)) w = 0.0;
-    
-    return h + w;
-}
-
-/// <summary>
-/// 수심 가져오기
-/// </summary>
-float GetWaterDepth(ivec2 p) 
-{
-    if (!IsInside(p)) 
-        return 0.0;
-    
-    float w = imageLoad(u_WaterBufferRead, p).r;
-    
-    // ⭐ 안전장치
-    if (isnan(w) || isinf(w)) 
-        return 0.0;
-    
-    return w;
-}
-
-void main()
-{
+    // ------------------------------------------------------------------------
+    // 1. 좌표 초기화 및 경계 검사
+    // ------------------------------------------------------------------------
+    // gl_GlobalInvocationID: GPU가 제공하는 전역 스레드 ID
+    // 예: 512x512 이미지라면 (0,0) ~ (511,511) 범위의 좌표
     ivec2 coords = ivec2(gl_GlobalInvocationID.xy);
-    if (!IsInside(coords)) 
-        return;
+    ivec2 size = imageSize(waterBufferWrite);
+    
+    // 워크그룹 크기가 이미지 크기와 정확히 나누어떨어지지 않을 경우
+    // 범위를 벗어난 스레드는 조기 종료
+    if (coords.x >= size.x || coords.y >= size.y) return;
+   
+    // ========================================================================
+    // 물 이동 시뮬레이션 (Pipe Model 구현)
+    // ========================================================================
+    
+    // ------------------------------------------------------------------------
+    // Pass 1 (mode 3): 유량(Flux) 계산
+    // ------------------------------------------------------------------------
+    // 이론: 수압 기반 유량 계산
+    // 
+    // 각 파이프의 유량은 다음 공식으로 업데이트됩니다:
+    // F_new = max(0, F_old + Δt × A × g × ΔH / L)
+    // 
+    // 여기서:
+    // - F_old: 이전 프레임의 유량
+    // - A: 파이프 단면적 (여기서는 상수로 흡수)
+    // - g: 중력 상수 (flowVelocityConstant에 포함)
+    // - ΔH: 높이 차이
+    // - L: 파이프 길이 (1 픽셀, 상수로 흡수)
+    //
+    // 물리적 의미:
+    // - 높은 곳에서 낮은 곳으로 물이 흐름
+    // - 유량은 시간에 따라 누적됨 (가속도 효과)
+    // - 음수 방지 (역류 없음)
+    if (mode == 3) 
+    {
+        // 현재 셀의 총 수위 (water level)
+        // = 바닥 높이(지형) + 물 깊이
+        float currentTotalHeight = imageLoad(heightMap, coords).r 
+                                 + imageLoad(waterBufferRead, coords).r;
+    
+        // 이전 프레임의 유량 (4방향)
+        // r: 위로, g: 아래로, b: 왼쪽으로, a: 오른쪽으로
+        vec4 previousFlux = imageLoad(fluxBuffer, coords);
+    
+        // 인접 셀의 총 수위 계산
+        // 경계 처리 함수 사용 → 맵 밖으로의 흐름 허용
+        float heightUp    = getHeightWithBoundary(coords + ivec2(0,  1), size, currentTotalHeight);
+        float heightDown  = getHeightWithBoundary(coords + ivec2(0, -1), size, currentTotalHeight);
+        float heightLeft  = getHeightWithBoundary(coords + ivec2(-1, 0), size, currentTotalHeight);
+        float heightRight = getHeightWithBoundary(coords + ivec2(1,  0), size, currentTotalHeight);
+    
+        // ====================================================================
+        // 1단계: 수압 차이 기반 유량 변화 계산
+        // ====================================================================
+        // heightDifference > 0: 현재 셀이 더 높음 → 물이 밖으로 나감
+        // heightDifference < 0: 이웃 셀이 더 높음 → 유량 감소 (역압)
+        vec4 heightDifference = vec4(
+            currentTotalHeight - heightUp,      // 위쪽으로의 압력 차
+            currentTotalHeight - heightDown,    // 아래쪽으로의 압력 차
+            currentTotalHeight - heightLeft,    // 왼쪽으로의 압력 차
+            currentTotalHeight - heightRight    // 오른쪽으로의 압력 차
+        );
+    
+        // 유량 업데이트 공식:
+        // F(t+1) = max(0, F(t) + k × ΔH)
+        // 
+        // flowVelocityConstant(k):
+        // - 작은 값: 느린 흐름, 안정적
+        // - 큰 값: 빠른 흐름, 불안정할 수 있음
+        // - 권장: 1.0 ~ 5.0
+        vec4 updatedFlux = max(vec4(0.0), previousFlux + heightDifference * flowVelocityConstant);
+    
+        // ====================================================================
+        // 2단계: 유량 스케일링 (물 보존 법칙)
+        // ====================================================================
+        // 문제: 현재 셀의 물보다 더 많은 양이 나가려고 할 수 있음
+        // 해결: 모든 유량을 비례적으로 축소
+        //
+        // 수학적 표현:
+        // if (ΣF_out > W_current):
+        //     F_scaled = F × (W_current / ΣF_out)
+        //
+        // 이것이 "물 보존 법칙"을 보장합니다
+        float totalOutgoingFlux = updatedFlux.r + updatedFlux.g 
+                                + updatedFlux.b + updatedFlux.a;
+        float currentWaterAmount = imageLoad(waterBufferRead, coords).r;
+    
+        if (totalOutgoingFlux > 0.0) {
+            // 스케일링 팩터 = min(1, 현재물량 / 나가려는물량)
+            // 0.001을 더해서 0으로 나누기 방지
+            float scalingFactor = min(1.0, currentWaterAmount / (totalOutgoingFlux + 0.001));
+            updatedFlux *= scalingFactor;
+        }
+    
+        // 계산된 유량을 fluxBuffer에 저장
+        // 다음 프레임(mode 4)에서 이 값을 사용합니다
+        imageStore(fluxBuffer, coords, updatedFlux);
+    }
 
-    float myHeight = imageLoad(u_HeightMap, coords).r;
-    vec2 myData = imageLoad(u_WaterBufferRead, coords).rg;
-    float myWater = myData.r;
-    float myFlux = myData.g;
-    
-    // ⭐ 안전장치: 입력값 검증
-    if (isnan(myHeight) || isinf(myHeight)) myHeight = 0.0;
-    if (isnan(myWater) || isinf(myWater)) myWater = 0.0;
-    
-    myHeight = clamp(myHeight, 0.0, 1.0);      // 높이 정규화 범위
-    myWater = clamp(myWater, 0.0, u_MaxWaterDepth);
-    
-    float myLevel = myHeight + myWater;
-    
-    // ========================================
-    // 1. 유입량 (Inflow): 이웃에서 흘러들어오는 물
-    // ========================================
-    
-    float totalInflow = 0.0;
-    
-    for (int i = 0; i < 8; i++)
+    // ------------------------------------------------------------------------
+    // Pass 2 (mode 4): 실제 물 업데이트
+    // ------------------------------------------------------------------------
+    // 이론: 유량 기반 물 이동
+    //
+    // 각 셀의 물 변화량:
+    // ΔW = Σ(F_in) - Σ(F_out)
+    //
+    // F_in: 이웃 셀에서 현재 셀로 들어오는 유량
+    // F_out: 현재 셀에서 이웃 셀로 나가는 유량
+    //
+    // 중요: 이웃의 "나가는 유량"이 내 "들어오는 유량"
+    // 예: 아래 셀의 "위로 가는 유량" = 내 "들어오는 유량"
+    if (mode == 4) 
     {
-        ivec2 neighborPos = coords + neighbors[i];
-        if (!IsInside(neighborPos)) 
-            continue;
-        
-        float nLevel = GetWaterLevel(neighborPos);
-        float nWater = GetWaterDepth(neighborPos);
-        
-        // 이웃이 나보다 높은가?
-        if (nLevel > myLevel + 0.0001) // ⭐ 최소 차이 임계값
+        // ====================================================================
+        // 1단계: 나가는 물 계산
+        // ====================================================================
+        vec4 myOutgoingFlux = imageLoad(fluxBuffer, coords);
+        float totalOutflow = myOutgoingFlux.r + myOutgoingFlux.g 
+                           + myOutgoingFlux.b + myOutgoingFlux.a;
+    
+        // ====================================================================
+        // 2단계: 들어오는 물 계산
+        // ====================================================================
+        // 4개 방향의 이웃 셀을 체크하여 각각에서 들어오는 유량을 합산
+        float totalInflow = 0.0;
+    
+        // 아래쪽 셀 (Down)
+        // 아래 셀의 '위로 향하는 유량(r)'이 현재 셀로 들어옴
+        ivec2 posDown = coords + ivec2(0, -1);
+        if (posDown.y >= 0) {
+            totalInflow += imageLoad(fluxBuffer, posDown).r;
+        }
+
+        // 위쪽 셀 (Up)
+        // 위 셀의 '아래로 향하는 유량(g)'이 현재 셀로 들어옴
+        ivec2 posUp = coords + ivec2(0, 1);
+        if (posUp.y < size.y) {
+            totalInflow += imageLoad(fluxBuffer, posUp).g;
+        }
+
+        // 오른쪽 셀 (Right)
+        // 오른쪽 셀의 '왼쪽으로 향하는 유량(b)'이 현재 셀로 들어옴
+        ivec2 posRight = coords + ivec2(1, 0);
+        if (posRight.x < size.x) {
+            totalInflow += imageLoad(fluxBuffer, posRight).b;
+        }
+
+        // 왼쪽 셀 (Left)
+        // 왼쪽 셀의 '오른쪽으로 향하는 유량(a)'이 현재 셀로 들어옴
+        ivec2 posLeft = coords + ivec2(-1, 0);
+        if (posLeft.x >= 0) {
+            totalInflow += imageLoad(fluxBuffer, posLeft).a;
+        }
+    
+        // ====================================================================
+        // 3단계: 물의 양 업데이트
+        // ====================================================================
+        float currentWaterAmount = imageLoad(waterBufferRead, coords).r;
+    
+        // 물 보존 법칙:
+        // W(t+1) = W(t) + (들어온 양 - 나간 양)
+        float updatedWaterAmount = currentWaterAmount + (totalInflow - totalOutflow);
+
+        // ====================================================================
+        // 4단계: 증발 시뮬레이션
+        // ====================================================================
+        // 이론: 표면적/부피 비율
+        //
+        // 얕은 물:
+        // - 표면적 대비 부피가 작음
+        // - 증발 속도 빠름 (표면에서 증발하므로)
+        //
+        // 깊은 물:
+        // - 표면적 대비 부피가 큼
+        // - 증발 속도 느림
+        //
+        // 수학적 모델:
+        // evaporation_rate ∝ 1/√depth
+        if (updatedWaterAmount > 0.0) {
+            // 깊이의 역제곱근으로 증발 계수 계산
+            // 0.1을 더해서 0으로 나누기 방지
+            float evaporationFactor = 1.0 / sqrt(updatedWaterAmount + 0.1);
+            float evaporationAmount = updatedWaterAmount * evaporationBaseRate * evaporationFactor;
+            updatedWaterAmount -= evaporationAmount;
+            updatedWaterAmount = max(0.0, updatedWaterAmount);  // 음수 방지
+        }
+
+        // ====================================================================
+        // 5단계: 수치 안정성 처리
+        // ====================================================================
+        // 부동소수점 오차로 인해 매우 작은 값이 남을 수 있음
+        // 임계값 이하는 0으로 처리하여:
+        // - 렌더링 부하 감소
+        // - 수치적 불안정성 제거
+        const float MIN_WATER_THRESHOLD = 0.0001;
+        if (updatedWaterAmount < MIN_WATER_THRESHOLD) {
+            updatedWaterAmount = 0.0;
+        }
+    
+        // ====================================================================
+        // 6단계: 경계 배수 처리
+        // ====================================================================
+        // 맵 가장자리에서 물을 더 빠르게 제거
+        // 실제 게임에서는:
+        // - 강/바다로 흘러가는 효과
+        // - 무한 맵의 경계 효과
+        bool isBoundary = (coords.x == 0 || coords.x == size.x - 1 || 
+                           coords.y == 0 || coords.y == size.y - 1);
+
+        if (isBoundary && updatedWaterAmount > 0.0) {
+            // 경계에서 99% 배수 (조절 가능)
+            updatedWaterAmount *= 0.01;
+        }
+
+        // ====================================================================
+        // 7단계: 흐름 방향 및 속도 계산 (시각화용)
+        // ====================================================================
+        // 현재 프레임의 유량에서 가장 강한 방향 찾기
+        // 이것은 주로 렌더링/디버깅 목적입니다
+        vec4 myFlux = imageLoad(fluxBuffer, coords);
+        vec2 flowDirection = vec2(0.0, 0.0);
+        float flowMagnitude = 0.0;
+
+        // 4방향 중 최대 유량 찾기
+        float maxFlux = max(max(myFlux.r, myFlux.g), 
+                            max(myFlux.b, myFlux.a));
+
+        if (maxFlux > 0.0) {
+            // 최대 유량의 방향을 벡터로 표현
+            if (maxFlux == myFlux.r) {
+                flowDirection = vec2(0.0, 1.0);   // 위
+            } else if (maxFlux == myFlux.g) {
+                flowDirection = vec2(0.0, -1.0);  // 아래
+            } else if (maxFlux == myFlux.b) {
+                flowDirection = vec2(-1.0, 0.0);  // 왼쪽
+            } else {
+                flowDirection = vec2(1.0, 0.0);   // 오른쪽
+            }
+            flowMagnitude = maxFlux;
+        }
+
+        // 방향을 0~1 범위로 정규화 (텍스처 저장용)
+        // (-1, 1) → (0, 1)
+        flowDirection = flowDirection * 0.5 + 0.5;
+
+        // 물이 없으면 방향도 중립
+        if (updatedWaterAmount < MIN_WATER_THRESHOLD) {
+            flowDirection = vec2(0.5, 0.5); // 중립 = 방향 없음
+            flowMagnitude = 0.0;
+        }
+
+        // ====================================================================
+        // 최종 결과 저장
+        // ====================================================================
+        // waterBufferWrite에 4개 채널 저장:
+        // r: 물의 양
+        // g: 흐름 방향 X (0~1, 0.5 = 중립)
+        // b: 흐름 방향 Y (0~1, 0.5 = 중립)
+        // a: 흐름 강도 (magnitude)
+        imageStore(waterBufferWrite, coords, 
+                   vec4(updatedWaterAmount, flowDirection.x, flowDirection.y, flowMagnitude));
+    }
+    
+    // ========================================================================
+    // 물 추가 기능
+    // ========================================================================
+    // 비, 호수, 강 등을 시뮬레이션하기 위해 특정 위치에 물을 추가
+    
+    // ------------------------------------------------------------------------
+    // Mode 0: 사각형 영역에 물 추가
+    // ------------------------------------------------------------------------
+    // 사용 예: 큰 폭포, 넓은 호수
+    if (mode == 0)
+    {
+        vec4 existingWater = imageLoad(waterBufferRead, coords);
+
+        // AABB(Axis-Aligned Bounding Box) 체크
+        // target을 중심으로 radius 크기의 사각형
+        if (target.x - radius < coords.x && coords.x < target.x + radius && 
+            target.y - radius < coords.y && coords.y < target.y + radius) 
         {
-            float diff = nLevel - myLevel;
-            diff = clamp(diff, 0.0, 1.0); // ⭐ 높이 차이 제한
-            
-            // ⭐ 단순화된 흐름 공식 (안정화)
-            float flowFactor = diff * u_FlowRate * 0.1; // ⭐ 10.0 → 0.1로 감소
-            flowFactor = clamp(flowFactor, 0.0, 1.0);
-            
-            float flowAmount = nWater * flowFactor * 0.125; // 1/8 (8개 이웃)
-            flowAmount = clamp(flowAmount, 0.0, nWater * 0.5); // ⭐ 이웃 물의 50% 이하만
-            
-            totalInflow += flowAmount;
+            // 기존 물에 추가 (누적)
+            imageStore(waterBufferWrite, coords, existingWater + vec4(rainWaterAmount, 0.0, 0.0, 0.0));
+            return;
+        }
+        else
+        {
+            // 영역 밖: 기존 물 그대로 유지
+            imageStore(waterBufferWrite, coords, existingWater);
+            return;
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // Mode 1: 원형 영역에 물 추가
+    // ------------------------------------------------------------------------
+    // 사용 예: 비, 샘물, 자연스러운 효과
+    if (mode == 1)
+    {
+        vec4 existingWater = imageLoad(waterBufferRead, coords);
+
+        // 원형 거리 체크
+        // 유클리드 거리: d = √((x₁-x₂)² + (y₁-y₂)²)
+        float distance = length(vec2(coords) - target);
+    
+        if (distance < radius) 
+        {
+            // 기존 물에 추가 (누적)
+            vec4 existingWater = imageLoad(waterBufferRead, coords);
+            float newWater = existingWater.r + rainWaterAmount;
+            imageStore(waterBufferWrite, coords, vec4(newWater, 0.0, 0.0, 0.0));
+            return;
+        }
+        else
+        {
+            // 반경 밖: 기존 물 그대로 유지
+            imageStore(waterBufferWrite, coords, existingWater);
+            return;
         }
     }
     
-    totalInflow = clamp(totalInflow, 0.0, u_MaxWaterDepth); // ⭐ 최대 유입량 제한
-    
-    // ========================================
-    // 2. 유출량 (Outflow): 낮은 곳으로 물 보내기
-    // ========================================
-    
-    float totalOutflow = 0.0;
-    float elevationDiffSum = 0.0;
-    
-    // 낮은 이웃들의 총 낙차 계산
-    for (int i = 0; i < 8; i++)
+    // ========================================================================
+    // 그라디언트 계산 (지형 경사)
+    // ========================================================================
+    // ------------------------------------------------------------------------
+    // Mode 2: 지형 경사도 계산
+    // ------------------------------------------------------------------------
+    // 이론: 수치 미분 (Numerical Differentiation)
+    //
+    // 그라디언트 = (∂h/∂x, ∂h/∂y)
+    // 
+    // 중앙 차분법 (Central Difference):
+    // ∂h/∂x ≈ (h(x+1) - h(x-1)) / 2
+    // ∂h/∂y ≈ (h(y+1) - h(y-1)) / 2
+    //
+    // 장점:
+    // - 전진/후진 차분보다 정확
+    // - O(h²) 오차
+    //
+    // 용도:
+    // - 법선 벡터 계산 (조명)
+    // - 물 흐름 시각화
+    // - 경사도 기반 효과
+    if (mode == 2)
     {
-        ivec2 neighborPos = coords + neighbors[i];
-        float nLevel = GetWaterLevel(neighborPos);
-        
-        if (nLevel < myLevel - 0.0001) // ⭐ 최소 차이 임계값
-        {
-            float diff = myLevel - nLevel;
-            diff = clamp(diff, 0.0, 1.0); // ⭐ 제한
-            
-            elevationDiffSum += diff / distances[i]; // 거리 보정
+        // 현재 위치의 지형 높이
+        float heightCenter = imageLoad(heightMap, coords).r;
+    
+        // 인접 4방향의 높이
+        // 경계 처리: clamp를 사용해 범위 내로 제한
+        float heightLeft = imageLoad(heightMap, ivec2(max(coords.x - 1, 0), coords.y)).r;
+        float heightRight = imageLoad(heightMap, ivec2(min(coords.x + 1, size.x - 1), coords.y)).r;
+        float heightDown = imageLoad(heightMap, ivec2(coords.x, max(coords.y - 1, 0))).r;
+        float heightUp = imageLoad(heightMap, ivec2(coords.x, min(coords.y + 1, size.y - 1))).r;
+    
+        // 중앙 차분법으로 그라디언트 계산
+        // dx = (오른쪽 - 왼쪽) / 2
+        // dy = (위 - 아래) / 2
+        float gradientX = (heightRight - heightLeft) * 0.5;
+        float gradientY = (heightUp - heightDown) * 0.5;
+    
+        // 그라디언트 벡터의 크기 (magnitude)
+        // ||∇h|| = √(dx² + dy²)
+        float gradientMagnitude = length(vec2(gradientX, gradientY));
+    
+        // 그라디언트 정규화 (방향만 유지)
+        // 단위 벡터로 만들기: v̂ = v / ||v||
+        if (gradientMagnitude > 0.0) {
+            gradientX /= gradientMagnitude;
+            gradientY /= gradientMagnitude;
         }
+        
+        // 결과 저장
+        // r: X 방향 경사
+        // g: Y 방향 경사
+        // b, a: 현재 미사용 (확장 가능)
+        imageStore(waterBufferWrite, coords, vec4(gradientX, gradientY, 0.0, 0.0));
+        return;
     }
-    
-    // 낙차에 비례하여 물 분배
-    if (elevationDiffSum > 0.0001)
-    {
-        float potentialOutflow = myWater * u_FlowRate;
-        totalOutflow = clamp(potentialOutflow, 0.0, myWater * 0.9); // ⭐ 내 물의 90% 이하만
-    }
-    
-    // ========================================
-    // 3. 물 업데이트
-    // ========================================
-    
-    float newWater = myWater + u_DeltaWater + totalInflow - totalOutflow;
-    
-    // ⭐ 안전장치
-    newWater = max(0.0, newWater);
-    newWater = min(newWater, u_MaxWaterDepth);
-    
-    // 증발
-    newWater *= (1.0 - u_EvaporationRate);
-    
-    // ⭐ 최종 검증
-    if (isnan(newWater) || isinf(newWater))
-        newWater = 0.0;
-    
-    // ========================================
-    // 4. 유량(Flux) 계산
-    // ========================================
-    
-    float flux = (totalInflow + totalOutflow) * 0.5;
-    flux = clamp(flux, 0.0, u_MaxWaterDepth); // ⭐ 제한
-    
-    // ⭐ 최종 검증
-    if (isnan(flux) || isinf(flux))
-        flux = 0.0;
-    
-    // 결과 저장 (R: 수심, G: 유량)
-    imageStore(u_WaterBufferWrite, coords, vec4(newWater, flux, 0.0, 1.0));
 }

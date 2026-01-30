@@ -1,34 +1,53 @@
 ﻿#version 430 core
+
+const float PI = 3.1415926535897932384626433832795;
+const float AMOUNT_LOD0 = 1.0f;
+const float AMOUNT_LOD1 = 3.0f;
+const float AMOUNT_LOD2 = 6.0f;
+ 
+
 uniform sampler2D noiseTexture;
+uniform sampler2D heightMapTexture;
+uniform float scaled;
+uniform int flip;
+uniform bool useHeightMap;
 
 in vec2 TexCoord;
 out vec4 fragColor;
 
-uniform bool useColorMap = false;
-uniform bool flip = false;
-
 void main(void)
 {
-    float noise = texture(noiseTexture, TexCoord).r;
+    vec2 uv = TexCoord;
     
-    if (flip) {
-        noise = 1.0 - noise;	
-	}
+    // Y축 flip 적용
+    if (flip == 1) {
+        uv.y = 1.0 - uv.y;
+    }
+    
+    vec4 heightData = texture(heightMapTexture, uv);
+    vec4 waterData = texture(noiseTexture, uv);
 
-    if (!useColorMap){
-        // 그레이스케일 표시
-        fragColor = vec4(noise, noise, noise, 1.0);
+    vec3 finalColor = vec3(0.0);
+
+    float waterLevel = waterData.r;
+
+    if (waterLevel < AMOUNT_LOD0) {
+		finalColor = vec3(0.0, 0.0, waterLevel);
+	} else if (waterLevel < AMOUNT_LOD1) {
+		finalColor = vec3(0.0, waterLevel, waterLevel);
+    } else if (waterLevel > AMOUNT_LOD2 ) {
+		finalColor = vec3(waterLevel, waterLevel, waterLevel);
     } else {
-        // 또는 컬러맵 적용 (물-모래-풀-산-눈)
-        if (noise < 0.3) 
-            fragColor = vec4(30.0/255.0, 100.0/255.0, 200.0/255.0, 1.0); // 물
-        else if (noise < 0.4) 
-            fragColor = vec4(220.0/255.0, 200.0/255.0, 120.0/255.0, 1.0); // 모래
-        else if (noise < 0.7) 
-            fragColor = vec4(50.0/255.0, 150.0/255.0, 50.0/255.0, 1.0); // 풀
-        else if (noise < 0.9) 
-            fragColor = vec4(100.0/255.0, 80.0/255.0, 60.0/255.0, 1.0); // 산
-        else 
-            fragColor = vec4(1.0, 1.0, 1.0, 1.0); // 눈
-    }    
+		finalColor = vec3(0.0, waterLevel, 0.0);
+    }
+
+    if (useHeightMap)
+    {
+        vec3 heightColor = heightData.rgb / 255.0f;
+        fragColor = vec4(finalColor * scaled + heightColor, 1.0);
+	}
+    else
+    {
+        fragColor = vec4(finalColor * scaled, 1.0);
+    }
 }

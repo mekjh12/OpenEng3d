@@ -194,6 +194,8 @@ namespace GlWindow
                 // 카메라 UBO 생성하기
                 _cameraUBO = new CameraUBO();
                 _cameraUBO.UpdateViewProjMatrices(_camera.ViewMatrix, _camera.ProjectiveMatrix, _camera.Position);
+
+                _isInitiazed = true;
             }
 
             // 프레임 카운트 증가

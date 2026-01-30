@@ -152,6 +152,13 @@ namespace ZetaExt
             return value;
         }
 
+        public static float Clamp(float value, float min, float max)
+        {
+            if (value < min) value = min;
+            if (value > max) value = max;
+            return value;
+        }
+
         /// <summary>
         /// value가 0~1일 때 start~end 사이의 값을 선형 보간하여 반환
         /// </summary>

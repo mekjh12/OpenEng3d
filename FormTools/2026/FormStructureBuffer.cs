@@ -23,11 +23,11 @@ namespace FormTools
     public partial class FormStructureBuffer : Form, GlControlerable
     {
         readonly string EXE_PATH = Application.StartupPath;
-        readonly string TITLE = "GPU드라이븐 StructureBuffer";
+        readonly string TITLE = "GPU Driven StructureBuffer";
 
         string[] _objFileNames = new string[]
         {
-            @"Medieval_House.obj",
+            @"MedievalHouse01.obj",
             @"florida_foliage\bananaPlant1.obj",
             @"florida_foliage\palm1.obj",
             @"florida_foliage\fern1.obj",
@@ -249,14 +249,14 @@ namespace FormTools
             _terrainRenderer = new TerrainRenderer(_terrainShader, StrRes.PROJECT_PATH);
             _terrainRenderer.LoadTerrainLevelTextures(EXE_PATH + @"\Res\Terrain\blend\", StrRes.TERRAIN_BIOM_TOLEDO_TEXTURES);
             _terrainRenderer.LoadDetailTexture(EXE_PATH + StrRes.TERRAIN_DETAILMAP_FILENAMES);
-            _terrainRenderer.LoadTerrainNormalMap(StrRes.PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\0x0.png_normal.png");
+            //_terrainRenderer.LoadTerrainNormalMap(StrRes.PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\0x0.png_normal.png");
             _terrainRenderer.LoadRockTexture(StrRes.PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\blend\toledo\rock.png");
             _terrainRenderer.LoadRiverMapTexture(StrRes.PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\0x0_river.png");
             _terrainRenderer.LoadMossRockTexture(StrRes.PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\blend\mossy_rock.png");
 
             // 낮은 안개 렌더러 초기화
             _billboardShader = new Shader.BillboardShader(StrRes.PROJECT_PATH);
-            _groundFogRenderer = new GroundFogRenderer(_billboardShader, StrRes.PROJECT_PATH);
+            _groundFogRenderer = new GroundFogRenderer(StrRes.PROJECT_PATH);
             _groundFogRenderer.HeightThreshold = 50.0f;
             _groundFogRenderer.SlopeThreshold = 15.0f;
 
@@ -304,7 +304,6 @@ namespace FormTools
 
             // 연무 패치 배치
             _groundFogRenderer.BatchInstances(_terrainRegion.TerrainData);
-            _groundFogRenderer.SetStructureBuffer(_gbuffer.StructureTextureId);
 
             // 연무 만들기
             _groundFogRenderer.Init(_glControl3.Camera);
