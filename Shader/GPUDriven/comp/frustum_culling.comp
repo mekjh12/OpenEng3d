@@ -1,27 +1,78 @@
 ﻿#version 450 core
+
+// ====================================================================
+// GPU Frustum Culling Compute Shader
+// ====================================================================
+// [개요]
+// 수만 개의 인스턴스를 GPU에서 병렬로 처리하여 카메라 시야각 내부에 있는
+// 오브젝트만 선별하는 컴퓨트 셰이더입니다.
+//
+// [동작 방식]
+// 1. 각 스레드가 하나의 인스턴스 AABB를 담당
+// 2. 카메라 Frustum의 6개 평면과 충돌 테스트 수행
+// 3. 통과한 인스턴스의 인덱스를 결과 버퍼에 atomic 방식으로 기록
+// 4. CPU는 결과를 받아서 가시적인 인스턴스만 렌더링
+//
+// [성능 최적화]
+// - GPU 병렬 처리로 CPU 부하 제거
+// - Conservative Test로 false negative 방지
+// - 유효하지 않은 AABB는 사전 필터링
+// ====================================================================
+
+// ====================================================================
+// 컴퓨트 셰이더 워크그룹 설정 (256개 스레드)
+// ====================================================================
 layout(local_size_x = 256) in;
 
-// 버퍼 정의
-struct AABB {vec3 min; float padding1; vec3 max; float padding2;};
+// ====================================================================
+// 데이터 구조 정의
+// ====================================================================
+// AABB (Axis-Aligned Bounding Box): 축 정렬 경계 상자
+struct AABB {
+    vec3 min;       // 최소 좌표
+    float padding1; // 16바이트 정렬용
+    vec3 max;       // 최대 좌표
+    float padding2; // 16바이트 정렬용
+};
 
-// 버퍼 바인딩
-layout(std430, binding = 0) buffer AABBBuffer { AABB aabbs[];};
-layout(std430, binding = 1) buffer FrustumPassedBuffer { int frustumPassedIndices[];};
-layout(std430, binding = 2) buffer FrustumCounterBuffer { uint frustumPassedCount;};
+// ====================================================================
+// GPU 버퍼 바인딩
+// ====================================================================
+layout(std430, binding = 0) buffer AABBBuffer { 
+    AABB aabbs[];  // 모든 인스턴스의 AABB (읽기)
+};
 
-// 유니폼
-uniform vec4 uFrustumPlanes[6];
+layout(std430, binding = 1) buffer FrustumPassedBuffer { 
+    int frustumPassedIndices[];  // Frustum 통과한 인덱스 (쓰기)
+};
+
+layout(std430, binding = 2) buffer FrustumCounterBuffer { 
+    uint frustumPassedCount;  // 통과한 개수 (atomic 카운터)
+};
+
+// ====================================================================
+// 유니폼 변수
+// ====================================================================
+uniform vec4 uFrustumPlanes[6];  // [0]=Right, [1]=Bottom, [2]=Left, [3]=Top, [4]=Near, [5]=Far
 uniform int u_maxInstanceCount;
 
+// ====================================================================
+// AABB와 평면의 충돌 테스트 (Conservative Test)
+// ====================================================================
 bool ContactTestAABBPlane(AABB aabb, vec4 plane) 
 {
     vec3 center = (aabb.min + aabb.max) * 0.5;
     vec3 extent = (aabb.max - aabb.min) * 0.5;
+    
     float dist = dot(plane.xyz, center) + plane.w;
     float radius = dot(extent, abs(plane.xyz));
-    return (dist + radius) >= 0.0;
+    
+    return (dist + radius) >= 0.0;  // AABB가 평면 앞쪽에 있는지 확인
 }
 
+// ====================================================================
+// Frustum Culling 테스트 - 6개 평면 모두 통과해야 함
+// ====================================================================
 bool IsInsideFrustum(AABB aabb) 
 {
     if (!ContactTestAABBPlane(aabb, uFrustumPlanes[4])) return false; // Near
@@ -33,6 +84,9 @@ bool IsInsideFrustum(AABB aabb)
     return true;
 }
 
+// ====================================================================
+// 메인 함수 - 각 스레드가 하나의 인스턴스를 처리
+// ====================================================================
 void main() 
 {
     uint index = gl_GlobalInvocationID.x;
@@ -40,16 +94,16 @@ void main()
     
     AABB aabb = aabbs[index];
     
-    // ✅ 유효하지 않은 AABB 필터링 (min > max는 무효)
+    // 유효하지 않은 AABB 필터링
     if (aabb.min.x > aabb.max.x || 
         aabb.min.y > aabb.max.y || 
         aabb.min.z > aabb.max.z) return;
     
-    // ✅ 너무 큰 AABB도 필터링 (쓰레기 데이터)
+    // 비정상적으로 큰 AABB 필터링 (쓰레기 데이터)
     vec3 size = aabb.max - aabb.min;
     if (size.x > 1000.0 || size.y > 1000.0 || size.z > 1000.0) return;
     
-    // Frustum 테스트만 수행 (LOD 구분 없음)
+    // Frustum 테스트 후 통과한 인스턴스만 결과 버퍼에 추가
     if (IsInsideFrustum(aabbs[index])) 
     {
         uint slot = atomicAdd(frustumPassedCount, 1);

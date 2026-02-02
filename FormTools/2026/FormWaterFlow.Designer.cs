@@ -48,22 +48,31 @@
             this.txtPrint = new System.Windows.Forms.TextBox();
             this.picWriteBuffer = new System.Windows.Forms.PictureBox();
             this.glControl1 = new OpenGL.GlControl();
-            this.sld_color_scaled = new FormTools.LabeledSlider();
-            this.sld_velocity = new FormTools.LabeledSlider();
             this.chk_useHeightMap = new System.Windows.Forms.CheckBox();
             this.chk_auto_rain = new System.Windows.Forms.CheckBox();
             this.chk_play = new System.Windows.Forms.CheckBox();
-            this.sld_rain_amout = new FormTools.LabeledSlider();
-            this.sld_evaporationFactor = new FormTools.LabeledSlider();
             this.btnExport = new System.Windows.Forms.Button();
+            this.sld_evaporationFactor = new FormTools.LabeledSlider();
+            this.sld_rain_amout = new FormTools.LabeledSlider();
+            this.sld_velocity = new FormTools.LabeledSlider();
+            this.sld_color_scaled = new FormTools.LabeledSlider();
+            this.chk_river_pass1 = new System.Windows.Forms.CheckBox();
+            this.sld_minWaterDepth = new FormTools.LabeledSlider();
+            this.sld_minFluxMagnitude = new FormTools.LabeledSlider();
+            this.sld_deepWaterDepth = new FormTools.LabeledSlider();
+            this.sld_iterations = new FormTools.LabeledSlider();
             ((System.ComponentModel.ISupportInitialize)(this.picOriginal)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.picReadBuffer)).BeginInit();
             this.menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.picWriteBuffer)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.sld_color_scaled.TrackBar)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.sld_velocity.TrackBar)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.sld_rain_amout.TrackBar)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.sld_evaporationFactor.TrackBar)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.sld_rain_amout.TrackBar)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.sld_velocity.TrackBar)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.sld_color_scaled.TrackBar)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.sld_minWaterDepth.TrackBar)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.sld_minFluxMagnitude.TrackBar)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.sld_deepWaterDepth.TrackBar)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.sld_iterations.TrackBar)).BeginInit();
             this.SuspendLayout();
             // 
             // picOriginal
@@ -112,19 +121,19 @@
             // 
             this.열기ToolStripMenuItem.Name = "열기ToolStripMenuItem";
             this.열기ToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.O)));
-            this.열기ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.열기ToolStripMenuItem.Size = new System.Drawing.Size(141, 22);
             this.열기ToolStripMenuItem.Text = "열기";
             this.열기ToolStripMenuItem.Click += new System.EventHandler(this.열기ToolStripMenuItem_Click);
             // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(177, 6);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(138, 6);
             // 
             // 종료ToolStripMenuItem
             // 
             this.종료ToolStripMenuItem.Name = "종료ToolStripMenuItem";
-            this.종료ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.종료ToolStripMenuItem.Size = new System.Drawing.Size(141, 22);
             this.종료ToolStripMenuItem.Text = "종료";
             this.종료ToolStripMenuItem.Click += new System.EventHandler(this.종료ToolStripMenuItem_Click);
             // 
@@ -200,12 +209,12 @@
             // 
             // txtPrint
             // 
-            this.txtPrint.Location = new System.Drawing.Point(913, 231);
+            this.txtPrint.Location = new System.Drawing.Point(913, 508);
             this.txtPrint.Multiline = true;
             this.txtPrint.Name = "txtPrint";
             this.txtPrint.ReadOnly = true;
             this.txtPrint.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtPrint.Size = new System.Drawing.Size(400, 709);
+            this.txtPrint.Size = new System.Drawing.Size(400, 432);
             this.txtPrint.TabIndex = 4;
             // 
             // picWriteBuffer
@@ -236,57 +245,6 @@
             this.glControl1.TabIndex = 10;
             this.glControl1.Render += new System.EventHandler<OpenGL.GlControlEventArgs>(this.glControl1_Render);
             this.glControl1.KeyUp += new System.Windows.Forms.KeyEventHandler(this.glControl1_KeyUp);
-            // 
-            // sld_color_scaled
-            // 
-            this.sld_color_scaled.BackColor = System.Drawing.SystemColors.Control;
-            this.sld_color_scaled.LargeChange = 1;
-            this.sld_color_scaled.Location = new System.Drawing.Point(913, 127);
-            this.sld_color_scaled.Maximum = 100;
-            this.sld_color_scaled.Minimum = 1;
-            this.sld_color_scaled.Name = "sld_color_scaled";
-            this.sld_color_scaled.Size = new System.Drawing.Size(400, 35);
-            this.sld_color_scaled.TabIndex = 11;
-            this.sld_color_scaled.Title = "색상스케일";
-            // 
-            // 
-            // 
-            this.sld_color_scaled.TrackBar.LargeChange = 1;
-            this.sld_color_scaled.TrackBar.Location = new System.Drawing.Point(85, 5);
-            this.sld_color_scaled.TrackBar.Maximum = 100;
-            this.sld_color_scaled.TrackBar.Minimum = 1;
-            this.sld_color_scaled.TrackBar.Name = "";
-            this.sld_color_scaled.TrackBar.Size = new System.Drawing.Size(200, 45);
-            this.sld_color_scaled.TrackBar.TabIndex = 1;
-            this.sld_color_scaled.TrackBar.TickStyle = System.Windows.Forms.TickStyle.None;
-            this.sld_color_scaled.TrackBar.Value = 1;
-            this.sld_color_scaled.Value = 1;
-            this.sld_color_scaled.DragLeave += new System.EventHandler(this.sld_color_scaled_DragLeave);
-            // 
-            // sld_velocity
-            // 
-            this.sld_velocity.BackColor = System.Drawing.SystemColors.Control;
-            this.sld_velocity.LargeChange = 1;
-            this.sld_velocity.Location = new System.Drawing.Point(913, 95);
-            this.sld_velocity.Maximum = 1000;
-            this.sld_velocity.Minimum = 1;
-            this.sld_velocity.Name = "sld_velocity";
-            this.sld_velocity.Size = new System.Drawing.Size(400, 35);
-            this.sld_velocity.TabIndex = 12;
-            this.sld_velocity.Title = "이동속도조절";
-            // 
-            // 
-            // 
-            this.sld_velocity.TrackBar.LargeChange = 1;
-            this.sld_velocity.TrackBar.Location = new System.Drawing.Point(85, 5);
-            this.sld_velocity.TrackBar.Maximum = 1000;
-            this.sld_velocity.TrackBar.Minimum = 1;
-            this.sld_velocity.TrackBar.Name = "";
-            this.sld_velocity.TrackBar.Size = new System.Drawing.Size(200, 45);
-            this.sld_velocity.TrackBar.TabIndex = 1;
-            this.sld_velocity.TrackBar.TickStyle = System.Windows.Forms.TickStyle.None;
-            this.sld_velocity.TrackBar.Value = 1;
-            this.sld_velocity.Value = 1;
             // 
             // chk_useHeightMap
             // 
@@ -324,30 +282,15 @@
             this.chk_play.Text = "Play/Stop";
             this.chk_play.UseVisualStyleBackColor = true;
             // 
-            // sld_rain_amout
+            // btnExport
             // 
-            this.sld_rain_amout.BackColor = System.Drawing.SystemColors.Control;
-            this.sld_rain_amout.LargeChange = 1;
-            this.sld_rain_amout.Location = new System.Drawing.Point(914, 159);
-            this.sld_rain_amout.Maximum = 200;
-            this.sld_rain_amout.Minimum = 1;
-            this.sld_rain_amout.Name = "sld_rain_amout";
-            this.sld_rain_amout.Size = new System.Drawing.Size(400, 35);
-            this.sld_rain_amout.TabIndex = 16;
-            this.sld_rain_amout.Title = "비의 양";
-            // 
-            // 
-            // 
-            this.sld_rain_amout.TrackBar.LargeChange = 1;
-            this.sld_rain_amout.TrackBar.Location = new System.Drawing.Point(85, 5);
-            this.sld_rain_amout.TrackBar.Maximum = 200;
-            this.sld_rain_amout.TrackBar.Minimum = 1;
-            this.sld_rain_amout.TrackBar.Name = "";
-            this.sld_rain_amout.TrackBar.Size = new System.Drawing.Size(200, 45);
-            this.sld_rain_amout.TrackBar.TabIndex = 1;
-            this.sld_rain_amout.TrackBar.TickStyle = System.Windows.Forms.TickStyle.None;
-            this.sld_rain_amout.TrackBar.Value = 100;
-            this.sld_rain_amout.Value = 100;
+            this.btnExport.Location = new System.Drawing.Point(1183, 29);
+            this.btnExport.Name = "btnExport";
+            this.btnExport.Size = new System.Drawing.Size(130, 60);
+            this.btnExport.TabIndex = 18;
+            this.btnExport.Text = "내보내기(PNG)";
+            this.btnExport.UseVisualStyleBackColor = true;
+            this.btnExport.Click += new System.EventHandler(this.btnExport_Click);
             // 
             // sld_evaporationFactor
             // 
@@ -374,21 +317,202 @@
             this.sld_evaporationFactor.TrackBar.Value = 1;
             this.sld_evaporationFactor.Value = 1;
             // 
-            // btnExport
+            // sld_rain_amout
             // 
-            this.btnExport.Location = new System.Drawing.Point(1183, 29);
-            this.btnExport.Name = "btnExport";
-            this.btnExport.Size = new System.Drawing.Size(130, 60);
-            this.btnExport.TabIndex = 18;
-            this.btnExport.Text = "내보내기(PNG)";
-            this.btnExport.UseVisualStyleBackColor = true;
-            this.btnExport.Click += new System.EventHandler(this.btnExport_Click);
+            this.sld_rain_amout.BackColor = System.Drawing.SystemColors.Control;
+            this.sld_rain_amout.LargeChange = 1;
+            this.sld_rain_amout.Location = new System.Drawing.Point(914, 159);
+            this.sld_rain_amout.Maximum = 200;
+            this.sld_rain_amout.Minimum = 1;
+            this.sld_rain_amout.Name = "sld_rain_amout";
+            this.sld_rain_amout.Size = new System.Drawing.Size(400, 35);
+            this.sld_rain_amout.TabIndex = 16;
+            this.sld_rain_amout.Title = "비의 양";
+            // 
+            // 
+            // 
+            this.sld_rain_amout.TrackBar.LargeChange = 1;
+            this.sld_rain_amout.TrackBar.Location = new System.Drawing.Point(85, 5);
+            this.sld_rain_amout.TrackBar.Maximum = 200;
+            this.sld_rain_amout.TrackBar.Minimum = 1;
+            this.sld_rain_amout.TrackBar.Name = "";
+            this.sld_rain_amout.TrackBar.Size = new System.Drawing.Size(200, 45);
+            this.sld_rain_amout.TrackBar.TabIndex = 1;
+            this.sld_rain_amout.TrackBar.TickStyle = System.Windows.Forms.TickStyle.None;
+            this.sld_rain_amout.TrackBar.Value = 5;
+            this.sld_rain_amout.Value = 5;
+            // 
+            // sld_velocity
+            // 
+            this.sld_velocity.BackColor = System.Drawing.SystemColors.Control;
+            this.sld_velocity.LargeChange = 1;
+            this.sld_velocity.Location = new System.Drawing.Point(913, 95);
+            this.sld_velocity.Maximum = 1000;
+            this.sld_velocity.Minimum = 1;
+            this.sld_velocity.Name = "sld_velocity";
+            this.sld_velocity.Size = new System.Drawing.Size(400, 35);
+            this.sld_velocity.TabIndex = 12;
+            this.sld_velocity.Title = "이동속도조절";
+            // 
+            // 
+            // 
+            this.sld_velocity.TrackBar.LargeChange = 1;
+            this.sld_velocity.TrackBar.Location = new System.Drawing.Point(85, 5);
+            this.sld_velocity.TrackBar.Maximum = 1000;
+            this.sld_velocity.TrackBar.Minimum = 1;
+            this.sld_velocity.TrackBar.Name = "";
+            this.sld_velocity.TrackBar.Size = new System.Drawing.Size(200, 45);
+            this.sld_velocity.TrackBar.TabIndex = 1;
+            this.sld_velocity.TrackBar.TickStyle = System.Windows.Forms.TickStyle.None;
+            this.sld_velocity.TrackBar.Value = 1;
+            this.sld_velocity.Value = 1;
+            // 
+            // sld_color_scaled
+            // 
+            this.sld_color_scaled.BackColor = System.Drawing.SystemColors.Control;
+            this.sld_color_scaled.LargeChange = 1;
+            this.sld_color_scaled.Location = new System.Drawing.Point(913, 127);
+            this.sld_color_scaled.Maximum = 100;
+            this.sld_color_scaled.Minimum = 1;
+            this.sld_color_scaled.Name = "sld_color_scaled";
+            this.sld_color_scaled.Size = new System.Drawing.Size(400, 35);
+            this.sld_color_scaled.TabIndex = 11;
+            this.sld_color_scaled.Title = "색상스케일";
+            // 
+            // 
+            // 
+            this.sld_color_scaled.TrackBar.LargeChange = 1;
+            this.sld_color_scaled.TrackBar.Location = new System.Drawing.Point(85, 5);
+            this.sld_color_scaled.TrackBar.Maximum = 100;
+            this.sld_color_scaled.TrackBar.Minimum = 1;
+            this.sld_color_scaled.TrackBar.Name = "";
+            this.sld_color_scaled.TrackBar.Size = new System.Drawing.Size(200, 45);
+            this.sld_color_scaled.TrackBar.TabIndex = 1;
+            this.sld_color_scaled.TrackBar.TickStyle = System.Windows.Forms.TickStyle.None;
+            this.sld_color_scaled.TrackBar.Value = 1;
+            this.sld_color_scaled.Value = 1;
+            this.sld_color_scaled.DragLeave += new System.EventHandler(this.sld_color_scaled_DragLeave);
+            // 
+            // chk_river_pass1
+            // 
+            this.chk_river_pass1.AutoSize = true;
+            this.chk_river_pass1.Checked = true;
+            this.chk_river_pass1.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chk_river_pass1.Location = new System.Drawing.Point(914, 231);
+            this.chk_river_pass1.Name = "chk_river_pass1";
+            this.chk_river_pass1.Size = new System.Drawing.Size(87, 16);
+            this.chk_river_pass1.TabIndex = 19;
+            this.chk_river_pass1.Text = "River Mask";
+            this.chk_river_pass1.UseVisualStyleBackColor = true;
+            // 
+            // sld_minWaterDepth
+            // 
+            this.sld_minWaterDepth.BackColor = System.Drawing.SystemColors.Control;
+            this.sld_minWaterDepth.LargeChange = 1;
+            this.sld_minWaterDepth.Location = new System.Drawing.Point(914, 253);
+            this.sld_minWaterDepth.Maximum = 1000;
+            this.sld_minWaterDepth.Minimum = 1;
+            this.sld_minWaterDepth.Name = "sld_minWaterDepth";
+            this.sld_minWaterDepth.Size = new System.Drawing.Size(400, 35);
+            this.sld_minWaterDepth.TabIndex = 20;
+            this.sld_minWaterDepth.Title = "MinWaterDepth";
+            // 
+            // 
+            // 
+            this.sld_minWaterDepth.TrackBar.LargeChange = 1;
+            this.sld_minWaterDepth.TrackBar.Location = new System.Drawing.Point(85, 5);
+            this.sld_minWaterDepth.TrackBar.Maximum = 1000;
+            this.sld_minWaterDepth.TrackBar.Minimum = 1;
+            this.sld_minWaterDepth.TrackBar.Name = "";
+            this.sld_minWaterDepth.TrackBar.Size = new System.Drawing.Size(200, 45);
+            this.sld_minWaterDepth.TrackBar.TabIndex = 1;
+            this.sld_minWaterDepth.TrackBar.TickStyle = System.Windows.Forms.TickStyle.None;
+            this.sld_minWaterDepth.TrackBar.Value = 80;
+            this.sld_minWaterDepth.Value = 80;
+            // 
+            // sld_minFluxMagnitude
+            // 
+            this.sld_minFluxMagnitude.BackColor = System.Drawing.SystemColors.Control;
+            this.sld_minFluxMagnitude.LargeChange = 1;
+            this.sld_minFluxMagnitude.Location = new System.Drawing.Point(914, 284);
+            this.sld_minFluxMagnitude.Maximum = 1000;
+            this.sld_minFluxMagnitude.Minimum = 1;
+            this.sld_minFluxMagnitude.Name = "sld_minFluxMagnitude";
+            this.sld_minFluxMagnitude.Size = new System.Drawing.Size(400, 35);
+            this.sld_minFluxMagnitude.TabIndex = 21;
+            this.sld_minFluxMagnitude.Title = "MinFluxMagnitude";
+            // 
+            // 
+            // 
+            this.sld_minFluxMagnitude.TrackBar.LargeChange = 1;
+            this.sld_minFluxMagnitude.TrackBar.Location = new System.Drawing.Point(85, 5);
+            this.sld_minFluxMagnitude.TrackBar.Maximum = 1000;
+            this.sld_minFluxMagnitude.TrackBar.Minimum = 1;
+            this.sld_minFluxMagnitude.TrackBar.Name = "";
+            this.sld_minFluxMagnitude.TrackBar.Size = new System.Drawing.Size(200, 45);
+            this.sld_minFluxMagnitude.TrackBar.TabIndex = 1;
+            this.sld_minFluxMagnitude.TrackBar.TickStyle = System.Windows.Forms.TickStyle.None;
+            this.sld_minFluxMagnitude.TrackBar.Value = 10;
+            this.sld_minFluxMagnitude.Value = 10;
+            // 
+            // sld_deepWaterDepth
+            // 
+            this.sld_deepWaterDepth.BackColor = System.Drawing.SystemColors.Control;
+            this.sld_deepWaterDepth.LargeChange = 1;
+            this.sld_deepWaterDepth.Location = new System.Drawing.Point(914, 316);
+            this.sld_deepWaterDepth.Maximum = 1000;
+            this.sld_deepWaterDepth.Minimum = 1;
+            this.sld_deepWaterDepth.Name = "sld_deepWaterDepth";
+            this.sld_deepWaterDepth.Size = new System.Drawing.Size(400, 35);
+            this.sld_deepWaterDepth.TabIndex = 22;
+            this.sld_deepWaterDepth.Title = "DeepWaterDepth";
+            // 
+            // 
+            // 
+            this.sld_deepWaterDepth.TrackBar.LargeChange = 1;
+            this.sld_deepWaterDepth.TrackBar.Location = new System.Drawing.Point(85, 5);
+            this.sld_deepWaterDepth.TrackBar.Maximum = 1000;
+            this.sld_deepWaterDepth.TrackBar.Minimum = 1;
+            this.sld_deepWaterDepth.TrackBar.Name = "";
+            this.sld_deepWaterDepth.TrackBar.Size = new System.Drawing.Size(200, 45);
+            this.sld_deepWaterDepth.TrackBar.TabIndex = 1;
+            this.sld_deepWaterDepth.TrackBar.TickStyle = System.Windows.Forms.TickStyle.None;
+            this.sld_deepWaterDepth.TrackBar.Value = 200;
+            this.sld_deepWaterDepth.Value = 200;
+            // 
+            // sld_iterations
+            // 
+            this.sld_iterations.BackColor = System.Drawing.SystemColors.Control;
+            this.sld_iterations.LargeChange = 1;
+            this.sld_iterations.Location = new System.Drawing.Point(912, 346);
+            this.sld_iterations.Minimum = 1;
+            this.sld_iterations.Name = "sld_iterations";
+            this.sld_iterations.Size = new System.Drawing.Size(400, 35);
+            this.sld_iterations.TabIndex = 23;
+            this.sld_iterations.Title = "침식+팽창 반복";
+            // 
+            // 
+            // 
+            this.sld_iterations.TrackBar.LargeChange = 1;
+            this.sld_iterations.TrackBar.Location = new System.Drawing.Point(85, 5);
+            this.sld_iterations.TrackBar.Minimum = 1;
+            this.sld_iterations.TrackBar.Name = "";
+            this.sld_iterations.TrackBar.Size = new System.Drawing.Size(200, 45);
+            this.sld_iterations.TrackBar.TabIndex = 1;
+            this.sld_iterations.TrackBar.TickStyle = System.Windows.Forms.TickStyle.None;
+            this.sld_iterations.TrackBar.Value = 3;
+            this.sld_iterations.Value = 3;
             // 
             // FormWaterFlow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1635, 952);
+            this.Controls.Add(this.sld_iterations);
+            this.Controls.Add(this.sld_deepWaterDepth);
+            this.Controls.Add(this.sld_minFluxMagnitude);
+            this.Controls.Add(this.sld_minWaterDepth);
+            this.Controls.Add(this.chk_river_pass1);
             this.Controls.Add(this.btnExport);
             this.Controls.Add(this.sld_evaporationFactor);
             this.Controls.Add(this.sld_rain_amout);
@@ -415,10 +539,14 @@
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.picWriteBuffer)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.sld_color_scaled.TrackBar)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.sld_velocity.TrackBar)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.sld_rain_amout.TrackBar)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.sld_evaporationFactor.TrackBar)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.sld_rain_amout.TrackBar)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.sld_velocity.TrackBar)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.sld_color_scaled.TrackBar)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.sld_minWaterDepth.TrackBar)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.sld_minFluxMagnitude.TrackBar)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.sld_deepWaterDepth.TrackBar)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.sld_iterations.TrackBar)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -454,5 +582,10 @@
         private LabeledSlider sld_rain_amout;
         private LabeledSlider sld_evaporationFactor;
         private System.Windows.Forms.Button btnExport;
+        private System.Windows.Forms.CheckBox chk_river_pass1;
+        private LabeledSlider sld_minWaterDepth;
+        private LabeledSlider sld_minFluxMagnitude;
+        private LabeledSlider sld_deepWaterDepth;
+        private LabeledSlider sld_iterations;
     }
 }

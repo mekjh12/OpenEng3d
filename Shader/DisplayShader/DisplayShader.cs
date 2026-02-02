@@ -18,6 +18,7 @@ namespace Shader
         private int loc_flip;
         private int loc_scaled;
         private int loc_useHeightMap;
+        private int loc_useGrayMode;
 
         /// <summary>
         /// 디스플레이 셰이더를 초기화합니다.
@@ -44,6 +45,12 @@ namespace Shader
             loc_flip = GetUniformLocation("flip");
             loc_scaled = GetUniformLocation("scaled");
             loc_useHeightMap = GetUniformLocation("useHeightMap");
+            loc_useGrayMode = GetUniformLocation("useGrayMode");
+        }
+
+        public void LoadUseGrayMode(bool useGrayMode)
+        {
+            Gl.Uniform1(loc_useGrayMode, useGrayMode ? 1 : 0);
         }
 
         public void LoadUseHeightMap(bool useHeightMap)

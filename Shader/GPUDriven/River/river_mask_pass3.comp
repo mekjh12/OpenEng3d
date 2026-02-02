@@ -1,0 +1,134 @@
+﻿#version 430 core
+
+// ============================================================================
+// River Mask Generation - Pass 3: Gaussian Blur
+// ============================================================================
+// 목적: 부드러운 경계선 생성 (Anti-aliasing)
+// Mode 0: Horizontal Blur - 가로 방향 블러
+// Mode 1: Vertical Blur - 세로 방향 블러
+// ============================================================================
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+// ============================================================================
+// 텍스처 바인딩
+// ============================================================================
+layout(rgba32f, binding = 0) readonly uniform image2D inputMask;     // 입력
+layout(rgba32f, binding = 1) writeonly uniform image2D outputMask;   // 출력
+
+// ============================================================================
+// 유니폼 파라미터
+// ============================================================================
+uniform int mode = 0;           // 0: Horizontal, 1: Vertical
+uniform float blurSigma = 1.0;  // 가우시안 시그마 (0.5~2.0 권장)
+
+// ============================================================================
+// Gaussian Blur 이론
+// ============================================================================
+// 가우시안 함수:
+// G(x) = (1 / √(2πσ²)) * e^(-x² / (2σ²))
+//
+// 여기서:
+// - σ (sigma): 표준편차, 블러 강도 결정
+// - σ 작으면: 약한 블러, 선명
+// - σ 크면: 강한 블러, 부드러움
+//
+// Separable Gaussian Blur:
+// - 2D 가우시안 = 1D 가우시안 × 1D 가우시안
+// - 5×5 커널 (25회 샘플링) → 5×1 + 1×5 (10회 샘플링)
+// - 성능: 2.5배 향상!
+//
+// 사용 방법:
+// 1. Mode 0 (Horizontal): 가로 방향 블러 → temp
+// 2. Mode 1 (Vertical): 세로 방향 블러 → final
+//
+// 결과:
+// - 0/1 이진값 → 0.0~1.0 연속값
+// - 부드러운 경계
+// - Anti-aliasing 효과
+// ============================================================================
+
+// ============================================================================
+// 가우시안 가중치 계산
+// ============================================================================
+float gaussian(float x, float sigma)
+{
+    const float PI = 3.14159265359;
+    float sigmaSq = sigma * sigma;
+    return (1.0 / sqrt(2.0 * PI * sigmaSq)) * exp(-(x * x) / (2.0 * sigmaSq));
+}
+
+// ============================================================================
+// 5-tap Gaussian Blur 커널
+// ============================================================================
+// 최적화를 위해 5개 샘플만 사용
+// sigma에 따라 동적으로 가중치 계산
+void main() 
+{
+    ivec2 coords = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 size = imageSize(outputMask);
+    
+    if (coords.x >= size.x || coords.y >= size.y) return;
+
+    // ------------------------------------------------------------------------
+    // 가우시안 가중치 계산
+    // ------------------------------------------------------------------------
+    // 5-tap: -2, -1, 0, +1, +2
+    float weights[5];
+    weights[0] = gaussian(-2.0, blurSigma);
+    weights[1] = gaussian(-1.0, blurSigma);
+    weights[2] = gaussian(0.0, blurSigma);
+    weights[3] = gaussian(1.0, blurSigma);
+    weights[4] = gaussian(2.0, blurSigma);
+
+    // 정규화를 위한 가중치 합
+    float weightSum = weights[0] + weights[1] + weights[2] + weights[3] + weights[4];
+
+    // ------------------------------------------------------------------------
+    // Mode 0: Horizontal Blur (가로 방향)
+    // ------------------------------------------------------------------------
+    if (mode == 0)
+    {
+        float blurredValue = 0.0;
+
+        for (int i = -2; i <= 2; i++)
+        {
+            ivec2 samplePos = coords + ivec2(i, 0);
+            
+            // 경계 처리: clamp
+            samplePos.x = clamp(samplePos.x, 0, size.x - 1);
+            
+            float value = imageLoad(inputMask, samplePos).r;
+            blurredValue += value * weights[i + 2];
+        }
+
+        // 정규화
+        blurredValue /= weightSum;
+
+        imageStore(outputMask, coords, vec4(blurredValue, 0.0, 0.0, 0.0));
+    }
+
+    // ------------------------------------------------------------------------
+    // Mode 1: Vertical Blur (세로 방향)
+    // ------------------------------------------------------------------------
+    else if (mode == 1)
+    {
+        float blurredValue = 0.0;
+
+        for (int i = -2; i <= 2; i++)
+        {
+            ivec2 samplePos = coords + ivec2(0, i);
+            
+            // 경계 처리: clamp
+            samplePos.y = clamp(samplePos.y, 0, size.y - 1);
+            
+            float value = imageLoad(inputMask, samplePos).r;
+            blurredValue += value * weights[i + 2];
+        }
+
+        // 정규화
+        blurredValue /= weightSum;
+
+        imageStore(outputMask, coords, vec4(blurredValue, 0.0, 0.0, 0.0));
+    }
+}

@@ -1,37 +1,139 @@
 ﻿#version 450 core
+
+// ====================================================================
+// Hierarchical Z-Buffer Occlusion Culling + LOD Selection Compute Shader
+// ====================================================================
+// [개요]
+// Frustum Culling을 통과한 인스턴스들을 대상으로 HiZ 텍스처를 이용한
+// 오클루전 컬링과 거리 기반 LOD 선택을 수행하는 컴퓨트 셰이더입니다.
+//
+// [파이프라인 단계]
+// 1. Frustum Culling 통과 인스턴스 로드
+// 2. AABB를 화면 공간으로 투영 (8개 코너 → 2D 바운딩 박스)
+// 3. HiZ 텍스처 계층적 테스트 (낮은→높은 해상도 순)
+// 4. Visibility 페이드 인/아웃 업데이트 (부드러운 전환)
+// 5. 카메라 거리 기반 LOD 레벨 결정
+// 6. 배치별 가시 인스턴스 리스트에 추가
+//
+// [성능 최적화]
+// - 계층적 HiZ 테스트로 Early-out 극대화
+// - 적응형 샘플링 (작은 객체: 2x2, 큰 객체: 3x3)
+// - Visibility 버퍼로 팝인/팝아웃 현상 제거
+// - 배치별 atomic 카운터로 병렬 처리
+// ====================================================================
+
 layout(local_size_x = 64) in;
 
+// ====================================================================
+// 상수 정의
+// ====================================================================
 const float MAX_DEPTH_METERS = 10000.0;
-const float DEPTH_EPSILON_BASE = 0.001;  // 5m
+const float DEPTH_EPSILON_BASE = 0.001;  // HiZ 깊이 비교 허용 오차
 
-// UBO (Uniform Buffer Object)
-layout(std140, binding = 0) uniform CameraBlock {mat4 view; mat4 proj; mat4 vp; vec4 cameraPos;} camera;
+const float FADE_IN_SPEED = 0.35;   // 빠르게 나타남 (~3 프레임)
+const float FADE_OUT_SPEED = 0.02;  // 천천히 사라짐 (~50 프레임)
+const float MIN_VISIBILITY_THRESHOLD = 0.05;  // 5% 미만 시 컬링
 
-// ===== 구조체 정의 =====
-struct AABB {vec3 min; float padding1; vec3 max; float padding2;};
-struct InstanceModelMatrixData {mat4 modelMatrix; mat4 normalMatrix;};
-struct BatchInfo {float lodDistance; uint startIndex; uint count; uint padding; }; // 16바이트 정렬
+// ====================================================================
+// UBO - 카메라 정보
+// ====================================================================
+layout(std140, binding = 0) uniform CameraBlock {
+    mat4 view;        // 뷰 행렬
+    mat4 proj;        // 프로젝션 행렬
+    mat4 vp;          // View-Projection 행렬
+    vec4 cameraPos;   // 카메라 위치
+} camera;
 
-// ===== 입력 버퍼 =====
-layout(std430, binding = 0) readonly buffer TransformBuffer {InstanceModelMatrixData transforms[];};
-layout(std430, binding = 1) readonly buffer FrustumPassedBuffer {int frustumPassedIndices[];};
-layout(std430, binding = 2) readonly buffer FrustumCounterBuffer {uint frustumPassedCount;};
-layout(std430, binding = 3) readonly buffer WorldAABBBuffer {AABB worldAABBs[];};
-layout(std430, binding = 4) readonly buffer BatchIDBuffer {uint batchIDs[];};
-layout(std430, binding = 14) readonly buffer BatchInfoBuffer {BatchInfo batches[];};
+// ====================================================================
+// 데이터 구조 정의
+// ====================================================================
+struct AABB {
+    vec3 min; 
+    float padding1; 
+    vec3 max; 
+    float padding2;
+};
 
-// ===== 출력 버퍼 =====
-layout(std430, binding = 5) buffer VisibleIndicesLOD0Buffer {int visibleIndices_LOD0[];};
-layout(std430, binding = 6) buffer VisibleCountsLOD0Buffer {uint visibleCounts_LOD0[];};
-layout(std430, binding = 7) buffer VisibleIndicesLOD1Buffer {int visibleIndices_LOD1[];};
-layout(std430, binding = 8) buffer VisibleCountsLOD1Buffer {uint visibleCounts_LOD1[];};
-layout(std430, binding = 9) buffer VisibleIndicesLOD2Buffer {int visibleIndices_LOD2[];};
-layout(std430, binding = 10) buffer VisibleCountsLOD2Buffer {uint visibleCounts_LOD2[];};
-layout(std430, binding = 11) buffer VisibleIndicesLOD3Buffer {int visibleIndices_LOD3[];};
-layout(std430, binding = 12) buffer VisibleCountsLOD3Buffer {uint visibleCounts_LOD3[];};
-layout(std430, binding = 15) buffer VisibilityBuffer { float visibility[]; };  // 0.0 ~ 1.0
+struct InstanceModelMatrixData {
+    mat4 modelMatrix; 
+    mat4 normalMatrix;
+};
 
-// ===== HiZ 텍스처 =====
+struct BatchInfo {
+    float lodDistance;  // 배치별 LOD 기준 거리
+    uint startIndex;    // 결과 버퍼 시작 인덱스
+    uint count;         // 최대 인스턴스 개수
+    uint padding;
+};
+
+// ====================================================================
+// 입력 버퍼 (읽기 전용)
+// ====================================================================
+layout(std430, binding = 0) readonly buffer TransformBuffer {
+    InstanceModelMatrixData transforms[];
+};
+
+layout(std430, binding = 1) readonly buffer FrustumPassedBuffer {
+    int frustumPassedIndices[];  // Frustum 통과한 인덱스
+};
+
+layout(std430, binding = 2) readonly buffer FrustumCounterBuffer {
+    uint frustumPassedCount;  // Frustum 통과 개수
+};
+
+layout(std430, binding = 3) readonly buffer WorldAABBBuffer {
+    AABB worldAABBs[];  // 월드 공간 AABB
+};
+
+layout(std430, binding = 4) readonly buffer BatchIDBuffer {
+    uint batchIDs[];  // 인스턴스별 배치 ID
+};
+
+layout(std430, binding = 14) readonly buffer BatchInfoBuffer {
+    BatchInfo batches[];  // 배치 메타데이터
+};
+
+// ====================================================================
+// 출력 버퍼 - LOD별 가시 인스턴스 리스트
+// ====================================================================
+layout(std430, binding = 5) buffer VisibleIndicesLOD0Buffer {
+    int visibleIndices_LOD0[];
+};
+layout(std430, binding = 6) buffer VisibleCountsLOD0Buffer {
+    uint visibleCounts_LOD0[];
+};
+
+layout(std430, binding = 7) buffer VisibleIndicesLOD1Buffer {
+    int visibleIndices_LOD1[];
+};
+layout(std430, binding = 8) buffer VisibleCountsLOD1Buffer {
+    uint visibleCounts_LOD1[];
+};
+
+layout(std430, binding = 9) buffer VisibleIndicesLOD2Buffer {
+    int visibleIndices_LOD2[];
+};
+layout(std430, binding = 10) buffer VisibleCountsLOD2Buffer {
+    uint visibleCounts_LOD2[];
+};
+
+layout(std430, binding = 11) buffer VisibleIndicesLOD3Buffer {
+    int visibleIndices_LOD3[];
+};
+layout(std430, binding = 12) buffer VisibleCountsLOD3Buffer {
+    uint visibleCounts_LOD3[];
+};
+
+// ====================================================================
+// Visibility 버퍼 - 페이드 인/아웃 제어 (0.0 ~ 1.0)
+// ====================================================================
+layout(std430, binding = 15) buffer VisibilityBuffer {
+    float visibility[];
+};
+
+// ====================================================================
+// HiZ 텍스처 - Mip Level 0 ~ 10
+// ====================================================================
 uniform sampler2D u_hizTexture0;
 uniform sampler2D u_hizTexture1;
 uniform sampler2D u_hizTexture2;
@@ -44,22 +146,23 @@ uniform sampler2D u_hizTexture8;
 uniform sampler2D u_hizTexture9;
 uniform sampler2D u_hizTexture10;
 
-// ===== Uniform 변수 =====
-uniform vec2 u_screenSize;          // 화면 크기
-uniform int u_maxMipLevel;          // HiZ 최대 mip level
-uniform vec3 u_cameraPosition;      // 카메라 월드 위치
-uniform float u_cameraNear;         // 카메라 Near 클립 거리
-uniform float u_cameraFar;          // 카메라 Far 클립 거리
-uniform float u_distance0 = 50.0;
-uniform float u_distance1 = 150.0;
-uniform float u_distance2 = 450.0;
+// ====================================================================
+// 유니폼 변수
+// ====================================================================
+uniform vec2 u_screenSize;       // 화면 해상도
+uniform int u_maxMipLevel;       // HiZ 최대 mip level
+uniform vec3 u_cameraPosition;   // 카메라 월드 위치
+uniform float u_cameraNear;      // Near 클립 평면
+uniform float u_cameraFar;       // Far 클립 평면
 
-// Visibility 제어 상수
-const float FADE_IN_SPEED = 0.35;   // 빠르게 나타남 (약 3프레임)
-const float FADE_OUT_SPEED = 0.02;  // 천천히 사라짐 (약 8프레임)
-const float MIN_VISIBILITY_THRESHOLD = 0.05;  // 5% 미만이면 컬링
+// LOD 거리 기준값
+uniform float u_distance0 = 50.0;   // LOD0 최대 거리
+uniform float u_distance1 = 150.0;  // LOD1 최대 거리
+uniform float u_distance2 = 450.0;  // LOD2 최대 거리
 
-// mip level에 따라 적절한 텍스처에서 샘플링
+// ====================================================================
+// HiZ 샘플링 함수 - Mip Level에 따라 적절한 텍스처 선택
+// ====================================================================
 float sampleHiZTexture(int mipLevel, vec2 uv)
 {
     if (mipLevel == 0) return texture(u_hizTexture0, uv).r;
@@ -75,9 +178,12 @@ float sampleHiZTexture(int mipLevel, vec2 uv)
     return texture(u_hizTexture10, uv).r;
 }
 
-// AABB를 화면에 투영
+// ====================================================================
+// AABB 투영 함수 - 3D AABB를 화면 공간 2D 박스로 변환
+// ====================================================================
 bool projectAABB(AABB worldAABB, out vec2 minScreen, out vec2 maxScreen, out float minDepth, out vec3 worldCenter)
 {
+    // 8개 코너 생성
     vec3 corners[8];
     corners[0] = vec3(worldAABB.min.x, worldAABB.min.y, worldAABB.min.z);
     corners[1] = vec3(worldAABB.max.x, worldAABB.min.y, worldAABB.min.z);
@@ -100,19 +206,12 @@ bool projectAABB(AABB worldAABB, out vec2 minScreen, out vec2 maxScreen, out flo
         vec4 viewPos = camera.view * vec4(corners[i], 1.0);
         vec4 clipPos = camera.vp * vec4(corners[i], 1.0);
         
-        // ✅ 카메라 뒤의 점 명시적으로 제외
-        if (viewPos.z <= 0.0) continue;  // OpenGL: 양수 = 뒤
-        
-        // 클립 공간 체크 (안전장치)
-        if (clipPos.w <= 0.01) continue;
+        if (viewPos.z <= 0.0) continue;  // 카메라 뒤 제외
+        if (clipPos.w <= 0.01) continue;  // 클립 공간 체크
         
         vec3 ndc = clipPos.xyz / clipPos.w;
-        
-        // ✅ 깊이 계산 (이제 abs() 불필요, 항상 음수)
         float linearDepth = clamp(viewPos.z / MAX_DEPTH_METERS, 0.0, 1.0);
-        
-        // NDC를 스크린 좌표(0~1)로 변환
-        vec2 uv = ndc.xy * 0.5 + 0.5;
+        vec2 uv = ndc.xy * 0.5 + 0.5;  // NDC → Screen UV
         
         minScreen = min(minScreen, uv);
         maxScreen = max(maxScreen, uv);
@@ -126,52 +225,48 @@ bool projectAABB(AABB worldAABB, out vec2 minScreen, out vec2 maxScreen, out flo
     return true;
 }
 
-// ✅ HiZ 기반 계층적 오클루전 테스트 (적응형 샘플링)
+// ====================================================================
+// 계층적 HiZ Occlusion 테스트 - 낮은 해상도부터 테스트
+// ====================================================================
 bool hierarchicalOcclusionTest(vec2 minScreen, vec2 maxScreen, float minDepth)
 {
-    // 1. 경계 확장 (보수적 테스트를 위해)
+    // 경계 확장 (보수적 테스트)
     vec2 sizeUV = maxScreen - minScreen;
-    vec2 expand = sizeUV * 0.1;  // 10% 확장 (조절 가능)
+    vec2 expand = sizeUV * 0.1;
     
     minScreen = max(vec2(0.0), minScreen - expand);
     maxScreen = min(vec2(1.0), maxScreen + expand);
     
-    // 2. 화면 크기 재계산
     sizeUV = maxScreen - minScreen;
     vec2 sizePixels = sizeUV * u_screenSize;
     float maxSize = max(sizePixels.x, sizePixels.y);
 
-    // 너무 작으면 컬링
-    if (maxSize <= 4.0) return false;
+    if (maxSize <= 4.0) return false;  // 너무 작으면 컬링
     
-    // 3. 크기에 따른 샘플 개수 결정
-    int sampleCount;
-    if (maxSize <= 4.0) sampleCount = 4;   // 2x2
-    else                sampleCount = 9;   // 3x3이상
+    // 크기에 따른 샘플 개수 결정
+    int sampleCount = (maxSize <= 4.0) ? 4 : 9;
     
-    // 4. 3x3 그리드 샘플 포인트 (9개)
+    // 3x3 그리드 샘플 포인트
     vec2 samples[9];
-    samples[0] = minScreen + sizeUV * vec2(0.0, 0.0);  // 좌상
-    samples[1] = minScreen + sizeUV * vec2(0.5, 0.0);  // 상중
-    samples[2] = minScreen + sizeUV * vec2(1.0, 0.0);  // 우상
-    samples[3] = minScreen + sizeUV * vec2(0.0, 0.5);  // 좌중
-    samples[4] = minScreen + sizeUV * vec2(0.5, 0.5);  // 중앙
-    samples[5] = minScreen + sizeUV * vec2(1.0, 0.5);  // 우중
-    samples[6] = minScreen + sizeUV * vec2(0.0, 1.0);  // 좌하
-    samples[7] = minScreen + sizeUV * vec2(0.5, 1.0);  // 하중
-    samples[8] = minScreen + sizeUV * vec2(1.0, 1.0);  // 우하
+    samples[0] = minScreen + sizeUV * vec2(0.0, 0.0);
+    samples[1] = minScreen + sizeUV * vec2(0.5, 0.0);
+    samples[2] = minScreen + sizeUV * vec2(1.0, 0.0);
+    samples[3] = minScreen + sizeUV * vec2(0.0, 0.5);
+    samples[4] = minScreen + sizeUV * vec2(0.5, 0.5);
+    samples[5] = minScreen + sizeUV * vec2(1.0, 0.5);
+    samples[6] = minScreen + sizeUV * vec2(0.0, 1.0);
+    samples[7] = minScreen + sizeUV * vec2(0.5, 1.0);
+    samples[8] = minScreen + sizeUV * vec2(1.0, 1.0);
     
-    // ✅ 5. 낮은 해상도(높은 mip)부터 테스트
+    // 낮은 해상도(높은 mip)부터 테스트 → Early rejection
     for (int mip = u_maxMipLevel; mip >= 0; mip--)
     {
         bool anyVisible = false;
         
-        // 필요한 개수만큼만 샘플링
         for (int i = 0; i < sampleCount; i++)
         {
             float hizDepth = sampleHiZTexture(mip, samples[i]);
             
-            // ✅ 객체가 HiZ보다 앞에 있으면 보임
             if (minDepth <= hizDepth + DEPTH_EPSILON_BASE)
             {
                 anyVisible = true;
@@ -179,36 +274,31 @@ bool hierarchicalOcclusionTest(vec2 minScreen, vec2 maxScreen, float minDepth)
             }
         }
         
-        // ✅ 이 레벨에서 모두 가려졌으면 즉시 컬링
-        if (!anyVisible)
-        {
-            return false;
-        }
+        if (!anyVisible) return false;  // 모두 가려짐 → 컬링
     }
     
-    // ✅ 모든 레벨을 통과했으면 렌더링
-    return true;
+    return true;  // 모든 레벨 통과 → 렌더링
 }
 
+// ====================================================================
+// 메인 함수 - 각 스레드가 Frustum 통과 인스턴스 하나를 처리
+// ====================================================================
 void main()
 {
-    // 글로벌 ID 계산
     uint gid = gl_GlobalInvocationID.x;
     if (gid >= frustumPassedCount) return;
  
-    // 배치 정보 (0번 인덱스에서 가져옴)
+    // 배치 메타데이터 로드 (0번 인덱스는 전역 정보)
     uint MAX_INSTANCES = batches[0].startIndex;
     uint MAX_BATCHES = batches[0].count;
 
-    // 프러스텀 테스트 통과한 인스턴스 인덱스 가져오기
     int instanceIdx = frustumPassedIndices[gid];
     if (instanceIdx < 0 || instanceIdx >= MAX_INSTANCES) return;
     
-    // 배치 ID 가져오기
     uint batchID = batchIDs[instanceIdx];    
     if (batchID >= MAX_BATCHES) return;
 
-    // SSBO에서 배치 정보 읽기 (GPU업로드시 0번은 배치 개요 정보이므로 1번부터 사용)
+    // 배치 정보 읽기 (1번부터 실제 배치 데이터) 0번은 전역 정보
     float lodDistance = batches[batchID + 1].lodDistance;
     uint batchStart = batches[batchID + 1].startIndex;
     uint batchMaxCount = batches[batchID + 1].count;
@@ -219,7 +309,6 @@ void main()
     float minDepth;
     vec3 worldCenter;
     
-    // 투영 실패 시 visibility 감소
     if (!projectAABB(worldAABB, minScreen, maxScreen, minDepth, worldCenter)) 
     {
         float currentVis = visibility[instanceIdx];
@@ -227,37 +316,34 @@ void main()
         return;
     }
 
-    // ===== HiZ 테스트 =====
+    // ===== HiZ 오클루전 테스트 =====
     bool passedHiZTest = hierarchicalOcclusionTest(minScreen, maxScreen, minDepth);
     
-    // ===== 가시성 업데이트 =====
+    // ===== Visibility 업데이트 (페이드 인/아웃) =====
     float currentVis = visibility[instanceIdx];
 
     if (passedHiZTest)
     {
-        // HiZ 테스트 통과 → visibility 증가 (빠르게 나타남)
         visibility[instanceIdx] = min(1.0, currentVis + FADE_IN_SPEED);
     }
     else
     {
-        // HiZ 테스트 실패 → visibility 감소 (천천히 사라짐)
         visibility[instanceIdx] = max(0.0, currentVis - FADE_OUT_SPEED);
     }
 
-    // 임계값 체크 : visibility가 너무 낮으면 렌더링 리스트에 추가하지 않음
     if (visibility[instanceIdx] < MIN_VISIBILITY_THRESHOLD)
     {
-        return;  // 컬링!
+        return;  // 임계값 미만 시 컬링
     }
 
-    // ===== LOD 결정 =====
+    // ===== LOD 레벨 결정 =====
     float distance = length(u_cameraPosition - worldCenter);
     bool isLOD0 =   0 < distance && distance <= u_distance0;
     bool isLOD1 = u_distance0 < distance && distance <= u_distance1;
     bool isLOD2 = u_distance1 < distance && distance <= u_distance2;
     bool isLOD3 = u_distance2 < distance && distance <= 800;
 
-    // ===== 결과 기록 =====
+    // ===== 배치별 결과 리스트에 추가 =====
     if (isLOD0) 
     {        
         uint relativeSlot = atomicAdd(visibleCounts_LOD0[batchID], 1);

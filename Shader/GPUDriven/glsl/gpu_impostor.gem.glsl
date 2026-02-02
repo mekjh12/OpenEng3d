@@ -10,7 +10,7 @@ struct ImpostorBaseInfo { // 80 bytes
     uint albedoTextureID; uint normalTextureID; uint depthTextureID; uint _padding2;
 };
 
-layout(std430, binding = 2) readonly buffer ImpostorBaseInfoBuffer{ImpostorBaseInfo baseInfos[];};
+layout(std430, binding = 3) readonly buffer ImpostorBaseInfoBuffer{ImpostorBaseInfo baseInfos[];};
 
 in VS_OUT 
 {

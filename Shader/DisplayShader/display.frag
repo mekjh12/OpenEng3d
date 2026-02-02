@@ -4,13 +4,13 @@ const float PI = 3.1415926535897932384626433832795;
 const float AMOUNT_LOD0 = 1.0f;
 const float AMOUNT_LOD1 = 3.0f;
 const float AMOUNT_LOD2 = 6.0f;
- 
 
 uniform sampler2D noiseTexture;
 uniform sampler2D heightMapTexture;
 uniform float scaled;
 uniform int flip;
 uniform bool useHeightMap;
+uniform bool useGrayMode = false;
 
 in vec2 TexCoord;
 out vec4 fragColor;
@@ -27,9 +27,17 @@ void main(void)
     vec4 heightData = texture(heightMapTexture, uv);
     vec4 waterData = texture(noiseTexture, uv);
 
-    vec3 finalColor = vec3(0.0);
 
+    // 그레이 모드일 경우 함수 종료
+    if (useGrayMode)
+    {
+        fragColor = vec4(heightData.x, 0, 0, 1.0);
+        return;
+    }
+
+    // 물 높이에 따른 색상 결정
     float waterLevel = waterData.r;
+    vec3 finalColor = vec3(0.0);
 
     if (waterLevel < AMOUNT_LOD0) {
 		finalColor = vec3(0.0, 0.0, waterLevel);

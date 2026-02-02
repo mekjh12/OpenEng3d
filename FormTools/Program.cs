@@ -19,8 +19,9 @@ namespace FormTools
             //Application.Run(new FormGPUDriveHiZ());               // 작동됨(실패)
             //Application.Run(new FormGPUDriven());                 // 작동됨(이전버전으로 폐기)
 
-            //Application.Run(new FormTerrainRegion());
-            Application.Run(new FormWaterFlow());                   // 지형에서 계곡감지[미완성]
+            //Application.Run(new FormTerrainGen());    // 지형 생성 테스트
+            Application.Run(new FormTerrainRegion());
+            //Application.Run(new FormWaterFlow());                   // 컴퓨터세이더 기반 유체흐름 시뮬레이션 테스트
 
 
             //Application.Run(new FormImposterBaker());

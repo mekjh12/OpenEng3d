@@ -27,6 +27,8 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -85,6 +87,12 @@
     </Compile>
     <Compile Include="2026\FormImposterBaker.Designer.cs">
       <DependentUpon>FormImposterBaker.cs</DependentUpon>
+    </Compile>
+    <Compile Include="2026\FormTerrainGen.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="2026\FormTerrainGen.Designer.cs">
+      <DependentUpon>FormTerrainGen.cs</DependentUpon>
     </Compile>
     <Compile Include="2026\FormTerrainGenerator.cs">
       <SubType>Form</SubType>
@@ -145,6 +153,9 @@
     </Compile>
     <Compile Include="2026\FormTerrainRegion.Designer.cs">
       <DependentUpon>FormTerrainRegion.cs</DependentUpon>
+    </Compile>
+    <Compile Include="CustomControl\LabeledPictureBox.cs">
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="GpuDriven\FormGPUDriveHiZ.cs">
       <SubType>Form</SubType>
@@ -331,6 +342,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="2026\FormImposterBaker.resx">
       <DependentUpon>FormImposterBaker.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="2026\FormTerrainGen.resx">
+      <DependentUpon>FormTerrainGen.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="2026\FormTerrainGenerator.resx">
       <DependentUpon>FormTerrainGenerator.cs</DependentUpon>

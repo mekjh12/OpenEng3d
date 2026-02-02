@@ -49,8 +49,6 @@ namespace Shader
             BindAttribute(0, "aPosition");
         }
 
-
-
         // 배치 관리
         public void LoadBatchStartOffset(uint offset)
         {

@@ -45,6 +45,7 @@
     <Reference Include="OpenGL.Net.WinForms, Version=0.8.4.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\OpenGL.Net.WinForms.0.8.4\lib\net461\OpenGL.Net.WinForms.dll</HintPath>
     </Reference>
+    <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -108,7 +109,12 @@
     <Compile Include="GPUDriven\HiZOcclusionComputeShader.cs" />
     <Compile Include="GPUDriven\NormalVectorShader.cs" />
     <Compile Include="GPUDriven\QuadTreeCullingComputeShader.cs" />
+    <Compile Include="GPUDriven\River\RiverMaskPass1ComputeShader.cs" />
+    <Compile Include="GPUDriven\River\RiverMaskPass2ComputeShader.cs" />
+    <Compile Include="GPUDriven\River\RiverMaskPass3ComputeShader.cs" />
     <Compile Include="GPUDriven\SimpleQuadTestShader.cs" />
+    <Compile Include="GPUDriven\Terrain\HeightmapGenerator.cs" />
+    <Compile Include="GPUDriven\Terrain\HeightmapGeneratorComputeShader.cs" />
     <Compile Include="GPUDriven\UpdateIndirectCommandsComputeShader.cs" />
     <Compile Include="GPUDriven\WaterDebugShader.cs" />
     <Compile Include="GPUDriven\WaterFlowComputeShader.cs" />
@@ -195,9 +201,9 @@
     <None Include="GPUDriven\comp\flow_accumulation.comp" />
     <None Include="GPUDriven\comp\grass_culling.comp" />
     <None Include="GPUDriven\comp\grass_culling_finalize.comp" />
-    <None Include="GPUDriven\comp\hiCulling.glsl" />
     <None Include="GPUDriven\comp\indices_ordering.comp" />
     <None Include="GPUDriven\comp\updateIndirectCommands.comp" />
+    <None Include="GPUDriven\Terrain\heightmap_gen.comp" />
     <None Include="GPUDriven\comp\water_flow.comp" />
     <None Include="GPUDriven\glsl\aabb_instance.frag" />
     <None Include="GPUDriven\glsl\aabb_instance.gem.glsl" />
@@ -246,6 +252,9 @@
     <None Include="GPUDriven\glsl\world_axis.frag" />
     <None Include="GPUDriven\glsl\world_axis.geom.glsl" />
     <None Include="GPUDriven\glsl\world_axis.vert" />
+    <None Include="GPUDriven\River\river_mask_pass3.comp" />
+    <None Include="GPUDriven\River\river_mask_pass2.comp" />
+    <None Include="GPUDriven\River\river_mask_pass1.comp" />
     <None Include="ImpostorShader\impostor_baking.frag" />
     <None Include="ImpostorShader\impostor_baking.vert" />
     <None Include="ImpostorShader\impostor_instanced.vert" />

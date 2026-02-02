@@ -22,9 +22,18 @@ namespace Terrain
         uint _waterBuffer1;
         uint _calcBuffer;
         uint _fluxBuffer;
+        uint _riverMask;
+        uint _riverMaskPass2Temp;   // Pass 2 임시 버퍼
+        uint _riverMaskPass2Out;    // Pass 2 출력: 스무딩
+        uint _riverMaskPass3Temp;   // Pass 3 임시 버퍼
+        uint _riverMaskFinal;       // Pass 3 출력: 최종 결과
+
         bool _useBuffer0 = true;
 
         WaterFlowComputeShader _compShader;
+        RiverMaskPass1ComputeShader _riverMaskPass1Shader;
+        RiverMaskPass2ComputeShader _riverMaskPass2Shader;
+        RiverMaskPass3ComputeShader _riverMaskPass3Shader;
         DisplayShader _displayShader;
                 
         float _time = 0.0f;
@@ -34,6 +43,7 @@ namespace Terrain
         // ---------------------------------------------------------------------------
         public uint WriteBuffer => _useBuffer0 ? _waterBuffer0 : _waterBuffer1;
         public uint ReadBuffer => _useBuffer0 ? _waterBuffer1 : _waterBuffer0;
+        public uint RiverMaskFinal => _riverMaskFinal;
 
         // ---------------------------------------------------------------------------
         // 생성자
@@ -47,6 +57,9 @@ namespace Terrain
             _fluxBuffer = 0;
 
             _compShader = new WaterFlowComputeShader(StrRes.PROJECT_PATH);
+            _riverMaskPass1Shader = new RiverMaskPass1ComputeShader(StrRes.PROJECT_PATH);
+            _riverMaskPass2Shader = new RiverMaskPass2ComputeShader(StrRes.PROJECT_PATH);
+            _riverMaskPass3Shader = new RiverMaskPass3ComputeShader(StrRes.PROJECT_PATH);
             _displayShader = new DisplayShader(StrRes.PROJECT_PATH);
 
             CreateFullscreenQuad();
@@ -134,10 +147,16 @@ namespace Terrain
             string result = "";
             if (_waterBuffer0 == 0)
             {
-                _waterBuffer0 = CreateWaterBuffer();
-                _waterBuffer1 = CreateWaterBuffer();
-                _calcBuffer = CreateWaterBuffer();
-                _fluxBuffer = CreateWaterBuffer();
+                _waterBuffer0 = CreateWaterBuffer(_width, _height, InternalFormat.Rgba32f, OpenGL.PixelFormat.Rgba);
+                _waterBuffer1 = CreateWaterBuffer(_width, _height, InternalFormat.Rgba32f, OpenGL.PixelFormat.Rgba);
+                _calcBuffer = CreateWaterBuffer(_width, _height, InternalFormat.Rgba32f, OpenGL.PixelFormat.Rgba);
+                _fluxBuffer = CreateWaterBuffer(_width, _height, InternalFormat.Rgba32f, OpenGL.PixelFormat.Rgba);
+                _riverMask = CreateWaterBuffer(_width, _height, InternalFormat.Rgba32f, OpenGL.PixelFormat.Rgba);
+                _riverMaskPass2Temp = CreateWaterBuffer(_width, _height, InternalFormat.Rgba32f, OpenGL.PixelFormat.Rgba);
+                _riverMaskPass2Out = CreateWaterBuffer(_width, _height, InternalFormat.Rgba32f, OpenGL.PixelFormat.Rgba);
+                _riverMaskPass3Temp = CreateWaterBuffer(_width, _height, InternalFormat.Rgba32f, OpenGL.PixelFormat.Rgba);
+                _riverMaskFinal = CreateWaterBuffer(_width, _height, InternalFormat.Rgba32f, OpenGL.PixelFormat.Rgba);
+
                 result +=($"[WaterFlow] 버퍼 생성 완료 - Buffer0: {_waterBuffer0}, Buffer1: {_waterBuffer1}\r\n");
             }
 
@@ -166,6 +185,45 @@ namespace Terrain
 
             // 버퍼 스왑 추가!
             _useBuffer0 = !_useBuffer0;
+        }
+
+        public void RunRiverMaskPass1(float minWaterDepth = 0.05f, float minFluxMagnitude = 0.01f, float deepWaterDepth = 0.2f)
+        {
+            _riverMaskPass1Shader.Bind();
+            {
+                _riverMaskPass1Shader.SetParameters(minWaterDepth, minFluxMagnitude, deepWaterDepth);
+                _riverMaskPass1Shader.BindBuffers(WriteBuffer, _riverMask);
+                _riverMaskPass1Shader.Dispatch(_width, _height);
+                Gl.MemoryBarrier(MemoryBarrierMask.ShaderImageAccessBarrierBit);
+            }
+            _riverMaskPass1Shader.Unbind();
+        }
+
+        public void RunRiverMaskPass2(int iterations)
+        {
+            // Step 2: Pass 2 실행 (Opening)
+            _riverMaskPass2Shader.PerformOpening(
+                _riverMask,      // 입력
+                _riverMaskPass2Temp,     // 임시 버퍼
+                _riverMaskPass2Out,    // 출력
+                _width, _height,
+                iterations: iterations      // Erosion 1회
+            );
+        }
+
+        public void RunRiverMaskPass3()
+        {
+            // Pass 3: Multi-pass Blur (매우 부드러움)
+            _riverMaskPass3Shader.PerformMultiPassBlur(
+                _riverMaskPass2Out,
+                _riverMaskPass3Temp,
+                _riverMask,        // 재활용
+                _riverMaskFinal,
+                _width,
+                _height,
+                passes: 10,              // 블러 2회
+                sigma: 1.5f             // 강한 블러
+            );
         }
 
         public void Clear()
@@ -248,7 +306,35 @@ namespace Terrain
             Gl.Enable(EnableCap.DepthTest);
         }
 
-        private uint CreateWaterBuffer()
+        public void RenderRiver(float deltaTime, float scaled, bool useHeightMap)
+        {
+            // 시간 누적
+            _time += deltaTime;
+
+            // 현재 사용 중인 버퍼 선택
+            uint currentBuffer = WriteBuffer;
+
+            // Depth test 비활성화 (fullscreen quad이므로)
+            Gl.Disable(EnableCap.DepthTest);
+
+            // 쉐이더 바인딩 및 Uniform 설정
+            _displayShader.Bind();
+            _displayShader.LoadNoiseTexture(TextureUnit.Texture0, _riverMaskFinal);
+            _displayShader.LoadHeightMapTexture(TextureUnit.Texture1, _mapTextureId);
+            _displayShader.LoadScaled(scaled);
+            _displayShader.LoadUseHeightMap(useHeightMap);
+            _displayShader.LoadFlip(false);
+
+            Gl.BindVertexArray(_quadVAO);
+            Gl.DrawArrays(PrimitiveType.Triangles, 0, 6);
+            Gl.BindVertexArray(0);
+            _displayShader.Unbind();
+
+            // 상태 복원
+            Gl.Enable(EnableCap.DepthTest);
+        }
+
+        private uint CreateWaterBuffer(int width, int height, InternalFormat internalFormat, OpenGL.PixelFormat pixelFormat)
         {
             uint buffer = Gl.GenTexture();
             Gl.BindTexture(TextureTarget.Texture2d, buffer);
@@ -256,9 +342,9 @@ namespace Terrain
             Gl.TexImage2D(
                 TextureTarget.Texture2d,
                 0,
-                InternalFormat.Rgba32f,      // ✅ Rgba32f 변경 (4채널)
-                _width, _height, 0,
-                OpenGL.PixelFormat.Rgba,     // ✅ 일치
+                internalFormat,      // ✅ Rgba32f 변경 (4채널), InternalFormat.Rgba32f
+                width, height, 0,
+                pixelFormat,     // ✅ 일치 OpenGL.PixelFormat.Rgba
                 PixelType.Float,
                 IntPtr.Zero
             );

@@ -27,15 +27,25 @@ namespace FormTools
 
         string[] _objFileNames = new string[]
         {
-            @"MedievalHouse01.obj",
             @"florida_foliage\bananaPlant1.obj",
             @"florida_foliage\palm1.obj",
+             @"florida_foliage\palm1.obj",
+            @"florida_foliage\palm2.obj",
+            @"florida_foliage\bananaPlant1.obj",
+            @"florida_foliage\bananaPlant2.obj",
+            @"florida_foliage\bananaPlant3.obj",
             @"florida_foliage\fern1.obj",
+            @"florida_foliage\fern2.obj",
+            @"florida_foliage\fern3.obj",
+            @"florida_foliage\fern4.obj",
+            @"florida_foliage\fern5.obj",
         };
 
         /*            
+            @"florida_foliage\palm4.obj",
             @"oak_tree.obj",
             @"pine_tree.obj",
+            @"MedievalHouse01.obj",
             @"florida_foliage\palm1.obj",
             @"florida_foliage\palm2.obj",
             @"florida_foliage\bananaPlant1.obj",
@@ -650,7 +660,7 @@ namespace FormTools
                     float posZ = _terrainRegion.TerrainData.GetTerrainHeight(ref position, Constants.TERRAIN_VERTICAL_SCALE);
 
                     float rotZ = (float)(rand.NextDouble() * Math.PI * 2);
-                    float scale = 0.5f + (float)(rand.NextDouble() * 1.0f);
+                    float scale = 0.2f + (float)(rand.NextDouble() * 2.0f);
 
                     Matrix4x4f transform = Matrix4x4f.Translated(offsetX + posX, offsetY + posY, posZ) *
                                     Matrix4x4f.RotatedZ(rotZ.ToDegree()) *

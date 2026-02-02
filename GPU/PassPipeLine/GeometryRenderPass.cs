@@ -187,7 +187,8 @@ namespace GPUDriven
             {
                 Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, _transformSSBO);
                 Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, _visibleIndicesSSBO_LOD3);
-                Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 2, _batchManager.ImpostorBaseInfoSSBO);
+                Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 2, _batchIDSSBO);
+                Gl.BindBufferBase(BufferTarget.ShaderStorageBuffer, 3, _batchManager.ImpostorBaseInfoSSBO);
 
                 _gpuDrivenImpostorShader.LoadImpostorAtlas(_baseInfo.AlbedoTextureID);
                 _gpuDrivenImpostorShader.LoadNormalAtlas(_baseInfo.NormalTextureID);

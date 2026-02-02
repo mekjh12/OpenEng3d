@@ -1,0 +1,128 @@
+﻿#version 430 core
+
+// ============================================================================
+// River Mask Generation - Pass 2: Morphological Smoothing
+// ============================================================================
+// 목적: 노이즈 제거 및 형태 다듬기
+// Mode 0: Erosion (침식) - 작은 돌기 제거
+// Mode 1: Dilation (팽창) - 작은 구멍 메우기
+// ============================================================================
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+// ============================================================================
+// 텍스처 바인딩
+// ============================================================================
+layout(rgba32f, binding = 0) readonly uniform image2D inputMask;     // 입력: 이전 Pass 결과
+layout(rgba32f, binding = 1) writeonly uniform image2D outputMask;   // 출력: 처리된 마스크
+
+// ============================================================================
+// 유니폼 파라미터
+// ============================================================================
+uniform int mode = 0;           // 0: Erosion, 1: Dilation
+uniform int kernelRadius = 1;   // 커널 반경 (1 = 3x3, 2 = 5x5, ...)
+
+// ============================================================================
+// Morphological Operations
+// ============================================================================
+// 이론:
+// 
+// Erosion (침식):
+//   - 주변 픽셀 중 하나라도 0이면 나도 0
+//   - 효과: 작은 돌기 제거, 전체적으로 영역 축소
+//   - 용도: 노이즈 제거
+//
+// Dilation (팽창):
+//   - 주변 픽셀 중 하나라도 1이면 나도 1
+//   - 효과: 작은 구멍 메우기, 전체적으로 영역 확대
+//   - 용도: 끊어진 부분 연결
+//
+// Opening = Erosion → Dilation:
+//   - 작은 돌기 제거하면서 원래 형태 복원
+//   - 노이즈 제거에 효과적
+//
+// Closing = Dilation → Erosion:
+//   - 작은 구멍 메우면서 원래 형태 복원
+//   - 끊어진 부분 연결에 효과적
+//
+// 권장 사용:
+//   Pass 2-A: Erosion (1~2회) → 노이즈 제거
+//   Pass 2-B: Dilation (1~2회) → 형태 복원 + 구멍 메우기
+// ============================================================================
+
+void main() 
+{
+    // ------------------------------------------------------------------------
+    // 좌표 초기화 및 경계 검사
+    // ------------------------------------------------------------------------
+    ivec2 coords = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 size = imageSize(outputMask);
+    
+    if (coords.x >= size.x || coords.y >= size.y) return;
+
+    // ------------------------------------------------------------------------
+    // Mode 0: Erosion (침식)
+    // ------------------------------------------------------------------------
+    // 주변 픽셀 중 최소값 찾기
+    // 하나라도 0이면 나도 0이 됨
+    if (mode == 0) 
+    {
+        float minValue = 1.0;  // 최대값으로 시작
+
+        // kernelRadius 범위 내의 모든 픽셀 검사
+        for (int dy = -kernelRadius; dy <= kernelRadius; dy++) {
+            for (int dx = -kernelRadius; dx <= kernelRadius; dx++) {
+                ivec2 samplePos = coords + ivec2(dx, dy);
+                
+                // 경계 처리: clamp
+                samplePos = clamp(samplePos, ivec2(0), size - 1);
+                
+                float value = imageLoad(inputMask, samplePos).r;
+                minValue = min(minValue, value);
+                
+                // 최적화: 이미 0을 찾았으면 조기 종료
+                if (minValue == 0.0) {
+                    break;
+                }
+            }
+            if (minValue == 0.0) {
+                break;
+            }
+        }
+
+        imageStore(outputMask, coords, vec4(minValue, 0.0, 0.0, 0.0));
+    }
+
+    // ------------------------------------------------------------------------
+    // Mode 1: Dilation (팽창)
+    // ------------------------------------------------------------------------
+    // 주변 픽셀 중 최대값 찾기
+    // 하나라도 1이면 나도 1이 됨
+    else if (mode == 1) 
+    {
+        float maxValue = 0.0;  // 최소값으로 시작
+
+        // kernelRadius 범위 내의 모든 픽셀 검사
+        for (int dy = -kernelRadius; dy <= kernelRadius; dy++) {
+            for (int dx = -kernelRadius; dx <= kernelRadius; dx++) {
+                ivec2 samplePos = coords + ivec2(dx, dy);
+                
+                // 경계 처리: clamp
+                samplePos = clamp(samplePos, ivec2(0), size - 1);
+                
+                float value = imageLoad(inputMask, samplePos).r;
+                maxValue = max(maxValue, value);
+                
+                // 최적화: 이미 1을 찾았으면 조기 종료
+                if (maxValue == 1.0) {
+                    break;
+                }
+            }
+            if (maxValue == 1.0) {
+                break;
+            }
+        }
+
+        imageStore(outputMask, coords, vec4(maxValue, 0.0, 0.0, 0.0));
+    }
+}

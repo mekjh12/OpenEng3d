@@ -58,7 +58,7 @@ uniform float evaporationBaseRate = 0.001f;   // 기본 증발률 (0.1%)
 // Pass 1 (mode 3): 모든 셀의 유량 계산
 // Pass 2 (mode 4): 계산된 유량으로 실제 물 이동
 //
-// 이렇게 분리하는 이유:
+// 2-Pass 분리하는 이유:
 // - 데이터 레이스 방지 (race condition)
 // - 물리적으로 정확한 시뮬레이션
 // - 물의 보존 법칙 준수

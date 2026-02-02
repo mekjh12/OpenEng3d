@@ -81,6 +81,9 @@ namespace FormTools
                 float rainAmount = sld_rain_amout.Value * 0.0001f;
 
                 _waterFlowGen?.Move(sld_velocity.Value * 0.1f, sld_evaporationFactor.Value * 0.001f);
+                _waterFlowGen?.RunRiverMaskPass1(sld_minWaterDepth.Value * 0.001f, sld_minFluxMagnitude.Value * 0.001f, sld_deepWaterDepth.Value * 0.001f);
+                _waterFlowGen?.RunRiverMaskPass2(sld_iterations.Value);
+                _waterFlowGen?.RunRiverMaskPass3();
 
                 if (chk_auto_rain.Checked)
                 {
@@ -92,7 +95,14 @@ namespace FormTools
             }
 
             // 렌더링
-            _waterFlowGen?.Render(0.01f, this.sld_color_scaled.Value, chk_useHeightMap.Checked);
+            if(!chk_river_pass1.Checked)
+            {
+                _waterFlowGen?.Render(0.01f, this.sld_color_scaled.Value, chk_useHeightMap.Checked);
+            }
+            else
+            {
+                _waterFlowGen?.RenderRiver(0.01f, this.sld_color_scaled.Value, chk_useHeightMap.Checked);
+            }
         }
 
         public void OpenMapTexture(string filePath)
@@ -166,11 +176,11 @@ namespace FormTools
         private void btnExport_Click(object sender, EventArgs e)
         {
             this.picReadBuffer.Image = _waterFlowGen.ExportWaterMapToPNG(_waterFlowGen.ReadBuffer, true);
-            this.picWriteBuffer.Image = _waterFlowGen.ExportWaterMapToPNG(_waterFlowGen.WriteBuffer, true);
+            this.picWriteBuffer.Image = _waterFlowGen.ExportWaterMapToPNG(_waterFlowGen.RiverMaskFinal, true);
 
-            Bitmap bitmap = (Bitmap)this.picReadBuffer.Image;
+            Bitmap bitmap = (Bitmap)this.picWriteBuffer.Image;
             bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
-            this.picReadBuffer.Image.Save(RES_TERRAIN_PATH + $"\\{_mapTextureName}_river.png");
+            bitmap.Save(RES_TERRAIN_PATH + $"\\{_mapTextureName}_river.png");
         }
     }
 }

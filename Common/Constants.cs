@@ -6,7 +6,7 @@
         public const float TwoPi = 6.28318530718f;
         public const float HalfPi = 1.57079632679f;
 
-        public const int MAX_INSTANCES = 100_000;       // 최대 인스턴스 수
+        public const int MAX_INSTANCES = 5_000;       // 최대 인스턴스 수
         public const int MAX_BATCHES = 64;              // 최대 배치 수
 
         public const float TERRAIN_VERTICAL_SCALE = 200.0f;

@@ -94,43 +94,49 @@ namespace FormTools
         {
             this.SuspendLayout();
 
-            this.Size = new Size(400, 35);
-            this.BackColor = SystemColors.Control;
+            // 전체 컨트롤 높이를 트랙바에 맞춰 살짝 키웁니다.
+            this.Size = new Size(350, 45);
 
-            // 1. 이름 라벨 (왼쪽 배치)
+            // 1. 이름 라벨 (왼쪽 끝)
             lblTitle = new Label();
             lblTitle.Text = "Parameter";
-            lblTitle.Size = new Size(80, 15);
-            lblTitle.Location = new Point(0, 10);
+            lblTitle.Size = new Size(70, 20); // 너비를 적절히 고정
+            lblTitle.Location = new Point(5, 12);
             lblTitle.TextAlign = ContentAlignment.MiddleLeft;
 
-            // 2. 트랙바 (가운데 배치)
+            // 2. 값 표시 라벨 (이름 바로 오른쪽)
+            lblValue = new Label();
+            lblValue.Text = "5";
+            lblValue.Size = new Size(35, 20); // 숫자가 들어갈 공간 확보
+            lblValue.Location = new Point(lblTitle.Right + 5, 12);
+            lblValue.TextAlign = ContentAlignment.MiddleCenter;
+            lblValue.ForeColor = Color.Blue;
+            lblValue.Font = new Font(this.Font, FontStyle.Bold);
+
+            // 3. 트랙바 (값 라벨이 끝나는 지점부터 시작)
             trackBar = new TrackBar();
-            trackBar.Size = new Size(200, 45);
-            trackBar.Location = new Point(85, 5);
-            trackBar.Minimum = 0;
+            trackBar.Minimum = 1;
             trackBar.Maximum = 10;
+            trackBar.Value = 5;
             trackBar.TickStyle = TickStyle.None;
+            trackBar.AutoSize = false; // 중요: 자동 크기 조절을 꺼야 높이를 제어할 수 있습니다.
+
+            // 값 라벨의 오른쪽(lblValue.Right)에 여백(+5)을 더해 시작 위치 설정
+            trackBar.Location = new Point(lblValue.Right + 5, 10);
+            // 전체 너비에서 앞의 라벨들이 차지한 만큼을 뺀 나머지 너비 할당
+            trackBar.Size = new Size(this.Width - (lblValue.Right + 15), 30);
+
+            // 폼 크기 조절 시 트랙바만 늘어나도록 설정
+            trackBar.Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
+
             trackBar.Scroll += (s, e) => {
                 UpdateValueText();
                 ValueChanged?.Invoke(this, EventArgs.Empty);
             };
 
-            // 3. 값 표시 라벨 (오른쪽 배치)
-            lblValue = new Label();
-            lblValue.Text = "0";
-            lblValue.Size = new Size(50, 25);
-            lblValue.Location = new Point(290, 10);
-            lblValue.TextAlign = ContentAlignment.MiddleLeft;
-            lblValue.ForeColor = Color.Blue;
-            lblValue.Font = new Font(lblValue.Font, FontStyle.Bold);
-
-            // 컨트롤에 추가
             this.Controls.Add(lblTitle);
-            this.Controls.Add(trackBar);
             this.Controls.Add(lblValue);
-
-            UpdateValueText();
+            this.Controls.Add(trackBar);
 
             this.ResumeLayout(false);
         }
@@ -138,6 +144,12 @@ namespace FormTools
         private void UpdateValueText()
         {
             lblValue.Text = trackBar.Value.ToString();
+            // 값 라벨의 오른쪽(lblValue.Right)에 여백(+5)을 더해 시작 위치 설정
+            trackBar.Location = new Point(lblValue.Right + 5, 10);
+            // 전체 너비에서 앞의 라벨들이 차지한 만큼을 뺀 나머지 너비 할당
+            trackBar.Size = new Size(this.Width - (lblValue.Right + 15), 30);
+
+            // 값이 바뀌어도 위치는 고정이므로 Location 수정 코드는 삭제해도 됩니다.
         }
     }
 }

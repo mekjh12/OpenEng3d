@@ -22,6 +22,8 @@ uniform sampler2D gHeightMap;
 uniform mat4 model;
 uniform float heightScale = 200.0f;
 
+uniform sampler2D gRiverMap;
+
 void main()
 {   
     float u = gl_TessCoord.x;
@@ -48,6 +50,11 @@ void main()
     vec4 p = (p1 - p0) * v + p0;
     p.z = heightScale * Height;
     
+    // 강인 경우에 지형을 페이게 만든다.
+    //float riverHeight = texture(gRiverMap, Tex3).r;
+    //if (riverHeight > 0.0) p.z = p.z - 2;
+
+    // 최종 연산
     fragPos = model * p;
     vec4 viewPos = camera.view * fragPos;
     viewDepth = viewPos.z; // 카메라 공간 깊이 
