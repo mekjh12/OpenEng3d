@@ -23,6 +23,7 @@ namespace Common.Abstractions
         public int IndexCount
         {
             get => _indexCount;
+            set=> _indexCount = value;
         }
 
         public bool IsDrawElement

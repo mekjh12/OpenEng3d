@@ -18,8 +18,11 @@ namespace Terrain
 
         int _width;
         int _height;
+
+        bool _useBuffer0 = true;
         uint _waterBuffer0;
         uint _waterBuffer1;
+
         uint _calcBuffer;
         uint _fluxBuffer;
         uint _riverMask;
@@ -28,7 +31,6 @@ namespace Terrain
         uint _riverMaskPass3Temp;   // Pass 3 임시 버퍼
         uint _riverMaskFinal;       // Pass 3 출력: 최종 결과
 
-        bool _useBuffer0 = true;
 
         WaterFlowComputeShader _compShader;
         RiverMaskPass1ComputeShader _riverMaskPass1Shader;

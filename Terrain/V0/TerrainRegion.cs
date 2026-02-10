@@ -1,4 +1,5 @@
-﻿using Common.Abstractions;
+﻿using Common;
+using Common.Abstractions;
 using Geometry;
 using Model3d;
 using Occlusion;
@@ -129,10 +130,17 @@ namespace Terrain
             SwapMapTextureBuffer();
         }
 
+
+        public void LoadTerrainRawResMap(RegionCoord coord, string heightmapRawFileName)
+        {
+            
+
+        }
+
         /// <summary>
         /// 지형 시스템을 초기화하고 저해상도 리소스를 로드합니다.
         /// </summary>
-        public async void LoadTerrainLowResMap(RegionCoord coord, string heightmapLowResFileName, Action completed = null, bool chunkEnable = true)
+        public void LoadTerrainLowResMap(RegionCoord coord, string heightmapLowResFileName, Action completed = null, bool chunkEnable = true)
         {
             _regionState = RegionState.Loading;
             _onCompleted = completed;
@@ -141,10 +149,12 @@ namespace Terrain
             InitializeRegionParameters(coord);
 
             // 높이맵 텍스처 로드
-            await LoadHeightMapTexture(heightmapLowResFileName);
+            LoadHeightMapTexture(heightmapLowResFileName);
 
             // 단일 대표 지형 엔티티 생성
             CreateTerrainEntity(coord);
+
+            return;
 
             // 청크 생성 시작
             if (chunkEnable)
@@ -169,7 +179,7 @@ namespace Terrain
         /// <summary>
         /// 높이맵 텍스처를 로드합니다.
         /// </summary>
-        private async Task LoadHeightMapTexture(string heightmapFileName)
+        private void LoadHeightMapTexture(string heightmapFileName)
         {
             // 높이맵 파일 존재 검증
             if (!File.Exists(heightmapFileName))
@@ -183,11 +193,14 @@ namespace Terrain
                 _terrainData = new TerrainData();
             }
 
+            Texture texture = new Texture(HeightmapTextureLoader.LoadRaw16ToTexture(heightmapFileName, 1024, 1024), 1024, 1024);
+            _terrainData.HeightMapTextureLowRes = texture;
+
             // 저해상도 높이맵 텍스처로부터 지형 데이터 초기화
-            using (Bitmap bitmap = await _terrainData.LoadFromFile(heightmapFileName, _n, _chunkSize))
+            //using (Bitmap bitmap = _terrainData.LoadFromFile(heightmapFileName, _n, _chunkSize))
             {
-                _terrainData.HeightMapTextureLowRes = (bitmap == null) ?
-                    TextureStorage.DebugTexture : new Texture(bitmap);
+                //_terrainData.HeightMapTextureLowRes = (bitmap == null) ?
+                //    TextureStorage.DebugTexture : new Texture(bitmap);
             }
         }
 

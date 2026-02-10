@@ -1,7 +1,14 @@
 ﻿//-----------------------------------------------------------------------------
-// 테셀레이션 평가 셰이더 - 위치만 계산
+// 테셀레이션 평가 셰이더 (Tessellation Evaluation Shader)
+// 패치의 테셀레이션된 점들에 대해 높이맵 기반의 변위를 적용
 //-----------------------------------------------------------------------------
+
 #version 430
+
+// 공통 헤더 포함
+#include "./../../includes/lib_terrain_height_sampling_v2.glsl"
+
+// 테셀레이션 제어 파라미터
 layout (quads, fractional_odd_spacing, ccw) in;
 
 layout(std140, binding = 0) uniform CameraBlock {
@@ -11,53 +18,73 @@ layout(std140, binding = 0) uniform CameraBlock {
     vec4 cameraPos;
 } camera;
 
+// 테셀레이션 제어 셰이더로부터의 입력
 in vec2 Tex2[];
 
+// 프래그먼트 셰이더로의 출력
 out vec2 Tex3;
 out vec4 fragPos;
 out float viewDepth;
 out vec3 viewPosOut;  // Structure Buffer용 카메라 공간 위치
 
-uniform sampler2D gHeightMap;
-uniform mat4 model;
-uniform float heightScale = 200.0f;
+// 높이맵 텍스처
+uniform sampler2D heightMapLowRes;      // 저해상도 높이맵
+uniform sampler2D heightMapHighRes;     // 고해상도 높이맵
+uniform float blendFactor = 1.0f;       // 블렌딩 계수 (0.0-1.0)
 
-uniform sampler2D gRiverMap;
+// 주변 높이맵 텍스처
+uniform sampler2D adjacentHeightMap0; // 주변 높이맵
+uniform sampler2D adjacentHeightMap1; // 주변 높이맵
+uniform sampler2D adjacentHeightMap2; // 주변 높이맵
+uniform sampler2D adjacentHeightMap3; // 주변 높이맵
+uniform sampler2D adjacentHeightMap4; // 주변 높이맵
+uniform sampler2D adjacentHeightMap5; // 주변 높이맵
+uniform sampler2D adjacentHeightMap6; // 주변 높이맵
+uniform sampler2D adjacentHeightMap7; // 주변 높이맵
+
+uniform mat4 model;             // 모델 행렬
+uniform float heightScale = 200.0f;
 
 void main()
 {   
-    float u = gl_TessCoord.x;
-    float v = gl_TessCoord.y;
+    // 테셀레이터에서 생성된 보간 좌표
+    float u = gl_TessCoord.x;    // u 방향 보간 계수
+    float v = gl_TessCoord.y;    // v 방향 보간 계수
+
+    // 패치의 네 꼭지점에 대한 텍스처 좌표
+    vec2 t00 = Tex2[0];     // 좌하단
+    vec2 t01 = Tex2[1];     // 우하단
+    vec2 t10 = Tex2[2];     // 좌상단
+    vec2 t11 = Tex2[3];     // 우상단
+
+    // 이중선형 보간으로 텍스처 좌표 계산
+    vec2 t0 = (t01 - t00) * u + t00;    // 아래쪽 에지 보간
+    vec2 t1 = (t11 - t10) * u + t10;    // 위쪽 에지 보간
+    Tex3 = (t1 - t0) * v + t0;          // 최종 텍스처 좌표
     
-    // 텍스처 좌표 보간
-    vec2 t00 = Tex2[0];
-    vec2 t01 = Tex2[1];
-    vec2 t10 = Tex2[2];
-    vec2 t11 = Tex2[3];
-    vec2 t0 = (t01 - t00) * u + t00;
-    vec2 t1 = (t11 - t10) * u + t10;
-    Tex3 = (t1 - t0) * v + t0;
+    // 높이맵에서 높이값 샘플링
+    float Height = SampleHeightForChunk(Tex3, heightMapHighRes, 
+	    adjacentHeightMap0, adjacentHeightMap1, adjacentHeightMap2, adjacentHeightMap3, 
+	    adjacentHeightMap4, adjacentHeightMap5, adjacentHeightMap6, adjacentHeightMap7);
     
-    float Height = texture(gHeightMap, Tex3).r;
-    
-    // 위치 계산
-    vec4 p00 = gl_in[0].gl_Position;
-    vec4 p01 = gl_in[1].gl_Position;
-    vec4 p10 = gl_in[2].gl_Position;
-    vec4 p11 = gl_in[3].gl_Position;
+    // 패치의 네 꼭지점 위치
+    vec4 p00 = gl_in[0].gl_Position;    // 좌하단
+    vec4 p01 = gl_in[1].gl_Position;    // 우하단
+    vec4 p10 = gl_in[2].gl_Position;    // 좌상단
+    vec4 p11 = gl_in[3].gl_Position;    // 우상단
+
+    // 위치에 대한 이중선형 보간
     vec4 p0 = (p01 - p00) * u + p00;
     vec4 p1 = (p11 - p10) * u + p10;
     vec4 p = (p1 - p0) * v + p0;
+    
+    // 높이맵 기반 수직 변위 적용 (heightScale는 높이 스케일)
     p.z = heightScale * Height;
     
-    // 강인 경우에 지형을 페이게 만든다.
-    //float riverHeight = texture(gRiverMap, Tex3).r;
-    //if (riverHeight > 0.0) p.z = p.z - 2;
-
-    // 최종 연산
-    fragPos = model * p;
-    vec4 viewPos = camera.view * fragPos;
-    viewDepth = viewPos.z; // 카메라 공간 깊이 
+    // 최종 위치 계산 (월드 -> 뷰 -> 클립 공간 변환)
+    fragPos = model * p;                    // 월드 공간 위치
+    vec4 viewPos = camera.view * fragPos;   // 뷰 공간 위치
+    viewDepth = viewPos.z;                  // 카메라 공간 깊이 
     viewPosOut = viewPos.xyz;
-    gl_Position = camera.vp * fragPos;
+    gl_Position = camera.vp * fragPos;      // 클립 공간 위치
 }

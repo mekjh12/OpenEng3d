@@ -210,7 +210,7 @@ namespace Renderer
             _shader.LoadEnableFunc(_onFunc);
 
             // 강줄기 맵
-            _shader.LoadRiverMap(_riverMap.TextureID);
+            if (_riverMap != null) _shader.LoadRiverMap(_riverMap.TextureID);
             _shader.LoadMossRockTexture(_mossRockTexture.TextureID);
 
             // 지형 높이 임계값
@@ -233,11 +233,9 @@ namespace Renderer
 
                 // 지형 텍스처 바인딩
                 TexturedModel modelTextured = rawModel as TexturedModel;
-                
-                _shader.LoadHeightAndNormalMap(
-                    modelTextured.Texture.TextureID,
-                    _normalTexture
-                );
+
+                _shader.LoadHeightHighResolutionMap(modelTextured.Texture.TextureID);
+                _shader.LoadHeightLowResolutionMap(modelTextured.Texture.TextureID);
 
                 // 모델행렬과 법선행렬을 바인딩
                 _shader.LoadNormalMatrix(_entity.NormalMatrix);

@@ -89,7 +89,7 @@ namespace FormTools
         TerrainRegion _terrainRegion;                       // 지형 영역
         Texture[] _levelTextureMap = null;                  // 지형 레벨 텍스쳐
         Texture _detailTextureMap = null;                   // 지형 디테일 텍스쳐
-        TerrainRenderer _terrainRenderer;                   // 지형 렌더러
+        Renderer.TerrainRenderer _terrainRenderer;                   // 지형 렌더러
         Texture _normalMapTexture;                          // 노말 맵 텍스쳐
         Texture _rockTexture;                               // 바위 텍스쳐
 
@@ -269,7 +269,7 @@ namespace FormTools
             _rockTexture = new Texture(PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\blend\castleTowerBaseTexture.bmp");
 
             // 지형 렌더러 초기화
-            _terrainRenderer = new TerrainRenderer(_terrainShader, PROJECT_PATH);
+            _terrainRenderer = new Renderer.TerrainRenderer(_terrainShader, PROJECT_PATH);
             _terrainRenderer.SetGroundTextures(_levelTextureMap, _normalMapTexture, _detailTextureMap);
             //_terrainRenderer.SetRockTexture(_rockTexture);
 

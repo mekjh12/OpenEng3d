@@ -1,4 +1,5 @@
 ﻿using Camera3d;
+using Common;
 using Common.Abstractions;
 using OpenGL;
 using Shader;
@@ -66,7 +67,6 @@ namespace GlWindow
         private Vertex3f _backColor = Vertex3f.Zero;
         private PolygonMode _polygonMode = PolygonMode.Fill;
         private MOUSE_GAME_MODE _mouseMode = MOUSE_GAME_MODE.NONE;
-        private float _cameraStepLength = 0.1f;
 
         // ==================================================================================
         //                              멤버 변수 - 카메라 및 뷰포트
@@ -140,7 +140,7 @@ namespace GlWindow
         // ==================================================================================
 
         public string HelpText { set => _helpText += value.Replace("/", "<br>"); }
-        public float CameraStepLength { get => _cameraStepLength; set => _cameraStepLength = value; }
+        public float CameraStepLength { get => Constants.CAMERA_MOVE_DELTA; set => Constants.CAMERA_MOVE_DELTA = value; }
         public bool IsUi2dMode { get => _isUi2dMode; set { _isUi2dMode = value; _isMouseVisible = value; } }
         public bool IsEnableCameraMove { get => _isEnableCameraMove; set => _isEnableCameraMove = value; }
         public bool IsVisibleGrid { get => _isVisibleGrid; set => _isVisibleGrid = value; }

@@ -1,5 +1,6 @@
 ﻿using Common;
 using OpenGL;
+using StbImageWriteSharp;
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -13,15 +14,20 @@ namespace Shader
         private HeightmapGeneratorComputeShader _compShader;
         private DisplayShader _displayShader;
 
-        private uint _heightmapTexture;
+        private uint _basemapTexture;
         private int _size = 1024;
-        
+
         uint _quadVAO;
         uint _quadVBO;
 
+        bool _useBuffer0 = true;
+        uint _mapBuffer0;
+        uint _mapBuffer1;
+
         float _time = 0.0f;
 
-        public uint HeightMapTexture => _heightmapTexture;
+        public uint ReadBuffer => _useBuffer0 ? _mapBuffer1 : _mapBuffer0;
+        public uint WriteBuffer => _useBuffer0 ? _mapBuffer0 : _mapBuffer1;
 
         public HeightmapGenerator()
         {
@@ -37,7 +43,8 @@ namespace Shader
             _displayShader = new DisplayShader(StrRes.PROJECT_PATH);
 
             // 텍스처 생성 (RGBA32F)
-            _heightmapTexture = CreateBuffer(_size, _size, InternalFormat.Rgba32f, OpenGL.PixelFormat.Rgba);
+            _mapBuffer0 = CreateBuffer(_size, _size, InternalFormat.Rgba32f, OpenGL.PixelFormat.Rgba);
+            _mapBuffer1 = CreateBuffer(_size, _size, InternalFormat.Rgba32f, OpenGL.PixelFormat.Rgba);
 
             // 전체 화면 쿼드 생성
             CreateFullscreenQuad();
@@ -51,9 +58,9 @@ namespace Shader
             Gl.TexImage2D(
                 TextureTarget.Texture2d,
                 0,
-                internalFormat,      // ✅ Rgba32f 변경 (4채널), InternalFormat.Rgba32f
+                internalFormat,
                 width, height, 0,
-                pixelFormat,     // ✅ 일치 OpenGL.PixelFormat.Rgba
+                pixelFormat,
                 PixelType.Float,
                 IntPtr.Zero
             );
@@ -69,7 +76,7 @@ namespace Shader
 
             Gl.BindTexture(TextureTarget.Texture2d, 0);
 
-            Console.WriteLine($"[WaterFlow {buffer}] 버퍼 생성됨");
+            Console.WriteLine($"[HeightmapGenerator {buffer}] 버퍼 생성됨");
             return buffer;
         }
 
@@ -104,28 +111,77 @@ namespace Shader
             Gl.BindVertexArray(0);
         }
 
-        public void Generate(float scale, int octaves)
+        /// <summary>
+        /// 버퍼 스왑 헬퍼 메서드
+        /// </summary>
+        private void SwapBuffers()
         {
-            // 셰이더 바인딩
-            _compShader.Bind();
+            _useBuffer0 = !_useBuffer0;
+        }
 
-            // 유니폼 설정
-            _compShader.LoadUniforms(
-                scale: scale,
-                octaves: octaves,
-                seed: new Random(10).Next()
-            );
+        /// <summary>
+        /// 단일 컴퓨트 패스 실행
+        /// </summary>
+        private void ExecutePass(int mode, int blurPass = -1)
+        {
+            _compShader.BindBuffers(ReadBuffer, WriteBuffer);
+            _compShader.SetMode(mode);
 
-            // 버퍼 바인딩
-            _compShader.BindBuffers(_heightmapTexture);
+            if (blurPass >= 0)
+            {
+                _compShader.SetBlurPass(blurPass);
+            }
 
-            // 실행
             _compShader.Dispatch(_size, _size);
 
-            // 완료 대기
+            // GPU 쓰기 완료 대기
             Gl.MemoryBarrier(MemoryBarrierMask.ShaderImageAccessBarrierBit);
 
+            SwapBuffers();
+        }
+
+        /// <summary>
+        /// 하이트맵 생성 파이프라인
+        /// </summary>
+        /// <param name="baseHeigthmapTextureId">기본 하이트맵 텍스처 ID</param>
+        /// <param name="useBicubic">Bicubic 보간 사용 여부</param>
+        /// <param name="useGaussianBlur">Gaussian 블러 사용 여부</param>
+        public void Generate(uint baseHeigthmapTextureId, bool useBicubic = true, bool useGaussianBlur = true)
+        {
+            _compShader.Bind();
+
+            // 기본 하이트맵 로드
+            _compShader.LoadBaseHeightmap(baseHeigthmapTextureId);
+
+            // Pass 0: Bilinear 업스케일 (항상 실행)
+            // ReadBuffer(이전 결과) -> WriteBuffer(새 결과)
+            ExecutePass(mode: 0);
+
+            // Pass 1: Bicubic 보간 (선택적)
+            if (useBicubic)
+            {
+                ExecutePass(mode: 1);
+            }
+
+            // Pass 2-3: Separable Gaussian Blur (선택적)
+            if (useGaussianBlur)
+            {
+                // 수평 블러
+                ExecutePass(mode: 2, blurPass: 0);
+
+                // 수직 블러
+                ExecutePass(mode: 2, blurPass: 1);
+            }
+
             _compShader.Unbind();
+
+            // 최종 동기화 (텍스처 읽기용)
+            Gl.MemoryBarrier(
+                MemoryBarrierMask.ShaderImageAccessBarrierBit |
+                MemoryBarrierMask.TextureFetchBarrierBit
+            );
+
+            Console.WriteLine($"[HeightmapGenerator] 생성 완료 - 최종 버퍼: {ReadBuffer}");
         }
 
         public void Render(float deltaTime)
@@ -138,12 +194,13 @@ namespace Shader
 
             // 쉐이더 바인딩 및 Uniform 설정
             _displayShader.Bind();
-            _displayShader.LoadHeightMapTexture(TextureUnit.Texture0, _heightmapTexture);
-            _displayShader.LoadUseGrayMode(true);
+            _displayShader.LoadHeightMapTexture(TextureUnit.Texture0, ReadBuffer);
+            _displayShader.LoadUseGrayMode(false);
 
             Gl.BindVertexArray(_quadVAO);
             Gl.DrawArrays(PrimitiveType.Triangles, 0, 6);
             Gl.BindVertexArray(0);
+
             _displayShader.Unbind();
 
             // 상태 복원
@@ -152,30 +209,35 @@ namespace Shader
 
         public void Cleanup()
         {
-            Gl.DeleteTextures(_heightmapTexture);
-            _compShader.CleanUp();
+            if (_mapBuffer0 != 0) Gl.DeleteTextures(_mapBuffer0);
+            if (_mapBuffer1 != 0) Gl.DeleteTextures(_mapBuffer1);
+            if (_quadVAO != 0) Gl.DeleteVertexArrays(_quadVAO);
+            if (_quadVBO != 0) Gl.DeleteBuffers(_quadVBO);
+
+            _compShader?.CleanUp();
+
+            Console.WriteLine("[HeightmapGenerator] 리소스 정리 완료");
         }
 
         /// <summary>
         /// Heightmap을 16bit PNG로 저장
         /// </summary>
-        public void SaveHeightmapToPng(string filePath)
+        public void SaveHeightmapToPng(string filePath, bool saveMeta = true)
         {
             // GPU에서 데이터 읽기
-            float[] heightData = ReadHeightmapFromGPU();
+            float[] heightData = ReadHeightmapFromGPU(flipY: false);
 
-            // 16bit 변환 및 저장
-            SaveAs16BitPng(heightData, filePath);
+            BmpHeightmapSaver.SaveAsRaw16(heightData, _size, _size, filePath, saveMeta: false);
 
             Console.WriteLine($"[Heightmap] PNG 저장 완료: {filePath}");
         }
 
         /// <summary>
-        /// GPU 텍스처에서 float 데이터 읽기
+        /// GPU 텍스처에서 float 데이터 읽기 (Y축 반전 최적화)
         /// </summary>
-        private float[] ReadHeightmapFromGPU()
+        private float[] ReadHeightmapFromGPU(bool flipY = false)
         {
-            Gl.BindTexture(TextureTarget.Texture2d, _heightmapTexture);
+            Gl.BindTexture(TextureTarget.Texture2d, ReadBuffer);
 
             float[] data = new float[_size * _size * 4]; // RGBA
 
@@ -189,58 +251,29 @@ namespace Shader
 
             Gl.BindTexture(TextureTarget.Texture2d, 0);
 
-            return data;
-        }
-
-        /// <summary>
-        /// float 배열을 16bit PNG로 저장
-        /// </summary>
-        private void SaveAs16BitPng(float[] heightData, string filePath)
-        {
-            // 48bit RGB로 저장 (각 채널 16bit)
-            Bitmap bitmap = new Bitmap(_size, _size, System.Drawing.Imaging.PixelFormat.Format48bppRgb);
-
-            BitmapData bmpData = bitmap.LockBits(
-                new Rectangle(0, 0, _size, _size),
-                ImageLockMode.WriteOnly,
-                bitmap.PixelFormat
-            );
-
-            unsafe
+            // Y축 반전 (인라인 최적화)
+            if (flipY)
             {
-                byte* ptr = (byte*)bmpData.Scan0;
-                int stride = bmpData.Stride;
+                int halfHeight = _size / 2;
+                int rowSize = _size * 4; // RGBA
 
-                for (int y = 0; y < _size; y++)
+                for (int y = 0; y < halfHeight; y++)
                 {
-                    ushort* row = (ushort*)(ptr + y * stride);
+                    int topIdx = y * rowSize;
+                    int bottomIdx = (_size - 1 - y) * rowSize;
 
-                    for (int x = 0; x < _size; x++)
+                    for (int i = 0; i < rowSize; i++)
                     {
-                        int index = (y * _size + x) * 4;
-                        float height = heightData[index];
-
-                        ushort value = (ushort)(height.Clamp(0.0f, 1.0f) * 65535);
-
-                        // RGB 모두 같은 값 (grayscale)
-                        row[x * 3 + 0] = value; // R
-                        row[x * 3 + 1] = value; // G
-                        row[x * 3 + 2] = value; // B
+                        float temp = data[topIdx + i];
+                        data[topIdx + i] = data[bottomIdx + i];
+                        data[bottomIdx + i] = temp;
                     }
                 }
+
+                Console.WriteLine($"[HeightmapGenerator] Y축 반전 완료: {_size}x{_size}");
             }
 
-            bitmap.UnlockBits(bmpData);
-
-            // 파일 경로 확인
-            string directory = Path.GetDirectoryName(filePath);
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            bitmap.Save(filePath, ImageFormat.Png);
-            bitmap.Dispose();
+            return data;
         }
 
     }

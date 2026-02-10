@@ -19,7 +19,7 @@ in float viewDepth;
 in vec3 viewPosOut;
 
 // 텍스처들
-uniform sampler2D gHeightMap;
+uniform sampler2D heightMapHighRes;
 uniform sampler2D gNormalMap;
 uniform sampler2D gTextureHeight0;
 uniform sampler2D gTextureHeight1;
@@ -35,11 +35,11 @@ uniform float gValleyThreshold = 0.02;       // 계곡 판단 임계값
 uniform bool gShowValleyDebug = true;        // 디버그 모드 ON/OFF
 
 // 기존 파라미터들
-uniform float gHeight0 = 0.17f;
-uniform float gHeight1 = 0.25f;
-uniform float gHeight2 = 0.35f;
-uniform float gHeight3 = 0.71f;
-uniform float gHeight4 = 0.82f;
+uniform float gHeight0 = 0.1f;//0.17f
+uniform float gHeight1 = 0.35f;//0.25f
+uniform float gHeight2 = 0.5f;//0.35f
+uniform float gHeight3 = 0.7f;//0.71f
+uniform float gHeight4 = 0.8f;//0.82f
 
 // 지층맵 유니폼
 uniform sampler2D gRockTexture;
@@ -88,7 +88,7 @@ vec4 CalculateStructureOutput(float z)
 void main()
 {
     // 높이 샘플링
-    float height = texture(gHeightMap, Tex3).r;
+    float height = texture(heightMapHighRes, Tex3).r;
     
     // 법선 로드
     vec3 normalTangent = texture(gNormalMap, Tex3).rgb;
@@ -111,7 +111,7 @@ void main()
     // G-Buffer 출력
     gAlbedo = vec4(texColor.rgb, 1.0);
     gPosition = vec4(fragPos.xyz, 1.0);
-    gNormal = vec4(normalWorld, 1.0);
+    gNormal = vec4(normalWorld, 1.0);//texture(heightMapHighRes, texCoord).r / 
     gDepth = viewDepth / 10000.0;
 
     // Structure에 기록하기
@@ -155,21 +155,21 @@ vec4 ApplyValleyTexturing(vec2 uv, vec3 normalWorld, vec3 riverMask, vec4 baseCo
 //-----------------------------------------------------------------------------
 float DetectValleyCurvature(vec2 uv, float currentHeight)
 {
-    vec2 texelSize = 1.0 / textureSize(gHeightMap, 0);
+    vec2 texelSize = 1.0 / textureSize(heightMapHighRes, 0);
     float h = texelSize.x * gValleyDetectionRadius;
     
     // 9개 포인트 샘플링 (3x3 그리드)
-    float h00 = texture(gHeightMap, uv + vec2(-h, h)).r;
-    float h01 = texture(gHeightMap, uv + vec2(0, h)).r;
-    float h02 = texture(gHeightMap, uv + vec2(h, h)).r;
+    float h00 = texture(heightMapHighRes, uv + vec2(-h, h)).r;
+    float h01 = texture(heightMapHighRes, uv + vec2(0, h)).r;
+    float h02 = texture(heightMapHighRes, uv + vec2(h, h)).r;
     
-    float h10 = texture(gHeightMap, uv + vec2(-h, 0)).r;
+    float h10 = texture(heightMapHighRes, uv + vec2(-h, 0)).r;
     float h11 = currentHeight;  // 중심
-    float h12 = texture(gHeightMap, uv + vec2(h, 0)).r;
+    float h12 = texture(heightMapHighRes, uv + vec2(h, 0)).r;
     
-    float h20 = texture(gHeightMap, uv + vec2(-h, -h)).r;
-    float h21 = texture(gHeightMap, uv + vec2(0, -h)).r;
-    float h22 = texture(gHeightMap, uv + vec2(h, -h)).r;
+    float h20 = texture(heightMapHighRes, uv + vec2(-h, -h)).r;
+    float h21 = texture(heightMapHighRes, uv + vec2(0, -h)).r;
+    float h22 = texture(heightMapHighRes, uv + vec2(h, -h)).r;
     
     // 2차 미분 계산 (곡률)
     float d2x = h10 - 2.0 * h11 + h12;  // X방향 곡률
@@ -233,8 +233,11 @@ vec4 BlendTerrainTexturesAdvanced(vec3 worldPos, vec3 normalWorld, float height,
     float worldTexScale = gColorTexcoordScaling * 0.0001; 
     vec2 topDownUV = worldPos.xy * worldTexScale; 
 
+    vec4 heightColor;        
+    float Factor = (height - gHeight1) / (gHeight2 - gHeight1);
+    heightColor = mix(texture(gTextureHeight2, topDownUV), texture(gTextureHeight3, topDownUV), Factor);
+    
     // 높이 기반 기본 색상
-    vec4 heightColor;
     if (height < gHeight0) {
         heightColor = texture(gTextureHeight0, topDownUV);
     } else if (height < gHeight1) {
@@ -254,7 +257,9 @@ vec4 BlendTerrainTexturesAdvanced(vec3 worldPos, vec3 normalWorld, float height,
     // 경사도 계산
     float slope = 1.0 - clamp(normalWorld.z, 0.0, 1.0);
     float slopeBlend = smoothstep(0.2, 0.5, slope);
-    
+    slopeBlend=0.0; // 여기지워야함
+
+
     // 바위 텍스처
     vec4 rockColor = GetTriplanarTextureAdvanced(gRockTexture, worldPos, normalWorld, worldTexScale);
     

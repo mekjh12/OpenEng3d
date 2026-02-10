@@ -14,8 +14,8 @@ namespace Ui3d
     public class FPSDisplay : Billboard3D
     {
         // 기본 텍스처 크기
-        private const int TExTURE_WIDTH = 256;
-        private const int TExTURE_HEIGHT = 64;
+        private const int TEXTURE_WIDTH = 256;
+        private const int TEXTURE_HEIGHT = 64;
 
         // 패딩
         private const float PADDING = 0.0f;
@@ -124,7 +124,7 @@ namespace Ui3d
             _fadeWithDistance = false;
 
             // 재사용할 그래픽 리소스 초기화
-            _reusableBitmap = new Bitmap(TExTURE_WIDTH, TExTURE_HEIGHT);
+            _reusableBitmap = new Bitmap(TEXTURE_WIDTH, TEXTURE_HEIGHT);
             _reusableGraphics = Graphics.FromImage(_reusableBitmap);
             _reusableGraphics.SmoothingMode = SmoothingMode.AntiAlias;
             _reusableGraphics.TextRenderingHint = TextRenderingHint.AntiAlias;
@@ -191,7 +191,7 @@ namespace Ui3d
             })
             {
                 _reusableGraphics.DrawString(fpsText, _fpsFont, textBrush,
-                    new RectangleF(0, 0, TExTURE_WIDTH, TExTURE_HEIGHT), format);
+                    new RectangleF(0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT), format);
             }
 
             // GPU에 업로드

@@ -81,7 +81,7 @@ namespace FormTools
         const int MAX_INSTANCES = 10000;                    // 최대 인스턴스 수
 
         // 지형 관련 변수들
-        TerrainRenderer _terrainRenderer;                   // 지형 렌더러
+        Renderer.TerrainRenderer _terrainRenderer;                   // 지형 렌더러
         TerrainRegion _terrainRegion;                       // 지형 영역
 
         // 라이팅 관련 변수들
@@ -241,7 +241,7 @@ namespace FormTools
             };
 
             // 지형 렌더러 초기화
-            _terrainRenderer = new TerrainRenderer(_terrainShader, PROJECT_PATH);
+            _terrainRenderer = new Renderer.TerrainRenderer(_terrainShader, PROJECT_PATH);
             _terrainRenderer.LoadTerrainLevelTextures(EXE_PATH + @"\Res\Terrain\blend\", levelTextureMap);
             _terrainRenderer.LoadDetailTexture(EXE_PATH + @"\Res\Terrain\blend\detailMap.png");
             //_terrainRenderer.LoadTerrainNormalMap(PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\0x0_normal.png");

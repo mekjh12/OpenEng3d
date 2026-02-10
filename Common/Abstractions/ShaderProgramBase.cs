@@ -277,6 +277,7 @@ namespace Common
         {
             string shaderName = _name;
 
+            /*
             // 이미 초기화되었고 파일이 변경되지 않았다면 컴파일하지 않음
             if (_isInitialized && !AnyShaderFileModified())
             {
@@ -297,6 +298,7 @@ namespace Common
                 _isInitialized = true;
                 return;
             }
+            */
 
             // 바이너리 로드 실패 또는 파일 변경됨 - 일반 컴파일 진행
             _programID = Gl.CreateProgram();

@@ -62,6 +62,9 @@
       <HintPath>..\packages\OpenGL.Net.WinForms.0.8.4\lib\net461\OpenGL.Net.WinForms.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
+    <Reference Include="StbImageWriteSharp, Version=1.16.7.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\StbImageWriteSharp.1.16.7\lib\netstandard2.0\StbImageWriteSharp.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -156,6 +159,18 @@
     </Compile>
     <Compile Include="CustomControl\LabeledPictureBox.cs">
       <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="FormGameWorld.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormGameWorld.Designer.cs">
+      <DependentUpon>FormGameWorld.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormRaw16Viewer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormRaw16Viewer.Designer.cs">
+      <DependentUpon>FormRaw16Viewer.cs</DependentUpon>
     </Compile>
     <Compile Include="GpuDriven\FormGPUDriveHiZ.cs">
       <SubType>Form</SubType>
@@ -376,6 +391,12 @@
     <EmbeddedResource Include="2026\FormTerrainRegion.resx">
       <DependentUpon>FormTerrainRegion.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="FormGameWorld.resx">
+      <DependentUpon>FormGameWorld.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormRaw16Viewer.resx">
+      <DependentUpon>FormRaw16Viewer.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="GpuDriven\FormGPUDriveHiZ.resx">
       <DependentUpon>FormGPUDriveHiZ.cs</DependentUpon>
     </EmbeddedResource>
@@ -593,6 +614,8 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="Resources\1-b7457433.ico" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

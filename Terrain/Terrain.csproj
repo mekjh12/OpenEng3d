@@ -52,25 +52,30 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ChunkCreator.cs" />
-    <Compile Include="EntityBatchProcessor.cs" />
-    <Compile Include="ITerrainCulling.cs" />
-    <Compile Include="NormalMapGenerator.cs" />
-    <Compile Include="RecentRegionCache.cs" />
-    <Compile Include="RegionCoord.cs" />
-    <Compile Include="RegionManager.cs" />
-    <Compile Include="SimpleTerrainRegion.cs" />
-    <Compile Include="SimpleTerrainRegionCache.cs" />
-    <Compile Include="TerrainCluster.cs" />
-    <Compile Include="TerrainCulling.cs" />
-    <Compile Include="TerrainData.cs" />
-    <Compile Include="Chunk.cs" />
-    <Compile Include="TerrainMap.cs" />
-    <Compile Include="TerrainPatchFactory.cs" />
-    <Compile Include="TerrainRegion.cs" />
+    <Compile Include="V0\ChunkCreator.cs" />
+    <Compile Include="V0\EntityBatchProcessor.cs" />
+    <Compile Include="V0\ITerrainCulling.cs" />
+    <Compile Include="V1\AsyncHeightmapLoader.cs" />
+    <Compile Include="V1\TerrainStreamingManager.cs" />
+    <Compile Include="V1\TiledImageUpscaler.cs" />
+    <Compile Include="V1\TerrainRenderer.cs" />
+    <Compile Include="V1\TerrainStreamer.cs" />
+    <Compile Include="V0\NormalMapGenerator.cs" />
+    <Compile Include="V0\RecentRegionCache.cs" />
+    <Compile Include="V0\RegionCoord.cs" />
+    <Compile Include="V0\RegionManager.cs" />
+    <Compile Include="V0\SimpleTerrainRegion.cs" />
+    <Compile Include="V0\SimpleTerrainRegionCache.cs" />
+    <Compile Include="V0\TerrainCluster.cs" />
+    <Compile Include="V0\TerrainCulling.cs" />
+    <Compile Include="V0\TerrainData.cs" />
+    <Compile Include="V0\Chunk.cs" />
+    <Compile Include="V0\TerrainMap.cs" />
+    <Compile Include="V0\TerrainPatchFactory.cs" />
+    <Compile Include="V0\TerrainRegion.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="VegetationMap.cs" />
-    <Compile Include="WaterFlowGenerator.cs" />
+    <Compile Include="V0\VegetationMap.cs" />
+    <Compile Include="V0\WaterFlowGenerator.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Camera3d\Camera3d.csproj">
@@ -109,6 +114,9 @@
       <Project>{878cf1d9-16ce-4e58-a6e7-165d00c56d1f}</Project>
       <Name>ZetaExt</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

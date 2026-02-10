@@ -9,8 +9,12 @@ namespace FormTools
         /// 해당 애플리케이션의 주 진입점입니다.
         /// </summary>
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
+            // 첫 번째 인자(args[0])가 파일의 경로입니다.
+            string filePath = "";
+            if (args.Length > 0) filePath = args[0];
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             //Application.Run(new FormTerrainDataTest());           // 작동됨(수정 필요)
@@ -19,10 +23,11 @@ namespace FormTools
             //Application.Run(new FormGPUDriveHiZ());               // 작동됨(실패)
             //Application.Run(new FormGPUDriven());                 // 작동됨(이전버전으로 폐기)
 
-            //Application.Run(new FormTerrainGen());    // 지형 생성 테스트
+            //Application.Run(new FormRaw16Viewer(filePath));
+            //Application.Run(new FormTerrainGen());                    // 지형 생성 테스트
             Application.Run(new FormTerrainRegion());
             //Application.Run(new FormWaterFlow());                   // 컴퓨터세이더 기반 유체흐름 시뮬레이션 테스트
-
+            //Application.Run(new FormGameWorld());                   // 게임 지형과 식물 전체 렌더링
 
             //Application.Run(new FormImposterBaker());
             //Application.Run(new FormStructureBuffer());

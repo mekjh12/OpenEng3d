@@ -45,7 +45,6 @@ namespace Ui3d
         private Matrix4x4f _modelMatrix;
         private Matrix4x4f _mvp;
 
-
         // GC를 줄이기 위한 인스턴스 버퍼 재사용
         private CharInstanceData[] _instanceBuffer = new CharInstanceData[512];  // 512글자 초기 할당
         private int _instanceCount = 0;

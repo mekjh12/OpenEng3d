@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -87,9 +88,11 @@
     <Compile Include="Abstractions\UniformLoader.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Core\GUID.cs" />
+    <Compile Include="HeightmapTextureLoader.cs" />
     <Compile Include="Mathematics\Pose.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Enum\StructureBufferEnum.cs" />
+    <Compile Include="Raw16HeightmapViewer.cs" />
     <Compile Include="ShareBuffer.cs" />
     <Compile Include="StringResources.cs" />
     <Compile Include="Struct\AABB3f.cs" />

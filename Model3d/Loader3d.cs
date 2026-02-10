@@ -1058,7 +1058,7 @@ namespace Model3d
 
             int idx = 0;
             int N = 2 * n + 1;
-            float unit = 1.0f / (float)(N - 1);
+            float unit = 1.0f / (float)(2 * n);
             for (int y = -n; y <= n; y++)
             {
                 for (int x = -n; x <= n; x++)
@@ -1074,7 +1074,9 @@ namespace Model3d
                     nor.Add(0.0f);
                     nor.Add(1.0f);
 
-                    if (x < n && y < n) // 맨 오른쪽과 맨 위쪽의 한 줄씩은 제외한다.
+                    // 맨 오른쪽과 맨 위쪽의 한 줄씩은 제외한다.
+                    // 점은 (2n+1)x(2n+1), 면은 2n*2n
+                    if (x < n && y < n) 
                     {
                         indices.Add((uint)(idx));
                         indices.Add((uint)(idx + 1));
@@ -1096,8 +1098,255 @@ namespace Model3d
 
             RawModel3d rawModel = new RawModel3d(vao, pos.ToArray());
             rawModel.IBO = ibo;
-            rawModel.VertexCount = indices.Count;
+            rawModel.VertexCount = pos.Count;
+            rawModel.IndexCount = indices.Count;
             rawModel.IsDrawElement = true;
+            return rawModel;
+        }
+
+        /// <summary>
+        /// 적응형 평면 메시 생성: 중심부는 낮은 해상도, 엣지는 높은 해상도
+        /// </summary>
+        /// <param name="innerN">내부 해상도 (2*innerN x 2*innerN 그리드)</param>
+        /// <param name="edgeN">엣지 해상도 (2*edgeN subdivisions per edge)</param>
+        /// <param name="unitSize">한 유닛의 크기</param>
+        /// <param name="edgeFlags">4방향 엣지 세분화 여부 [Right, Top, Left, Bottom]</param>
+        /// <returns></returns>
+        public static RawModel3d LoadAdaptivePlane(int innerN, int edgeN, float unitSize = 1.0f, bool[] edgeFlags = null)
+        {
+            // 기본값: 모든 엣지 세분화
+            if (edgeFlags == null)
+                edgeFlags = new bool[] { true, true, true, true };
+
+            List<float> pos = new List<float>();
+            List<float> tex = new List<float>();
+            List<float> nor = new List<float>();
+            List<uint> indices = new List<uint>();
+
+            Dictionary<string, uint> vertexMap = new Dictionary<string, uint>(); // 중복 방지
+            uint vertexIndex = 0;
+
+            // 헬퍼: 정점 추가 (중복 체크)
+            uint AddVertex(float x, float y, float u, float v)
+            {
+                string key = $"{x:F6}_{y:F6}";
+                if (vertexMap.ContainsKey(key))
+                    return vertexMap[key];
+
+                pos.Add(x);
+                pos.Add(y);
+                pos.Add(0.0f);
+                tex.Add(u);
+                tex.Add(v);
+                nor.Add(0.0f);
+                nor.Add(0.0f);
+                nor.Add(1.0f);
+
+                vertexMap[key] = vertexIndex;
+                return vertexIndex++;
+            }
+
+            // 헬퍼: 쿼드 추가
+            void AddQuad(uint v0, uint v1, uint v2, uint v3)
+            {
+                indices.Add(v0);
+                indices.Add(v1);
+                indices.Add(v2);
+                indices.Add(v3);
+            }
+
+            float halfSize = innerN * unitSize;
+            float innerUnit = unitSize;
+            float edgeUnit = (2.0f * halfSize) / (2.0f * edgeN);
+
+            // ============================================================
+            // 1. 중심부 (저해상도 그리드)
+            // ============================================================
+            // 엣지 플래그에 따라 중심부 범위 결정
+            int xMin = edgeFlags[2] ? -innerN + 1 : -innerN;     // Left  off → 왼쪽 확장
+            int xMax = edgeFlags[0] ? innerN - 2 : innerN - 1;   // Right off → 오른쪽 확장
+            int yMin = edgeFlags[3] ? -innerN + 1 : -innerN;     // Bottom off → 아래 확장
+            int yMax = edgeFlags[1] ? innerN - 2 : innerN - 1;   // Top    off → 위 확장
+
+            // 1. 중심부 (저해상도 그리드)
+            for (int y = yMin; y <= yMax; y++)
+            {
+                for (int x = xMin; x <= xMax; x++)
+                {
+                    float x0 = x * innerUnit;
+                    float y0 = y * innerUnit;
+                    float x1 = (x + 1) * innerUnit;
+                    float y1 = (y + 1) * innerUnit;
+
+                    float u0 = (x0 / halfSize + 1.0f) * 0.5f;
+                    float v0 = (y0 / halfSize + 1.0f) * 0.5f;
+                    float u1 = (x1 / halfSize + 1.0f) * 0.5f;
+                    float v1 = (y1 / halfSize + 1.0f) * 0.5f;
+
+                    uint v00 = AddVertex(x0, y0, u0, v0);
+                    uint v10 = AddVertex(x1, y0, u1, v0);
+                    uint v01 = AddVertex(x0, y1, u0, v1);
+                    uint v11 = AddVertex(x1, y1, u1, v1);
+
+                    AddQuad(v00, v10, v01, v11);
+                }
+            }
+
+            // ============================================================
+            // 2. 오른쪽 엣지 (Right, x = halfSize)
+            // ============================================================
+            if (edgeFlags[0])
+            {
+                float xEdge = halfSize;
+                for (int i = 0; i < 2 * edgeN; i++)
+                {
+                    float yEdge0 = -halfSize + i * edgeUnit;
+                    float yEdge1 = yEdge0 + edgeUnit;
+
+                    // 내부 연결점
+                    float xInnerR = halfSize - innerUnit;
+
+                    // 내부쪽 정점은 y 좌표를 내부 그리드에 맞춤
+                    int innerYIdx0 = (int)Math.Round(yEdge0 / innerUnit);
+                    int innerYIdx1 = (int)Math.Round(yEdge1 / innerUnit);
+                    float yInnerR0 = innerYIdx0 * innerUnit;
+                    float yInnerR1 = innerYIdx1 * innerUnit;
+
+                    float uEdge = 1.0f;
+                    float uInnerR = (xInnerR / halfSize + 1.0f) * 0.5f;
+                    float vEdge0 = (yEdge0 / halfSize + 1.0f) * 0.5f;
+                    float vEdge1 = (yEdge1 / halfSize + 1.0f) * 0.5f;
+                    float vInnerR0 = (yInnerR0 / halfSize + 1.0f) * 0.5f;
+                    float vInnerR1 = (yInnerR1 / halfSize + 1.0f) * 0.5f;
+
+                    uint vEdgeR0 = AddVertex(xEdge, yEdge0, uEdge, vEdge0);
+                    uint vEdgeR1 = AddVertex(xEdge, yEdge1, uEdge, vEdge1);
+                    uint uvInnerR0 = AddVertex(xInnerR, yInnerR0, uInnerR, vInnerR0);
+                    uint uvInnerR1 = AddVertex(xInnerR, yInnerR1, uInnerR, vInnerR1);
+
+                    AddQuad(uvInnerR0, vEdgeR0, uvInnerR1, vEdgeR1);
+                }
+            }
+
+            // ============================================================
+            // 3. 위쪽 엣지 (Top, y = halfSize)
+            // ============================================================
+            if (edgeFlags[1])
+            {
+                float yEdge = halfSize;
+                for (int i = 0; i < 2 * edgeN; i++)
+                {
+                    float xEdge0 = -halfSize + i * edgeUnit;
+                    float xEdge1 = xEdge0 + edgeUnit;
+
+                    float yInnerT = halfSize - innerUnit;
+
+                    int innerXIdx0 = (int)Math.Round(xEdge0 / innerUnit);
+                    int innerXIdx1 = (int)Math.Round(xEdge1 / innerUnit);
+                    float xInnerT0 = innerXIdx0 * innerUnit;
+                    float xInnerT1 = innerXIdx1 * innerUnit;
+
+                    float vEdgeT = 1.0f;
+                    float vInnerT = (yInnerT / halfSize + 1.0f) * 0.5f;
+                    float uEdge0 = (xEdge0 / halfSize + 1.0f) * 0.5f;
+                    float uEdge1 = (xEdge1 / halfSize + 1.0f) * 0.5f;
+                    float uInnerT0 = (xInnerT0 / halfSize + 1.0f) * 0.5f;
+                    float uInnerT1 = (xInnerT1 / halfSize + 1.0f) * 0.5f;
+
+                    uint vEdgeT0 = AddVertex(xEdge0, yEdge, uEdge0, vEdgeT);
+                    uint vEdgeT1 = AddVertex(xEdge1, yEdge, uEdge1, vEdgeT);
+                    uint vInnerT0 = AddVertex(xInnerT0, yInnerT, uInnerT0, vInnerT);
+                    uint vInnerT1 = AddVertex(xInnerT1, yInnerT, uInnerT1, vInnerT);
+
+                    AddQuad(vInnerT0, vInnerT1, vEdgeT0, vEdgeT1);
+                }
+            }
+
+            // ============================================================
+            // 4. 왼쪽 엣지 (Left, x = -halfSize)
+            // ============================================================
+            if (edgeFlags[2])
+            {
+                float xEdge = -halfSize;
+                for (int i = 0; i < 2 * edgeN; i++)
+                {
+                    float yEdge0 = -halfSize + i * edgeUnit;
+                    float yEdge1 = yEdge0 + edgeUnit;
+
+                    float xInnerL = -halfSize + innerUnit;
+
+                    int innerYIdx0 = (int)Math.Round(yEdge0 / innerUnit);
+                    int innerYIdx1 = (int)Math.Round(yEdge1 / innerUnit);
+                    float yInnerL0 = innerYIdx0 * innerUnit;
+                    float yInnerL1 = innerYIdx1 * innerUnit;
+
+                    float uEdgeL = 0.0f;
+                    float uInnerL = (xInnerL / halfSize + 1.0f) * 0.5f;
+                    float vEdge0 = (yEdge0 / halfSize + 1.0f) * 0.5f;
+                    float vEdge1 = (yEdge1 / halfSize + 1.0f) * 0.5f;
+                    float vInnerL0 = (yInnerL0 / halfSize + 1.0f) * 0.5f;
+                    float vInnerL1 = (yInnerL1 / halfSize + 1.0f) * 0.5f;
+
+                    uint vEdgeL0 = AddVertex(xEdge, yEdge0, uEdgeL, vEdge0);
+                    uint vEdgeL1 = AddVertex(xEdge, yEdge1, uEdgeL, vEdge1);
+                    uint uvInnerL0 = AddVertex(xInnerL, yInnerL0, uInnerL, vInnerL0);
+                    uint uvInnerL1 = AddVertex(xInnerL, yInnerL1, uInnerL, vInnerL1);
+
+                    AddQuad(vEdgeL0, uvInnerL0, vEdgeL1, uvInnerL1);
+                }
+            }
+
+            // ============================================================
+            // 5. 아래쪽 엣지 (Bottom, y = -halfSize)
+            // ============================================================
+            if (edgeFlags[3])
+            {
+                float yEdge = -halfSize;
+                for (int i = 0; i < 2 * edgeN; i++)
+                {
+                    float xEdge0 = -halfSize + i * edgeUnit;
+                    float xEdge1 = xEdge0 + edgeUnit;
+
+                    float yInnerB = -halfSize + innerUnit;
+
+                    int innerXIdx0 = (int)Math.Round(xEdge0 / innerUnit);
+                    int innerXIdx1 = (int)Math.Round(xEdge1 / innerUnit);
+                    float xInnerB0 = innerXIdx0 * innerUnit;
+                    float xInnerB1 = innerXIdx1 * innerUnit;
+
+                    float vEdgeB = 0.0f;
+                    float vInnerB = (yInnerB / halfSize + 1.0f) * 0.5f;
+                    float uEdge0 = (xEdge0 / halfSize + 1.0f) * 0.5f;
+                    float uEdge1 = (xEdge1 / halfSize + 1.0f) * 0.5f;
+                    float uInnerB0 = (xInnerB0 / halfSize + 1.0f) * 0.5f;
+                    float uInnerB1 = (xInnerB1 / halfSize + 1.0f) * 0.5f;
+
+                    uint vEdgeB0 = AddVertex(xEdge0, yEdge, uEdge0, vEdgeB);
+                    uint vEdgeB1 = AddVertex(xEdge1, yEdge, uEdge1, vEdgeB);
+                    uint vInnerB0 = AddVertex(xInnerB0, yInnerB, uInnerB0, vInnerB);
+                    uint vInnerB1 = AddVertex(xInnerB1, yInnerB, uInnerB1, vInnerB);
+
+                    AddQuad(vEdgeB0, vEdgeB1, vInnerB0, vInnerB1);
+                }
+            }
+
+            // ============================================================
+            // VAO/IBO 생성
+            // ============================================================
+            uint vao = Gl.GenVertexArray();
+            Gl.BindVertexArray(vao);
+            StoreDataInAttributeList(0, 3, pos.ToArray());
+            StoreDataInAttributeList(1, 2, tex.ToArray());
+            StoreDataInAttributeList(2, 3, nor.ToArray());
+            uint ibo = StoreDataInAttributeList(indices.ToArray());
+            Gl.BindVertexArray(0);
+
+            RawModel3d rawModel = new RawModel3d(vao, pos.ToArray());
+            rawModel.IBO = ibo;
+            rawModel.VertexCount = pos.Count / 3;
+            rawModel.IndexCount = indices.Count;
+            rawModel.IsDrawElement = true;
+
             return rawModel;
         }
 

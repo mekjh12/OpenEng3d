@@ -13,6 +13,8 @@
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile />
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -46,6 +48,9 @@
       <HintPath>..\packages\OpenGL.Net.WinForms.0.8.4\lib\net461\OpenGL.Net.WinForms.dll</HintPath>
     </Reference>
     <Reference Include="PresentationFramework" />
+    <Reference Include="StbImageWriteSharp, Version=1.16.7.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\StbImageWriteSharp.1.16.7\lib\netstandard2.0\StbImageWriteSharp.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -113,6 +118,7 @@
     <Compile Include="GPUDriven\River\RiverMaskPass2ComputeShader.cs" />
     <Compile Include="GPUDriven\River\RiverMaskPass3ComputeShader.cs" />
     <Compile Include="GPUDriven\SimpleQuadTestShader.cs" />
+    <Compile Include="GPUDriven\Terrain\BmpHeightmapSaver.cs" />
     <Compile Include="GPUDriven\Terrain\HeightmapGenerator.cs" />
     <Compile Include="GPUDriven\Terrain\HeightmapGeneratorComputeShader.cs" />
     <Compile Include="GPUDriven\UpdateIndirectCommandsComputeShader.cs" />
@@ -260,6 +266,7 @@
     <None Include="ImpostorShader\impostor_instanced.vert" />
     <None Include="ImpostorShader\impostor_instanced.gem.glsl" />
     <None Include="ImpostorShader\impostor_instanced.frag" />
+    <None Include="includes\lib_terrain_height_sampling_v2.glsl" />
     <None Include="includes\lib_terrain_normal.glsl" />
     <None Include="includes\lib_terrain_height_sampling.glsl" />
     <None Include="includes\lib_vegetation.glsl" />

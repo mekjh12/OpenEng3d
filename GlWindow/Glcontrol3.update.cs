@@ -1,4 +1,5 @@
 ﻿using Camera3d;
+using Common;
 using System.Windows.Input;
 using Ui2d;
 
@@ -80,13 +81,13 @@ namespace GlWindow
             {
                 OrbitCamera orbitCamera = (OrbitCamera)_camera;
                 
-                if (Keyboard.IsKeyDown(Key.W)) orbitCamera.GoForward(_cameraStepLength);
-                if (Keyboard.IsKeyDown(Key.S)) orbitCamera.GoForward(-_cameraStepLength);
-                if (Keyboard.IsKeyDown(Key.D)) orbitCamera.GoRight(_cameraStepLength);
-                if (Keyboard.IsKeyDown(Key.A)) orbitCamera.GoRight(-_cameraStepLength);
+                if (Keyboard.IsKeyDown(Key.W)) orbitCamera.GoForward(Constants.CAMERA_MOVE_DELTA);
+                if (Keyboard.IsKeyDown(Key.S)) orbitCamera.GoForward(-Constants.CAMERA_MOVE_DELTA);
+                if (Keyboard.IsKeyDown(Key.D)) orbitCamera.GoRight(Constants.CAMERA_MOVE_DELTA);
+                if (Keyboard.IsKeyDown(Key.A)) orbitCamera.GoRight(-Constants.CAMERA_MOVE_DELTA);
 
-                if (Keyboard.IsKeyDown(Key.E)) orbitCamera.GoUp(_cameraStepLength);
-                if (Keyboard.IsKeyDown(Key.Q)) orbitCamera.GoUp(-_cameraStepLength);
+                if (Keyboard.IsKeyDown(Key.E)) orbitCamera.GoUp(Constants.CAMERA_MOVE_DELTA);
+                if (Keyboard.IsKeyDown(Key.Q)) orbitCamera.GoUp(-Constants.CAMERA_MOVE_DELTA);
             }
         }
     }

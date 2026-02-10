@@ -82,7 +82,7 @@ namespace FormTools
         const int DOWN_LEVEL = 2;                           // 다운샘플링 레벨
 
         // 지형 관련 변수들
-        TerrainRenderer _terrainRenderer;                   // 지형 렌더러
+        Renderer.TerrainRenderer _terrainRenderer;                   // 지형 렌더러
         TerrainRegion _terrainRegion;                       // 지형 영역
 
         // 라이팅 관련 변수들
@@ -246,7 +246,7 @@ namespace FormTools
             );
 
             // 지형 렌더러 초기화
-            _terrainRenderer = new TerrainRenderer(_terrainShader, StrRes.PROJECT_PATH);
+            _terrainRenderer = new Renderer.TerrainRenderer(_terrainShader, StrRes.PROJECT_PATH);
             _terrainRenderer.LoadTerrainLevelTextures(EXE_PATH + @"\Res\Terrain\blend\", StrRes.TERRAIN_BIOM_TOLEDO_TEXTURES);
             _terrainRenderer.LoadDetailTexture(EXE_PATH + StrRes.TERRAIN_DETAILMAP_FILENAMES);
             //_terrainRenderer.LoadTerrainNormalMap(StrRes.PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\0x0.png_normal.png");
@@ -278,7 +278,7 @@ namespace FormTools
             _lightingManager.SetDirty();
 
             // 태양 그림자 맵 초기화
-            _sunShadowMap = new ShadowMap(2048, 2048);
+            _sunShadowMap = new ShadowMap(1024, 1024);
 
             // UI 3D 텍스트 네임플레이트 초기화
             CharacterTextureAtlas.Initialize();

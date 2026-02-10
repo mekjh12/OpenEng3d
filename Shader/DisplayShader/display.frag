@@ -7,9 +7,9 @@ const float AMOUNT_LOD2 = 6.0f;
 
 uniform sampler2D noiseTexture;
 uniform sampler2D heightMapTexture;
-uniform float scaled;
+uniform float scaled = 1.0f;
 uniform int flip;
-uniform bool useHeightMap;
+uniform bool useHeightMap = false;
 uniform bool useGrayMode = false;
 
 in vec2 TexCoord;

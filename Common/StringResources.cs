@@ -35,6 +35,7 @@
         };
 
 
+        public readonly static string TERRAIN_ROOT_PATH = StrRes.PROJECT_PATH + @"\FormTools\bin\Debug\Res\Terrain\";
 
         public readonly static string TERRAIN_DETAILMAP_FILENAMES = @"\Res\Terrain\blend\detailMap.png";
     }

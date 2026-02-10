@@ -3,10 +3,8 @@ using Common.Abstractions;
 using FastMath;
 using Geometry;
 using GlWindow;
-using GPUDriven;
 using Light;
 using Lights;
-using Model3d;
 using Occlusion;
 using OpenGL;
 using Renderer;
@@ -23,40 +21,7 @@ namespace FormTools
     public partial class FormTerrainRegion : Form, GlControlerable
     {
         readonly string EXE_PATH = Application.StartupPath;
-        readonly string TITLE = "GPU Driven 지형 리전";
-
-        string[] _objFileNames = new string[]
-        {
-            @"florida_foliage\bananaPlant1.obj",
-            @"florida_foliage\palm1.obj",
-             @"florida_foliage\palm1.obj",
-            @"florida_foliage\palm2.obj",
-            @"florida_foliage\bananaPlant1.obj",
-            @"florida_foliage\bananaPlant2.obj",
-            @"florida_foliage\bananaPlant3.obj",
-            @"florida_foliage\fern1.obj",
-            @"florida_foliage\fern2.obj",
-            @"florida_foliage\fern3.obj",
-            @"florida_foliage\fern4.obj",
-            @"florida_foliage\fern5.obj",
-        };
-
-        /*            
-            @"florida_foliage\palm4.obj",
-            @"oak_tree.obj",
-            @"pine_tree.obj",
-            @"MedievalHouse01.obj",
-            @"florida_foliage\palm1.obj",
-            @"florida_foliage\palm2.obj",
-            @"florida_foliage\bananaPlant1.obj",
-            @"florida_foliage\bananaPlant2.obj",
-            @"florida_foliage\bananaPlant3.obj",
-            @"florida_foliage\fern1.obj",
-            @"florida_foliage\fern2.obj",
-            @"florida_foliage\fern3.obj",
-            @"florida_foliage\fern4.obj",
-            @"florida_foliage\fern5.obj",
-        */
+        readonly string TITLE = "Terrain Render";
 
         // GL 컨트롤 변수들
         private GlControl3 _glControl3;                     // OpenGL 컨트롤
@@ -67,8 +32,7 @@ namespace FormTools
         private WorldAxisRenderer _worldAxisRenderer;       // 월드 축 렌더러
         private DeferredRenderer _deferredRenderer;         // 디퍼드 렌더러
         private GBuffer _gbuffer;                           // 렌더타겟 지버퍼
-        private ShadowMap _sunShadowMap;                    // 태양 그림자맵
-
+                
         // 셰이더 변수들
         private ColorShader _colorShader;                   // 컬러 셰이더
         private HzmDepthShader _hzmDepthShader;             // HZM 깊이 셰이더
@@ -85,15 +49,12 @@ namespace FormTools
         private BackgroundText2d _culledText;               // 컬링된 노드 텍스트   
 
         // 3D 관련 변수들
-        Model3dManager _model3DManager;                     // 3D 모델 매니저
-        ModelBatchManager _modelBatchManager;               // 모델 배치 매니저
         HierarchyZBuffer _hiZBuffer;                        // 계층적 Z 버퍼
-        GeometryRenderPass _gpuDriven;                      // GPU 드리븐 렌더러
         const int DOWN_LEVEL = 2;                           // 다운샘플링 레벨
 
         // 지형 관련 변수들
-        TerrainRenderer _terrainRenderer;                   // 지형 렌더러
-        TerrainRegion _terrainRegion;                       // 지형 영역
+        TerrainStreamingManager _terrainStreamer;           // 지형 스트러머
+        Terrain.TerrainRenderer _terrainRenderer;           // 지형 렌더러
 
         // 라이팅 관련 변수들
         LightingManager _lightingManager;                   // 라이팅 매니저
@@ -121,7 +82,6 @@ namespace FormTools
         bool _isDebugTextDirty = true;                      // 디버그 텍스트 갱신 여부
         bool _isVisibleGbuffer = false;                     // G-버퍼 가시화 여부
         bool _isVisibleWorldAxis = false;                   // 월드 축 가시화 여부
-        bool _isFlyMode = false;                            // 플라이 모드 여부
         Vertex3f _cameraPivotPosition;                      // 디버깅용 카메라 피벗 위치 
 
         // 스트럭처버퍼 디버그 상태
@@ -129,10 +89,6 @@ namespace FormTools
         private bool _showStructureDebug = false;
         private int _debugMode = 0;  // 0~5
         private float _depthRange = 500.0f;
-
-        private GroundFogRenderer _groundFogRenderer;
-        private Shader.BillboardShader _billboardShader;  // ✅ BillboardShader로 변경
-
 
         public FormTerrainRegion()
         {
@@ -185,6 +141,7 @@ namespace FormTools
             ShaderManager.Instance.AddShader(new DeferredShadingShader(StrRes.PROJECT_PATH));
             ShaderManager.Instance.AddShader(new StructureDebugShader(StrRes.PROJECT_PATH));
 
+            // 셰이더 인스턴스 가져오기
             _colorShader = ShaderManager.Instance.GetShader<ColorShader>();
             _hzmDepthShader = ShaderManager.Instance.GetShader<HzmDepthShader>();
             _terrainShader = ShaderManager.Instance.GetShader<TerrainTessellationShader>();
@@ -229,49 +186,16 @@ namespace FormTools
             // 계층적 Z 버퍼 초기화
             _hiZBuffer = new HierarchyZBuffer(width >> DOWN_LEVEL, height >> DOWN_LEVEL, StrRes.PROJECT_PATH);
 
-            // 3D 모델 매니저 초기화 및 모델 로드
-            _model3DManager = new Model3dManager(StrRes.PROJECT_PATH, EXE_PATH + "\\nullTexture.jpg");
-            _modelBatchManager = new ModelBatchManager(Constants.MAX_INSTANCES, Constants.MAX_BATCHES);
-
-            for (int i = 0; i < _objFileNames.Length; i++)
-            {
-                UnifiedTexturedModel model3 = _model3DManager.AddRawModel(@"FormTools\bin\Debug\Res\" + _objFileNames[i]);
-                UnifiedTexturedModelLOD model3_lod1 = model3 as UnifiedTexturedModelLOD;
-                _modelBatchManager.AddModel(model3.Name, 100, model3, model3_lod1.ModelLod1);
-            }
-
-            _modelBatchManager.ImposterFinalize();
-
-            // 지형 영역 초기화
-            RegionCoord regionCoord = new RegionCoord(0, 0);
-            string heightMapFile = EXE_PATH + $"\\Res\\Terrain\\{regionCoord.FileName}.png";
-            _terrainRegion = new TerrainRegion(regionCoord, chunkSize: 100, n: 10, null);
-            _terrainRegion.LoadTerrainLowResMap(regionCoord, heightMapFile, completed: LoadTerrainRegionCompleted);
-
-            // 지형 노말맵 생성
-            uint normalMapTexture = NormalMapGenerator.GenerateNormalMap(
-                heightMapFile,
-                heightScale: Constants.TERRAIN_VERTICAL_SCALE,
-                wrapMode: true
-            );
+            // 지형 스트리밍 매니저 초기화
+            _terrainStreamer = new TerrainStreamingManager(StrRes.TERRAIN_ROOT_PATH + "yangshuo\\Tiles");
 
             // 지형 렌더러 초기화
-            _terrainRenderer = new TerrainRenderer(_terrainShader, StrRes.PROJECT_PATH);
+            _terrainRenderer = new Terrain.TerrainRenderer(_terrainStreamer);
             _terrainRenderer.LoadTerrainLevelTextures(EXE_PATH + @"\Res\Terrain\blend\", StrRes.TERRAIN_BIOM_TOLEDO_TEXTURES);
             _terrainRenderer.LoadDetailTexture(EXE_PATH + StrRes.TERRAIN_DETAILMAP_FILENAMES);
-            _terrainRenderer.LoadTerrainNormalMap(normalMapTexture);
             _terrainRenderer.LoadRockTexture(StrRes.PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\blend\toledo\rock.png");
-            _terrainRenderer.LoadRiverMapTexture(StrRes.PROJECT_PATH + $"FormTools\\bin\\Debug\\Res\\Terrain\\{regionCoord.FileName}_river.png");
             _terrainRenderer.LoadMossRockTexture(StrRes.PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\blend\mossy_rock.png");
-
-            // 낮은 안개 렌더러 초기화
-            _billboardShader = new Shader.BillboardShader(StrRes.PROJECT_PATH);
-            _groundFogRenderer = new GroundFogRenderer(StrRes.PROJECT_PATH);
-            _groundFogRenderer.HeightThreshold = 50.0f;
-            _groundFogRenderer.SlopeThreshold = 15.0f;
-
-            //_groundFogRenderer.CreateTestTexture();
-            _groundFogRenderer.LoadTexture(EXE_PATH + @"\Res\Terrain\fog_noise.png");
+            LoadTerrainRegionCompleted();
 
             // 하늘 렌더러 초기화
             float azimuth = float.Parse(IniFile.GetPrivateProfileString("sunlight", "Azimuth", "0"));
@@ -287,9 +211,6 @@ namespace FormTools
             _lightingManager.Lighting.SunIntensity = 1.5f;
             _lightingManager.SetDirty();
 
-            // 태양 그림자 맵 초기화
-            _sunShadowMap = new ShadowMap(2048, 2048);
-
             // UI 3D 텍스트 네임플레이트 초기화
             CharacterTextureAtlas.Initialize();
             TextBillboardShader.Initialize();
@@ -301,10 +222,6 @@ namespace FormTools
             // 셰리더 해시정보는 파일로 저장
             FileHashManager.Finalize();
 
-            // GPU 드리븐 렌더러 초기화
-            _gpuDriven = new GeometryRenderPass("초목용 렌더패스", StrRes.PROJECT_PATH);
-            _gpuDriven.Initialize(_glControl3.Camera, _modelBatchManager, distance0: 50, distance1: 150, distance2: 150);
-
             // 디퍼드 렌더러 초기화
             _gbuffer = _glControl3.GBuffer;
             _deferredRenderer = new DeferredRenderer(_gbuffer, _deferredShadingShader);
@@ -312,11 +229,7 @@ namespace FormTools
             // 지형 단층맵 만들기
             _terrainRenderer.CreateFaultTexture();
 
-            // 연무 패치 배치
-            _groundFogRenderer.BatchInstances(_terrainRegion.TerrainData);
-
-            // 연무 만들기
-            _groundFogRenderer.Init(_glControl3.Camera);
+            Constants.CAMERA_MOVE_DELTA = 10.0f;
         }
 
         public void UpdateFrame(int deltaTime, int width, int height, Camera camera)
@@ -341,32 +254,29 @@ namespace FormTools
                 _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
 
                 // 카메라 피벗 위치에 대한 지형 높이 얻기
-                if (!_isFlyMode)
-                {
-                    _cameraPivotPosition = camera.PivotPosition;
-                    _terrainRegion.TerrainData.GetTerrainHeightVertex3f(ref _cameraPivotPosition);
-                    _cameraPivotPosition.z += 2.0f; // 약간 띄우기   
-                    camera.PivotPosition = _cameraPivotPosition;
-                }
+                //_cameraPivotPosition = camera.PivotPosition;
+                //_terrainRegion.TerrainData.GetTerrainHeightVertex3f(ref _cameraPivotPosition);
+                //_cameraPivotPosition.z += 2.0f; // 약간 띄우기   
+                //camera.PivotPosition = _cameraPivotPosition;
 
                 // === HiZ 버퍼 업데이트 ===
                 _hiZBuffer.BindFramebuffer();
                 _hiZBuffer.PrepareRenderSurface();
 
                 // 지형 깊이 렌더링
+                /*
                 _hiZBuffer.RenderTerrainDepth(
                     Constants.TERRAIN_VERTICAL_SCALE,
                     _terrainRegion.TerrainEntity
                 );
-
-                // 2. 이전 프레임 LOD0, LOD1 깊이 렌더링 (Temporal Z-PrePass)
-                _gpuDriven?.RenderDepthPrePassFromPrevFrame(camera);
-                //_groundFogRenderer.RenderDepthPrePassFromPrevFrame(camera);
+                */
 
                 _hiZBuffer.UnbindFramebuffer();
 
                 // HiZ 밉맵 생성
                 _hiZBuffer.GenerateMipmapsUsingFragment(maxLevel: -1);
+
+                _culledText.Text = _terrainStreamer.CurrentRegionCoords;
 
                 _camPosText.Text = $"카메라 위치 ({camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1})";
 
@@ -374,14 +284,11 @@ namespace FormTools
                 //_culledText.Text = $"풀타일수 {_grassSystem.PoolCount} 활성 타일\n" + _grassSystem.ActiveTileNames;
             }
 
+            // 지형 스트리밍 매니저에 카메라 위치 업데이트
+            _terrainStreamer.Update(duration, camera.PivotPosition.x, camera.PivotPosition.y);
+
             // 지형 렌더링 업데이트
             _terrainRenderer.Update(duration);
-
-            // GPU 드리븐 업데이트
-            _gpuDriven?.Update(camera, _viewFrustum, _hiZBuffer);
-
-            // 연무 렌더러 업데이트
-            _groundFogRenderer.Update(camera, _viewFrustum, _hiZBuffer);
 
             // 렌더링 루프에서
             _fpsText.Text = $"FPS: {FramePerSecond.FPS:F1}";
@@ -392,17 +299,8 @@ namespace FormTools
 
             }
 
-            // 테스트 후 지울 것
-            _gpuDriven.GetVisibleCountDebug(ref _visibleCount,
-                   ref _visibleCountLod0,
-                   ref _visibleCountLod1,
-                   ref _visibleCountLod2,
-                   ref _visibleCountLod3,
-                   ref _frustumPassCount, ref _visibleReport);
-
             _lastVisibleCount = _visibleCount;
             _lastFrustumPassCount = _frustumPassCount;
-            _culledText.Text = _groundFogRenderer.GetDebugInfo();
             _isDebugTextDirty = true;
 
         }
@@ -415,16 +313,6 @@ namespace FormTools
             // ========================================
             // 1단계: Shadow Map 패스 (별도 FBO)
             // ========================================
-
-            // 지형 세도우맵 갱신
-            _terrainRenderer.RenderShadowMap(
-                _sunLight.Direction,
-                heightScale: Constants.TERRAIN_VERTICAL_SCALE, isClearBuffer: true
-            );
-
-            // 물체 세도우맵 갱신
-            _gpuDriven.RenderShadowMap(_sunShadowMap, camera, _sunLight.Direction, lightViewWidth: camera.Distance * 0.8f, isClearBuffer: true);
-            //_groundFogRenderer.RenderShadowMap(_sunShadowMap, camera, _sunLight.Direction, isClearBuffer: false);
 
             // ========================================
             // 2단계: G-Buffer 패스 (메인 지오메트리)
@@ -442,14 +330,11 @@ namespace FormTools
             _skyRenderer.RenderSkyDome(camera);
 
             // 지형 렌더링 (G-Buffer에 기록)
-            Gl.PolygonMode(MaterialFace.FrontAndBack, _glControl3.PolygonMode);
-            _terrainRenderer.Render(camera, heightScale: Constants.TERRAIN_VERTICAL_SCALE);
+            Gl.Enable(EnableCap.CullFace);
+            Gl.PolygonMode(MaterialFace.Front, _glControl3.PolygonMode);
 
-            // GPU DRIVEN 렌더링
-            _gpuDriven?.Render(camera);
-
-            // 연무 렌더링 (한 줄!)
-            _groundFogRenderer.Render(camera);
+            // 지형을 렌더링
+            _terrainRenderer.Render(camera);
 
             // 월드 축 렌더링
             if (_isVisibleWorldAxis) _worldAxisRenderer.Render(camera.VPMatrix);
@@ -477,26 +362,6 @@ namespace FormTools
                 _hiZBuffer.RenderDepthBuffer(_hzmDepthShader, camera, level: _level);
                 Gl.PolygonMode(MaterialFace.FrontAndBack, _glControl3.PolygonMode);
             }
-            else if (_isVisibleRenderDepthBuffer)
-            {
-                // [디버깅] 메인 렌더 깊이 버퍼 시각화 (지형 + 나무)
-                _renderDepthShader.Bind();
-                {
-                    _renderDepthShader.LoadCameraNear(camera.NEAR);
-                    _renderDepthShader.LoadCameraFar(camera.FAR);
-                    _renderDepthShader.LoadIsPerspective(true);
-
-                    // 선형 깊이 텍스처 사용 (MRT location 1)
-                    // GlControl3가 LinearDepthTextureId를 제공한다고 가정
-                    _renderDepthShader.LoadDepthTexture(
-                        TextureUnit.Texture0,
-                        _sunShadowMap.DepthTextureID //_terrainRenderer.ShadowMapTextureID //_glControl3.DepthTextureId  // 또는 적절한 프로퍼티명
-                    );
-
-                    Gl.DrawArrays(PrimitiveType.Points, 0, 1);
-                }
-                _renderDepthShader.Unbind();
-            }
             else if (_showStructureDebug)
             {
                 RenderStructureDebugQuad();
@@ -509,12 +374,7 @@ namespace FormTools
                 }
                 else
                 {
-                    // Deferred Shading (불투명 객체들)
-                    _deferredRenderer.SetTerrainShadowMap(_terrainRenderer.ShadowMap);
-                    _deferredRenderer.SetInstanceShadowMap(_sunShadowMap);
-
                     _deferredRenderer.Render(w, h);
-
                 }
             }
 
@@ -535,8 +395,9 @@ namespace FormTools
             _culledText.Render();
 
             Gl.Disable(EnableCap.Blend);
-            Renderer3d.RenderPoint(_colorShader, camera.PivotPosition, camera, new Vertex4f(1, 1, 0, 1), 0.02f);
-            Gl.Enable(EnableCap.DepthTest);
+            Gl.Disable(EnableCap.DepthTest);
+            Renderer3d.RenderPoint(_colorShader, camera.PivotPosition, camera, new Vertex4f(1, 1, 0, 1), 0.2f);
+            Gl.Enable(EnableCap.Blend);
         }
 
         public void PreviewKeyDownEvent(object sender, PreviewKeyDownEventArgs e)
@@ -626,56 +487,8 @@ namespace FormTools
         private void LoadTerrainRegionCompleted()
         {
             // 지형 로드 완료 후 처리할 작업들
-            _terrainRenderer.SetTerrain(_terrainRegion.TerrainEntity);
 
-            // 인스턴스 변환 행렬 생성 및 추가
-            int gridSize = 300;
-            float spacing = 15f;
-            float halfSpacing = spacing / 2f;
-            float quaterSpacing = spacing / 4f;
-            Random rand = new Random(42);
-            Vertex3f position = Vertex3f.Zero;
-            int numInstance = 0;
-
-            while (true)
-            {
-                //int x = i % gridSize;
-                //int y = i / gridSize;
-
-                //float posX = (x - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
-                //float posY = (y - gridSize / 2) * spacing + (float)(rand.NextDouble() * halfSpacing - quaterSpacing);
-                float posX = 1000f * (float)(rand.NextDouble() * 2.0f - 1.0f);
-                float posY = 1000f * (float)(rand.NextDouble() * 2.0f - 1.0f);
-
-                position.x = posX;
-                position.y = posY;
-
-                float slope = _terrainRegion.TerrainData.GetTerrainSlope(posX, posY);
-
-                float offsetX =_terrainRegion.TerrainData.Width * _terrainRegion.RegionCoord.X;
-                float offsetY =_terrainRegion.TerrainData.Height * _terrainRegion.RegionCoord.Y;
-
-                if (slope < 15)
-                {
-                    float posZ = _terrainRegion.TerrainData.GetTerrainHeight(ref position, Constants.TERRAIN_VERTICAL_SCALE);
-
-                    float rotZ = (float)(rand.NextDouble() * Math.PI * 2);
-                    float scale = 0.2f + (float)(rand.NextDouble() * 2.0f);
-
-                    Matrix4x4f transform = Matrix4x4f.Translated(offsetX + posX, offsetY + posY, posZ) *
-                                    Matrix4x4f.RotatedZ(rotZ.ToDegree()) *
-                                    Matrix4x4f.Scaled(scale, scale, scale);
-                    _modelBatchManager.AddInstance((uint)(numInstance % _objFileNames.Length), transform);
-                    //_modelBatchManager.AddInstance((uint)Rand.NextInt(0, objFileNames.Length), transform);
-                    numInstance++;
-                }
-
-                if (numInstance >= Constants.MAX_INSTANCES) break;
-            }
-
-            Console.WriteLine($"Generated {Constants.MAX_INSTANCES} tree instances");
-            _modelBatchManager.Finalized();
-
+            // 로드 완료 플래그 설정
             _isLoaded = true;
         }
 
@@ -696,7 +509,6 @@ namespace FormTools
             "G: Grid " +
             "-키: HiZDown  " +
             "+키: HiZUp  " +
-            "H: Fly모드  " +
             "/: 월드축  " +
             "화살표: 태양각" +
             "\n";
@@ -705,9 +517,7 @@ namespace FormTools
         {
             if (e.KeyCode == Keys.O)
             {
-                Vertex3f pos = Vertex3f.Zero;
-                pos.z = _terrainRegion.TerrainData.GetTerrainHeight(ref pos, Constants.TERRAIN_VERTICAL_SCALE);
-                _glControl3.Camera.PivotPosition = pos;
+                
             }
             else if (e.KeyCode == Keys.D1)
             {
@@ -729,28 +539,9 @@ namespace FormTools
                 _isVisibleRenderDepthBuffer = !_isVisibleRenderDepthBuffer;
                 _culledText.Text = $"RenderDepthBuffer {_isVisibleRenderDepthBuffer}";
             }
-            else if (e.KeyCode == Keys.D5)
-            {
-                _culledText.Text = "기능 " + _terrainRenderer.ToggleFunction();
-            }
             else if (e.KeyCode == Keys.D9)
             {
-                Vertex3f pos = new Vertex3f(0, 0, 0);
-                float z = _terrainRegion.TerrainData.GetTerrainHeight(ref pos, Constants.TERRAIN_VERTICAL_SCALE);
-
-                float px = ((float)_terrainRegion.RegionCoord.X + 0.5f) * _terrainRegion.TerrainData.Width;
-                float py = ((float)_terrainRegion.RegionCoord.Y + 0.5f) * _terrainRegion.TerrainData.Height;
-                pos.x = px;
-                pos.y = py;
-                pos.z = z;
-                _glControl3.Camera.PivotPosition = pos;
-            }
-            else if (e.KeyCode == Keys.D0)
-            {
-                Vertex3f pos = Rand.NextColor3f * 2000.0f - new Vertex3f(1000.0f, 1000.0f, 0.0f);
-                float z = _terrainRegion.TerrainData.GetTerrainHeight(ref pos, Constants.TERRAIN_VERTICAL_SCALE);
-                pos.z = z;
-                _glControl3.Camera.PivotPosition = pos;
+                _terrainStreamer.Print();
             }
             else if (e.KeyCode == Keys.OemMinus)
             {
@@ -770,14 +561,25 @@ namespace FormTools
             {
                 _isVisibleWorldAxis = !_isVisibleWorldAxis;
             }
-            else if (e.KeyCode == Keys.H)
+            else if (e.KeyCode == Keys.D0)
             {
-                _isFlyMode = !_isFlyMode;
-                _culledText.Text = $"플라이모드 {_level}";
+                Constants.CAMERA_MOVE_DELTA = Constants.CAMERA_MOVE_DELTA == 10.0f ? 0.1f: 10.0f;
             }
-            else if (e.KeyCode == Keys.Enter)
+            else if (e.KeyCode == Keys.Right)
             {
-                Console.WriteLine("카메라 위치 = " + _glControl3.Camera.PivotPosition);
+                _glControl3.Camera.PivotPosition = new Vertex3f(512, 0, 238);
+            }
+            else if (e.KeyCode == Keys.Left)
+            {
+                _glControl3.Camera.PivotPosition = new Vertex3f(-512, 0, 238);
+            }
+            else if (e.KeyCode == Keys.Up)
+            {
+                _glControl3.Camera.PivotPosition = new Vertex3f(0, 512, 238);
+            }
+            else if (e.KeyCode == Keys.Down)
+            {
+                _glControl3.Camera.PivotPosition = new Vertex3f(0, -512, 238);
             }
         }
 
@@ -829,6 +631,7 @@ namespace FormTools
 
         private void FormTerrainRegion_Load(object sender, EventArgs e)
         {
+
 
         }
     }
