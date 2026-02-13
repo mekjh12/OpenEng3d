@@ -210,7 +210,7 @@ namespace Renderer
             _shader.LoadEnableFunc(_onFunc);
 
             // 강줄기 맵
-            if (_riverMap != null) _shader.LoadRiverMap(_riverMap.TextureID);
+            if (_riverMap != null) _shader.LoadRiverRoadMap(_riverMap.TextureID);
             _shader.LoadMossRockTexture(_mossRockTexture.TextureID);
 
             // 지형 높이 임계값

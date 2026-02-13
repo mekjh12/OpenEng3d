@@ -45,6 +45,7 @@
             this.지형이미지타일링하기ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.지형이미지업스케일ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.지형이미지다듬기ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.지형타일링후Rawhighlow생성하기ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.txtCoord = new System.Windows.Forms.TextBox();
             this.btn_refresh = new System.Windows.Forms.Button();
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
@@ -114,8 +115,8 @@
             // 
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.파일ToolStripMenuItem,
-            this.도움말ToolStripMenuItem,
-            this.도구ToolStripMenuItem});
+            this.도구ToolStripMenuItem,
+            this.도움말ToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Size = new System.Drawing.Size(1616, 24);
@@ -162,7 +163,8 @@
             this.지형보기ToolStripMenuItem,
             this.지형이미지타일링하기ToolStripMenuItem,
             this.지형이미지업스케일ToolStripMenuItem,
-            this.지형이미지다듬기ToolStripMenuItem});
+            this.지형이미지다듬기ToolStripMenuItem,
+            this.지형타일링후Rawhighlow생성하기ToolStripMenuItem});
             this.도구ToolStripMenuItem.Name = "도구ToolStripMenuItem";
             this.도구ToolStripMenuItem.Size = new System.Drawing.Size(43, 20);
             this.도구ToolStripMenuItem.Text = "도구";
@@ -173,7 +175,7 @@
             this.읽어오기ToolStripMenuItem,
             this.저장하기ToolStripMenuItem});
             this.pNGToolStripMenuItem.Name = "pNGToolStripMenuItem";
-            this.pNGToolStripMenuItem.Size = new System.Drawing.Size(202, 22);
+            this.pNGToolStripMenuItem.Size = new System.Drawing.Size(288, 22);
             this.pNGToolStripMenuItem.Text = "PNG";
             // 
             // 읽어오기ToolStripMenuItem
@@ -192,30 +194,37 @@
             // 지형보기ToolStripMenuItem
             // 
             this.지형보기ToolStripMenuItem.Name = "지형보기ToolStripMenuItem";
-            this.지형보기ToolStripMenuItem.Size = new System.Drawing.Size(202, 22);
+            this.지형보기ToolStripMenuItem.Size = new System.Drawing.Size(288, 22);
             this.지형보기ToolStripMenuItem.Text = "지형 보기";
             this.지형보기ToolStripMenuItem.Click += new System.EventHandler(this.지형보기ToolStripMenuItem_Click);
             // 
             // 지형이미지타일링하기ToolStripMenuItem
             // 
             this.지형이미지타일링하기ToolStripMenuItem.Name = "지형이미지타일링하기ToolStripMenuItem";
-            this.지형이미지타일링하기ToolStripMenuItem.Size = new System.Drawing.Size(202, 22);
+            this.지형이미지타일링하기ToolStripMenuItem.Size = new System.Drawing.Size(288, 22);
             this.지형이미지타일링하기ToolStripMenuItem.Text = "지형이미지 타일링 하기";
             this.지형이미지타일링하기ToolStripMenuItem.Click += new System.EventHandler(this.지형이미지타일링하기ToolStripMenuItem_Click);
             // 
             // 지형이미지업스케일ToolStripMenuItem
             // 
             this.지형이미지업스케일ToolStripMenuItem.Name = "지형이미지업스케일ToolStripMenuItem";
-            this.지형이미지업스케일ToolStripMenuItem.Size = new System.Drawing.Size(202, 22);
+            this.지형이미지업스케일ToolStripMenuItem.Size = new System.Drawing.Size(288, 22);
             this.지형이미지업스케일ToolStripMenuItem.Text = "지형이미지 업스케일";
             this.지형이미지업스케일ToolStripMenuItem.Click += new System.EventHandler(this.지형이미지업스케일ToolStripMenuItem_Click);
             // 
             // 지형이미지다듬기ToolStripMenuItem
             // 
             this.지형이미지다듬기ToolStripMenuItem.Name = "지형이미지다듬기ToolStripMenuItem";
-            this.지형이미지다듬기ToolStripMenuItem.Size = new System.Drawing.Size(202, 22);
+            this.지형이미지다듬기ToolStripMenuItem.Size = new System.Drawing.Size(288, 22);
             this.지형이미지다듬기ToolStripMenuItem.Text = "지형이미지 다듬기";
             this.지형이미지다듬기ToolStripMenuItem.Click += new System.EventHandler(this.지형이미지다듬기ToolStripMenuItem_Click);
+            // 
+            // 지형타일링후Rawhighlow생성하기ToolStripMenuItem
+            // 
+            this.지형타일링후Rawhighlow생성하기ToolStripMenuItem.Name = "지형타일링후Rawhighlow생성하기ToolStripMenuItem";
+            this.지형타일링후Rawhighlow생성하기ToolStripMenuItem.Size = new System.Drawing.Size(288, 22);
+            this.지형타일링후Rawhighlow생성하기ToolStripMenuItem.Text = "지형 타일링 후 raw(high+low) 생성하기";
+            this.지형타일링후Rawhighlow생성하기ToolStripMenuItem.Click += new System.EventHandler(this.지형타일링후Rawhighlow생성하기ToolStripMenuItem_Click);
             // 
             // txtCoord
             // 
@@ -517,5 +526,6 @@
         private System.Windows.Forms.ToolStripMenuItem 지형이미지업스케일ToolStripMenuItem;
         private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog1;
         private System.Windows.Forms.TextBox txtTileOffset;
+        private System.Windows.Forms.ToolStripMenuItem 지형타일링후Rawhighlow생성하기ToolStripMenuItem;
     }
 }

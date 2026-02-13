@@ -10,6 +10,8 @@ namespace Terrain
         private TerrainStreamer _terrainLowStreamer;        // 지형 저해상도 스트리머
         private Dictionary<string, uint[]> _adjRegionTilesTextures;     // 주변 인접 텍스처들
 
+        private TileStreamer _roadRivertileStreamer;
+        
         // 속성
         public string CurrentRegionCoords => _terrainHighStreamer.CurrentRegionCoords;
         public int HighTileRadius => _terrainHighStreamer.TileRadius;
@@ -23,6 +25,14 @@ namespace Terrain
             _terrainHighStreamer = new TerrainStreamer(folder, 1, isLowRes: false);
             _terrainLowStreamer = new TerrainStreamer(folder, 3, isLowRes: true);
             _adjRegionTilesTextures = new Dictionary<string, uint[]>();
+
+            // 강과 도로의 텍스처를 로딩한다.
+            string[] filenames = new string[9] {
+                "river_road_-1_-1", "river_road_0_-1", "river_road_1_-1",
+                "river_road_-1_0", "river_road_0_0", "river_road_1_0",
+                "river_road_-1_1", "river_road_0_1", "river_road_1_1"
+            };
+            _roadRivertileStreamer = new TileStreamer(filenames, folder);
         }
 
         public void Update(float duration, float x, float y)
@@ -37,6 +47,11 @@ namespace Terrain
                 _terrainLowStreamer.CompletedLoad = false;
                 UpdateAdjTilesTextureIds();
             }
+        }
+
+        public uint GetRiverRoadTexture(float px, float py)
+        {
+            return _roadRivertileStreamer.GetTexture(px, py);
         }
 
         /// <summary>

@@ -191,7 +191,7 @@ namespace FormTools
 
             // 지형 렌더러 초기화
             _terrainRenderer = new Terrain.TerrainRenderer(_terrainStreamer);
-            _terrainRenderer.LoadTerrainLevelTextures(EXE_PATH + @"\Res\Terrain\blend\", StrRes.TERRAIN_BIOM_TOLEDO_TEXTURES);
+            _terrainRenderer.LoadTerrainLevelTextures(EXE_PATH + @"\Res\Terrain\blend\", StrRes.TERRAIN_HEIGHT_FILENAMES);
             _terrainRenderer.LoadDetailTexture(EXE_PATH + StrRes.TERRAIN_DETAILMAP_FILENAMES);
             _terrainRenderer.LoadRockTexture(StrRes.PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\blend\toledo\rock.png");
             _terrainRenderer.LoadMossRockTexture(StrRes.PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\blend\mossy_rock.png");
@@ -259,6 +259,10 @@ namespace FormTools
                 //_cameraPivotPosition.z += 2.0f; // 약간 띄우기   
                 //camera.PivotPosition = _cameraPivotPosition;
 
+
+                // 지형 스트리밍 매니저에 카메라 위치 업데이트
+                _terrainStreamer.Update(duration, camera.PivotPosition.x, camera.PivotPosition.y);
+
                 // === HiZ 버퍼 업데이트 ===
                 _hiZBuffer.BindFramebuffer();
                 _hiZBuffer.PrepareRenderSurface();
@@ -283,9 +287,6 @@ namespace FormTools
                 // 디버그 텍스트 갱신
                 //_culledText.Text = $"풀타일수 {_grassSystem.PoolCount} 활성 타일\n" + _grassSystem.ActiveTileNames;
             }
-
-            // 지형 스트리밍 매니저에 카메라 위치 업데이트
-            _terrainStreamer.Update(duration, camera.PivotPosition.x, camera.PivotPosition.y);
 
             // 지형 렌더링 업데이트
             _terrainRenderer.Update(duration);

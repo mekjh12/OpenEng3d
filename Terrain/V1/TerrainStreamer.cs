@@ -174,7 +174,7 @@ namespace Terrain
         private string GetHeightmapPath(int x, int y)
         {
             string verb = _isLowRes ? "_low" : "";
-            return $"{_heightmapBasePath}/{x}x{y}{verb}.raw";
+            return $"{_heightmapBasePath}/tile_{x}_{y}{verb}.raw";
         }
 
         /// <summary>

@@ -182,7 +182,6 @@ namespace Terrain
                 _groundTextures[3].TextureID,
                 _groundTextures[4].TextureID
             );
-            if (_riverMap != null) _shader.LoadRiverMap(_riverMap.TextureID);
             _shader.LoadMossRockTexture(_mossRockTexture.TextureID);
             _shader.LoadRockTexture(_rockTexture.TextureID);
             _shader.LoadFaultMap(_faultTexture.TextureID);
@@ -211,7 +210,10 @@ namespace Terrain
 
                     _shader.LoadHeightHighResolutionMap(_heightMapTextureId);
                     _shader.LoadHeightLowResolutionMap(_heightMapTextureId);
+                    
                     _shader.LoadAdjacentHeightMaps(_streamingManager.GetAdjRegionTextures(cx, cy));
+                    
+                    _shader.LoadRiverRoadMap(_streamingManager.GetRiverRoadTexture(camera.PivotPosition.x, camera.PivotPosition.y));
                     _shader.LoadModelMatrix(_worldMatrix);
 
                     Gl.DrawElements(PrimitiveType.Patches, _count, DrawElementsType.UnsignedInt, IntPtr.Zero);

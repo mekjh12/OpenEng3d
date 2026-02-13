@@ -2,6 +2,7 @@
 using OpenGL;
 using Shader;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -22,6 +23,8 @@ namespace FormTools
 
         HeightmapGenerator _generator;
         DisplayShader _displayShader;
+
+        private uint _baseHeightTextureId = 0;
 
         public FormTerrainGen()
         {
@@ -196,57 +199,66 @@ namespace FormTools
 
             if (this.openFileDialog1.ShowDialog() == DialogResult.OK)
             {
-                Console.WriteLine("https://heightmap.skydark.pl/");
-                string filepath = this.openFileDialog1.FileName;
+                TileSplit(offsetX, offsetY);
+            }
 
-                // 1. 저장할 폴더 생성 (이미지 파일명과 동일한 폴더)
-                string outputDir = Path.Combine(Path.GetDirectoryName(filepath), "Tiles");
-                if (!Directory.Exists(outputDir)) Directory.CreateDirectory(outputDir);
+            MessageBox.Show($"타일 생성이 완료되었습니다!", "완료");
+        }
 
-                try
+        private List<string> TileSplit(int offsetX, int offsetY)
+        {
+            List<string> list = new List<string>();
+
+            string filepath = this.openFileDialog1.FileName;
+
+            // 1. 저장할 폴더 생성 (이미지 파일명과 동일한 폴더)
+            string outputDir = Path.Combine(Path.GetDirectoryName(filepath), "Tiles");
+            if (!Directory.Exists(outputDir)) Directory.CreateDirectory(outputDir);
+
+            try
+            {
+                // 2. 원본 이미지 로드
+                using (Bitmap sourceImage = new Bitmap(filepath))
                 {
-                    // 2. 원본 이미지 로드
-                    using (Bitmap sourceImage = new Bitmap(filepath))
+                    int tileSize = 120;
+                    int columns = 9;
+                    int rows = 9;
+
+                    // 3. 이중 루프를 돌며 타일 절단 및 저장
+                    for (int y = 0; y < rows; y++)
                     {
-                        int tileSize = 120;
-                        int columns = 9;
-                        int rows = 9;
-
-                        // 3. 이중 루프를 돌며 타일 절단 및 저장
-                        for (int y = 0; y < rows; y++)
+                        for (int x = 0; x < columns; x++)
                         {
-                            for (int x = 0; x < columns; x++)
+                            // 타일 영역 설정
+                            Rectangle tileRect = new Rectangle(x * tileSize, y * tileSize, tileSize + 1, tileSize + 1);
+
+                            // 타일 생성 및 그리기
+                            using (Bitmap tile = new Bitmap(tileSize, tileSize))
                             {
-                                // 타일 영역 설정
-                                Rectangle tileRect = new Rectangle(x * tileSize, y * tileSize, tileSize + 1, tileSize + 1);
-
-                                // 타일 생성 및 그리기
-                                using (Bitmap tile = new Bitmap(tileSize, tileSize))
+                                using (Graphics g = Graphics.FromImage(tile))
                                 {
-                                    using (Graphics g = Graphics.FromImage(tile))
-                                    {
-                                        g.DrawImage(sourceImage, new Rectangle(0, 0, tileSize, tileSize), tileRect, GraphicsUnit.Pixel);
-                                    }
-
-                                    // 4. 파일 저장 (png 형식 권장)
-                                    int cordX = x + offsetX;
-                                    int cordY = y + offsetY;
-                                    string fileName = $"tile_{cordY}_{cordX}.png";
-                                    tile.Save(Path.Combine(outputDir, fileName), ImageFormat.Png);
+                                    g.DrawImage(sourceImage, new Rectangle(0, 0, tileSize, tileSize), tileRect, GraphicsUnit.Pixel);
                                 }
+
+                                // 4. 파일 저장 (png 형식 권장)
+                                int cordX = x + offsetX;
+                                int cordY = y + offsetY;
+                                string fileName = $"tile_{cordY}_{cordX}.png";
+                                tile.Save(Path.Combine(outputDir, fileName), ImageFormat.Png);
+
+                                list.Add(Path.Combine(outputDir, fileName));
                             }
                         }
                     }
-                    MessageBox.Show($"타일 생성이 완료되었습니다!\n저장 위치: {outputDir}", "완료");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"오류 발생: {ex.Message}");
                 }
             }
-        }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"오류 발생: {ex.Message}");
+            }
 
-        private uint _baseHeightTextureId = 0;
+            return list;
+        }
 
         private void 지형이미지다듬기ToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -259,40 +271,58 @@ namespace FormTools
 
         private void LoadBaseMap(string filename)
         {
-            // 1. 확장자를 제외한 파일명만 가져오기 (예: "tile_2_5")
+            // 1. 파일명에서 좌표 추출 로직
             string fileNameOnly = Path.GetFileNameWithoutExtension(filename);
-
-            // 2. 언더바(_)를 기준으로 문자열 분리
             string[] parts = fileNameOnly.Split('_');
 
-            // 3. 배열 크기 확인 및 데이터 추출
-            // parts[0] = "tile", parts[1] = "y", parts[2] = "x"
             if (parts.Length >= 3 && parts[0] == "tile")
             {
                 if (int.TryParse(parts[1], out int y) && int.TryParse(parts[2], out int x))
                 {
-                    // 파싱 성공! 여기서 x, y를 활용해 다듬기 로직을 수행하세요.
                     Console.WriteLine($"추출된 좌표 -> 행(Y): {y}, 열(X): {x}");
 
-                    // 읽어온 파일 GPU로 전송
-                    Bitmap bitmap = (Bitmap)Bitmap.FromFile(filename);
+                    // 2. 비트맵 로드 (using을 사용하여 처리가 끝나면 즉시 메모리 해제)
+                    using (Bitmap bitmap = (Bitmap)Bitmap.FromFile(filename))
+                    {
+                        // 3. 텍스처 ID 관리 (중복 생성 방지)
+                        if (_baseHeightTextureId == 0)
+                        {
+                            _baseHeightTextureId = Gl.GenTexture();
+                            Gl.BindTexture(TextureTarget.Texture2d, _baseHeightTextureId);
 
-                    int width = bitmap.Width;
-                    int height = bitmap.Height;
+                            // 최초 생성 시에만 텍스처 파라미터 설정
+                            Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, TextureMinFilter.Linear);
+                            Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, TextureMagFilter.Linear);
+                            Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.REPEAT);
+                            Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.REPEAT);
+                        }
+                        else
+                        {
+                            // 이미 ID가 있다면 기존 텍스처 바인딩
+                            Gl.BindTexture(TextureTarget.Texture2d, _baseHeightTextureId);
+                        }
 
-                    _baseHeightTextureId = Gl.GenTexture();
-                    Gl.BindTexture(TextureTarget.Texture2d, _baseHeightTextureId);
+                        // 4. GPU로 데이터 전송
+                        BitmapData data = bitmap.LockBits(
+                            new Rectangle(0, 0, bitmap.Width, bitmap.Height),
+                            ImageLockMode.ReadOnly,
+                            System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
-                    BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height),
-                        ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                    Gl.TexImage2D(TextureTarget.Texture2d, 0, InternalFormat.Rgba, data.Width, data.Height, 0,
-                         OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
-                    Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, TextureMinFilter.Linear);
-                    Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, TextureMagFilter.Linear);
-                    Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.REPEAT);
-                    Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.REPEAT);
+                        try
+                        {
+                            // 기존 메모리 공간에 새로운 이미지 데이터를 덮어씌움
+                            Gl.TexImage2D(TextureTarget.Texture2d, 0, InternalFormat.Rgba,
+                                data.Width, data.Height, 0,
+                                OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+                        }
+                        finally
+                        {
+                            bitmap.UnlockBits(data);
+                        }
 
-                    bitmap.UnlockBits(data);
+                        // 5. GPU 전송 완료 대기 (선택 사항이지만 연속 루프 시 안정적임)
+                        Gl.Flush();
+                    }
                 }
                 else
                 {
@@ -304,6 +334,29 @@ namespace FormTools
                 MessageBox.Show("타일 이미지 파일명이 규칙(tile_y_x.png)에 맞지 않습니다.");
             }
         }
+
+        private void BatchProcessTiles(List<string> filePaths)
+        {
+            foreach (var path in filePaths)
+            {
+                // 1. CPU -> GPU: 텍스처 전송 (LoadBaseMap)
+                LoadBaseMap(path);
+
+                // 2. GPU 연산 시작
+                _generator.Generate(_baseHeightTextureId, chk_first.Checked, chk_second.Checked);
+
+                // 3. 싱크 강제 맞춤 (핵심!)
+                // GPU가 Generate 연산을 끝낼 때까지 CPU가 여기서 대기합니다.
+                Gl.Finish();
+
+                // 4. GPU -> CPU -> Disk: 결과 읽기 및 저장
+                _generator.SaveHeightmapToPng(Path.ChangeExtension(path, "raw"));
+            }
+
+            MessageBox.Show("60개 타일 처리가 완료되었습니다.");
+        }
+
+
         private void sld_scale_Load(object sender, EventArgs e)
         {
 
@@ -413,14 +466,6 @@ namespace FormTools
             }
         }
 
-        private void checkedListBox1_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            string[] strings = Path.GetFileNameWithoutExtension(this.checkedListBox1.Text).Split('_');
-            this.txtCoord.Text = strings[1] + "x" + strings[2];
-            LoadBaseMap(this.label1.Text + "\\" + this.checkedListBox1.Text);
-            _generator.Generate(_baseHeightTextureId, chk_first.Checked, chk_second.Checked);
-        }
-
         private void btnAutoMacro_Click(object sender, EventArgs e)
         {
             string folder = this.label1.Text;
@@ -446,7 +491,25 @@ namespace FormTools
                     }
                 }
             }
+        }
 
+        private void checkedListBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            string[] strings = Path.GetFileNameWithoutExtension(this.checkedListBox1.Text).Split('_');
+            this.txtCoord.Text = strings[1] + "x" + strings[2];
+            LoadBaseMap(this.label1.Text + "\\" + this.checkedListBox1.Text);
+            _generator.Generate(_baseHeightTextureId, chk_first.Checked, chk_second.Checked);
+        }
+
+        private void SaveTile(string filename)
+        {
+            // _baseHeightTextureId를 리턴한다.
+            LoadBaseMap(this.label1.Text + "\\" + this.checkedListBox1.Text);
+
+            _generator.Generate(_baseHeightTextureId, chk_first.Checked, chk_second.Checked);
+
+            string outputFileName = Path.Combine(this.fileSystemWatcher1.Path, $"{this.txtCoord.Text}.raw");
+            _generator.SaveHeightmapToPng(outputFileName);
         }
 
         private void checkedListBox1_MouseDoubleClick(object sender, MouseEventArgs e)
@@ -482,6 +545,26 @@ namespace FormTools
                 string outputFolder = Path.GetDirectoryName(folderPath) + @"\output\";
                 TiledImageUpscaler.ProcessTiledUpscale(folderPath, outputFolder);
             }
+        }
+
+        private void 지형타일링후Rawhighlow생성하기ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string[] cols = this.txtTileOffset.Text.Split(',');
+            if (cols.Length != 2) MessageBox.Show($"Offset Tiles은 0,0인 형식이어야 합니다.");
+
+            int offsetX = int.Parse(cols[0].Trim());
+            int offsetY = int.Parse(cols[1].Trim());
+
+            List<string> tileList = null;
+
+            if (this.openFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                tileList = TileSplit(offsetX, offsetY);
+            }
+
+
+            BatchProcessTiles(tileList);
+            
         }
     }
 }

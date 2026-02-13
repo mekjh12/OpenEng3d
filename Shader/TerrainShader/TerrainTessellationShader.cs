@@ -57,7 +57,7 @@ namespace Shader
         private int loc_isDetailMap;
         private int loc_rockTexture;
         private int loc_rockMap;
-        private int loc_riverMap;
+        private int loc_riverRoadMap;
         private int loc_mossRockTexture;
 
         // --- 높이 임계값 유니폼 로케이션 ---
@@ -120,7 +120,7 @@ namespace Shader
             loc_detailMap = GetUniformLocation("gDetailMap");
             loc_isDetailMap = GetUniformLocation("gIsDetailMap");
             loc_rockTexture = GetUniformLocation("gRockTexture");
-            loc_riverMap = GetUniformLocation("gRiverMap");
+            loc_riverRoadMap = GetUniformLocation("gRiverRoadMap");
 
             loc_height0 = GetUniformLocation("gHeight0");
             loc_height1 = GetUniformLocation("gHeight1");
@@ -267,9 +267,9 @@ namespace Shader
         }
 
         // Unit 19: 강 맵
-        public void LoadRiverMap(uint texture)
+        public void LoadRiverRoadMap(uint texture)
         {
-            Gl.Uniform1(loc_riverMap, 19);
+            Gl.Uniform1(loc_riverRoadMap, 19);
             Gl.ActiveTexture(TextureUnit.Texture19);
             Gl.BindTexture(TextureTarget.Texture2d, texture);
         }

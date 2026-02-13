@@ -50,7 +50,9 @@ uniform float gFaultZoneWidth = 0.05f;
 uniform float gFaultZoneIntensity = 0.7f;
 
 // 강유역 유니폼
-uniform sampler2D gRiverMap;
+uniform sampler2D gRiverRoadMap;
+
+
 uniform sampler2D gMossRockTexture;
 uniform float gValleyBlendStart = 0.3;    // 블렌딩 시작 지점
 uniform float gValleyBlendEnd = 0.7;      // 블렌딩 종료 지점 (완전히 계곡 텍스처)
@@ -69,6 +71,7 @@ vec4 BlendTerrainTexturesAdvanced(vec3 worldPos, vec3 normalWorld, float height,
 vec4 GetTriplanarTextureAdvanced(sampler2D tex, vec3 worldPos, vec3 normal, float scale);
 float DetectValleyCurvature(vec2 uv, float currentHeight);
 vec4 ApplyValleyTexturing(vec2 uv, vec3 normalWorld, vec3 riverMask, vec4 baseColor);
+vec4 ApplyRiverTexturing(vec3 pos, vec3 normalWorld, vec4 baseColor);
 
 vec4 CalculateStructureOutput(float z)
 {
@@ -105,11 +108,10 @@ void main()
     vec4 texColor = BlendTerrainTexturesAdvanced(fragPos.xyz, normalWorld, height, dist);
         
     // 계곡 텍스처 적용 (스무스 블렌딩)
-    vec3 riverMask = texture(gRiverMap, Tex3).rgb;
-    texColor = ApplyValleyTexturing(Tex3, normalWorld, riverMask, texColor);
+    texColor = ApplyRiverTexturing(fragPos.xyz, normalWorld, texColor);
 
     // G-Buffer 출력
-    gAlbedo = vec4(texColor.rgb, 1.0);
+    gAlbedo = vec4(2.0f * texColor.rgb, 1.0); // <====2.0은 지워야 함(임시)
     gPosition = vec4(fragPos.xyz, 1.0);
     gNormal = vec4(normalWorld, 1.0);//texture(heightMapHighRes, texCoord).r / 
     gDepth = viewDepth / 10000.0;
@@ -118,6 +120,42 @@ void main()
     float z = viewPosOut.z;
     gStructure = CalculateStructureOutput(z);
 }
+
+vec4 SampleRiverSmooth(vec2 uv)
+{
+    vec2 texSize = vec2(1024.0); // 텍스처 해상도
+    vec2 texelCoord = uv * texSize - 0.5;
+    vec2 f = fract(texelCoord);
+    
+    // smoothstep으로 블록 경계를 부드럽게
+    f = f * f * (3.0 - 2.0 * f); // smoothstep hermite
+    // 더 부드럽게 하려면: f = f*f*f*(f*(f*6.0-15.0)+10.0); // quintic
+    
+    vec2 snapped = (floor(texelCoord) + f + 0.5) / texSize;
+    return texture(gRiverRoadMap, snapped);
+}
+
+vec4 ApplyRiverTexturing(vec3 pos, vec3 normalWorld, vec4 baseColor)
+{
+    vec2 uv = fract(pos.xy / 9216.0);
+    vec3 riverRoad = SampleRiverSmooth(uv).rgb;
+    float river = riverRoad.b;
+    float road  = riverRoad.r;
+    
+    // 하드 threshold 대신 부드러운 블렌딩
+    float riverAlpha = smoothstep(0.3, 0.7, river);
+    float roadAlpha  = smoothstep(0.3, 0.7, road);
+    
+    vec4 result = baseColor;
+
+    vec4 roadColor = texture(gTextureHeight4, uv * 1000.0f);
+
+
+    result = mix(result, vec4(0.0, 0.0, 1.0, 1.0), riverAlpha);
+    result = mix(result, vec4(roadColor.rgb, 1.0), roadAlpha);
+    return result;
+}
+
 
 //-----------------------------------------------------------------------------
 // ⭐ 계곡 텍스처 적용 함수 (부드러운 블렌딩)
