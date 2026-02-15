@@ -166,7 +166,8 @@ void main()
     
     // 최종 라이팅
     vec3 ambient = lighting.ambientColor * albedo.rgb;
-    vec3 finalColor = ambient + (1.0 - shadowTerrainFactor) * (1.0 - shadowFactor) * diffuse;
+    //vec3 finalColor = ambient + (1.0 - shadowTerrainFactor) * (1.0 - shadowFactor) * diffuse;
+    vec3 finalColor = ambient + diffuse;
     
     fragColor = vec4(finalColor, albedo.a);
 }

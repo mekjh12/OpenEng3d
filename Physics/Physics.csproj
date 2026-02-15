@@ -99,6 +99,7 @@
     <Compile Include="Matter\SpecificGravityList.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="Force\ForceDiagram.cd" />
     <None Include="RigidBody.cd" />
     <None Include="packages.config" />

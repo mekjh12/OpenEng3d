@@ -8,10 +8,15 @@ namespace Terrain
         // 지형 관련 변수들
         private TerrainStreamer _terrainHighStreamer;       // 지형 고해상도 스트리머
         private TerrainStreamer _terrainLowStreamer;        // 지형 저해상도 스트리머
-        private Dictionary<string, uint[]> _adjRegionTilesTextures;     // 주변 인접 텍스처들
+        private TerrainStreamer _terrainNormalMapStreamer;  // 지형 노말맵 스트리머
+        private Dictionary<(int, int), uint[]> _adjRegionTilesTextures;     // 주변 인접 텍스처들
 
         private TileStreamer _roadRivertileStreamer;
-        
+
+        // 8방향 오프셋을 static readonly로
+        private static readonly int[] _adjDx = { 1, 1, 0, -1, -1, -1, 0, 1 };
+        private static readonly int[] _adjDy = { 0, 1, 1, 1, 0, -1, -1, -1 };
+
         // 속성
         public string CurrentRegionCoords => _terrainHighStreamer.CurrentRegionCoords;
         public int HighTileRadius => _terrainHighStreamer.TileRadius;
@@ -22,29 +27,39 @@ namespace Terrain
 
         public TerrainStreamingManager(string folder)
         {
-            _terrainHighStreamer = new TerrainStreamer(folder, 1, isLowRes: false);
-            _terrainLowStreamer = new TerrainStreamer(folder, 3, isLowRes: true);
-            _adjRegionTilesTextures = new Dictionary<string, uint[]>();
+            _terrainHighStreamer = new TerrainStreamer(
+                folder, tileRadius: 1, 1, tileFileSuffix: "", TileFormat.HeightmapHighFloat());
+
+            _terrainLowStreamer = new TerrainStreamer(
+                folder, tileRadius: 3, 1, tileFileSuffix: "_low", TileFormat.HeightmapLowFloat());
+
+            _terrainNormalMapStreamer = new TerrainStreamer(
+                folder, tileRadius: 3, 1, tileFileSuffix: "_normal", TileFormat.NormalMapRGB());
+
+            _adjRegionTilesTextures = new Dictionary<(int, int), uint[]>();
 
             // 강과 도로의 텍스처를 로딩한다.
-            string[] filenames = new string[9] {
-                "river_road_-1_-1", "river_road_0_-1", "river_road_1_-1",
-                "river_road_-1_0", "river_road_0_0", "river_road_1_0",
-                "river_road_-1_1", "river_road_0_1", "river_road_1_1"
+            string[] filenames = new string[4] {
+                "river_road_0_0", "river_road_1_0",
+                 "river_road_0_1", "river_road_1_1"
             };
             _roadRivertileStreamer = new TileStreamer(filenames, folder);
         }
 
         public void Update(float duration, float x, float y)
         {
-            _terrainHighStreamer.Update(duration, x, y);
-            _terrainLowStreamer.Update(duration, x, y);
+            _terrainHighStreamer.UpdateStreaming(duration, x, y);
+            _terrainLowStreamer.UpdateStreaming(duration, x, y);
+            _terrainNormalMapStreamer.UpdateStreaming(duration, x, y);
 
-            if (_terrainHighStreamer.CompletedLoad && _terrainLowStreamer.CompletedLoad)
+            if (_terrainHighStreamer.IsLoadingComplete && 
+                _terrainLowStreamer.IsLoadingComplete && 
+                _terrainNormalMapStreamer.IsLoadingComplete)
             {
                 Console.WriteLine("*** 로딩완료 " + _terrainLowStreamer.CurrentRegionX + "," + _terrainLowStreamer.CurrentRegionY);
-                _terrainHighStreamer.CompletedLoad = false;
-                _terrainLowStreamer.CompletedLoad = false;
+                _terrainHighStreamer.IsLoadingComplete = false;
+                _terrainLowStreamer.IsLoadingComplete = false;
+                _terrainNormalMapStreamer.IsLoadingComplete = false;
                 UpdateAdjTilesTextureIds();
             }
         }
@@ -69,9 +84,14 @@ namespace Terrain
             }
         }
 
+        public uint GetRegionNormalTexture(int regionX, int regionY)
+        {
+            return _terrainNormalMapStreamer.GetRegionTexture(regionX, regionY);
+        }
+
         public uint[] GetAdjRegionTextures(int regionX, int regionY)
         {
-            _adjRegionTilesTextures.TryGetValue($"{regionX}_{regionY}", out uint[] result);
+            _adjRegionTilesTextures.TryGetValue((regionX, regionY), out uint[] result);
             return result;
         }
 
@@ -79,6 +99,7 @@ namespace Terrain
         {
             _terrainLowStreamer.PrintRegion();
             _terrainHighStreamer.PrintRegion();
+            _terrainNormalMapStreamer.PrintRegion();
 
             foreach (var key in _adjRegionTilesTextures)
             {
@@ -100,24 +121,19 @@ namespace Terrain
 
             _adjRegionTilesTextures.Clear();
 
-            // 8방향 오프셋: 동, 북동, 북, 북서, 서, 남서, 남, 남동
-            int[] adjDx = { 1, 1, 0, -1, -1, -1, 0, 1 };
-            int[] adjDy = { 0, 1, 1, 1, 0, -1, -1, -1 };
-
             for (int dy = -_tileRadius; dy <= _tileRadius; dy++)
             {
                 for (int dx = -_tileRadius; dx <= _tileRadius; dx++)
                 {
                     int rx = _currentRegionX + dx;
                     int ry = _currentRegionY + dy;
-                    string key = _terrainLowStreamer.GetRegionKey(rx, ry);
 
                     uint[] textures = new uint[8];
 
                     for (int i = 0; i < 8; i++)
                     {
-                        int nx = rx + adjDx[i];
-                        int ny = ry + adjDy[i];
+                        int nx = rx + _adjDx[i];
+                        int ny = ry + _adjDy[i];
 
                         // 인접 타일이 고해상도 범위 내인지 판별
                         int relX = nx - _currentRegionX;
@@ -135,7 +151,7 @@ namespace Terrain
                         }
                     }
 
-                    _adjRegionTilesTextures.Add(key, textures);
+                    _adjRegionTilesTextures.Add((rx, ry), textures);
                 }
             }
         }

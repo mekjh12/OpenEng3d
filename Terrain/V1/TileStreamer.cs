@@ -13,7 +13,7 @@ namespace Terrain
     public class TileStreamer
     {
         private const float TileSize = 9216f;
-        private const int SlotCount = 9;
+        private const int SlotCount = 4;
 
         private readonly int[] _tileX = new int[SlotCount];
         private readonly int[] _tileY = new int[SlotCount];
@@ -57,7 +57,7 @@ namespace Terrain
         {
             int regionX = (int)Math.Floor(worldX / TileSize);
             int regionY = (int)Math.Floor(worldY / TileSize);
-            return GetTexture(regionX, regionY);
+            return GetTexture(-regionY, -regionX);
         }
 
 

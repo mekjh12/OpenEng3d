@@ -1,7 +1,7 @@
 ﻿using OpenGL;
 using System;
 
-namespace Renderer
+namespace Common
 {
     /// <summary>
     /// Shadow Map을 위한 깊이 텍스처와 프레임버퍼를 관리합니다.

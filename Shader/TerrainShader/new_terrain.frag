@@ -97,7 +97,7 @@ void main()
     vec3 normalTangent = texture(gNormalMap, Tex3).rgb;
     normalTangent = normalTangent * 2.0 - 1.0;
     vec3 normalWorld = normalize(normalMatrix * normalTangent);
-    
+
     // 경사도 계산
     float slope = 1.0 - clamp(normalWorld.z, 0.0, 1.0);
 
@@ -111,7 +111,7 @@ void main()
     texColor = ApplyRiverTexturing(fragPos.xyz, normalWorld, texColor);
 
     // G-Buffer 출력
-    gAlbedo = vec4(2.0f * texColor.rgb, 1.0); // <====2.0은 지워야 함(임시)
+    gAlbedo = vec4(texColor.rgb, 1.0);
     gPosition = vec4(fragPos.xyz, 1.0);
     gNormal = vec4(normalWorld, 1.0);//texture(heightMapHighRes, texCoord).r / 
     gDepth = viewDepth / 10000.0;
@@ -149,13 +149,17 @@ vec4 ApplyRiverTexturing(vec3 pos, vec3 normalWorld, vec4 baseColor)
     vec4 result = baseColor;
 
     vec4 roadColor = texture(gTextureHeight4, uv * 1000.0f);
+    vec4 waterColor = texture(gMossRockTexture, uv * 300.0f);
 
+    if (river > 0.5 ) {
+        result = mix(result, vec4(waterColor.rgb, 1.0), riverAlpha);
+    }
 
-    result = mix(result, vec4(0.0, 0.0, 1.0, 1.0), riverAlpha);
-    result = mix(result, vec4(roadColor.rgb, 1.0), roadAlpha);
+    if (road > 0.5 ) {
+        result = mix(result, vec4(roadColor.rgb, 1.0), roadAlpha);
+    }
     return result;
 }
-
 
 //-----------------------------------------------------------------------------
 // ⭐ 계곡 텍스처 적용 함수 (부드러운 블렌딩)
@@ -295,8 +299,6 @@ vec4 BlendTerrainTexturesAdvanced(vec3 worldPos, vec3 normalWorld, float height,
     // 경사도 계산
     float slope = 1.0 - clamp(normalWorld.z, 0.0, 1.0);
     float slopeBlend = smoothstep(0.2, 0.5, slope);
-    slopeBlend=0.0; // 여기지워야함
-
 
     // 바위 텍스처
     vec4 rockColor = GetTriplanarTextureAdvanced(gRockTexture, worldPos, normalWorld, worldTexScale);

@@ -219,17 +219,101 @@ namespace Shader
             Console.WriteLine("[HeightmapGenerator] 리소스 정리 완료");
         }
 
-        /// <summary>
-        /// Heightmap을 16bit PNG로 저장
-        /// </summary>
-        public void SaveHeightmapToPng(string filePath, bool saveMeta = true)
+        public void SaveHeightmapToPng(string filePath, bool saveMeta = false, bool generateNormalMap = true)
         {
-            // GPU에서 데이터 읽기
             float[] heightData = ReadHeightmapFromGPU(flipY: false);
+            BmpHeightmapSaver.SaveAsRaw16(heightData, _size, _size, filePath, saveMeta: saveMeta);
+            Console.WriteLine($"[Heightmap] RAW 저장 완료: {filePath}");
 
-            BmpHeightmapSaver.SaveAsRaw16(heightData, _size, _size, filePath, saveMeta: false);
+            if (generateNormalMap)
+            {
+                float[] normalData = GenerateNormalMapFromHeight(heightData, _size, _size);
 
-            Console.WriteLine($"[Heightmap] PNG 저장 완료: {filePath}");
+                string normalPath = Path.Combine(
+                    Path.GetDirectoryName(filePath),
+                    Path.GetFileNameWithoutExtension(filePath) + "_normal.raw"
+                );
+
+                BmpHeightmapSaver.SaveNormalMapAsRaw8(normalData, _size, _size, normalPath, saveMeta: false);
+            }
+        }
+
+        /// <summary>
+        /// RGB 3채널 float[] 다운샘플링 (Bilinear)
+        /// </summary>
+        private static float[] DownsampleRgb(float[] src, int srcW, int srcH, int dstW, int dstH)
+        {
+            float[] dst = new float[dstW * dstH * 3];
+
+            float scaleX = (float)srcW / dstW;
+            float scaleY = (float)srcH / dstH;
+
+            for (int y = 0; y < dstH; y++)
+            {
+                float srcY = y * scaleY;
+                int y0 = Math.Min((int)srcY, srcH - 1);
+                int y1 = Math.Min(y0 + 1, srcH - 1);
+                float fy = srcY - y0;
+
+                for (int x = 0; x < dstW; x++)
+                {
+                    float srcX = x * scaleX;
+                    int x0 = Math.Min((int)srcX, srcW - 1);
+                    int x1 = Math.Min(x0 + 1, srcW - 1);
+                    float fx = srcX - x0;
+
+                    int i00 = (y0 * srcW + x0) * 3;
+                    int i10 = (y0 * srcW + x1) * 3;
+                    int i01 = (y1 * srcW + x0) * 3;
+                    int i11 = (y1 * srcW + x1) * 3;
+
+                    int dstIdx = (y * dstW + x) * 3;
+                    for (int c = 0; c < 3; c++)
+                    {
+                        float top = src[i00 + c] * (1f - fx) + src[i10 + c] * fx;
+                        float bot = src[i01 + c] * (1f - fx) + src[i11 + c] * fx;
+                        dst[dstIdx + c] = top * (1f - fy) + bot * fy;
+                    }
+                }
+            }
+
+            return dst;
+        }
+
+        private float[] GenerateNormalMapFromHeight(float[] heightRGBA, int width, int height)
+        {
+            float[] normals = new float[width * height * 3];
+            float strengthScale = width * 0.5f;
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    int xL = Math.Max(x - 1, 0);
+                    int xR = Math.Min(x + 1, width - 1);
+                    int yD = Math.Max(y - 1, 0);
+                    int yU = Math.Min(y + 1, height - 1);
+
+                    float hL = heightRGBA[y * width * 4 + xL * 4];
+                    float hR = heightRGBA[y * width * 4 + xR * 4];
+                    float hD = heightRGBA[yD * width * 4 + x * 4];
+                    float hU = heightRGBA[yU * width * 4 + x * 4];
+
+                    float dx = (hR - hL) * strengthScale;
+                    float dy = (hU - hD) * strengthScale;
+
+                    float nx = -dx;
+                    float ny = -dy;
+                    float nz = 1.0f;
+                    float len = MathF.Sqrt(nx * nx + ny * ny + nz * nz);
+
+                    int idx = (y * width + x) * 3;
+                    normals[idx + 0] = (nx / len) * 0.5f + 0.5f;
+                    normals[idx + 1] = (ny / len) * 0.5f + 0.5f;
+                    normals[idx + 2] = (nz / len) * 0.5f + 0.5f;
+                }
+            }
+            return normals;
         }
 
         /// <summary>

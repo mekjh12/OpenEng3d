@@ -51,7 +51,7 @@ namespace FormTools
             // 높이맵 생성기 초기화
             _generator = new HeightmapGenerator();
             _generator.Initialize(StrRes.PROJECT_PATH, size: 1025);
-            _generator.Generate(_baseHeightTextureId, chk_first.Checked, chk_second.Checked);
+            _generator.Generate(_baseHeightTextureId, true, true);
         }
 
 
@@ -82,12 +82,12 @@ namespace FormTools
 
         private void sld_scale_ValueChanged(object sender, EventArgs e)
         {
-            _generator.Generate(_baseHeightTextureId,chk_first.Checked, chk_second.Checked);
+            _generator.Generate(_baseHeightTextureId);
         }
 
         private void sld_octaves_ValueChanged(object sender, EventArgs e)
         {
-            _generator.Generate(_baseHeightTextureId, chk_first.Checked, chk_second.Checked);
+            _generator.Generate(_baseHeightTextureId);
         }
 
         private void btn_save_Click(object sender, EventArgs e)
@@ -191,34 +191,22 @@ namespace FormTools
 
         private void 지형이미지타일링하기ToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string[] cols = this.txtTileOffset.Text.Split(',');
-            if (cols.Length != 2) MessageBox.Show($"Offset Tiles은 0,0인 형식이어야 합니다.");
-
-            int offsetX = int.Parse(cols[0].Trim());
-            int offsetY = int.Parse(cols[1].Trim());
-
-            if (this.openFileDialog1.ShowDialog() == DialogResult.OK)
-            {
-                TileSplit(offsetX, offsetY);
-            }
-
-            MessageBox.Show($"타일 생성이 완료되었습니다!", "완료");
+            
         }
 
-        private List<string> TileSplit(int offsetX, int offsetY)
+        private List<string> TileSplit(string fileName, int offsetX, int offsetY)
         {
             List<string> list = new List<string>();
 
-            string filepath = this.openFileDialog1.FileName;
 
             // 1. 저장할 폴더 생성 (이미지 파일명과 동일한 폴더)
-            string outputDir = Path.Combine(Path.GetDirectoryName(filepath), "Tiles");
+            string outputDir = Path.Combine(Path.GetDirectoryName(fileName), "Tiles");
             if (!Directory.Exists(outputDir)) Directory.CreateDirectory(outputDir);
 
             try
             {
                 // 2. 원본 이미지 로드
-                using (Bitmap sourceImage = new Bitmap(filepath))
+                using (Bitmap sourceImage = new Bitmap(fileName))
                 {
                     int tileSize = 120;
                     int columns = 9;
@@ -243,10 +231,10 @@ namespace FormTools
                                 // 4. 파일 저장 (png 형식 권장)
                                 int cordX = x + offsetX;
                                 int cordY = y + offsetY;
-                                string fileName = $"tile_{cordY}_{cordX}.png";
-                                tile.Save(Path.Combine(outputDir, fileName), ImageFormat.Png);
+                                string outputFileName = $"tile_{cordY}_{cordX}.png";
+                                tile.Save(Path.Combine(outputDir, outputFileName), ImageFormat.Png);
 
-                                list.Add(Path.Combine(outputDir, fileName));
+                                list.Add(Path.Combine(outputDir, outputFileName));
                             }
                         }
                     }
@@ -343,7 +331,7 @@ namespace FormTools
                 LoadBaseMap(path);
 
                 // 2. GPU 연산 시작
-                _generator.Generate(_baseHeightTextureId, chk_first.Checked, chk_second.Checked);
+                _generator.Generate(_baseHeightTextureId);
 
                 // 3. 싱크 강제 맞춤 (핵심!)
                 // GPU가 Generate 연산을 끝낼 때까지 CPU가 여기서 대기합니다.
@@ -354,29 +342,6 @@ namespace FormTools
             }
 
             MessageBox.Show("60개 타일 처리가 완료되었습니다.");
-        }
-
-
-        private void sld_scale_Load(object sender, EventArgs e)
-        {
-
-        }
-
-        private void button2_Click(object sender, EventArgs e)
-        {
-            LoadBaseMap(@"C:\Users\mekjh\Videos\Downloads\heightmap_Tiles\tile_4_5.png");
-            _generator.Generate(_baseHeightTextureId, chk_first.Checked, chk_second.Checked);
-        }
-
-        private void chk_first_CheckedChanged(object sender, EventArgs e)
-        {
-            _generator.Generate(_baseHeightTextureId, chk_first.Checked, chk_second.Checked);
-
-        }
-
-        private void chk_second_CheckedChanged(object sender, EventArgs e)
-        {
-            _generator.Generate(_baseHeightTextureId, chk_first.Checked, chk_second.Checked);
         }
 
         private void btnLoad_Click(object sender, EventArgs e)
@@ -397,51 +362,8 @@ namespace FormTools
                 this.Invoke(new Action(() => fileSystemWatcher1_Changed(sender, e)));
                 return;
             }
-
-            // 1. 현재 상태 저장 (스크롤 위치와 선택된 항목의 이름)
-            int oldTopIndex = checkedListBox1.TopIndex;
-            string selectedItemText = checkedListBox1.SelectedItem?.ToString();
-
-            this.checkedListBox1.Items.Clear();
-            string folder = this.label1.Text;
-
-            if (string.IsNullOrEmpty(folder) || !Directory.Exists(folder)) return;
-
-            // 2. 아이템 다시 채우기
-            foreach (var item in Directory.GetFiles(folder))
-            {
-                string fileName = Path.GetFileName(item);
-                string extension = Path.GetExtension(item).ToLower();
-
-                if (extension == ".png")
-                {
-                    string[] strings = Path.GetFileNameWithoutExtension(fileName).Split('_');
-                    if (strings.Length == 3)
-                    {
-                        string rawFile = Path.Combine(folder, strings[1] + "x" + strings[2] + ".raw");
-                        bool hasRawFile = File.Exists(rawFile);
-                        this.checkedListBox1.Items.Add(fileName, hasRawFile);
-                    }
-                }
-            }
-
-            // 3. 상태 복구
-            // 이전에 선택했던 파일명이 리스트에 있다면 다시 선택해줌
-            if (!string.IsNullOrEmpty(selectedItemText))
-            {
-                int newIndex = checkedListBox1.FindStringExact(selectedItemText);
-                if (newIndex != -1)
-                {
-                    checkedListBox1.SelectedIndex = newIndex;
-                }
-            }
-
-            // 4. 스크롤 위치 복구 (가장 중요!)
-            if (oldTopIndex < checkedListBox1.Items.Count)
-            {
-                checkedListBox1.TopIndex = oldTopIndex;
-            }
         }
+
         private void btnFolder_Click(object sender, EventArgs e)
         {
             using (FolderBrowserDialog dialog = new FolderBrowserDialog())
@@ -486,53 +408,10 @@ namespace FormTools
                         bool hasRawFile = File.Exists(rawFile);
 
                         LoadBaseMap(item);
-                        _generator.Generate(_baseHeightTextureId, chk_first.Checked, chk_second.Checked);
+                        _generator.Generate(_baseHeightTextureId);
                         _generator.SaveHeightmapToPng(rawFile);
                     }
                 }
-            }
-        }
-
-        private void checkedListBox1_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            string[] strings = Path.GetFileNameWithoutExtension(this.checkedListBox1.Text).Split('_');
-            this.txtCoord.Text = strings[1] + "x" + strings[2];
-            LoadBaseMap(this.label1.Text + "\\" + this.checkedListBox1.Text);
-            _generator.Generate(_baseHeightTextureId, chk_first.Checked, chk_second.Checked);
-        }
-
-        private void SaveTile(string filename)
-        {
-            // _baseHeightTextureId를 리턴한다.
-            LoadBaseMap(this.label1.Text + "\\" + this.checkedListBox1.Text);
-
-            _generator.Generate(_baseHeightTextureId, chk_first.Checked, chk_second.Checked);
-
-            string outputFileName = Path.Combine(this.fileSystemWatcher1.Path, $"{this.txtCoord.Text}.raw");
-            _generator.SaveHeightmapToPng(outputFileName);
-        }
-
-        private void checkedListBox1_MouseDoubleClick(object sender, MouseEventArgs e)
-        {
-            // 1. 더블클릭한 위치의 인덱스를 정확히 가져옵니다.
-            int index = checkedListBox1.IndexFromPoint(e.Location);
-
-            // 항목이 없는 빈 공간을 클릭했다면 중단
-            if (index == ListBox.NoMatches) return;
-
-            // 2. 파일 저장 로직 수행
-            string filename = Path.Combine(this.fileSystemWatcher1.Path, $"{this.txtCoord.Text}.raw");
-            _generator.SaveHeightmapToPng(filename);
-
-            if (File.Exists(filename))
-            {
-                this.statusStrip1.Items[0].Text = $"저장 완료: {filename}";
-
-                // 3. 핵심: 선택한 항목(index)이 리스트박스 맨 위에 보이도록 스크롤 이동
-                checkedListBox1.TopIndex = index;
-
-                // 항목 선택 상태도 유지
-                checkedListBox1.SelectedIndex = index;
             }
         }
 
@@ -547,24 +426,30 @@ namespace FormTools
             }
         }
 
-        private void 지형타일링후Rawhighlow생성하기ToolStripMenuItem_Click(object sender, EventArgs e)
+        private void btnClear_Click(object sender, EventArgs e)
         {
-            string[] cols = this.txtTileOffset.Text.Split(',');
-            if (cols.Length != 2) MessageBox.Show($"Offset Tiles은 0,0인 형식이어야 합니다.");
+            this.txtConsole.Clear();
+        }
 
-            int offsetX = int.Parse(cols[0].Trim());
-            int offsetY = int.Parse(cols[1].Trim());
-
+        private void button1_Click(object sender, EventArgs e)
+        {
             List<string> tileList = null;
 
             if (this.openFileDialog1.ShowDialog() == DialogResult.OK)
             {
-                tileList = TileSplit(offsetX, offsetY);
+                string fileName = Path.GetFileNameWithoutExtension(this.openFileDialog1.FileName);
+                string[] cols = fileName.Split('x');
+                if (cols.Length != 2) MessageBox.Show($"Offset Tiles은 0x0인 형식이어야 합니다.");
+
+                int offsetX = 9 * int.Parse(cols[0].Trim());
+                int offsetY = -9 * int.Parse(cols[1].Trim());
+
+                tileList = TileSplit(this.openFileDialog1.FileName, offsetX, offsetY);
             }
 
-
             BatchProcessTiles(tileList);
-            
+
+            txtConsole.AppendText("타일 이미지 일괄 처리 완료");
         }
     }
 }

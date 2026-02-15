@@ -1,5 +1,4 @@
 ﻿using Common;
-using Model3d;
 using System;
 using System.Collections.Generic;
 
@@ -14,13 +13,11 @@ namespace Terrain
 
         private AsyncHeightmapLoader _loader;
         private string _heightmapBasePath;
-        private bool _isLowRes;
-        private bool _completedLoad = false;
+        private bool _isLoadingComplete = false;
 
         private int _currentRegionX = 0;
         private int _currentRegionY = 0;
         private readonly int _tileRadius = 3;
-        private readonly int _maxUploadsPerFrame = 1;
 
         private HashSet<string> _loadedRegions = new HashSet<string>();
         private HashSet<string> _newVisibleRegions = new HashSet<string>();
@@ -35,32 +32,35 @@ namespace Terrain
         public int CurrentRegionY => _currentRegionY;
         public uint CurrentMapTextureId => GetCurrentTexture();
         public int TileRadius => _tileRadius;
-        public bool CompletedLoad
+        public bool IsLoadingComplete
         {
-            get => _completedLoad; set => _completedLoad = value;
+            get => _isLoadingComplete; set => _isLoadingComplete = value;
         }
+
+        private string _tileFileSuffix = "";
 
         // ------------------------------------------------------------------------
         // 생성자
         // ------------------------------------------------------------------------
 
-        public TerrainStreamer(string heightmapBasePath, int tileRadius, int maxUploadsPerFrame = 1, bool isLowRes = false)
+        public TerrainStreamer(string heightmapBasePath, int tileRadius, int maxUploadsPerFrame = 1,
+            string tileFileSuffix = "", TileFormat tileFormat = default)
         {
             _tileRadius = tileRadius;
-            _isLowRes = isLowRes;
-            _maxUploadsPerFrame = maxUploadsPerFrame;
+            _tileFileSuffix = tileFileSuffix;
             _heightmapBasePath = heightmapBasePath;
-            _loader = new AsyncHeightmapLoader(isLowRes ? 129u: 1025u);
+
+            _loader = new AsyncHeightmapLoader(tileFormat, 128, maxUploadsPerFrame);
             _loader.Start();
         }
 
         /// <summary>
         /// 플레이어 위치 업데이트 (메인 스레드)
         /// </summary>
-        public void Update(float duration, float worldX, float worldY)
+        public void UpdateStreaming(float duration, float worldX, float worldY)
         {
             // 월드 좌표 -> 리전 좌표
-            GetRigionCoord(worldX, worldY, out int newRegionX, out int newRegionY);
+            GetRegionCoord(worldX, worldY, out int newRegionX, out int newRegionY);
 
             // 리전 변경 시 주변 타일 로드/언로드 처리
             if (newRegionX != _currentRegionX || newRegionY != _currentRegionY)
@@ -72,14 +72,13 @@ namespace Terrain
             }
 
             // GPU 업로드 처리 (매 프레임)
-            _loader.ProcessUploads(_maxUploadsPerFrame);
+            _loader.ProcessUploads();
 
             // 주변 타일 업로드가 모두 완료되면
             if (_loader.CheckUploadCompleted())
             {
-                _completedLoad = true;
-                string low = _isLowRes ? "저해상도" : "고해상도";
-                Console.WriteLine($"로딩완료 {low} {_currentRegionX}x{_currentRegionY}");
+                _isLoadingComplete = true;
+                Console.WriteLine($"로딩완료 {_tileFileSuffix} {_currentRegionX}x{_currentRegionY}");
             }
         }
 
@@ -173,14 +172,13 @@ namespace Terrain
 
         private string GetHeightmapPath(int x, int y)
         {
-            string verb = _isLowRes ? "_low" : "";
-            return $"{_heightmapBasePath}/tile_{x}_{y}{verb}.raw";
+            return $"{_heightmapBasePath}/tile_{x}_{y}{_tileFileSuffix}.raw";
         }
 
         /// <summary>
         /// 월드 좌표 -> 리전 좌표
         /// </summary>
-        public void GetRigionCoord(float worldX, float worldY, out int regionX, out int regionY)
+        public void GetRegionCoord(float worldX, float worldY, out int regionX, out int regionY)
         {
             int size = Constants.TERRAIN_TILE_SIZE - 1;
             regionX = (int)Math.Floor((worldX + WORLD_POSITION_OFFSET) / size);

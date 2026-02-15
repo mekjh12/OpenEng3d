@@ -184,6 +184,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AniModels\AniActor\AnimActor.Debug.cs" />
+    <None Include="app.config" />
     <None Include="packages.config" />
     <None Include="README.md" />
   </ItemGroup>

@@ -14,8 +14,11 @@ namespace Terrain
     public class TerrainRenderer
     {
         const float WORLD_POSITION_OFFSET = (Constants.TERRAIN_TILE_SIZE - 1) / 2;
+        const int regionSize = (Constants.TERRAIN_TILE_SIZE - 1);
 
         TerrainTessellationShader _shader;
+        TerrainNormalLineShader _nshader;
+        TerrainShadowMapShader _shadowShader;
 
         uint _heightMapTextureId = 0;
 
@@ -49,6 +52,9 @@ namespace Terrain
 
         TerrainStreamingManager _streamingManager;
 
+        ShadowMap _shadowmap;
+
+
         // --------------------------------------------------------
         // 속성
         // --------------------------------------------------------
@@ -62,6 +68,10 @@ namespace Terrain
         {
             
             _shader = ShaderManager.Instance.GetShader<TerrainTessellationShader>();
+            _shadowmap = new ShadowMap(2048, 2048);  // 해상도 상향 권장
+
+            _shadowShader = new TerrainShadowMapShader(StrRes.PROJECT_PATH);
+            _nshader = new TerrainNormalLineShader(StrRes.PROJECT_PATH);
             
             _streamingManager = streamingManager;
 
@@ -160,10 +170,59 @@ namespace Terrain
 
         public void SetRegion(int coordX, int coordY, uint heightMapTextureId)
         {
-            int regionSize = (Constants.TERRAIN_TILE_SIZE - 1);
             _worldMatrix[3, 0] = coordX * regionSize + WORLD_POSITION_OFFSET;
             _worldMatrix[3, 1] = coordY * regionSize + WORLD_POSITION_OFFSET; ;
             _heightMapTextureId = heightMapTextureId;
+        }
+
+        /// <summary>
+        /// 태양 관점에서 Shadow Map을 렌더링합니다.
+        /// </summary>
+        /// <param name="sunDirection">태양에서 지표로 향하는 벡터</param>
+        /// <param name="heightScale"></param>
+        public void RenderShadowMap(Vertex3f sunDirection, float heightScale = 200.0f, bool isClearBuffer = false)
+        {
+            // 그림자맵을 렌더링한다.
+            Vertex3f terrainCenter = new Vertex3f(0, 0, 0);
+            float terrainSize = 1024.0f;
+            _shadowmap.Update(sunDirection, terrainCenter, terrainSize);
+
+            // Shadow Map FBO 바인딩
+            _shadowmap.Bind();
+
+            // 지우기 옵션
+            if (isClearBuffer) _shadowmap.Clear();
+
+            // 앞면만 렌더링 (뒷면 컬링)
+            Gl.Enable(EnableCap.CullFace);
+            Gl.CullFace(CullFaceMode.Back);
+
+            _shadowShader.Bind();
+            _shadowShader.LoadLightProjMatrix(_shadowmap.LightProjMatrix);
+            _shadowShader.LoadLightViewMatrix(_shadowmap.LightViewMatrix);
+            _shadowShader.LoadModelMatrix(_worldMatrix);
+            _shadowShader.LoadHeightScale(heightScale);
+
+            Gl.BindVertexArray(_vao);
+            Gl.EnableVertexAttribArray(0);
+            Gl.EnableVertexAttribArray(1);
+
+            _shadowShader.LoadHeightMap(_heightMapTextureId);
+
+            Gl.BindBuffer(BufferTarget.ElementArrayBuffer, _ibo);
+            Gl.PatchParameter(PatchParameterName.PatchVertices, 4);
+            Gl.DrawElements(PrimitiveType.Patches, _count, DrawElementsType.UnsignedInt, IntPtr.Zero);
+
+            Gl.DisableVertexAttribArray(1);
+            Gl.DisableVertexAttribArray(0);
+            Gl.BindVertexArray(0);
+
+            _shadowShader.Unbind();
+
+            // 앞면만 렌더링으로 복원 (뒷면 컬링)
+            Gl.CullFace(CullFaceMode.Back);
+
+            _shadowmap.Unbind();
         }
 
         public void Render(Camera camera)
@@ -189,7 +248,8 @@ namespace Terrain
             _shader.LoadIsDetailMap(true);
             _shader.LoadHeightScale(Constants.TERRAIN_VERTICAL_SCALE);
             _shader.LoadBlendFactor(0.0f);
-            _shader.LoadNormalMap(_normalTexture);
+            _shader.LoadNormalMatrix(Matrix3x3f.Identity);
+
             Gl.PatchParameter(PatchParameterName.PatchVertices, 4);
 
             // ── 패스 1: 고해상도 타일 (absX <= 1 && absY <= 1) ──
@@ -213,8 +273,13 @@ namespace Terrain
                     
                     _shader.LoadAdjacentHeightMaps(_streamingManager.GetAdjRegionTextures(cx, cy));
                     
-                    _shader.LoadRiverRoadMap(_streamingManager.GetRiverRoadTexture(camera.PivotPosition.x, camera.PivotPosition.y));
+                    float rx = (cx + 0.5f) * 1024f;
+                    float ry = (cy + 0.5f) * 1024f;
+                    uint riverRoadTextureId = _streamingManager.GetRiverRoadTexture(cx, cy);
+                    _shader.LoadRiverRoadMap(riverRoadTextureId);
+
                     _shader.LoadModelMatrix(_worldMatrix);
+                    _shader.LoadNormalMap(_streamingManager.GetRegionNormalTexture(cx, cy));
 
                     Gl.DrawElements(PrimitiveType.Patches, _count, DrawElementsType.UnsignedInt, IntPtr.Zero);
                 }
@@ -237,13 +302,10 @@ namespace Terrain
                 {
                     for (int y = -tileLowRadius; y <= tileLowRadius; y++)
                     {
-                        int absX = Math.Abs(x);
+                        // 고해상도 영역은 이미 처리됨. 저해상도 영역만 아래는 처리함.
+                        int absX = Math.Abs(x); 
                         int absY = Math.Abs(y);
-
-                        // 고해상도 영역은 이미 처리됨
                         if (absX <= 1 && absY <= 1) continue;
-
-                        // 저해상도 영역만 아래는 처리함.
 
                         // 이 타일의 lowMapTypeIndex 계산
                         int idx = 0;
@@ -262,8 +324,15 @@ namespace Terrain
 
                         _shader.LoadHeightHighResolutionMap(_heightMapTextureId);
                         _shader.LoadHeightLowResolutionMap(_heightMapTextureId);
+
+                        float rx = (cx + 0.5f) * 1024f;
+                        float ry = (cy + 0.5f) * 1024f;
+                        uint riverRoadTextureId = _streamingManager.GetRiverRoadTexture(cx, cy);
+                        _shader.LoadRiverRoadMap(riverRoadTextureId);
+
                         _shader.LoadAdjacentHeightMaps(_streamingManager.GetAdjRegionTextures(cx, cy));
                         _shader.LoadModelMatrix(_worldMatrix);
+                        _shader.LoadNormalMap(_streamingManager.GetRegionNormalTexture(cx, cy));
 
                         Gl.DrawElements(PrimitiveType.Patches, count, DrawElementsType.UnsignedInt, IntPtr.Zero);
                     }
@@ -276,6 +345,62 @@ namespace Terrain
             Gl.DisableVertexAttribArray(0);
             Gl.BindVertexArray(0);
             _shader.Unbind();
+        }
+
+
+        /// <summary>
+        /// 지형의 법선 벡터를 RGB 라인으로 시각화하여 렌더링합니다.
+        /// Vertex 0: 빨강, Vertex 1: 녹색, Vertex 2: 파랑
+        /// </summary>
+        public void RenderTerrainNormals(
+            Entity terrainEntity,
+            TerrainNormalLineShader normalShader,
+            float normalLength = 5.0f,
+            float heightScale = 200.0f)  // ⭐ 기본값 수정
+        {
+            if (terrainEntity is null) return;
+            if (terrainEntity.Model == null) return;
+
+            // 라인이 지형 위에 보이도록
+            Gl.Disable(EnableCap.CullFace);
+
+            normalShader.Bind();  // ⭐ Bind → Start
+
+            // 전역 유니폼 설정 (한 번만)
+            normalShader.LoadHeightScale(heightScale);
+            normalShader.LoadNormalLength(normalLength);
+            normalShader.LoadModelMatrix(terrainEntity.ModelMatrix);  // ⭐ terrainEntity 사용
+
+            foreach (RawModel3d rawModel in terrainEntity.Model)
+            {
+                Gl.BindVertexArray(rawModel.VAO);
+                Gl.EnableVertexAttribArray(0); // position
+                Gl.EnableVertexAttribArray(1); // texCoord
+
+                TexturedModel modelTextured = rawModel as TexturedModel;
+
+                // 높이맵만 바인딩
+                normalShader.SetInt("gHeightMap", 0);
+                Gl.ActiveTexture(TextureUnit.Texture0);
+                Gl.BindTexture(TextureTarget.Texture2d, modelTextured.Texture.TextureID);
+                Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, Gl.LINEAR);
+                Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, Gl.LINEAR);
+                Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapS, Gl.CLAMP_TO_EDGE);
+                Gl.TexParameteri(TextureTarget.Texture2d, TextureParameterName.TextureWrapT, Gl.CLAMP_TO_EDGE);
+
+                // 지형 렌더링 (Patches)
+                Gl.BindBuffer(BufferTarget.ElementArrayBuffer, rawModel.IBO);
+                Gl.PatchParameter(PatchParameterName.PatchVertices, 4);
+                Gl.DrawElements(PrimitiveType.Patches, rawModel.VertexCount, DrawElementsType.UnsignedInt, IntPtr.Zero);
+
+                Gl.DisableVertexAttribArray(1);
+                Gl.DisableVertexAttribArray(0);
+                Gl.BindVertexArray(0);
+            }
+
+            normalShader.Unbind();
+
+            Gl.Enable(EnableCap.CullFace);
         }
     }
 }

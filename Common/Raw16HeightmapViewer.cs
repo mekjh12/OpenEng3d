@@ -19,6 +19,8 @@ namespace Common
 
         private bool _isLoaded = false;
         private string _currentFile = "";
+        private bool _isNormalMap = false;
+        private byte[] _normalRGB; // 노말맵 원본 데이터
 
         // 통계
         private ushort _minHeightRaw;
@@ -39,6 +41,7 @@ namespace Common
         }
 
         public bool AutoContrast { get => _autoContrast; set => _autoContrast = value; }
+        public bool IsNormalMap => _isNormalMap;
         public bool IsLoaded => _isLoaded;
         public string CurrentFile => _currentFile;
         public ColorMode CurrentColorMode => _colorMode;
@@ -68,8 +71,18 @@ namespace Common
                 // 파일 읽기
                 byte[] rawBytes = File.ReadAllBytes(filePath);
 
+                // 노말맵 판별 (RGB 8bit: size*size*3)
+                if (rawBytes.Length == 1025 * 1025 * 3 || rawBytes.Length == 129 * 129 * 3)
+                {
+                    _isNormalMap = true;
+                    _size = (rawBytes.Length == 129 * 129 * 3) ? 128 : 1025;
+                    return LoadNormalMapRaw8(rawBytes);
+                }
+
+                _isNormalMap = false;
+
                 // 저해상도 판별
-                _size = (rawBytes.Length == 129*129*2) ? 129 : SIZE;    // 저해상도 크기
+                _size = (rawBytes.Length == 129 * 129 * 2) ? 129 : SIZE;    // 저해상도 크기
 
                 int expectedSize = _size * _size * 2; // 16bit = 2 bytes
 
@@ -107,6 +120,25 @@ namespace Common
                 Console.WriteLine($"[Viewer] 로드 실패: {ex.Message}");
                 return false;
             }
+        }
+
+        private bool LoadNormalMapRaw8(byte[] rawBytes)
+        {
+            _normalRGB = rawBytes;
+
+            // 높이맵 호환용으로 normalizedData도 채움 (Z채널 기준)
+            _normalizedData = new float[_size * _size];
+            for (int i = 0; i < _size * _size; i++)
+            {
+                _normalizedData[i] = rawBytes[i * 3 + 2] / 255.0f; // B(Z) 채널
+            }
+
+            _minHeight = 0; _maxHeight = 1;
+            _minHeightRaw = 0; _maxHeightRaw = 255;
+            _isLoaded = true;
+
+            Console.WriteLine($"[Viewer] 노말맵 로드 완료: {_size}x{_size} RGB 8bit");
+            return true;
         }
 
         /// <summary>
@@ -162,7 +194,16 @@ namespace Common
                         }
 
                         // 색상 계산
-                        Color color = GetColorForHeight(height);
+                        Color color;
+                        if (_isNormalMap)
+                        {
+                            int nIdx = index * 3;
+                            color = Color.FromArgb(_normalRGB[nIdx], _normalRGB[nIdx + 1], _normalRGB[nIdx + 2]);
+                        }
+                        else
+                        {
+                            color = GetColorForHeight(height);
+                        }
 
                         // BGR 순서로 저장 (Bitmap은 BGR)
                         int offset = y * stride + x * 3;
@@ -332,6 +373,7 @@ namespace Common
         public ushort? GetRawHeightAt(int x, int y)
         {
             if (!_isLoaded) return null;
+            if (_heightData == null) return null;
             if (x < 0 || x >= _size || y < 0 || y >= _size) return null;
 
             return _heightData[y * _size + x];

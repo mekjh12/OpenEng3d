@@ -31,12 +31,12 @@
             this.glControl1 = new OpenGL.GlControl();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
+            this.toolStripProgressBar1 = new System.Windows.Forms.ToolStripProgressBar();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.파일ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.새지형ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.종료ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.도움말ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.도구ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.pNGToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.읽어오기ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -45,26 +45,24 @@
             this.지형이미지타일링하기ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.지형이미지업스케일ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.지형이미지다듬기ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.지형타일링후Rawhighlow생성하기ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.도움말ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.txtCoord = new System.Windows.Forms.TextBox();
             this.btn_refresh = new System.Windows.Forms.Button();
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
-            this.chk_first = new System.Windows.Forms.CheckBox();
-            this.chk_second = new System.Windows.Forms.CheckBox();
             this.button2 = new System.Windows.Forms.Button();
             this.btnLoad = new System.Windows.Forms.Button();
             this.fileSystemWatcher1 = new System.IO.FileSystemWatcher();
             this.label1 = new System.Windows.Forms.Label();
-            this.btnFolder = new System.Windows.Forms.Button();
+            this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
             this.pic_river = new FormTools.LabeledPictureBox();
             this.pic_normal = new FormTools.LabeledPictureBox();
             this.pic_heightmap = new FormTools.LabeledPictureBox();
             this.sld_octaves = new FormTools.LabeledSlider();
             this.sld_scale = new FormTools.LabeledSlider();
-            this.checkedListBox1 = new System.Windows.Forms.CheckedListBox();
-            this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
-            this.txtTileOffset = new System.Windows.Forms.TextBox();
+            this.txtConsole = new System.Windows.Forms.TextBox();
+            this.btnClear = new System.Windows.Forms.Button();
+            this.button1 = new System.Windows.Forms.Button();
             this.statusStrip1.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.fileSystemWatcher1)).BeginInit();
@@ -97,7 +95,8 @@
             // statusStrip1
             // 
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.toolStripStatusLabel1});
+            this.toolStripStatusLabel1,
+            this.toolStripProgressBar1});
             this.statusStrip1.Location = new System.Drawing.Point(0, 886);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(1616, 22);
@@ -110,6 +109,11 @@
             this.toolStripStatusLabel1.Size = new System.Drawing.Size(121, 17);
             this.toolStripStatusLabel1.Text = "toolStripStatusLabel1";
             this.toolStripStatusLabel1.Click += new System.EventHandler(this.toolStripStatusLabel1_Click);
+            // 
+            // toolStripProgressBar1
+            // 
+            this.toolStripProgressBar1.Name = "toolStripProgressBar1";
+            this.toolStripProgressBar1.Size = new System.Drawing.Size(300, 16);
             // 
             // menuStrip1
             // 
@@ -150,12 +154,6 @@
             this.종료ToolStripMenuItem.Size = new System.Drawing.Size(114, 22);
             this.종료ToolStripMenuItem.Text = "종료";
             // 
-            // 도움말ToolStripMenuItem
-            // 
-            this.도움말ToolStripMenuItem.Name = "도움말ToolStripMenuItem";
-            this.도움말ToolStripMenuItem.Size = new System.Drawing.Size(55, 20);
-            this.도움말ToolStripMenuItem.Text = "도움말";
-            // 
             // 도구ToolStripMenuItem
             // 
             this.도구ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -163,8 +161,7 @@
             this.지형보기ToolStripMenuItem,
             this.지형이미지타일링하기ToolStripMenuItem,
             this.지형이미지업스케일ToolStripMenuItem,
-            this.지형이미지다듬기ToolStripMenuItem,
-            this.지형타일링후Rawhighlow생성하기ToolStripMenuItem});
+            this.지형이미지다듬기ToolStripMenuItem});
             this.도구ToolStripMenuItem.Name = "도구ToolStripMenuItem";
             this.도구ToolStripMenuItem.Size = new System.Drawing.Size(43, 20);
             this.도구ToolStripMenuItem.Text = "도구";
@@ -175,60 +172,59 @@
             this.읽어오기ToolStripMenuItem,
             this.저장하기ToolStripMenuItem});
             this.pNGToolStripMenuItem.Name = "pNGToolStripMenuItem";
-            this.pNGToolStripMenuItem.Size = new System.Drawing.Size(288, 22);
+            this.pNGToolStripMenuItem.Size = new System.Drawing.Size(202, 22);
             this.pNGToolStripMenuItem.Text = "PNG";
             // 
             // 읽어오기ToolStripMenuItem
             // 
             this.읽어오기ToolStripMenuItem.Name = "읽어오기ToolStripMenuItem";
-            this.읽어오기ToolStripMenuItem.Size = new System.Drawing.Size(122, 22);
+            this.읽어오기ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.읽어오기ToolStripMenuItem.Text = "읽어오기";
             this.읽어오기ToolStripMenuItem.Click += new System.EventHandler(this.읽어오기ToolStripMenuItem_Click);
             // 
             // 저장하기ToolStripMenuItem
             // 
             this.저장하기ToolStripMenuItem.Name = "저장하기ToolStripMenuItem";
-            this.저장하기ToolStripMenuItem.Size = new System.Drawing.Size(122, 22);
+            this.저장하기ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.저장하기ToolStripMenuItem.Text = "저장하기";
             // 
             // 지형보기ToolStripMenuItem
             // 
             this.지형보기ToolStripMenuItem.Name = "지형보기ToolStripMenuItem";
-            this.지형보기ToolStripMenuItem.Size = new System.Drawing.Size(288, 22);
+            this.지형보기ToolStripMenuItem.Size = new System.Drawing.Size(202, 22);
             this.지형보기ToolStripMenuItem.Text = "지형 보기";
             this.지형보기ToolStripMenuItem.Click += new System.EventHandler(this.지형보기ToolStripMenuItem_Click);
             // 
             // 지형이미지타일링하기ToolStripMenuItem
             // 
             this.지형이미지타일링하기ToolStripMenuItem.Name = "지형이미지타일링하기ToolStripMenuItem";
-            this.지형이미지타일링하기ToolStripMenuItem.Size = new System.Drawing.Size(288, 22);
+            this.지형이미지타일링하기ToolStripMenuItem.Size = new System.Drawing.Size(202, 22);
             this.지형이미지타일링하기ToolStripMenuItem.Text = "지형이미지 타일링 하기";
             this.지형이미지타일링하기ToolStripMenuItem.Click += new System.EventHandler(this.지형이미지타일링하기ToolStripMenuItem_Click);
             // 
             // 지형이미지업스케일ToolStripMenuItem
             // 
             this.지형이미지업스케일ToolStripMenuItem.Name = "지형이미지업스케일ToolStripMenuItem";
-            this.지형이미지업스케일ToolStripMenuItem.Size = new System.Drawing.Size(288, 22);
+            this.지형이미지업스케일ToolStripMenuItem.Size = new System.Drawing.Size(202, 22);
             this.지형이미지업스케일ToolStripMenuItem.Text = "지형이미지 업스케일";
             this.지형이미지업스케일ToolStripMenuItem.Click += new System.EventHandler(this.지형이미지업스케일ToolStripMenuItem_Click);
             // 
             // 지형이미지다듬기ToolStripMenuItem
             // 
             this.지형이미지다듬기ToolStripMenuItem.Name = "지형이미지다듬기ToolStripMenuItem";
-            this.지형이미지다듬기ToolStripMenuItem.Size = new System.Drawing.Size(288, 22);
+            this.지형이미지다듬기ToolStripMenuItem.Size = new System.Drawing.Size(202, 22);
             this.지형이미지다듬기ToolStripMenuItem.Text = "지형이미지 다듬기";
             this.지형이미지다듬기ToolStripMenuItem.Click += new System.EventHandler(this.지형이미지다듬기ToolStripMenuItem_Click);
             // 
-            // 지형타일링후Rawhighlow생성하기ToolStripMenuItem
+            // 도움말ToolStripMenuItem
             // 
-            this.지형타일링후Rawhighlow생성하기ToolStripMenuItem.Name = "지형타일링후Rawhighlow생성하기ToolStripMenuItem";
-            this.지형타일링후Rawhighlow생성하기ToolStripMenuItem.Size = new System.Drawing.Size(288, 22);
-            this.지형타일링후Rawhighlow생성하기ToolStripMenuItem.Text = "지형 타일링 후 raw(high+low) 생성하기";
-            this.지형타일링후Rawhighlow생성하기ToolStripMenuItem.Click += new System.EventHandler(this.지형타일링후Rawhighlow생성하기ToolStripMenuItem_Click);
+            this.도움말ToolStripMenuItem.Name = "도움말ToolStripMenuItem";
+            this.도움말ToolStripMenuItem.Size = new System.Drawing.Size(55, 20);
+            this.도움말ToolStripMenuItem.Text = "도움말";
             // 
             // txtCoord
             // 
-            this.txtCoord.Location = new System.Drawing.Point(1072, 27);
+            this.txtCoord.Location = new System.Drawing.Point(1520, 142);
             this.txtCoord.Name = "txtCoord";
             this.txtCoord.Size = new System.Drawing.Size(74, 21);
             this.txtCoord.TabIndex = 20;
@@ -236,9 +232,9 @@
             // 
             // btn_refresh
             // 
-            this.btn_refresh.Location = new System.Drawing.Point(1072, 264);
+            this.btn_refresh.Location = new System.Drawing.Point(1503, 382);
             this.btn_refresh.Name = "btn_refresh";
-            this.btn_refresh.Size = new System.Drawing.Size(312, 29);
+            this.btn_refresh.Size = new System.Drawing.Size(74, 29);
             this.btn_refresh.TabIndex = 21;
             this.btn_refresh.Text = "새로고침";
             this.btn_refresh.UseVisualStyleBackColor = true;
@@ -248,47 +244,20 @@
             // 
             this.openFileDialog1.FileName = "openFileDialog1";
             // 
-            // chk_first
-            // 
-            this.chk_first.AutoSize = true;
-            this.chk_first.Checked = true;
-            this.chk_first.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chk_first.Location = new System.Drawing.Point(1074, 220);
-            this.chk_first.Name = "chk_first";
-            this.chk_first.Size = new System.Drawing.Size(54, 16);
-            this.chk_first.TabIndex = 23;
-            this.chk_first.Text = "1단계";
-            this.chk_first.UseVisualStyleBackColor = true;
-            this.chk_first.CheckedChanged += new System.EventHandler(this.chk_first_CheckedChanged);
-            // 
-            // chk_second
-            // 
-            this.chk_second.AutoSize = true;
-            this.chk_second.Checked = true;
-            this.chk_second.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chk_second.Location = new System.Drawing.Point(1074, 242);
-            this.chk_second.Name = "chk_second";
-            this.chk_second.Size = new System.Drawing.Size(54, 16);
-            this.chk_second.TabIndex = 24;
-            this.chk_second.Text = "2단계";
-            this.chk_second.UseVisualStyleBackColor = true;
-            this.chk_second.CheckedChanged += new System.EventHandler(this.chk_second_CheckedChanged);
-            // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(1178, 518);
+            this.button2.Location = new System.Drawing.Point(1445, 408);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(149, 64);
             this.button2.TabIndex = 25;
             this.button2.Text = "지형Base가져오기";
             this.button2.UseVisualStyleBackColor = true;
-            this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
             // btnLoad
             // 
-            this.btnLoad.Location = new System.Drawing.Point(1072, 78);
+            this.btnLoad.Location = new System.Drawing.Point(1445, 184);
             this.btnLoad.Name = "btnLoad";
-            this.btnLoad.Size = new System.Drawing.Size(255, 30);
+            this.btnLoad.Size = new System.Drawing.Size(113, 30);
             this.btnLoad.TabIndex = 26;
             this.btnLoad.Text = "이미지타일 읽기";
             this.btnLoad.UseVisualStyleBackColor = true;
@@ -303,21 +272,11 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(1072, 51);
+            this.label1.Location = new System.Drawing.Point(1520, 166);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(38, 12);
             this.label1.TabIndex = 28;
             this.label1.Text = "label1";
-            // 
-            // btnFolder
-            // 
-            this.btnFolder.Location = new System.Drawing.Point(704, 833);
-            this.btnFolder.Name = "btnFolder";
-            this.btnFolder.Size = new System.Drawing.Size(100, 38);
-            this.btnFolder.TabIndex = 29;
-            this.btnFolder.Text = "폴더지정";
-            this.btnFolder.UseVisualStyleBackColor = true;
-            this.btnFolder.Click += new System.EventHandler(this.btnFolder_Click);
             // 
             // pic_river
             // 
@@ -327,7 +286,7 @@
             this.pic_river.LabelForeColor = System.Drawing.Color.White;
             this.pic_river.LabelPadding = new System.Windows.Forms.Padding(5, 2, 5, 2);
             this.pic_river.LabelText = "River";
-            this.pic_river.Location = new System.Drawing.Point(1286, 114);
+            this.pic_river.Location = new System.Drawing.Point(1494, 258);
             this.pic_river.Name = "pic_river";
             this.pic_river.Size = new System.Drawing.Size(100, 100);
             this.pic_river.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
@@ -343,7 +302,7 @@
             this.pic_normal.LabelForeColor = System.Drawing.Color.White;
             this.pic_normal.LabelPadding = new System.Windows.Forms.Padding(5, 2, 5, 2);
             this.pic_normal.LabelText = "Normal";
-            this.pic_normal.Location = new System.Drawing.Point(1180, 114);
+            this.pic_normal.Location = new System.Drawing.Point(1445, 220);
             this.pic_normal.Name = "pic_normal";
             this.pic_normal.Size = new System.Drawing.Size(100, 100);
             this.pic_normal.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
@@ -360,7 +319,7 @@
             this.pic_heightmap.LabelForeColor = System.Drawing.Color.White;
             this.pic_heightmap.LabelPadding = new System.Windows.Forms.Padding(5, 2, 5, 2);
             this.pic_heightmap.LabelText = "Height";
-            this.pic_heightmap.Location = new System.Drawing.Point(1074, 114);
+            this.pic_heightmap.Location = new System.Drawing.Point(1416, 276);
             this.pic_heightmap.Name = "pic_heightmap";
             this.pic_heightmap.Size = new System.Drawing.Size(100, 100);
             this.pic_heightmap.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
@@ -372,10 +331,10 @@
             // 
             this.sld_octaves.BackColor = System.Drawing.SystemColors.Control;
             this.sld_octaves.LargeChange = 1;
-            this.sld_octaves.Location = new System.Drawing.Point(1178, 588);
+            this.sld_octaves.Location = new System.Drawing.Point(1445, 478);
             this.sld_octaves.Minimum = 1;
             this.sld_octaves.Name = "sld_octaves";
-            this.sld_octaves.Size = new System.Drawing.Size(267, 35);
+            this.sld_octaves.Size = new System.Drawing.Size(144, 35);
             this.sld_octaves.TabIndex = 13;
             this.sld_octaves.Title = "Octaves";
             // 
@@ -388,7 +347,7 @@
             this.sld_octaves.TrackBar.Location = new System.Drawing.Point(120, 10);
             this.sld_octaves.TrackBar.Minimum = 1;
             this.sld_octaves.TrackBar.Name = "";
-            this.sld_octaves.TrackBar.Size = new System.Drawing.Size(137, 30);
+            this.sld_octaves.TrackBar.Size = new System.Drawing.Size(14, 30);
             this.sld_octaves.TrackBar.TabIndex = 1;
             this.sld_octaves.TrackBar.TickStyle = System.Windows.Forms.TickStyle.None;
             this.sld_octaves.TrackBar.Value = 5;
@@ -399,11 +358,11 @@
             // 
             this.sld_scale.BackColor = System.Drawing.SystemColors.Control;
             this.sld_scale.LargeChange = 1;
-            this.sld_scale.Location = new System.Drawing.Point(1178, 629);
+            this.sld_scale.Location = new System.Drawing.Point(1445, 519);
             this.sld_scale.Maximum = 5000;
             this.sld_scale.Minimum = 1;
             this.sld_scale.Name = "sld_scale";
-            this.sld_scale.Size = new System.Drawing.Size(267, 35);
+            this.sld_scale.Size = new System.Drawing.Size(144, 35);
             this.sld_scale.TabIndex = 12;
             this.sld_scale.Title = "Scale";
             // 
@@ -417,45 +376,53 @@
             this.sld_scale.TrackBar.Maximum = 5000;
             this.sld_scale.TrackBar.Minimum = 1;
             this.sld_scale.TrackBar.Name = "";
-            this.sld_scale.TrackBar.Size = new System.Drawing.Size(137, 30);
+            this.sld_scale.TrackBar.Size = new System.Drawing.Size(14, 30);
             this.sld_scale.TrackBar.TabIndex = 1;
             this.sld_scale.TrackBar.TickStyle = System.Windows.Forms.TickStyle.None;
             this.sld_scale.TrackBar.Value = 5;
             this.sld_scale.Value = 5;
             this.sld_scale.ValueChanged += new System.EventHandler(this.sld_scale_ValueChanged);
-            this.sld_scale.Load += new System.EventHandler(this.sld_scale_Load);
             // 
-            // checkedListBox1
+            // txtConsole
             // 
-            this.checkedListBox1.FormattingEnabled = true;
-            this.checkedListBox1.Location = new System.Drawing.Point(811, 27);
-            this.checkedListBox1.Name = "checkedListBox1";
-            this.checkedListBox1.Size = new System.Drawing.Size(255, 852);
-            this.checkedListBox1.TabIndex = 30;
-            this.checkedListBox1.SelectedIndexChanged += new System.EventHandler(this.checkedListBox1_SelectedIndexChanged);
-            this.checkedListBox1.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.checkedListBox1_MouseDoubleClick);
+            this.txtConsole.Location = new System.Drawing.Point(811, 27);
+            this.txtConsole.Multiline = true;
+            this.txtConsole.Name = "txtConsole";
+            this.txtConsole.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.txtConsole.Size = new System.Drawing.Size(449, 800);
+            this.txtConsole.TabIndex = 29;
             // 
-            // txtTileOffset
+            // btnClear
             // 
-            this.txtTileOffset.Location = new System.Drawing.Point(4, 833);
-            this.txtTileOffset.Name = "txtTileOffset";
-            this.txtTileOffset.Size = new System.Drawing.Size(100, 21);
-            this.txtTileOffset.TabIndex = 31;
-            this.txtTileOffset.Text = "0, 0";
+            this.btnClear.Location = new System.Drawing.Point(811, 833);
+            this.btnClear.Name = "btnClear";
+            this.btnClear.Size = new System.Drawing.Size(74, 29);
+            this.btnClear.TabIndex = 30;
+            this.btnClear.Text = "지우기";
+            this.btnClear.UseVisualStyleBackColor = true;
+            this.btnClear.Click += new System.EventHandler(this.btnClear_Click);
+            // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(891, 833);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(369, 29);
+            this.button1.TabIndex = 31;
+            this.button1.Text = "지형 타일링 후 raw(high+low+riverRoad) 생성하기";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // FormTerrainGen
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1616, 908);
-            this.Controls.Add(this.txtTileOffset);
-            this.Controls.Add(this.checkedListBox1);
-            this.Controls.Add(this.btnFolder);
+            this.Controls.Add(this.button1);
+            this.Controls.Add(this.btnClear);
+            this.Controls.Add(this.txtConsole);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.btnLoad);
             this.Controls.Add(this.button2);
-            this.Controls.Add(this.chk_second);
-            this.Controls.Add(this.chk_first);
             this.Controls.Add(this.btn_refresh);
             this.Controls.Add(this.txtCoord);
             this.Controls.Add(this.pic_river);
@@ -515,17 +482,15 @@
         private System.Windows.Forms.ToolStripMenuItem 지형보기ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem 지형이미지타일링하기ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem 지형이미지다듬기ToolStripMenuItem;
-        private System.Windows.Forms.CheckBox chk_first;
-        private System.Windows.Forms.CheckBox chk_second;
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.Button btnLoad;
         public System.IO.FileSystemWatcher fileSystemWatcher1;
         private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.Button btnFolder;
-        private System.Windows.Forms.CheckedListBox checkedListBox1;
         private System.Windows.Forms.ToolStripMenuItem 지형이미지업스케일ToolStripMenuItem;
         private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog1;
-        private System.Windows.Forms.TextBox txtTileOffset;
-        private System.Windows.Forms.ToolStripMenuItem 지형타일링후Rawhighlow생성하기ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripProgressBar toolStripProgressBar1;
+        private System.Windows.Forms.TextBox txtConsole;
+        private System.Windows.Forms.Button btnClear;
+        private System.Windows.Forms.Button button1;
     }
 }

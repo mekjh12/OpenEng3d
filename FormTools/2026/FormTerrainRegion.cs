@@ -191,10 +191,10 @@ namespace FormTools
 
             // 지형 렌더러 초기화
             _terrainRenderer = new Terrain.TerrainRenderer(_terrainStreamer);
-            _terrainRenderer.LoadTerrainLevelTextures(EXE_PATH + @"\Res\Terrain\blend\", StrRes.TERRAIN_HEIGHT_FILENAMES);
+            _terrainRenderer.LoadTerrainLevelTextures(EXE_PATH + @"\Res\Terrain\blend\", StrRes.TERRAIN_BIOM_TOLEDO_TEXTURES);
             _terrainRenderer.LoadDetailTexture(EXE_PATH + StrRes.TERRAIN_DETAILMAP_FILENAMES);
-            _terrainRenderer.LoadRockTexture(StrRes.PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\blend\toledo\rock.png");
-            _terrainRenderer.LoadMossRockTexture(StrRes.PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\blend\mossy_rock.png");
+            _terrainRenderer.LoadRockTexture(StrRes.PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\blend\toledo\rockTile.png");
+            _terrainRenderer.LoadMossRockTexture(StrRes.PROJECT_PATH + @"FormTools\bin\Debug\Res\Terrain\blend\water1.png");
             LoadTerrainRegionCompleted();
 
             // 하늘 렌더러 초기화
@@ -565,22 +565,6 @@ namespace FormTools
             else if (e.KeyCode == Keys.D0)
             {
                 Constants.CAMERA_MOVE_DELTA = Constants.CAMERA_MOVE_DELTA == 10.0f ? 0.1f: 10.0f;
-            }
-            else if (e.KeyCode == Keys.Right)
-            {
-                _glControl3.Camera.PivotPosition = new Vertex3f(512, 0, 238);
-            }
-            else if (e.KeyCode == Keys.Left)
-            {
-                _glControl3.Camera.PivotPosition = new Vertex3f(-512, 0, 238);
-            }
-            else if (e.KeyCode == Keys.Up)
-            {
-                _glControl3.Camera.PivotPosition = new Vertex3f(0, 512, 238);
-            }
-            else if (e.KeyCode == Keys.Down)
-            {
-                _glControl3.Camera.PivotPosition = new Vertex3f(0, -512, 238);
             }
         }
 

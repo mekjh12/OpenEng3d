@@ -1,4 +1,5 @@
-﻿using System;
+﻿using StbImageWriteSharp;
+using System;
 using System.IO;
 using ZetaExt;
 
@@ -6,6 +7,35 @@ namespace Common
 {
     public static class BmpHeightmapSaver
     {
+        public static void SaveNormalMapAsRaw8(float[] normalRGB, int width, int height, string filePath, bool saveMeta = true)
+        {
+            EnsureDirectoryExists(filePath);
+
+            byte[] buffer = new byte[width * height * 3];
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                buffer[i] = (byte)(normalRGB[i].Clamp(0f, 1f) * 255f);
+            }
+
+            File.WriteAllBytes(filePath, buffer);
+
+            long fileSize = new FileInfo(filePath).Length;
+            Console.WriteLine($"[RAW 8bit NormalMap] {width}x{height}, {fileSize / 1024.0:F2} KB (RGB 3채널)");
+
+            if (saveMeta)
+            {
+                string metaPath = Path.ChangeExtension(filePath, ".txt");
+                File.WriteAllText(metaPath,
+                    $"File: {Path.GetFileName(filePath)}\n" +
+                    $"Width: {width}\n" +
+                    $"Height: {height}\n" +
+                    $"Format: 8-bit RGB (3 channels)\n" +
+                    $"Byte order: R,G,B interleaved\n" +
+                    $"Encoding: [-1,1] → [0,255] (decode: value/255*2-1)\n" +
+                    $"File size: {fileSize} bytes\n");
+            }
+        }
+
         /// <summary>
         /// 48bit RGB BMP 저장 (Alpha 무시, R=G=B grayscale)
         /// </summary>
