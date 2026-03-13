@@ -178,14 +178,14 @@
             // 읽어오기ToolStripMenuItem
             // 
             this.읽어오기ToolStripMenuItem.Name = "읽어오기ToolStripMenuItem";
-            this.읽어오기ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.읽어오기ToolStripMenuItem.Size = new System.Drawing.Size(122, 22);
             this.읽어오기ToolStripMenuItem.Text = "읽어오기";
             this.읽어오기ToolStripMenuItem.Click += new System.EventHandler(this.읽어오기ToolStripMenuItem_Click);
             // 
             // 저장하기ToolStripMenuItem
             // 
             this.저장하기ToolStripMenuItem.Name = "저장하기ToolStripMenuItem";
-            this.저장하기ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.저장하기ToolStripMenuItem.Size = new System.Drawing.Size(122, 22);
             this.저장하기ToolStripMenuItem.Text = "저장하기";
             // 
             // 지형보기ToolStripMenuItem
@@ -246,12 +246,13 @@
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(1445, 408);
+            this.button2.Location = new System.Drawing.Point(1409, 482);
             this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(149, 64);
+            this.button2.Size = new System.Drawing.Size(127, 32);
             this.button2.TabIndex = 25;
             this.button2.Text = "지형Base가져오기";
             this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
             // btnLoad
             // 
@@ -331,10 +332,10 @@
             // 
             this.sld_octaves.BackColor = System.Drawing.SystemColors.Control;
             this.sld_octaves.LargeChange = 1;
-            this.sld_octaves.Location = new System.Drawing.Point(1445, 478);
+            this.sld_octaves.Location = new System.Drawing.Point(1266, 767);
             this.sld_octaves.Minimum = 1;
             this.sld_octaves.Name = "sld_octaves";
-            this.sld_octaves.Size = new System.Drawing.Size(144, 35);
+            this.sld_octaves.Size = new System.Drawing.Size(250, 35);
             this.sld_octaves.TabIndex = 13;
             this.sld_octaves.Title = "Octaves";
             // 
@@ -347,7 +348,7 @@
             this.sld_octaves.TrackBar.Location = new System.Drawing.Point(120, 10);
             this.sld_octaves.TrackBar.Minimum = 1;
             this.sld_octaves.TrackBar.Name = "";
-            this.sld_octaves.TrackBar.Size = new System.Drawing.Size(14, 30);
+            this.sld_octaves.TrackBar.Size = new System.Drawing.Size(120, 30);
             this.sld_octaves.TrackBar.TabIndex = 1;
             this.sld_octaves.TrackBar.TickStyle = System.Windows.Forms.TickStyle.None;
             this.sld_octaves.TrackBar.Value = 5;
@@ -358,11 +359,11 @@
             // 
             this.sld_scale.BackColor = System.Drawing.SystemColors.Control;
             this.sld_scale.LargeChange = 1;
-            this.sld_scale.Location = new System.Drawing.Point(1445, 519);
+            this.sld_scale.Location = new System.Drawing.Point(1266, 792);
             this.sld_scale.Maximum = 5000;
             this.sld_scale.Minimum = 1;
             this.sld_scale.Name = "sld_scale";
-            this.sld_scale.Size = new System.Drawing.Size(144, 35);
+            this.sld_scale.Size = new System.Drawing.Size(250, 35);
             this.sld_scale.TabIndex = 12;
             this.sld_scale.Title = "Scale";
             // 
@@ -376,7 +377,7 @@
             this.sld_scale.TrackBar.Maximum = 5000;
             this.sld_scale.TrackBar.Minimum = 1;
             this.sld_scale.TrackBar.Name = "";
-            this.sld_scale.TrackBar.Size = new System.Drawing.Size(14, 30);
+            this.sld_scale.TrackBar.Size = new System.Drawing.Size(120, 30);
             this.sld_scale.TrackBar.TabIndex = 1;
             this.sld_scale.TrackBar.TickStyle = System.Windows.Forms.TickStyle.None;
             this.sld_scale.TrackBar.Value = 5;

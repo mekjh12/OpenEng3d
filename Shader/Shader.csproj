@@ -132,7 +132,7 @@
     <Compile Include="InstancedShader\InstancedShader.cs" />
     <Compile Include="RenderDepthBufferShader\RenderDepthBufferShader.cs" />
     <Compile Include="DisplayShader\DisplayShader.cs" />
-    <Compile Include="ShaderManager.cs" />
+    <Compile Include="RiverShader\RiverTessellationShader.cs" />
     <Compile Include="SkyDomeShader\CloudShader.cs" />
     <Compile Include="SkyDomeShader\SkyDomeRenderShader.cs" />
     <Compile Include="SkyDomeShader\SkyDomeTexture2dShader.cs" />
@@ -279,6 +279,10 @@
     <None Include="RenderDepthBufferShader\dummy.vert" />
     <None Include="RenderDepthBufferShader\post.gs.glsl" />
     <None Include="RenderDepthBufferShader\renderdepth.frag" />
+    <None Include="RiverShader\river.frag" />
+    <None Include="RiverShader\river.tes.glsl" />
+    <None Include="RiverShader\river.tcs.glsl" />
+    <None Include="RiverShader\river.vert" />
     <None Include="SkyDomeShader\volumetric_cloud.comp" />
     <None Include="SkyDomeShader\cloudGenerator.comp" />
     <None Include="SkyDomeShader\skyColorGenerator.comp" />

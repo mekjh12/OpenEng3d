@@ -40,6 +40,7 @@ namespace FormTools
         private RenderDepthBufferShader _renderDepthShader; // 렌더 깊이 셰이더
         private DeferredShadingShader _deferredShadingShader;       // 디퍼드 셰이딩 셰이더
 
+
         // UI 2D 관련 변수들
         private Polyhedron _viewFrustum;                    // 뷰 프러스텀
         private Text2d _fpsText;                            // FPS 텍스트
@@ -140,6 +141,7 @@ namespace FormTools
             ShaderManager.Instance.AddShader(new RenderDepthBufferShader(StrRes.PROJECT_PATH));
             ShaderManager.Instance.AddShader(new DeferredShadingShader(StrRes.PROJECT_PATH));
             ShaderManager.Instance.AddShader(new StructureDebugShader(StrRes.PROJECT_PATH));
+            ShaderManager.Instance.AddShader(new RiverTessellationShader(StrRes.PROJECT_PATH));
 
             // 셰이더 인스턴스 가져오기
             _colorShader = ShaderManager.Instance.GetShader<ColorShader>();
@@ -228,6 +230,8 @@ namespace FormTools
 
             // 지형 단층맵 만들기
             _terrainRenderer.CreateFaultTexture();
+
+            ShaderManager.PrintCompileMessages();
 
             Constants.CAMERA_MOVE_DELTA = 10.0f;
         }
@@ -562,9 +566,9 @@ namespace FormTools
             {
                 _isVisibleWorldAxis = !_isVisibleWorldAxis;
             }
-            else if (e.KeyCode == Keys.D0)
+            else if (e.KeyCode == Keys.Space)
             {
-                Constants.CAMERA_MOVE_DELTA = Constants.CAMERA_MOVE_DELTA == 10.0f ? 0.1f: 10.0f;
+                Constants.CAMERA_MOVE_DELTA = Constants.CAMERA_MOVE_DELTA == 2.0f ? 0.1f: 2.0f;
             }
         }
 

@@ -49,6 +49,8 @@ float SampleHeightForChunk(
         clamp(texCoord.x, EDGE_THRESHOLD, OPPOSITE_EDGE),
         clamp(texCoord.y, EDGE_THRESHOLD, OPPOSITE_EDGE)
     );
+
+    
     
     // 공통으로 사용할 모서리 좌표 정의
     vec2 topLeft = vec2(EDGE_THRESHOLD, EDGE_THRESHOLD);

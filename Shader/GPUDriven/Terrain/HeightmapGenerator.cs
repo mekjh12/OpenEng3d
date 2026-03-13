@@ -5,6 +5,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Runtime.InteropServices;
 using ZetaExt;
 
 namespace Shader
@@ -141,7 +142,7 @@ namespace Shader
         }
 
         /// <summary>
-        /// 하이트맵 생성 파이프라인
+        /// 하이트맵 생성 파이프라인 (Bilinear -> Bicubic -> Gaussian Blur)
         /// </summary>
         /// <param name="baseHeigthmapTextureId">기본 하이트맵 텍스처 ID</param>
         /// <param name="useBicubic">Bicubic 보간 사용 여부</param>
@@ -222,7 +223,9 @@ namespace Shader
         public void SaveHeightmapToPng(string filePath, bool saveMeta = false, bool generateNormalMap = true)
         {
             float[] heightData = ReadHeightmapFromGPU(flipY: false);
-            BmpHeightmapSaver.SaveAsRaw16(heightData, _size, _size, filePath, saveMeta: saveMeta);
+            //SaveFloatArrayToBmp(heightData, 1025, @"C:\Users\mekjh\OneDrive\바탕 화면\a.bmp");
+
+            BmpHeightmapSaver.SaveAsRaw16(heightData, _size, _size, filePath, saveMeta: saveMeta, saveWithLowRes: true);
             Console.WriteLine($"[Heightmap] RAW 저장 완료: {filePath}");
 
             if (generateNormalMap)
@@ -238,6 +241,50 @@ namespace Shader
             }
         }
 
+        public void SaveFloatArrayToBmp(float[] data, int size, string filePath)
+        {
+            // 1. 비트맵 객체 생성 (32bpp ARGB 권장)
+            using (Bitmap bitmap = new Bitmap(size, size, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
+            {
+                // 2. 비트맵 데이터 잠금 (포인터 접근을 위해)
+                BitmapData bmpData = bitmap.LockBits(
+                    new Rectangle(0, 0, size, size),
+                    ImageLockMode.WriteOnly,
+                    bitmap.PixelFormat);
+
+                try
+                {
+                    int pixelCount = size * size;
+                    byte[] pixelBytes = new byte[pixelCount * 4]; // BGRA 순서
+
+                    for (int i = 0; i < pixelCount; i++)
+                    {
+                        // float[] data는 RGBA 순서라고 가정 (ReadHeightmapFromGPU 기준)
+                        int floatIdx = i * 4;
+                        int byteIdx = i * 4;
+
+                        // 0.0 ~ 1.0 범위를 0 ~ 255로 클램핑 및 변환
+                        // GDI+의 Format32bppArgb는 실제 메모리에 [B, G, R, A] 순서로 저장됩니다.
+                        pixelBytes[byteIdx + 0] = (byte)(data[floatIdx + 2] * 255).Clamp(0, 255); // Blue
+                        pixelBytes[byteIdx + 1] = (byte)(data[floatIdx + 1] * 255).Clamp(0, 255); // Green
+                        pixelBytes[byteIdx + 2] = (byte)(data[floatIdx + 0] * 255).Clamp(0, 255); // Red
+                        pixelBytes[byteIdx + 3] = (byte)(data[floatIdx + 3] * 255).Clamp(0, 255); // Alpha
+                    }
+
+                    // 3. 변환된 바이트 배열을 비트맵 메모리로 복사
+                    Marshal.Copy(pixelBytes, 0, bmpData.Scan0, pixelBytes.Length);
+                }
+                finally
+                {
+                    bitmap.UnlockBits(bmpData);
+                }
+
+                // 4. 파일 저장 (확장자에 따라 포맷 자동 결정)
+                bitmap.Save(filePath, ImageFormat.Bmp);
+            }
+
+            Console.WriteLine($"[Success] BMP 저장 완료: {filePath}");
+        }
         /// <summary>
         /// RGB 3채널 float[] 다운샘플링 (Bilinear)
         /// </summary>

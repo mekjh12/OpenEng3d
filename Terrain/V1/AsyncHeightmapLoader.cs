@@ -51,7 +51,7 @@ namespace Terrain
         /// <summary>
         /// 노말맵 (RGB 8bit)
         /// </summary>
-        public static TileFormat NormalMapRGB() => new TileFormat
+        public static TileFormat MapRGB() => new TileFormat
         {
             TileSize = 1025,
             ChannelCount = 3,
@@ -400,13 +400,12 @@ namespace Terrain
                 Span<ushort> heightData = MemoryMarshal.Cast<byte, ushort>(
                     rawBytes.AsSpan(0, length));
 
-                // Transpose 적용
                 for (uint y = 0; y < size; y++)
                 {
                     for (uint x = 0; x < size; x++)
                     {
                         uint srcIdx = y * size + x;
-                        uint dstIdx = x * size + y;
+                        uint dstIdx = y * size + x;
                         normalizedData[dstIdx] = heightData[(int)srcIdx] / _format.NormalizeValue;
                     }
                 }
@@ -424,31 +423,21 @@ namespace Terrain
         /// <summary>
         /// 3채널 로드 (Normal map)
         /// </summary>
-        private float[] LoadTripleChannel(byte[] rawBytes, bool isXYchange = true)
+        private float[] LoadTripleChannel(byte[] rawBytes)
         {
             uint size = _format.TileSize;
             float[] normalData = new float[size * size * 3];
 
-            // RGB 8bit → float RGB (transpose 포함)
             for (uint y = 0; y < size; y++)
             {
                 for (uint x = 0; x < size; x++)
                 {
                     uint srcIdx = (y * size + x) * 3;
-                    uint dstIdx = (x * size + y) * 3; // transpose
+                    uint dstIdx = (y * size + x) * 3;
 
-                    if (isXYchange)
-                    {
-                        normalData[dstIdx + 1] = rawBytes[srcIdx + 0] / _format.NormalizeValue;
-                        normalData[dstIdx + 0] = rawBytes[srcIdx + 1] / _format.NormalizeValue;
-                        normalData[dstIdx + 2] = rawBytes[srcIdx + 2] / _format.NormalizeValue;
-                    }
-                    else
-                    {
-                        normalData[dstIdx + 0] = rawBytes[srcIdx + 0] / _format.NormalizeValue;
-                        normalData[dstIdx + 1] = rawBytes[srcIdx + 1] / _format.NormalizeValue;
-                        normalData[dstIdx + 2] = rawBytes[srcIdx + 2] / _format.NormalizeValue;
-                    }
+                    normalData[dstIdx + 0] = rawBytes[srcIdx + 0] / _format.NormalizeValue;
+                    normalData[dstIdx + 1] = rawBytes[srcIdx + 1] / _format.NormalizeValue;
+                    normalData[dstIdx + 2] = rawBytes[srcIdx + 2] / _format.NormalizeValue;
                 }
             }
 

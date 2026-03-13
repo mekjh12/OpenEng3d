@@ -5,6 +5,7 @@ using Noise;
 using OpenGL;
 using Shader;
 using System;
+using System.Net;
 
 namespace Terrain
 {
@@ -19,6 +20,12 @@ namespace Terrain
         TerrainTessellationShader _shader;
         TerrainNormalLineShader _nshader;
         TerrainShadowMapShader _shadowShader;
+        RiverTessellationShader _riverShader;
+
+        // 강 메시 (AABB 쿼드 패치)
+        uint _riverVao = 0;
+        uint _riverIbo = 0;
+        int _riverCount = 0;
 
         uint _heightMapTextureId = 0;
 
@@ -65,17 +72,28 @@ namespace Terrain
         // --------------------------------------------------------
 
         public TerrainRenderer(TerrainStreamingManager streamingManager)
-        {
-            
+        {            
             _shader = ShaderManager.Instance.GetShader<TerrainTessellationShader>();
             _shadowmap = new ShadowMap(2048, 2048);  // 해상도 상향 권장
 
+            _riverShader = ShaderManager.Instance.GetShader<RiverTessellationShader>();
+
             _shadowShader = new TerrainShadowMapShader(StrRes.PROJECT_PATH);
             _nshader = new TerrainNormalLineShader(StrRes.PROJECT_PATH);
-            
+
             _streamingManager = streamingManager;
 
             CreateTerrainMesh(32, 8);
+            CreateRiverMesh(32);
+        }
+
+        public void CreateRiverMesh(int patchGridSize = 32)
+        {
+            RawModel3d riverPlane = Loader3d.LoadPlaneNxN(patchGridSize / 2,
+                (int)((1024+32) / patchGridSize));
+            _riverVao = riverPlane.VAO;
+            _riverIbo = riverPlane.IBO;
+            _riverCount = riverPlane.IndexCount;
         }
 
         private void CreateTerrainMesh(int resHigh = 32, int resLow = 2)
@@ -227,6 +245,12 @@ namespace Terrain
 
         public void Render(Camera camera)
         {
+            RenderTerrain(camera);
+            RenderRivers(camera);
+        }
+
+        public void RenderTerrain(Camera camera)
+        {
             int tileLowRadius = _streamingManager.LowTileRadius;
             int tileHighRadius = _streamingManager.HighTileRadius;
 
@@ -272,11 +296,7 @@ namespace Terrain
                     _shader.LoadHeightLowResolutionMap(_heightMapTextureId);
                     
                     _shader.LoadAdjacentHeightMaps(_streamingManager.GetAdjRegionTextures(cx, cy));
-                    
-                    float rx = (cx + 0.5f) * 1024f;
-                    float ry = (cy + 0.5f) * 1024f;
-                    uint riverRoadTextureId = _streamingManager.GetRiverRoadTexture(cx, cy);
-                    _shader.LoadRiverRoadMap(riverRoadTextureId);
+                    _shader.LoadRiverRoadMap(_streamingManager.GetRiverRoadTexture(cx, cy));
 
                     _shader.LoadModelMatrix(_worldMatrix);
                     _shader.LoadNormalMap(_streamingManager.GetRegionNormalTexture(cx, cy));
@@ -324,11 +344,7 @@ namespace Terrain
 
                         _shader.LoadHeightHighResolutionMap(_heightMapTextureId);
                         _shader.LoadHeightLowResolutionMap(_heightMapTextureId);
-
-                        float rx = (cx + 0.5f) * 1024f;
-                        float ry = (cy + 0.5f) * 1024f;
-                        uint riverRoadTextureId = _streamingManager.GetRiverRoadTexture(cx, cy);
-                        _shader.LoadRiverRoadMap(riverRoadTextureId);
+                        _shader.LoadRiverRoadMap(_streamingManager.GetRiverRoadTexture(cx, cy));
 
                         _shader.LoadAdjacentHeightMaps(_streamingManager.GetAdjRegionTextures(cx, cy));
                         _shader.LoadModelMatrix(_worldMatrix);
@@ -347,6 +363,49 @@ namespace Terrain
             _shader.Unbind();
         }
 
+        public void RenderRivers(Camera camera)
+        {
+            if (_riverVao == 0) return;
+            if (_riverShader == null) return;
+
+            _riverShader.Bind();
+            _riverShader.LoadHeightScale(Constants.TERRAIN_VERTICAL_SCALE);
+            _riverShader.LoadBlendFactor(0.0f);
+            _riverShader.LoadRiverHeightOffset(0.5f);
+            _riverShader.LoadModelMatrix(_worldMatrix);
+
+            Gl.BindVertexArray(_riverVao);
+            Gl.EnableVertexAttribArray(0);
+            Gl.EnableVertexAttribArray(1);
+            Gl.BindBuffer(BufferTarget.ElementArrayBuffer, _riverIbo);
+            Gl.PatchParameter(PatchParameterName.PatchVertices, 4);
+
+            // 강이 있는 청크만 순회
+            for (int dx = -1; dx <= 1; dx++)
+                for (int dy = -1; dy <= 1; dy++)
+                {
+                    int cx = _streamingManager.CurrentRegionX + dx;
+                    int cy = _streamingManager.CurrentRegionY + dy;
+
+                    uint riverMaskTex = _streamingManager.GetRiverRoadTexture(cx, cy);
+                    if (riverMaskTex == 0) continue;
+
+                    uint heightTex = _streamingManager.GetRegionTexture(cx, cy, dx, dy);
+                    SetRegion(cx, cy, heightTex);
+
+                    _riverShader.LoadModelMatrix(_worldMatrix);
+                    _riverShader.LoadHeightHighResMap(_heightMapTextureId);
+                    _riverShader.LoadHeightLowResMap(_heightMapTextureId);
+                    _riverShader.LoadRiverMask(riverMaskTex);
+
+                    Gl.DrawElements(PrimitiveType.Patches, _riverCount, DrawElementsType.UnsignedInt, IntPtr.Zero);
+                }
+
+            Gl.DisableVertexAttribArray(1);
+            Gl.DisableVertexAttribArray(0);
+            Gl.BindVertexArray(0);
+            _riverShader.Unbind();
+        }
 
         /// <summary>
         /// 지형의 법선 벡터를 RGB 라인으로 시각화하여 렌더링합니다.

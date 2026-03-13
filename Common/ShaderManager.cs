@@ -3,12 +3,37 @@ using Common.Abstractions;
 using System;
 using System.Collections.Generic;
 
-namespace Shader
+namespace Common
 {
     // 셰이더 매니저 구현
     public class ShaderManager
     {
         private static ShaderManager _instance;
+        private static List<string> _compileMessages = new List<string>();
+        private static bool _isPrintedCompileMessages = false;
+
+        public static void AddCompileMessage(string message)
+        {
+            _compileMessages.Add(message);
+        }
+
+        public static void PrintCompileMessages()
+        {
+            if (_isPrintedCompileMessages) return;
+
+            Console.WriteLine("\n" + new string('=', 60));
+            Console.WriteLine("{0, -10} | {1}", "유형", "셰이더 컴파일 메시지");
+            Console.WriteLine(new string('-', 60));
+
+            foreach (var msg in _compileMessages)
+            {
+                // 메시지 내용에 따라 접두사를 붙이거나 정렬할 수 있습니다.
+                Console.WriteLine($"  LOG      | {msg}");
+            }
+
+            Console.WriteLine(new string('=', 60) + "\n");
+            _isPrintedCompileMessages = true;
+        }
 
         public static ShaderManager Instance
         {
@@ -30,11 +55,10 @@ namespace Shader
             if (!_shaders.ContainsKey(shaderName))
             {
                 _shaders[shaderName] = shader;
-                //Console.WriteLine($"* 셰이더 추가됨: {shaderName}");
             }
             else
             {
-                Console.WriteLine($"! 셰이더 이미 존재: {shaderName}");
+                ShaderManager.AddCompileMessage($"---> 셰이더 이미 존재: {shaderName}");
             }
         }
 

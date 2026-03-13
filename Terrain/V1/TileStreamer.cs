@@ -57,7 +57,7 @@ namespace Terrain
         {
             int regionX = (int)Math.Floor(worldX / TileSize);
             int regionY = (int)Math.Floor(worldY / TileSize);
-            return GetTexture(-regionY, -regionX);
+            return GetTexture(regionX, regionY);
         }
 
 
@@ -80,8 +80,8 @@ namespace Terrain
             }
 
             Bitmap bitmap = (Bitmap)Bitmap.FromFile(path);
-            //bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
-            bitmap.RotateFlip(RotateFlipType.Rotate90FlipX);
+            bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
+            //bitmap.RotateFlip(RotateFlipType.Rotate90FlipX);
 
             BitmapData data = bitmap.LockBits(
                 new Rectangle(0, 0, bitmap.Width, bitmap.Height),

@@ -319,7 +319,7 @@ namespace Common
             {
                 StringBuilder stringBuilder = new StringBuilder(256);
                 Gl.GetProgramInfoLog(_programID, 256, out int len, stringBuilder);
-                Console.WriteLine($"Shader Program Linking Error ({shaderName}):\n{stringBuilder.ToString()}");
+                ShaderManager.AddCompileMessage($"Shader Program Linking Error ({shaderName}):\n{stringBuilder.ToString()}");
                 // 링크 실패 시 프로그램 ID를 유효하지 않은 값으로 설정하거나 예외를 던지는 것을 고려할 수 있습니다.
                 // _programID = 0;
                 // throw new Exception($"Shader Program Linking Error: {stringBuilder.ToString()}");
@@ -498,7 +498,7 @@ namespace Common
                 }
                 else
                 {
-                    Console.WriteLine($"{fileNameWithoutPath}: include파일이 없습니다. {includeFileName}");
+                    ShaderManager.AddCompileMessage($"{fileNameWithoutPath}: include파일이 없습니다. {includeFileName}");
                 }
             }
             // 인클루드 라인이 아니면 그대로 읽어온다.
@@ -548,12 +548,12 @@ namespace Common
             if (param == Gl.FALSE)
             {
                 string msg = $"--->[실패] {_name} GLSL 컴파일 실패 {type} {shaderID} {fileName}";
-                Console.WriteLine(msg + $" Shader Program 에러");
+                ShaderManager.AddCompileMessage(msg + $" Shader Program 에러");
             }
             else
             {
                 string shaderName = Path.GetFileName(shortFileName);
-                Console.WriteLine($"(성공) {_name} GLSL 빌드 {shaderName} {type} [{shaderID}]");
+                ShaderManager.AddCompileMessage($"(성공) {_name} GLSL 빌드 {shaderName} {type} [{shaderID}]");
             }
 
             return shaderID;
@@ -656,12 +656,12 @@ namespace Common
                     // 포맷 정보 저장
                     File.WriteAllText(binaryFile + ".format", binaryFormat.ToString());
 
-                    Console.WriteLine($"셰이더 바이너리 저장 완료: {shaderName}");
+                    ShaderManager.AddCompileMessage($"셰이더 바이너리 저장 완료: {shaderName}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"셰이더 바이너리 저장 실패: {ex.Message}");
+                ShaderManager.AddCompileMessage($"셰이더 바이너리 저장 실패: {ex.Message}");
             }
         }
 
@@ -695,20 +695,20 @@ namespace Common
 
                 if (status == Gl.TRUE)
                 {
-                    Console.WriteLine($"* 셰이더 바이너리 로드 성공: {_name}");
+                    ShaderManager.AddCompileMessage($"* 셰이더 바이너리 로드 성공: {_name}");
                     return true;
                 }
                 else
                 {
                     StringBuilder infoLog = new StringBuilder(256);
                     Gl.GetProgramInfoLog(_programID, 256, out int len, infoLog);
-                    Console.WriteLine($"! 셰이더 바이너리 로드 실패: {infoLog.ToString()}");
+                    ShaderManager.AddCompileMessage($"! 셰이더 바이너리 로드 실패: {infoLog.ToString()}");
                     return false;
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"! 셰이더 바이너리 로드 오류: {ex.Message}");
+                ShaderManager.AddCompileMessage($"! 셰이더 바이너리 로드 오류: {ex.Message}");
                 return false;
             }
         }

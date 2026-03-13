@@ -44,7 +44,7 @@ namespace Terrain
         // ------------------------------------------------------------------------
 
         public TerrainStreamer(string heightmapBasePath, int tileRadius, int maxUploadsPerFrame = 1,
-            string tileFileSuffix = "", TileFormat tileFormat = default)
+            string tileFileSuffix = "",  TileFormat tileFormat = default)
         {
             _tileRadius = tileRadius;
             _tileFileSuffix = tileFileSuffix;

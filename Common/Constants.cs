@@ -9,7 +9,7 @@
         public const int MAX_INSTANCES = 100_000;       // 최대 인스턴스 수
         public const int MAX_BATCHES = 64;              // 최대 배치 수
 
-        public const float TERRAIN_VERTICAL_SCALE = 1608.32f;
+        public const float TERRAIN_VERTICAL_SCALE = 608.32f;
 
         public static float CAMERA_MOVE_DELTA = 0.10f;
         public const int GROUND_FOG_MAX_INSTANCES = 5_000;

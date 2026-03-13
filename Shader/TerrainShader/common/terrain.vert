@@ -19,4 +19,5 @@ void main()
    
    // 텍스처 좌표를 프래그먼트 셰이더로 전달
    Tex1 = vec2(texCoord.x, texCoord.y);
+
 }

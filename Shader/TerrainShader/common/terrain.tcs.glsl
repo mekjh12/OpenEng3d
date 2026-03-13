@@ -120,17 +120,6 @@ void main()
         float tessLevel2 = mix(MAX_TESS, MIN_TESS, min(d01, d11)); // Right
         float tessLevel3 = mix(MAX_TESS, MIN_TESS, min(d11, d10)); // Top
 
-        // 상수 정의
-        const float EDGE_THRESHOLD = 0.001f;
-        const float OPPOSITE_EDGE = 0.999f;
-
-        // 엣지 케이스: 여기서는 모서리를 포함한 모든 엣지 케이스 처리
-        vec2 texCoord = Tex2[gl_InvocationID];
-        bool isRightEdge = texCoord.x > OPPOSITE_EDGE;
-        bool isLeftEdge = texCoord.x < EDGE_THRESHOLD;
-        bool isTopEdge = texCoord.y > OPPOSITE_EDGE;
-        bool isBottomEdge = texCoord.y < EDGE_THRESHOLD;
-
         // 레벨 적용
         gl_TessLevelOuter[0] = tessLevel0;
         gl_TessLevelOuter[1] = tessLevel1;

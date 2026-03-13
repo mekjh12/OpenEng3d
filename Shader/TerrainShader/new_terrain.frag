@@ -52,7 +52,6 @@ uniform float gFaultZoneIntensity = 0.7f;
 // 강유역 유니폼
 uniform sampler2D gRiverRoadMap;
 
-
 uniform sampler2D gMossRockTexture;
 uniform float gValleyBlendStart = 0.3;    // 블렌딩 시작 지점
 uniform float gValleyBlendEnd = 0.7;      // 블렌딩 종료 지점 (완전히 계곡 텍스처)
@@ -137,27 +136,23 @@ vec4 SampleRiverSmooth(vec2 uv)
 
 vec4 ApplyRiverTexturing(vec3 pos, vec3 normalWorld, vec4 baseColor)
 {
-    vec2 uv = fract(pos.xy / 9216.0);
-    vec3 riverRoad = SampleRiverSmooth(uv).rgb;
-    float river = riverRoad.b;
-    float road  = riverRoad.r;
+    vec2 uv = fract(pos.xy / 1024.0);
+    uv.y = 1.0 - uv.y; // 텍스처 좌표 반전
+    vec3 riverRoad = texture(gRiverRoadMap, uv).rgb;
+    float river = riverRoad.r;
+    float road  = riverRoad.b;
     
     // 하드 threshold 대신 부드러운 블렌딩
     float riverAlpha = smoothstep(0.3, 0.7, river);
-    float roadAlpha  = smoothstep(0.3, 0.7, road);
+    float roadAlpha  = smoothstep(0.45, 0.9, road);
     
     vec4 result = baseColor;
 
-    vec4 roadColor = texture(gTextureHeight4, uv * 1000.0f);
+    vec4 roadColor = texture(gMossRockTexture, uv * 1000.0f);
     vec4 waterColor = texture(gMossRockTexture, uv * 300.0f);
 
-    if (river > 0.5 ) {
-        result = mix(result, vec4(waterColor.rgb, 1.0), riverAlpha);
-    }
+    result = mix(result, vec4(roadColor.rgb, 1.0), roadAlpha);
 
-    if (road > 0.5 ) {
-        result = mix(result, vec4(roadColor.rgb, 1.0), roadAlpha);
-    }
     return result;
 }
 
@@ -263,7 +258,7 @@ vec4 GetTriplanarTextureAdvanced(sampler2D tex, vec3 worldPos, vec3 normal, floa
     vec4 macroColor = macroX * blendWeights.x + macroY * blendWeights.y + macroZ * blendWeights.z;
     
     float dist = length(camera.cameraPos.xyz - worldPos);
-    float fade = clamp(dist / 500.0, 0.0, 1.0);
+    float fade = clamp(dist / 2500.0, 0.0, 1.0);
     return mix(microColor, macroColor, fade);
 }
 

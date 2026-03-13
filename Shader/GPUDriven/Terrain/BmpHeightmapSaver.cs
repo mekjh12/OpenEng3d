@@ -200,7 +200,8 @@ namespace Common
         /// <summary>
         /// 단일 채널 RAW 16bit 저장 (R 채널만, Alpha 무시)
         /// </summary>
-        public static void SaveAsRaw16(float[] rgbaData, int width, int height, string filePath, bool saveMeta = true, bool saveLowRes = true)
+        public static void SaveAsRaw16(float[] rgbaData, int width, int height, string filePath, 
+            bool saveMeta = true, bool saveWithLowRes = true)
         {
             // 원본 저장
             ushort[] data16bit = ConvertRgbaFloatToUshort(rgbaData, width, height);
@@ -228,7 +229,7 @@ namespace Common
             }
 
             // 129x129 low 버전 저장
-            if (saveLowRes)
+            if (saveWithLowRes)
             {
                 const int lowResSize = 129;
                 float[] lowResRgba = DownsampleRgba(rgbaData, width, height, lowResSize, lowResSize);

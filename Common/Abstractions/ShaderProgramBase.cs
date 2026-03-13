@@ -277,152 +277,105 @@ namespace Common
         {
             string shaderName = _name;
 
-            /*
-            // 이미 초기화되었고 파일이 변경되지 않았다면 컴파일하지 않음
+            // ─────────────────────────────────────────────────────
+            // _isInitialized 상태에 따른 분기:
+            //   false              → 첫 컴파일, GPU 자원 없음, 그냥 진행
+            //   true + 파일 미변경 → 재컴파일 불필요, 조기 리턴
+            //   true + 파일 변경됨 → 기존 GPU 자원 해제 후 재컴파일
+            // ─────────────────────────────────────────────────────
+
+            // 1. 조기 리턴: 변경 사항이 없으면 아무것도 하지 않음
             if (_isInitialized && !AnyShaderFileModified())
             {
-                Console.WriteLine($"[재컴파일을 생략] {_name}");
+                ShaderManager.AddCompileMessage($"[재컴파일 생략] {shaderName}");
                 return;
             }
 
-            // 기존 프로그램 정리
-            if (_isInitialized)
-            {
-                CleanUp();
-            }
+            // 2. 기존 자원 정리
+            if (_isInitialized) CleanUp();
 
-            // 파일이 변경되지 않았고 바이너리가 있다면 바이너리 로드 시도
+            // 3. 바이너리 로드 시도 (파일 수정이 없을 때만)
             if (!AnyShaderFileModified() && LoadCompiledShaderBinary(shaderName))
             {
-                GetAllUniformLocations();
-                _isInitialized = true;
+                FinalizeShaderSetup();
                 return;
             }
-            */
 
-            // 바이너리 로드 실패 또는 파일 변경됨 - 일반 컴파일 진행
+            // 4. 일반 컴파일 프로세스 시작
             _programID = Gl.CreateProgram();
+            int compiledCount = 0;
 
-            // 셰이더 로드
-            int success = 0;
-
-            if (_vertFilename != "")
-            {
-                if (File.Exists(_vertFilename))
-                {
-                    _vertexShaderID = LoadShader(_vertFilename, ShaderType.VertexShader);
-                    if (_vertexShaderID >= 0) success++;
-                    Gl.AttachShader(_programID, _vertexShaderID);
-                }
-                else
-                {
-                    throw new Exception($"{_vertFilename}이 없습니다. {ERROR_COMPILE_PATH}");
-                }
-            }
-
-            if (_fragFilename != "")
-            {
-                if (File.Exists(_fragFilename))
-                {
-                    _fragmentShaderID = LoadShader(_fragFilename, ShaderType.FragmentShader);
-                    if (_fragmentShaderID >= 0) success++;
-                    Gl.AttachShader(_programID, _fragmentShaderID);
-                }
-                else
-                {
-                    throw new Exception($"{_fragFilename}이 없습니다. {ERROR_COMPILE_PATH}");
-                }
-            }
-
-            if (_geomFilename != "")
-            {
-                if (File.Exists(_geomFilename))
-                {
-                    _geometryShaderID = LoadShader(_geomFilename, ShaderType.GeometryShader);
-                    if (_geometryShaderID >= 0) success++;
-                    Gl.AttachShader(_programID, _geometryShaderID);
-                }
-                else
-                {
-                    throw new Exception($"{_geomFilename}이 없습니다. {ERROR_COMPILE_PATH}");
-                }
-            }
-
-            if (_tcsFilename != "")
-            {
-                if (File.Exists(_tcsFilename))
-                {
-                    _tcsShaderID = LoadShader(_tcsFilename, ShaderType.TessControlShader);
-                    if (_tcsShaderID >= 0) success++;
-                    Gl.AttachShader(_programID, _tcsShaderID);
-                }
-                else
-                {
-                    throw new Exception($"{_tcsFilename}이 없습니다. {ERROR_COMPILE_PATH}");
-                }
-            }
-
-            if (_tesFilename != "")
-            {
-                if (File.Exists(_tesFilename))
-                {
-                    _tesShaderID = LoadShader(_tesFilename, ShaderType.TessEvaluationShader);
-                    if (_tesShaderID >= 0) success++;
-                    Gl.AttachShader(_programID, _tesShaderID);
-                }
-                else
-                {
-                    throw new Exception($"{_tesFilename}이 없습니다. {ERROR_COMPILE_PATH}");
-                }
-            }
-
-            if (_compFilename != "")
-            {
-                if (File.Exists(_compFilename))
-                {
-                    _computeShaderID = LoadShader(_compFilename, ShaderType.ComputeShader);
-                    if (_computeShaderID >= 0) success++;
-                    Gl.AttachShader(_programID, _computeShaderID);
-                }
-                else
-                {
-                    throw new Exception($"{_compFilename}이 없습니다. {ERROR_COMPILE_PATH}");
-                }
-            }
+            // 셰이더 타입별 파일 처리 (반복 구조 개선)
+            compiledCount += TryAttachShader(_vertFilename, ShaderType.VertexShader, ref _vertexShaderID);
+            compiledCount += TryAttachShader(_fragFilename, ShaderType.FragmentShader, ref _fragmentShaderID);
+            compiledCount += TryAttachShader(_geomFilename, ShaderType.GeometryShader, ref _geometryShaderID);
+            compiledCount += TryAttachShader(_tcsFilename, ShaderType.TessControlShader, ref _tcsShaderID);
+            compiledCount += TryAttachShader(_tesFilename, ShaderType.TessEvaluationShader, ref _tesShaderID);
+            compiledCount += TryAttachShader(_compFilename, ShaderType.ComputeShader, ref _computeShaderID);
 
             BindAttributes();
 
+            // 5. 링크 및 검증
             Gl.LinkProgram(_programID);
+            bool isLinked = CheckLinkStatus(shaderName);
 
-            // 셰이더 링크 오류 확인
-            int linkStatus;
-            Gl.GetProgram(_programID, ProgramProperty.LinkStatus, out linkStatus);
-            if (linkStatus == 0)
+            if (isLinked)
             {
-                StringBuilder stringBuilder = new StringBuilder(256);
-                Gl.GetProgramInfoLog(_programID, 256, out int len, stringBuilder);
-                Console.WriteLine($"Shader Program Linking Error ({shaderName}):\n{stringBuilder.ToString()}");
-            }
+                Gl.ValidateProgram(_programID);
+                ShaderManager.AddCompileMessage($"** 쉐이더 빌드 {shaderName}, 파일수={compiledCount}");
 
-            Gl.ValidateProgram(_programID);
-
-            ZetaExt.Debug.WriteLine($"** 쉐이더 빌드 {shaderName}, 파일수={success}");
-
-            Gl.DeleteShader(_vertexShaderID);
-            Gl.DeleteShader(_fragmentShaderID);
-            Gl.DeleteShader(_geometryShaderID);
-            Gl.DeleteShader(_tcsShaderID);
-            Gl.DeleteShader(_tesShaderID);
-            Gl.DeleteShader(_computeShaderID);
-
-            GetAllUniformLocations();
-
-            // 컴파일 성공 후 바이너리 저장
-            if (linkStatus != 0)
-            {
+                // 성공 시 바이너리 저장
                 SaveCompiledShaderBinary(shaderName, _programID);
             }
 
+            // 6. 후처리 (중간 셰이더 객체 삭제 및 유니폼 로드)
+            CleanupIntermediateShaders();
+            FinalizeShaderSetup();
+        }
+
+        // --- 보조 메서드들 ---
+
+        private int TryAttachShader(string filename, ShaderType type, ref uint shaderId)
+        {
+            if (string.IsNullOrEmpty(filename)) return 0;
+
+            if (!File.Exists(filename))
+                throw new FileNotFoundException($"{filename}이 없습니다. {ERROR_COMPILE_PATH}");
+
+            shaderId = LoadShader(filename, type);
+            if (shaderId >= 0)
+            {
+                Gl.AttachShader(_programID, shaderId);
+                return 1;
+            }
+            return 0;
+        }
+
+        private bool CheckLinkStatus(string shaderName)
+        {
+            Gl.GetProgram(_programID, ProgramProperty.LinkStatus, out int linkStatus);
+            if (linkStatus == 0)
+            {
+                StringBuilder sb = new StringBuilder(512);
+                Gl.GetProgramInfoLog(_programID, 512, out _, sb);
+                ShaderManager.AddCompileMessage($"Shader Program Linking Error ({shaderName}):\n{sb}");
+                return false;
+            }
+            return true;
+        }
+
+        private void CleanupIntermediateShaders()
+        {
+            uint[] shaders = { _vertexShaderID, _fragmentShaderID, _geometryShaderID, _tcsShaderID, _tesShaderID, _computeShaderID };
+            foreach (var id in shaders)
+            {
+                if (id > 0) Gl.DeleteShader(id);
+            }
+        }
+
+        private void FinalizeShaderSetup()
+        {
+            GetAllUniformLocations();
             _isInitialized = true;
         }
 
@@ -482,6 +435,36 @@ namespace Common
             }
 
             return shaderSources;
+        }
+
+        // include 파일 경로를 수집하는 메서드 추가
+        private HashSet<string> CollectIncludeFiles(string fileName)
+        {
+            var result = new HashSet<string>();
+            if (!File.Exists(fileName)) return result;
+
+            foreach (var line in File.ReadAllLines(fileName))
+            {
+                string trimmed = line.Trim();
+                if (!trimmed.StartsWith("#include")) continue;
+
+                string includePath = trimmed
+                    .Replace("#include", "")
+                    .Replace("\"", "")
+                    .Trim();
+
+                string fullPath = Path.GetFullPath(
+                    Path.Combine(Path.GetDirectoryName(fileName), includePath));
+
+                if (File.Exists(fullPath))
+                {
+                    result.Add(fullPath);
+                    // 재귀: include 안의 include도 추적
+                    foreach (var nested in CollectIncludeFiles(fullPath))
+                        result.Add(nested);
+                }
+            }
+            return result;
         }
 
         private string AnalysisLine(string fileName, string shaderSourceOneLine, out List<string> funcs, out List<string> structs)
@@ -602,12 +585,12 @@ namespace Common
             if (param == Gl.FALSE)
             {
                 string msg = $"--->[실패] {_name} GLSL 컴파일 실패 {type} {shaderID} {fileName}";
-                Console.WriteLine(msg + $" Shader Program 에러");
+                ShaderManager.AddCompileMessage(msg + $" Shader Program 에러");
             }
             else
             {
                 string shaderName = Path.GetFileName(shortFileName);
-                Console.WriteLine($"**성공** {_name} GLSL 빌드 {shaderName} {type} [{shaderID}]");
+                ShaderManager.AddCompileMessage($"**성공** {_name} GLSL 빌드 {shaderName} {type} [{shaderID}]");
             }
 
             return shaderID;
@@ -653,23 +636,26 @@ namespace Common
         {
             bool modified = false;
 
-            if (_vertFilename != "" && FileHashManager.IsFileModified(_vertFilename))
-                modified = true;
+            var topLevelFiles = new[]
+            {
+                _vertFilename, _fragFilename, _geomFilename, _tcsFilename, _tesFilename, _compFilename
+            };
 
-            if (_fragFilename != "" && FileHashManager.IsFileModified(_fragFilename))
-                modified = true;
+            foreach (var file in topLevelFiles)
+            {
+                if (string.IsNullOrEmpty(file)) continue;
 
-            if (_geomFilename != "" && FileHashManager.IsFileModified(_geomFilename))
-                modified = true;
+                // 최상위 파일 체크
+                if (FileHashManager.IsFileModified(file))
+                    modified = true;
 
-            if (_tcsFilename != "" && FileHashManager.IsFileModified(_tcsFilename))
-                modified = true;
-
-            if (_tesFilename != "" && FileHashManager.IsFileModified(_tesFilename))
-                modified = true;
-
-            if (_compFilename != "" && FileHashManager.IsFileModified(_compFilename))
-                modified = true;
+                // include 파일들도 재귀적으로 체크
+                foreach (var includeFile in CollectIncludeFiles(file))
+                {
+                    if (FileHashManager.IsFileModified(includeFile))
+                        modified = true;
+                }
+            }
 
             return modified;
         }
@@ -722,14 +708,14 @@ namespace Common
 
                 if (status == Gl.TRUE)
                 {
-                    Console.WriteLine($"* 셰이더 바이너리 로드 성공: {_name}");
+                    ShaderManager.AddCompileMessage($"* 셰이더 바이너리 로드 성공: {_name}");
                     return true;
                 }
                 else
                 {
                     StringBuilder infoLog = new StringBuilder(256);
                     Gl.GetProgramInfoLog(_programID, 256, out int len, infoLog);
-                    Console.WriteLine($"! 셰이더 바이너리 로드 실패: {infoLog.ToString()}");
+                    ShaderManager.AddCompileMessage($"! 셰이더 바이너리 로드 실패: {infoLog.ToString()}");
                     return false;
                 }
             }

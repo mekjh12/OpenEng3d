@@ -24,7 +24,7 @@ namespace FormTools
             //Application.Run(new FormGPUDriven());                 // 작동됨(이전버전으로 폐기)
 
             //Application.Run(new FormRaw16Viewer(filePath));
-            Application.Run(new FormTerrainGen());                    // 지형 생성 테스트
+            //Application.Run(new FormTerrainGen());                    // 지형 생성 테스트
             Application.Run(new FormTerrainRegion());
             //Application.Run(new FormWaterFlow());                   // 컴퓨터세이더 기반 유체흐름 시뮬레이션 테스트
             //Application.Run(new FormGameWorld());                   // 게임 지형과 식물 전체 렌더링
