@@ -5,7 +5,6 @@ using Noise;
 using OpenGL;
 using Shader;
 using System;
-using System.Net;
 
 namespace Terrain
 {
@@ -246,7 +245,7 @@ namespace Terrain
         public void Render(Camera camera)
         {
             RenderTerrain(camera);
-            RenderRivers(camera);
+            //RenderRivers(camera);
         }
 
         public void RenderTerrain(Camera camera)

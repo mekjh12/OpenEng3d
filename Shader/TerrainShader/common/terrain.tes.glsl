@@ -43,7 +43,7 @@ uniform sampler2D adjacentHeightMap6; // 주변 높이맵
 uniform sampler2D adjacentHeightMap7; // 주변 높이맵
 
 uniform mat4 model;             // 모델 행렬
-uniform float heightScale = 200.0f;
+uniform float heightScale;
 
 void main()
 {   

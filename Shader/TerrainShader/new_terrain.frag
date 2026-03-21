@@ -97,9 +97,6 @@ void main()
     normalTangent = normalTangent * 2.0 - 1.0;
     vec3 normalWorld = normalize(normalMatrix * normalTangent);
 
-    // 경사도 계산
-    float slope = 1.0 - clamp(normalWorld.z, 0.0, 1.0);
-
     // 카메라와의 거리
     float dist = length(fragPos.xyz - camera.cameraPos.xyz);
     
@@ -107,7 +104,7 @@ void main()
     vec4 texColor = BlendTerrainTexturesAdvanced(fragPos.xyz, normalWorld, height, dist);
         
     // 계곡 텍스처 적용 (스무스 블렌딩)
-    texColor = ApplyRiverTexturing(fragPos.xyz, normalWorld, texColor);
+    //texColor = ApplyRiverTexturing(fragPos.xyz, normalWorld, texColor);
 
     // G-Buffer 출력
     gAlbedo = vec4(texColor.rgb, 1.0);
@@ -119,6 +116,68 @@ void main()
     float z = viewPosOut.z;
     gStructure = CalculateStructureOutput(z);
 }
+
+
+//-----------------------------------------------------------------------------
+// 지형 텍스처 블렌딩 (기존 코드)
+//-----------------------------------------------------------------------------
+vec4 BlendTerrainTexturesAdvanced(vec3 worldPos, vec3 normalWorld, float height, float dist)
+{
+    float worldTexScale = gColorTexcoordScaling * 0.0001; 
+    vec2 topDownUV = worldPos.xy * worldTexScale; 
+
+    vec4 heightColor;        
+    float Factor = (height - gHeight1) / (gHeight2 - gHeight1);
+    heightColor = mix(texture(gTextureHeight2, topDownUV), texture(gTextureHeight3, topDownUV), Factor);
+    
+    // 높이 기반 기본 색상
+    if (height < gHeight0) {
+        heightColor = texture(gTextureHeight0, topDownUV);
+    } else if (height < gHeight1) {
+        float Factor = (height - gHeight0) / (gHeight1 - gHeight0);
+        heightColor = mix(texture(gTextureHeight0, topDownUV), texture(gTextureHeight1, topDownUV), Factor);
+    } else if (height < gHeight2) {
+        float Factor = (height - gHeight1) / (gHeight2 - gHeight1);
+        heightColor = mix(texture(gTextureHeight1, topDownUV), texture(gTextureHeight2, topDownUV), Factor);
+    } else if (height < gHeight3) {
+        float Factor = (height - gHeight2) / (gHeight3 - gHeight2);
+        heightColor = mix(texture(gTextureHeight2, topDownUV), texture(gTextureHeight3, topDownUV), Factor);
+    } else { 
+        float Factor = clamp((height - gHeight3) / (gHeight4 - gHeight3), 0.0, 1.0);
+        heightColor = mix(texture(gTextureHeight3, topDownUV), texture(gTextureHeight4, topDownUV), Factor);
+    }
+
+    // 경사도 계산
+    float slope = 1.0 - clamp(normalWorld.z, 0.0, 1.0);
+    float slopeBlend = smoothstep(0.2, 0.5, slope);
+
+    // 바위 텍스처
+    vec4 rockColor = GetTriplanarTextureAdvanced(gRockTexture, worldPos, normalWorld, worldTexScale);
+    
+    // 단층 시스템
+    float faultZoneMask;
+    vec3 displacedPos = ApplyFaultSystem(worldPos, faultZoneMask);
+    float distBlendFactor = 1.0 - smoothstep(200, 300, dist);
+    float strataInput = (displacedPos.z + displacedPos.y * 0.2) * 10.0;
+    float strataPattern = 0.9 + 0.1 * sin(strataInput) * distBlendFactor;
+    float variation = sin(displacedPos.z * 2.0 + displacedPos.x * 0.5) * 0.05;
+    strataPattern += variation;
+    vec3 strataColor = mix(vec3(0.9, 0.8, 0.7), vec3(1.0, 1.0, 1.0), strataPattern);
+    vec3 brecciaColor = vec3(0.45, 0.4, 0.35);
+    strataColor = mix(strataColor, brecciaColor, faultZoneMask * gFaultZoneIntensity);
+    rockColor.rgb *= strataPattern;
+    rockColor.rgb *= strataColor;
+    
+    // 최종 합성
+    vec4 finalColor = mix(heightColor, rockColor, slopeBlend);
+    
+    if (gIsDetailMap) {
+        finalColor *= texture(gDetailMap, topDownUV * 10.0); 
+    }
+    
+    return finalColor;
+}
+
 
 vec4 SampleRiverSmooth(vec2 uv)
 {
@@ -260,66 +319,6 @@ vec4 GetTriplanarTextureAdvanced(sampler2D tex, vec3 worldPos, vec3 normal, floa
     float dist = length(camera.cameraPos.xyz - worldPos);
     float fade = clamp(dist / 2500.0, 0.0, 1.0);
     return mix(microColor, macroColor, fade);
-}
-
-//-----------------------------------------------------------------------------
-// 지형 텍스처 블렌딩 (기존 코드)
-//-----------------------------------------------------------------------------
-vec4 BlendTerrainTexturesAdvanced(vec3 worldPos, vec3 normalWorld, float height, float dist)
-{
-    float worldTexScale = gColorTexcoordScaling * 0.0001; 
-    vec2 topDownUV = worldPos.xy * worldTexScale; 
-
-    vec4 heightColor;        
-    float Factor = (height - gHeight1) / (gHeight2 - gHeight1);
-    heightColor = mix(texture(gTextureHeight2, topDownUV), texture(gTextureHeight3, topDownUV), Factor);
-    
-    // 높이 기반 기본 색상
-    if (height < gHeight0) {
-        heightColor = texture(gTextureHeight0, topDownUV);
-    } else if (height < gHeight1) {
-        float Factor = (height - gHeight0) / (gHeight1 - gHeight0);
-        heightColor = mix(texture(gTextureHeight0, topDownUV), texture(gTextureHeight1, topDownUV), Factor);
-    } else if (height < gHeight2) {
-        float Factor = (height - gHeight1) / (gHeight2 - gHeight1);
-        heightColor = mix(texture(gTextureHeight1, topDownUV), texture(gTextureHeight2, topDownUV), Factor);
-    } else if (height < gHeight3) {
-        float Factor = (height - gHeight2) / (gHeight3 - gHeight2);
-        heightColor = mix(texture(gTextureHeight2, topDownUV), texture(gTextureHeight3, topDownUV), Factor);
-    } else { 
-        float Factor = clamp((height - gHeight3) / (gHeight4 - gHeight3), 0.0, 1.0);
-        heightColor = mix(texture(gTextureHeight3, topDownUV), texture(gTextureHeight4, topDownUV), Factor);
-    }
-
-    // 경사도 계산
-    float slope = 1.0 - clamp(normalWorld.z, 0.0, 1.0);
-    float slopeBlend = smoothstep(0.2, 0.5, slope);
-
-    // 바위 텍스처
-    vec4 rockColor = GetTriplanarTextureAdvanced(gRockTexture, worldPos, normalWorld, worldTexScale);
-    
-    // 단층 시스템
-    float faultZoneMask;
-    vec3 displacedPos = ApplyFaultSystem(worldPos, faultZoneMask);
-    float distBlendFactor = 1.0 - smoothstep(200, 300, dist);
-    float strataInput = (displacedPos.z + displacedPos.y * 0.2) * 10.0;
-    float strataPattern = 0.9 + 0.1 * sin(strataInput) * distBlendFactor;
-    float variation = sin(displacedPos.z * 2.0 + displacedPos.x * 0.5) * 0.05;
-    strataPattern += variation;
-    vec3 strataColor = mix(vec3(0.9, 0.8, 0.7), vec3(1.0, 1.0, 1.0), strataPattern);
-    vec3 brecciaColor = vec3(0.45, 0.4, 0.35);
-    strataColor = mix(strataColor, brecciaColor, faultZoneMask * gFaultZoneIntensity);
-    rockColor.rgb *= strataPattern;
-    rockColor.rgb *= strataColor;
-    
-    // 최종 합성
-    vec4 finalColor = mix(heightColor, rockColor, slopeBlend);
-    
-    if (gIsDetailMap) {
-        finalColor *= texture(gDetailMap, topDownUV * 10.0); 
-    }
-    
-    return finalColor;
 }
 
 //-----------------------------------------------------------------------------

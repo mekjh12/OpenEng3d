@@ -90,6 +90,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="V0\VegetationMap.cs" />
     <Compile Include="V0\WaterFlowGenerator.cs" />
+    <Compile Include="V1\TileFormat.cs" />
     <Compile Include="V1\TileStreamer.cs" />
   </ItemGroup>
   <ItemGroup>

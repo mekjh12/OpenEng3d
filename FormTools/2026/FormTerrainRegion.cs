@@ -251,6 +251,13 @@ namespace FormTools
             // 라이팅 매니저 UBO 업데이트
             _lightingManager.Update();
 
+            // 지형 스트리밍 매니저에 카메라 위치 업데이트
+            float worldX = camera.PivotPosition.x;
+            float worldY = camera.PivotPosition.y;
+            float worldZ = camera.PivotPosition.z;
+
+            _terrainStreamer.Update(duration, worldX, worldY);
+
             // 카메라 위치가 변경되었는지 확인
             if (camera.IsCameraFrameMoved) //해결해야 할 부분 
             {
@@ -258,14 +265,16 @@ namespace FormTools
                 _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
 
                 // 카메라 피벗 위치에 대한 지형 높이 얻기
-                //_cameraPivotPosition = camera.PivotPosition;
-                //_terrainRegion.TerrainData.GetTerrainHeightVertex3f(ref _cameraPivotPosition);
-                //_cameraPivotPosition.z += 2.0f; // 약간 띄우기   
-                //camera.PivotPosition = _cameraPivotPosition;
+                _cameraPivotPosition = camera.PivotPosition;
+                
+                float? terrainHeight = _terrainStreamer.SampleHeightWorld(worldX, worldY, Constants.TERRAIN_VERTICAL_SCALE);
 
+                if (terrainHeight != null)
+                {
+                    _cameraPivotPosition.z = (float)(terrainHeight + 0.0f); // 약간 띄우기
+                }
+                camera.PivotPosition = _cameraPivotPosition;
 
-                // 지형 스트리밍 매니저에 카메라 위치 업데이트
-                _terrainStreamer.Update(duration, camera.PivotPosition.x, camera.PivotPosition.y);
 
                 // === HiZ 버퍼 업데이트 ===
                 _hiZBuffer.BindFramebuffer();
@@ -286,7 +295,8 @@ namespace FormTools
 
                 _culledText.Text = _terrainStreamer.CurrentRegionCoords;
 
-                _camPosText.Text = $"카메라 위치 ({camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1})";
+                //_camPosText.Text = $"카메라 위치 ({camera.Position.x:F1}, {camera.Position.y:F1}, {camera.Position.z:F1})";
+                _camPosText.Text = $"카메라 위치 ({camera.PivotPosition.x:F1}, {camera.PivotPosition.y:F1}, {camera.PivotPosition.z:F1})";
 
                 // 디버그 텍스트 갱신
                 //_culledText.Text = $"풀타일수 {_grassSystem.PoolCount} 활성 타일\n" + _grassSystem.ActiveTileNames;

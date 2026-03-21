@@ -44,15 +44,21 @@ namespace Terrain
         // ------------------------------------------------------------------------
 
         public TerrainStreamer(string heightmapBasePath, int tileRadius, int maxUploadsPerFrame = 1,
-            string tileFileSuffix = "",  TileFormat tileFormat = default)
+            string tileFileSuffix = "",  TileFormat tileFormat = default, bool keepCpuData = false)
         {
             _tileRadius = tileRadius;
             _tileFileSuffix = tileFileSuffix;
             _heightmapBasePath = heightmapBasePath;
 
-            _loader = new AsyncHeightmapLoader(tileFormat, 128, maxUploadsPerFrame);
-            _loader.Start();
+            _loader = new AsyncHeightmapLoader(tileFormat, 128, maxUploadsPerFrame, keepCpuData);
+            _loader.Start(_tileFileSuffix);
         }
+
+        public float? SampleHeightByUV(int regionX, int regionY, float u, float v)
+            => _loader.SampleHeightByUV(regionX, regionY, u, v);
+
+        public float? SampleHeight(int regionX, int regionY, float localX, float localY)
+            => _loader.SampleHeight(regionX, regionY, localX, localY);
 
         /// <summary>
         /// 플레이어 위치 업데이트 (메인 스레드)
@@ -96,7 +102,7 @@ namespace Terrain
                 {
                     int rx = _currentRegionX + dx;
                     int ry = _currentRegionY + dy;
-                    string key = GetRegionKey(rx, ry);
+                    string key = $"{rx}_{ry}";
 
                     _newVisibleRegions.Add(key);
 
@@ -184,8 +190,6 @@ namespace Terrain
             regionX = (int)Math.Floor((worldX + WORLD_POSITION_OFFSET) / size);
             regionY = (int)Math.Floor((worldY + WORLD_POSITION_OFFSET) / size);
         }
-
-        public string GetRegionKey(int x, int y) => $"{x}_{y}";
 
         private (int x, int y) ParseRegionKey(string key)
         {

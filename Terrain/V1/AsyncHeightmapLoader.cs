@@ -1,5 +1,4 @@
-﻿using Common;
-using OpenGL;
+﻿using OpenGL;
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
@@ -10,61 +9,6 @@ using System.Threading;
 
 namespace Terrain
 {
-    /// <summary>
-    /// 타일 형식 설정 구조체
-    /// </summary>
-    public struct TileFormat
-    {
-        public uint TileSize;
-        public uint ChannelCount;
-        public PixelFormat PixelFormat;
-        public InternalFormat InternalFormat;
-        public int BytesPerChannel;
-        public float NormalizeValue;
-
-        /// <summary>
-        /// 하이트맵 (16bit -> float)
-        /// </summary>
-        public static TileFormat HeightmapLowFloat() => new TileFormat
-        {
-            TileSize = 129,
-            ChannelCount = 1,
-            PixelFormat = OpenGL.PixelFormat.Red,
-            InternalFormat = InternalFormat.R32f,
-            BytesPerChannel = 2, // ushort
-            NormalizeValue = 65535.0f
-        };
-
-        /// <summary>
-        /// 하이트맵 (16bit -> float)
-        /// </summary>
-        public static TileFormat HeightmapHighFloat() => new TileFormat
-        {
-            TileSize = 1025,
-            ChannelCount = 1,
-            PixelFormat = OpenGL.PixelFormat.Red,
-            InternalFormat = InternalFormat.R32f,
-            BytesPerChannel = 2, // ushort
-            NormalizeValue = 65535.0f
-        };
-
-        /// <summary>
-        /// 노말맵 (RGB 8bit)
-        /// </summary>
-        public static TileFormat MapRGB() => new TileFormat
-        {
-            TileSize = 1025,
-            ChannelCount = 3,
-            PixelFormat = OpenGL.PixelFormat.Rgb,
-            InternalFormat = InternalFormat.Rgb8,
-            BytesPerChannel = 1, // byte
-            NormalizeValue = 255.0f
-        };
-
-        public int GetExpectedFileSize()
-            => (int)(TileSize * TileSize * ChannelCount * BytesPerChannel);
-    }
-
     /// <summary>
     /// 비동기 하이트맵 로더 (프레임 락 없음)
     /// </summary>
@@ -92,6 +36,7 @@ namespace Terrain
         // 도움 변수
         private bool _wasLoading = false;
         private bool _uploadJustCompleted = false;
+        private readonly bool _keepCpuData;
 
         // 통계
         private LoaderStatistics _stats = new LoaderStatistics();
@@ -119,6 +64,7 @@ namespace Terrain
             public int RegionX;
             public int RegionY;
             public DateTime LastAccess;
+            public float[] CpuData;
         }
 
         public class LoaderStatistics
@@ -140,20 +86,18 @@ namespace Terrain
         /// <summary>
         /// 생성자
         /// </summary>
-        public AsyncHeightmapLoader(
-            TileFormat format,
-            int maxCacheSize = 128,
-            int maxUploadsPerFrame = 1)
+        public AsyncHeightmapLoader(TileFormat format, int maxCacheSize = 128, int maxUploadsPerFrame = 1, bool keepCpuData = false)
         {
             _format = format;
             _maxCacheSize = maxCacheSize;
             _maxUploadsPerFrame = maxUploadsPerFrame;
+            _keepCpuData = keepCpuData;
         }
 
         /// <summary>
         /// 로더 시작
         /// </summary>
-        public void Start()
+        public void Start(string typeName = "")
         {
             if (_isRunning) return;
 
@@ -165,7 +109,7 @@ namespace Terrain
             };
             _loaderThread.Start();
 
-            Console.WriteLine("[AsyncLoader] 시작됨");
+            Console.WriteLine($"[AsyncLoader {typeName}] 시작됨");
         }
 
         /// <summary>
@@ -176,6 +120,80 @@ namespace Terrain
             _isRunning = false;
             _loaderThread?.Join();
             Console.WriteLine("[AsyncLoader] 중지됨");
+        }
+
+        public float? SampleHeightByUV(int regionX, int regionY, float u, float v)
+        {
+            lock (_tileCache)
+            {
+                if (!_tileCache.TryGetValue((regionX, regionY), out CachedTile tile)) return null;
+                if (tile.CpuData == null) return null;
+
+                int size = (int)_format.TileSize;
+
+                // 셰이더: texture(heightMapHighRes, texCoord).r
+                // OpenGL 텍셀 중심 보정 (-0.5)
+                float texelX = u * size - 0.5f;
+                float texelY = v * size - 0.5f;
+
+                int ix = (int)Math.Floor(texelX);
+                int iy = (int)Math.Floor(texelY);
+                float s = texelX - ix;
+                float t = texelY - iy;
+
+                // 경계 클램프
+                ix = Math.Max(0, Math.Min(ix, size - 2));
+                iy = Math.Max(0, Math.Min(iy, size - 2));
+
+                // 셰이더 texture() bilinear와 동일
+                float h00 = tile.CpuData[iy * size + ix];
+                float h10 = tile.CpuData[iy * size + (ix + 1)];
+                float h01 = tile.CpuData[(iy + 1) * size + ix];
+                float h11 = tile.CpuData[(iy + 1) * size + (ix + 1)];
+
+                float h0 = h00 * (1f - s) + h10 * s;
+                float h1 = h01 * (1f - s) + h11 * s;
+                return h0 * (1f - t) + h1 * t;
+            }
+        }
+
+        /// <summary>
+        /// 타일 내 로컬 좌표로 높이 샘플링 (bilinear 보간, OpenGL 텍셀 중심 규칙)
+        /// localX, localY: 0.0 ~ TileSize 범위의 실수 좌표
+        /// </summary>
+        public float? SampleHeight(int regionX, int regionY, float localX, float localY)
+        {
+            lock (_tileCache)
+            {
+                if (!_tileCache.TryGetValue((regionX, regionY), out CachedTile tile)) return null;
+                if (tile.CpuData == null) return null;
+
+                int size = (int)_format.TileSize;
+
+                // OpenGL 텍셀 중심 보정 (-0.5)
+                float texelX = localX - 0.5f;
+                float texelY = localY - 0.5f;
+
+                int ix = (int)Math.Floor(texelX);
+                int iy = (int)Math.Floor(texelY);
+                float s = texelX - ix;
+                float t = texelY - iy;
+
+                // 경계 체크
+                if (ix < 0 || iy < 0 || ix >= size - 1 || iy >= size - 1)
+                    return null;
+
+                // Bilinear interpolation (TerrainData.InterpolateHeightOpenGLStyle와 동일)
+                float h00 = tile.CpuData[iy * size + ix];
+                float h10 = tile.CpuData[iy * size + (ix + 1)];
+                float h01 = tile.CpuData[(iy + 1) * size + ix];
+                float h11 = tile.CpuData[(iy + 1) * size + (ix + 1)];
+
+                float h0 = h00 * (1.0f - s) + h10 * s;
+                float h1 = h01 * (1.0f - s) + h11 * s;
+
+                return h0 * (1.0f - t) + h1 * t;  // 0~1 정규화값
+            }
         }
 
         /// <summary>
@@ -234,6 +252,7 @@ namespace Terrain
                 if (_tileCache.TryGetValue(key, out CachedTile tile))
                 {
                     Gl.DeleteTextures(tile.TextureId);
+                    tile.CpuData = null;  // GC 해제
                     _tileCache.Remove(key);
                     _lruList.Remove(key);
                 }
@@ -269,25 +288,42 @@ namespace Terrain
 
             while (uploadCount < _maxUploadsPerFrame && _uploadQueue.TryDequeue(out UploadRequest req))
             {
-                // GPU 텍스처 생성
-                uint textureId = CreateTexture(req.Data);
-
                 var key = (req.RegionX, req.RegionY);
 
-                // 캐시에 추가
+                // 1. 텍스처 생성 전에 캐시 확인
                 lock (_tileCache)
                 {
-                    if (_tileCache.Count >= _maxCacheSize)
+                    if (_tileCache.ContainsKey(key))
                     {
-                        EvictOldestTile();
+                        // 이미 있으면 GPU 텍스처 생성 없이 그냥 skip
+                        uploadCount++;
+                        continue;
                     }
+                }
+
+                // 2. 없을 때만 GPU 텍스처 생성
+                uint textureId = CreateTexture(req.Data);
+
+                lock (_tileCache)
+                {
+                    // 3. lock 사이에 다른 곳에서 추가됐을 수도 있으니 한 번 더 확인
+                    if (_tileCache.ContainsKey(key))
+                    {
+                        Gl.DeleteTextures(textureId);  // TOCTOU 방어
+                        uploadCount++;
+                        continue;
+                    }
+
+                    if (_tileCache.Count >= _maxCacheSize)
+                        EvictOldestTile();
 
                     _tileCache[key] = new CachedTile
                     {
                         TextureId = textureId,
                         RegionX = req.RegionX,
                         RegionY = req.RegionY,
-                        LastAccess = DateTime.Now
+                        LastAccess = DateTime.Now,
+                        CpuData = _keepCpuData ? req.Data : null
                     };
 
                     _lruList.AddFirst(key);
@@ -500,6 +536,7 @@ namespace Terrain
             if (_tileCache.TryGetValue(oldestKey, out CachedTile tile))
             {
                 Gl.DeleteTextures(tile.TextureId);
+                tile.CpuData = null;  // GC 해제
                 _tileCache.Remove(oldestKey);
                 //Console.WriteLine($"[AsyncLoader] LRU 제거: Region({tile.RegionX}, {tile.RegionY})");
             }

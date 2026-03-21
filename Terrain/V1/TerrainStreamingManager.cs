@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Common;
+using System;
 using System.Collections.Generic;
+using ZetaExt;
 
 namespace Terrain
 {
@@ -28,16 +30,16 @@ namespace Terrain
         public TerrainStreamingManager(string folder)
         {
             _terrainHighStreamer = new TerrainStreamer(
-                folder, tileRadius: 1, 1, tileFileSuffix: "", TileFormat.HeightmapHighFloat());
+                folder, tileRadius: 1, maxUploadsPerFrame: 1, tileFileSuffix: "", TileFormat.HeightmapHighFloat(), keepCpuData: true);
 
             _terrainLowStreamer = new TerrainStreamer(
-                folder, tileRadius: 3, 1, tileFileSuffix: "_low", TileFormat.HeightmapLowFloat());
+                folder, tileRadius: 3, maxUploadsPerFrame: 1, tileFileSuffix: "_low", TileFormat.HeightmapLowFloat(), keepCpuData: true);
 
             _terrainNormalMapStreamer = new TerrainStreamer(
-                folder, tileRadius: 3, 1, tileFileSuffix: "_normal", TileFormat.MapRGB());
+                folder, tileRadius: 3, maxUploadsPerFrame: 1, tileFileSuffix: "_normal", TileFormat.MapRGB(), keepCpuData: false);
 
             _terrainFeatureStreamer = new TerrainStreamer(
-                folder, tileRadius: 3, 1, tileFileSuffix: "_feature", TileFormat.MapRGB());
+                folder, tileRadius: 3, maxUploadsPerFrame: 1, tileFileSuffix: "_feature", TileFormat.MapRGB(), keepCpuData: true);
 
             _adjRegionTilesTextures = new Dictionary<(int, int), uint[]>();
 
@@ -54,11 +56,13 @@ namespace Terrain
 
         public void Update(float duration, float x, float y)
         {
+            // 스트리머를 업데이트한다. 
             _terrainHighStreamer.UpdateStreaming(duration, x, y);
             _terrainLowStreamer.UpdateStreaming(duration, x, y);
             _terrainNormalMapStreamer.UpdateStreaming(duration, x, y);
             _terrainFeatureStreamer.UpdateStreaming(duration, x, y);
 
+            // 각 스트리머는 내부적으로 로딩이 완료되었는지 체크한다.
             if (_terrainHighStreamer.IsLoadingComplete && 
                 _terrainLowStreamer.IsLoadingComplete && 
                 _terrainNormalMapStreamer.IsLoadingComplete && 
@@ -69,8 +73,33 @@ namespace Terrain
                 _terrainLowStreamer.IsLoadingComplete = false;
                 _terrainNormalMapStreamer.IsLoadingComplete = false;
                 _terrainFeatureStreamer.IsLoadingComplete = false;
+
+                // 주변 타일들의 텍스처 아이디를 업데이트한다.
                 UpdateAdjTilesTextureIds();
             }
+        }
+
+        public float? SampleHeightWorld(float worldX, float worldY, float verticalScale)
+        {
+            _terrainHighStreamer.GetRegionCoord(worldX, worldY, out int rx, out int ry);
+
+            int tileSize = Constants.TERRAIN_TILE_SIZE - 1;
+            float u = ((worldX - rx * tileSize) / tileSize).Clamp(0f, 1f);
+            float v = ((worldY - ry * tileSize) / tileSize).Clamp(0f, 1f);
+
+            float? h = _terrainHighStreamer.SampleHeightByUV(rx, ry, u, v);
+
+            if (h == null)
+            {
+                h = _terrainLowStreamer.SampleHeightByUV(rx, ry, u, v);
+            }
+
+            if (h == null)
+            {
+                return null;
+            }
+
+            return h.Value * verticalScale;
         }
 
         public uint GetRiverRoadTexture(int px, int py)
