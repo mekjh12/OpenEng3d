@@ -343,7 +343,7 @@ namespace Terrain
                     else if (_tileFileSuffix == "")
                     {
                         _tileCache[key].AABB = req.AABB;
-                        Console.WriteLine($"HIGH {req.RegionX},{req.RegionY}={req.AABB.Min} {req.AABB.Max}");
+                        //Console.WriteLine($"HIGH {req.RegionX},{req.RegionY}={req.AABB.Min} {req.AABB.Max}");
                     }
 
                     _lruList.AddFirst(key);

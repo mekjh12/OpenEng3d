@@ -85,7 +85,7 @@ namespace Terrain
             if (_loader.CheckUploadCompleted())
             {
                 _isLoadingComplete = true;
-                Console.WriteLine($"로딩완료 {_tileFileSuffix} {_currentRegionX}x{_currentRegionY}");
+                //Console.WriteLine($"로딩완료 {_tileFileSuffix} {_currentRegionX}x{_currentRegionY}");
             }
         }
 

@@ -252,14 +252,14 @@ namespace Terrain
             for (int i = 0; i < _travHighCount; i++)
             {
                 ref TerrainHighCoord coord = ref _travTerrainHighCoords[i];
+                AABB3f? aabb = _streamingManager.GetTileAABB(coord.x, coord.y);
 
                 // 프러스텀 컬링
                 if (!IsTileVisible(coord.x, coord.y, frustumPlanes)) continue;
 
                 _renderHighCoords[_renderHighCount] = coord;
                 _renderHighCount++;
-            }
-            //Console.WriteLine($"frustumPassed={frustumPassed}");
+            } 
 
             // 2. 저해상도: 컬링 적용
             int frustumCulled = 0;
@@ -282,13 +282,13 @@ namespace Terrain
                     AABB3f? aabb = _streamingManager.GetTileAABB(coord.x, coord.y);
 
                     // 기본색: 노랑(디버깅)
-                    _streamingManager.SetTileAABBColor(coord.x, coord.y, new Vertex4f(1, 1, 0, 1));
+                    //_streamingManager.SetTileAABBColor(coord.x, coord.y, new Vertex4f(1, 1, 0, 1));
 
                     // 프러스텀 컬링
                     if (!IsTileVisible(coord.x, coord.y, frustumPlanes))
                     {
                         // 디버깅: 컬링된 타일은 AABB를 빨강으로 표시
-                        _streamingManager.SetTileAABBColor(coord.x, coord.y, new Vertex4f(0, 1, 0, 1));
+                        //_streamingManager.SetTileAABBColor(coord.x, coord.y, new Vertex4f(0, 1, 0, 1));
                         frustumCulled++;
                         continue;
                     }
@@ -299,7 +299,7 @@ namespace Terrain
                         hizCulled++;
                         if (aabb != null && !hiZBuffer.TestVisibility(vp, view, (AABB3f)aabb))
                         {
-                            _streamingManager.SetTileAABBColor(coord.x, coord.y, new Vertex4f(1, 0, 0, 1));
+                            //_streamingManager.SetTileAABBColor(coord.x, coord.y, new Vertex4f(1, 0, 0, 1));
                             continue;
                         }
                     }
@@ -315,6 +315,7 @@ namespace Terrain
             int totalLowRendered = totalLow - frustumCulled - hizCulled;
             int totalRendered = _renderHighCount + totalLowRendered;
 
+            /*
             if (totalRendered != _lastRenderedCount)
             {
                 _lastRenderedCount = totalRendered;
@@ -324,6 +325,7 @@ namespace Terrain
                                   $"프러스텀컬링: {frustumCulled}  " +
                                   $"HiZ컬링: {hizCulled})");
             }
+            */
         }
 
         public void LoadTerrainLevelTextures(string path, string[] fileNames)
@@ -402,9 +404,9 @@ namespace Terrain
             _shadowmap.Unbind();
         }
 
-        public void Render(Camera camera)
+        public void Render(Camera camera, Matrix4x4f vp, Matrix4x4f view)
         {
-            RenderTerrain(camera);
+            RenderTerrain(camera, vp, view);
             //RenderRivers(camera);
         }
 
@@ -471,11 +473,8 @@ namespace Terrain
             return 0;  // 외곽 전체 (absX>=3 or absY>=3 or 모서리 ±2,±2)
         }
 
-        public void RenderTerrain(Camera camera)
+        public void RenderTerrain(Camera camera, Matrix4x4f vp, Matrix4x4f view)
         {
-            Matrix4x4f vp = camera.VPMatrix;
-            Matrix4x4f view = camera.ViewMatrix;
-
             // ── 셰이더 바인드 & 공통 유니폼 (1회) ──
             _shader.Bind();
             _shader.LoadTime(_time);
@@ -536,26 +535,13 @@ namespace Terrain
             _shader.Unbind();
 
 
-            // RenderTerrain 패스 2
-            /*
-            _boxShader.Bind();
-            for (int typeIdx = 0; typeIdx < 5; typeIdx++)
-            {
-                int tileCount = _renderLowCounts[typeIdx];  // ← _render
-                if (tileCount == 0) continue;
+            // 디버깅을 위한 저해상도 리전 AABB 렌더링
+            RenderLowRegionAABB(camera);
+        }
 
-                int count = _count1[typeIdx];
-                for (int i = 0; i < tileCount; i++)
-                {
-                    ref TerrainLowCoord coord = ref _renderLowCoords[typeIdx][i];  // ← _render
-                    AABB3f aabb = _streamingManager.GetTileAABB(coord.x, coord.y);
-                    _boxShader.RenderAABB((AABB3f)aabb, camera, aabb.Color);
-                }
-            }
-            _boxShader.Unbind();
-            */
-
-            // 이전 폴리곤 모드 저장
+        private void RenderLowRegionAABB(Camera camera)
+        {
+            // [디버그] 렌더링된 타일의 AABB를 그린다. (컬링 결과 검증용)
             int[] prevPolygonMode = new int[2];
             Gl.GetInteger(GetPName.PolygonMode, 0, out prevPolygonMode[0]);
             Gl.GetInteger(GetPName.PolygonMode, 1, out prevPolygonMode[1]);
@@ -575,7 +561,6 @@ namespace Terrain
 
             // 이전 폴리곤 모드 복원
             Gl.PolygonMode(MaterialFace.FrontAndBack, (PolygonMode)prevPolygonMode[1]);
-
         }
 
         private void DrawTerrainTile(int cx, int cy, int dx, int dy, int count, Matrix4x4f vp, Matrix4x4f view)

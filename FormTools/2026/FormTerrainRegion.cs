@@ -91,6 +91,10 @@ namespace FormTools
         private bool _showStructureDebug = false;
         private int _debugMode = 0;  // 0~5
         private float _depthRange = 500.0f;
+                
+        // 뷰와 뷰프로젝션 행렬
+        Matrix4x4f _view = Matrix4x4f.Identity;
+        Matrix4x4f _vp = Matrix4x4f.Identity;
 
         bool _isFridged = false;
 
@@ -289,46 +293,12 @@ namespace FormTools
                 // 디버그 텍스트 갱신
                 //_culledText.Text = $"풀타일수 {_grassSystem.PoolCount} 활성 타일\n" + _grassSystem.ActiveTileNames;
             }
-            Matrix4x4f view = camera.ViewMatrix;
-            Matrix4x4f vp = camera.VPMatrix;
 
-            // ── 디버깅: view, vp 행렬 검증 ──
-            if (camera.IsCameraFrameMoved)
-            {
-                // View 행렬: 3열(번역 성분)이 카메라 위치의 역변환이어야 함
-                Console.WriteLine($"[Debug] View 번역열: ({view[3, 0]:F2}, {view[3, 1]:F2}, {view[3, 2]:F2})");
+            _view = camera.ViewMatrix;
+            _vp = camera.VPMatrix;
 
-                // View 행렬: 2행(forward 벡터, 반전) - Z축 방향
-                Console.WriteLine($"[Debug] View forward: ({view[0, 2]:F2}, {view[1, 2]:F2}, {view[2, 2]:F2})");
+            _terrainRenderer.Update(duration, camera.IsCameraFrameMoved, _vp, _view, _viewFrustum, _hiZBuffer, _isFridged);
 
-                // VP 행렬: 단위행렬에 가까우면 뭔가 잘못된 것
-                float vpDiag = vp[0, 0] + vp[1, 1] + vp[2, 2] + vp[3, 3];
-                Console.WriteLine($"[Debug] VP 대각합: {vpDiag:F4}  (단위행렬이면 4.0)");
-
-                // VP 행렬: [2,3]은 프로젝션의 near/far 관련 값, 0이면 이상
-                Console.WriteLine($"[Debug] VP[2,3]={vp[2, 3]:F4}  VP[3,2]={vp[3, 2]:F4}");
-
-                // 현재 공식 (column-major 가정)
-                float camX = -(view[0, 0] * view[3, 0] + view[1, 0] * view[3, 1] + view[2, 0] * view[3, 2]);
-                float camY = -(view[0, 1] * view[3, 0] + view[1, 1] * view[3, 1] + view[2, 1] * view[3, 2]);
-                float camZ = -(view[0, 2] * view[3, 0] + view[1, 2] * view[3, 1] + view[2, 2] * view[3, 2]);
-
-                // 전치 버전 (row-major 가정)
-                float camX2 = -(view[0, 0] * view[0, 3] + view[1, 0] * view[1, 3] + view[2, 0] * view[2, 3]);
-                float camY2 = -(view[0, 1] * view[0, 3] + view[1, 1] * view[1, 3] + view[2, 1] * view[2, 3]);
-                float camZ2 = -(view[0, 2] * view[0, 3] + view[1, 2] * view[1, 3] + view[2, 2] * view[2, 3]);
-                Console.WriteLine($"[Debug] 역산2 카메라 위치: ({camX2:F1}, {camY2:F1}, {camZ2:F1})");
-
-                // 실제 카메라 위치도 같이 출력
-                Console.WriteLine($"[Debug] camera.Position: {camera.Position}");
-                Console.WriteLine($"[Debug] View 행렬 전체:");
-                Console.WriteLine($"  [{view[0, 0]:F3}, {view[0, 1]:F3}, {view[0, 2]:F3}, {view[0, 3]:F3}]");
-                Console.WriteLine($"  [{view[1, 0]:F3}, {view[1, 1]:F3}, {view[1, 2]:F3}, {view[1, 3]:F3}]");
-                Console.WriteLine($"  [{view[2, 0]:F3}, {view[2, 1]:F3}, {view[2, 2]:F3}, {view[2, 3]:F3}]");
-                Console.WriteLine($"  [{view[3, 0]:F3}, {view[3, 1]:F3}, {view[3, 2]:F3}, {view[3, 3]:F3}]");
-            }
-
-            _terrainRenderer.Update(duration, camera.IsCameraFrameMoved, vp, view, _viewFrustum, _hiZBuffer, _isFridged);
             // 렌더링 루프에서
             _fpsText.Text = $"FPS: {FramePerSecond.FPS:F1}";
 
@@ -373,7 +343,7 @@ namespace FormTools
             Gl.PolygonMode(MaterialFace.Front, _glControl3.PolygonMode);
 
             // 지형을 렌더링
-            _terrainRenderer.Render(camera);
+            _terrainRenderer.Render(camera, _vp, _view);
 
             // 월드 축 렌더링
             if (_isVisibleWorldAxis) _worldAxisRenderer.Render(camera.VPMatrix);
@@ -555,7 +525,7 @@ namespace FormTools
 
         public void KeyUpEvent(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.O)
+            if (e.KeyCode == Keys.B)
             {
                 _isFridged = !_isFridged;
                 Console.WriteLine($"IsFridged={_isFridged}");

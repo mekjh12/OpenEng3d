@@ -31,17 +31,17 @@ namespace Terrain
         public TerrainStreamingManager(string folder)
         {
             _terrainHighStreamer = new TerrainStreamer(
-                folder, tileRadius: 1, maxUploadsPerFrame: 1, tileFileSuffix: "", TileFormat.HeightmapHighFloat(), keepCpuData: true);
+                folder, tileRadius: 1, maxUploadsPerFrame: 5, tileFileSuffix: "", TileFormat.HeightmapHighFloat(), keepCpuData: true);
 
             _terrainLowStreamer = new TerrainStreamer(
-                folder, tileRadius: 3, maxUploadsPerFrame: 1, tileFileSuffix: "_low", TileFormat.HeightmapLowFloat(), keepCpuData: true);
+                folder, tileRadius: 3, maxUploadsPerFrame: 5, tileFileSuffix: "_low", TileFormat.HeightmapLowFloat(), keepCpuData: true);
 
             _terrainNormalMapStreamer = new TerrainStreamer(
                 //folder, tileRadius: 3, maxUploadsPerFrame: 1, tileFileSuffix: "_normal", TileFormat.NormalMapRGB16f(), keepCpuData: false);
-                folder, tileRadius: 3, maxUploadsPerFrame: 1, tileFileSuffix: "_normal", TileFormat.MapRGB8f(), keepCpuData: false);
+                folder, tileRadius: 3, maxUploadsPerFrame: 5, tileFileSuffix: "_normal", TileFormat.MapRGB8f(), keepCpuData: false);
 
             _terrainFeatureStreamer = new TerrainStreamer(
-                folder, tileRadius: 3, maxUploadsPerFrame: 1, tileFileSuffix: "_feature", TileFormat.MapRGB8f(), keepCpuData: true);
+                folder, tileRadius: 3, maxUploadsPerFrame: 5, tileFileSuffix: "_feature", TileFormat.MapRGB8f(), keepCpuData: true);
 
             _adjRegionTilesTextures = new Dictionary<(int, int), uint[]>();
 
