@@ -133,12 +133,13 @@ namespace Common.Abstractions
 
         // 모델 행렬
         public virtual Matrix4x4f ModelMatrix => ViewMatrix.Inverse;
+
         // 뷰*투영 행렬
         public virtual Matrix4x4f VPMatrix
         {
             get
             {
-                _vpMatrix = ProjectiveMatrix* ViewMatrix;
+                _vpMatrix = ProjectiveMatrix * ViewMatrix;
                 return _vpMatrix;
             }
         }

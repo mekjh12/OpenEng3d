@@ -1,4 +1,6 @@
-﻿using OpenGL;
+﻿using Common;
+using Geometry;
+using OpenGL;
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
@@ -17,6 +19,7 @@ namespace Terrain
         private readonly TileFormat _format;
         private readonly int _maxCacheSize;
         private readonly int _maxUploadsPerFrame;
+        private readonly string _tileFileSuffix;
 
         private readonly ArrayPool<byte> _bytePool = ArrayPool<byte>.Shared;
         private readonly ArrayPool<float> _floatPool = ArrayPool<float>.Shared;
@@ -56,6 +59,7 @@ namespace Terrain
             public float[] Data;
             public int RegionX;
             public int RegionY;
+            public AABB3f AABB;
         }
 
         private class CachedTile
@@ -65,6 +69,7 @@ namespace Terrain
             public int RegionY;
             public DateTime LastAccess;
             public float[] CpuData;
+            public AABB3f AABB;
         }
 
         public class LoaderStatistics
@@ -86,12 +91,13 @@ namespace Terrain
         /// <summary>
         /// 생성자
         /// </summary>
-        public AsyncHeightmapLoader(TileFormat format, int maxCacheSize = 128, int maxUploadsPerFrame = 1, bool keepCpuData = false)
+        public AsyncHeightmapLoader(string tileFileSuffix, TileFormat format, int maxCacheSize = 128, int maxUploadsPerFrame = 1, bool keepCpuData = false)
         {
             _format = format;
             _maxCacheSize = maxCacheSize;
             _maxUploadsPerFrame = maxUploadsPerFrame;
             _keepCpuData = keepCpuData;
+            _tileFileSuffix = tileFileSuffix;
         }
 
         /// <summary>
@@ -109,7 +115,7 @@ namespace Terrain
             };
             _loaderThread.Start();
 
-            Console.WriteLine($"[AsyncLoader {typeName}] 시작됨");
+            Console.WriteLine($"[Raw 파일 비동기 Loader {typeName}] 시작됨");
         }
 
         /// <summary>
@@ -119,7 +125,7 @@ namespace Terrain
         {
             _isRunning = false;
             _loaderThread?.Join();
-            Console.WriteLine("[AsyncLoader] 중지됨");
+            Console.WriteLine("[Raw 파일 비동기 Loader] 중지됨");
         }
 
         public float? SampleHeightByUV(int regionX, int regionY, float u, float v)
@@ -314,17 +320,31 @@ namespace Terrain
                         continue;
                     }
 
+                    // 4. 캐시 크기 초과 시 LRU 제거
                     if (_tileCache.Count >= _maxCacheSize)
                         EvictOldestTile();
 
+                    // 5. 캐시에 추가
                     _tileCache[key] = new CachedTile
                     {
                         TextureId = textureId,
                         RegionX = req.RegionX,
                         RegionY = req.RegionY,
                         LastAccess = DateTime.Now,
-                        CpuData = _keepCpuData ? req.Data : null
+                        CpuData = _keepCpuData ? req.Data : null,
                     };
+
+                    // 지형 높이맵은 파일명 형식과 무관하게 항상 AABB 로드
+                    if (_tileFileSuffix == "_low")
+                    {
+                        _tileCache[key].AABB = req.AABB;
+                        //Console.WriteLine($"{req.RegionX},{req.RegionY}={req.AABB.Min} {req.AABB.Max}");
+                    }
+                    else if (_tileFileSuffix == "")
+                    {
+                        _tileCache[key].AABB = req.AABB;
+                        Console.WriteLine($"HIGH {req.RegionX},{req.RegionY}={req.AABB.Min} {req.AABB.Max}");
+                    }
 
                     _lruList.AddFirst(key);
                 }
@@ -345,7 +365,7 @@ namespace Terrain
         }
 
         /// <summary>
-        /// 워커 스레드 (파일 읽기)
+        /// 워커 스레드 (RAW 파일 읽기)
         /// </summary>
         private void LoaderThreadFunc()
         {
@@ -359,12 +379,17 @@ namespace Terrain
 
                         if (data != null)
                         {
+                            // 파일명 형식과 무관하게 항상 AABB 로드
+                            AABB3f aabb = LoadAABB(req.FilePath, req.RegionX, req.RegionY);
+
                             _uploadQueue.Enqueue(new UploadRequest
                             {
                                 Data = data,
                                 RegionX = req.RegionX,
-                                RegionY = req.RegionY
+                                RegionY = req.RegionY,
+                                AABB = aabb
                             });
+
                         }
                     }
                     catch (Exception ex)
@@ -457,23 +482,30 @@ namespace Terrain
         }
 
         /// <summary>
-        /// 3채널 로드 (Normal map)
+        /// 3채널 로드 (Normal map) - 16비트 대응 수정 버전
         /// </summary>
         private float[] LoadTripleChannel(byte[] rawBytes)
         {
             uint size = _format.TileSize;
-            float[] normalData = new float[size * size * 3];
+            int totalElements = (int)(size * size * 3);
+            float[] normalData = new float[totalElements];
 
-            for (uint y = 0; y < size; y++)
+            if (_format.BytesPerChannel == 2) // 16bit (ushort)
             {
-                for (uint x = 0; x < size; x++)
-                {
-                    uint srcIdx = (y * size + x) * 3;
-                    uint dstIdx = (y * size + x) * 3;
+                // 바이트 배열을 ushort(2바이트) 스팬으로 캐스팅
+                ReadOnlySpan<ushort> srcData = MemoryMarshal.Cast<byte, ushort>(rawBytes.AsSpan());
 
-                    normalData[dstIdx + 0] = rawBytes[srcIdx + 0] / _format.NormalizeValue;
-                    normalData[dstIdx + 1] = rawBytes[srcIdx + 1] / _format.NormalizeValue;
-                    normalData[dstIdx + 2] = rawBytes[srcIdx + 2] / _format.NormalizeValue;
+                for (int i = 0; i < totalElements; i++)
+                {
+                    // 65535.0f로 나누어 0.0 ~ 1.0 범위로 정규화
+                    normalData[i] = srcData[i] / _format.NormalizeValue;
+                }
+            }
+            else // 8bit (byte)
+            {
+                for (int i = 0; i < totalElements; i++)
+                {
+                    normalData[i] = rawBytes[i] / _format.NormalizeValue;
                 }
             }
 
@@ -539,6 +571,62 @@ namespace Terrain
                 tile.CpuData = null;  // GC 해제
                 _tileCache.Remove(oldestKey);
                 //Console.WriteLine($"[AsyncLoader] LRU 제거: Region({tile.RegionX}, {tile.RegionY})");
+            }
+        }
+
+        private AABB3f LoadAABB(string rawFilePath, int regionX, int regionY)
+        {
+            int tileSize = Constants.TERRAIN_TILE_SIZE - 1;  // 1024
+            float worldX = regionX * tileSize;
+            float worldY = regionY * tileSize;
+
+            string metaPath = rawFilePath.Replace("_low.raw", "_meta.txt");
+            if (!File.Exists(metaPath))
+            {
+                // 메타 없으면 최대 범위 → 항상 visible 판정
+                return new AABB3f(
+                    new Vertex3f(worldX, worldY, 0f),
+                    new Vertex3f(worldX + tileSize, worldY + tileSize, Constants.TERRAIN_VERTICAL_SCALE)
+                );
+            }
+
+            float minH = 0f, maxH = 1f;
+            foreach (string line in File.ReadAllLines(metaPath))
+            {
+                string[] parts = line.Split('=');
+                if (parts.Length != 2) continue;
+                switch (parts[0].Trim())
+                {
+                    case "minHeight": minH = float.Parse(parts[1]); break;
+                    case "maxHeight": maxH = float.Parse(parts[1]); break;
+                }
+            }
+
+            return new AABB3f(
+                new Vertex3f(worldX, worldY, minH * Constants.TERRAIN_VERTICAL_SCALE),
+                new Vertex3f(worldX + tileSize, worldY + tileSize, maxH * Constants.TERRAIN_VERTICAL_SCALE)
+            );
+        }
+
+        public void SetTileAABBColor(int regionX, int regionY, Vertex4f color)
+        {
+            lock (_tileCache)
+            {
+                if (_tileCache.TryGetValue((regionX, regionY), out CachedTile tile))
+                {
+                    tile.AABB.Color = color;
+                    _tileCache[(regionX, regionY)] = tile; // struct이므로 다시 저장
+                }
+            }
+        }
+
+        public AABB3f GetTileAABB(int regionX, int regionY)
+        {
+            lock (_tileCache)
+            {
+                if (_tileCache.TryGetValue((regionX, regionY), out CachedTile tile))
+                    return tile.AABB;
+                return new AABB3f(new Vertex3f(0, 0, 0), new Vertex3f(100, 100, 100));
             }
         }
 

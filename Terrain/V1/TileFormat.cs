@@ -43,7 +43,7 @@ namespace Terrain
         /// <summary>
         /// 노말맵 (RGB 8bit)
         /// </summary>
-        public static TileFormat MapRGB() => new TileFormat
+        public static TileFormat MapRGB8f() => new TileFormat
         {
             TileSize = 1025,
             ChannelCount = 3,
@@ -51,6 +51,19 @@ namespace Terrain
             InternalFormat = InternalFormat.Rgb8,
             BytesPerChannel = 1, // byte
             NormalizeValue = 255.0f
+        };
+
+        /// <summary>
+        /// 노말맵 (RGB 16bit -> float, [-1, 1] 범위로 언패킹 필요)
+        /// </summary>
+        public static TileFormat NormalMapRGB16f() => new TileFormat
+        {
+            TileSize = 1025,
+            ChannelCount = 3,
+            PixelFormat = OpenGL.PixelFormat.Rgb,
+            InternalFormat = InternalFormat.Rgb16,  // 또는 Rgb32f
+            BytesPerChannel = 2, // ushort
+            NormalizeValue = 65535.0f
         };
 
         public int GetExpectedFileSize()

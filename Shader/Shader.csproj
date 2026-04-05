@@ -288,6 +288,7 @@
     <None Include="SkyDomeShader\skyColorGenerator.comp" />
     <None Include="SkyDomeShader\skydome.frag" />
     <None Include="SkyDomeShader\skydome.vert" />
+    <None Include="TerrainShader\common\terrain_depth.tes.glsl" />
     <None Include="TerrainShader\new_terrain.frag" />
     <None Include="TerrainShader\shadowmap\shadowmap.frag" />
     <None Include="TerrainShader\shadowmap\shadowmap.tcs.glsl" />

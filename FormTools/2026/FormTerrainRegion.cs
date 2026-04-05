@@ -5,6 +5,7 @@ using Geometry;
 using GlWindow;
 using Light;
 using Lights;
+using Model3d;
 using Occlusion;
 using OpenGL;
 using Renderer;
@@ -90,6 +91,8 @@ namespace FormTools
         private bool _showStructureDebug = false;
         private int _debugMode = 0;  // 0~5
         private float _depthRange = 500.0f;
+
+        bool _isFridged = false;
 
         public FormTerrainRegion()
         {
@@ -221,6 +224,8 @@ namespace FormTools
 
         public void Start()
         {
+            ShaderManager.PrintCompileMessages();
+
             // 셰리더 해시정보는 파일로 저장
             FileHashManager.Finalize();
 
@@ -230,8 +235,6 @@ namespace FormTools
 
             // 지형 단층맵 만들기
             _terrainRenderer.CreateFaultTexture();
-
-            ShaderManager.PrintCompileMessages();
 
             Constants.CAMERA_MOVE_DELTA = 10.0f;
         }
@@ -264,34 +267,19 @@ namespace FormTools
                 // 뷰 프러스텀 업데이트
                 _viewFrustum = ViewFrustum.BuildFrustumPolyhedron(camera);
 
-                // 카메라 피벗 위치에 대한 지형 높이 얻기
-                _cameraPivotPosition = camera.PivotPosition;
-                
+                // 카메라 피벗 위치에 대한 지형 높이로 보정하기
+                _cameraPivotPosition = camera.PivotPosition;                
                 float? terrainHeight = _terrainStreamer.SampleHeightWorld(worldX, worldY, Constants.TERRAIN_VERTICAL_SCALE);
-
-                if (terrainHeight != null)
-                {
-                    _cameraPivotPosition.z = (float)(terrainHeight + 0.0f); // 약간 띄우기
-                }
+                _cameraPivotPosition.z = terrainHeight != null ? (float)(terrainHeight + 0.0f) : 0.0f;
                 camera.PivotPosition = _cameraPivotPosition;
 
-
-                // === HiZ 버퍼 업데이트 ===
+                // HiZ 빌드
                 _hiZBuffer.BindFramebuffer();
                 _hiZBuffer.PrepareRenderSurface();
-
-                // 지형 깊이 렌더링
-                /*
-                _hiZBuffer.RenderTerrainDepth(
-                    Constants.TERRAIN_VERTICAL_SCALE,
-                    _terrainRegion.TerrainEntity
-                );
-                */
-
+                TerrainDepthRenderData depthData = _terrainRenderer.BuildDepthRenderData();
+                _hiZBuffer.RenderTerrainDepth(Constants.TERRAIN_VERTICAL_SCALE, depthData);
                 _hiZBuffer.UnbindFramebuffer();
-
-                // HiZ 밉맵 생성
-                _hiZBuffer.GenerateMipmapsUsingFragment(maxLevel: -1);
+                _hiZBuffer.GenerateMipmapsUsingFragment(maxLevel: -1, isTransferToCpu: true);
 
                 _culledText.Text = _terrainStreamer.CurrentRegionCoords;
 
@@ -301,10 +289,46 @@ namespace FormTools
                 // 디버그 텍스트 갱신
                 //_culledText.Text = $"풀타일수 {_grassSystem.PoolCount} 활성 타일\n" + _grassSystem.ActiveTileNames;
             }
+            Matrix4x4f view = camera.ViewMatrix;
+            Matrix4x4f vp = camera.VPMatrix;
 
-            // 지형 렌더링 업데이트
-            _terrainRenderer.Update(duration);
+            // ── 디버깅: view, vp 행렬 검증 ──
+            if (camera.IsCameraFrameMoved)
+            {
+                // View 행렬: 3열(번역 성분)이 카메라 위치의 역변환이어야 함
+                Console.WriteLine($"[Debug] View 번역열: ({view[3, 0]:F2}, {view[3, 1]:F2}, {view[3, 2]:F2})");
 
+                // View 행렬: 2행(forward 벡터, 반전) - Z축 방향
+                Console.WriteLine($"[Debug] View forward: ({view[0, 2]:F2}, {view[1, 2]:F2}, {view[2, 2]:F2})");
+
+                // VP 행렬: 단위행렬에 가까우면 뭔가 잘못된 것
+                float vpDiag = vp[0, 0] + vp[1, 1] + vp[2, 2] + vp[3, 3];
+                Console.WriteLine($"[Debug] VP 대각합: {vpDiag:F4}  (단위행렬이면 4.0)");
+
+                // VP 행렬: [2,3]은 프로젝션의 near/far 관련 값, 0이면 이상
+                Console.WriteLine($"[Debug] VP[2,3]={vp[2, 3]:F4}  VP[3,2]={vp[3, 2]:F4}");
+
+                // 현재 공식 (column-major 가정)
+                float camX = -(view[0, 0] * view[3, 0] + view[1, 0] * view[3, 1] + view[2, 0] * view[3, 2]);
+                float camY = -(view[0, 1] * view[3, 0] + view[1, 1] * view[3, 1] + view[2, 1] * view[3, 2]);
+                float camZ = -(view[0, 2] * view[3, 0] + view[1, 2] * view[3, 1] + view[2, 2] * view[3, 2]);
+
+                // 전치 버전 (row-major 가정)
+                float camX2 = -(view[0, 0] * view[0, 3] + view[1, 0] * view[1, 3] + view[2, 0] * view[2, 3]);
+                float camY2 = -(view[0, 1] * view[0, 3] + view[1, 1] * view[1, 3] + view[2, 1] * view[2, 3]);
+                float camZ2 = -(view[0, 2] * view[0, 3] + view[1, 2] * view[1, 3] + view[2, 2] * view[2, 3]);
+                Console.WriteLine($"[Debug] 역산2 카메라 위치: ({camX2:F1}, {camY2:F1}, {camZ2:F1})");
+
+                // 실제 카메라 위치도 같이 출력
+                Console.WriteLine($"[Debug] camera.Position: {camera.Position}");
+                Console.WriteLine($"[Debug] View 행렬 전체:");
+                Console.WriteLine($"  [{view[0, 0]:F3}, {view[0, 1]:F3}, {view[0, 2]:F3}, {view[0, 3]:F3}]");
+                Console.WriteLine($"  [{view[1, 0]:F3}, {view[1, 1]:F3}, {view[1, 2]:F3}, {view[1, 3]:F3}]");
+                Console.WriteLine($"  [{view[2, 0]:F3}, {view[2, 1]:F3}, {view[2, 2]:F3}, {view[2, 3]:F3}]");
+                Console.WriteLine($"  [{view[3, 0]:F3}, {view[3, 1]:F3}, {view[3, 2]:F3}, {view[3, 3]:F3}]");
+            }
+
+            _terrainRenderer.Update(duration, camera.IsCameraFrameMoved, vp, view, _viewFrustum, _hiZBuffer, _isFridged);
             // 렌더링 루프에서
             _fpsText.Text = $"FPS: {FramePerSecond.FPS:F1}";
 
@@ -355,6 +379,7 @@ namespace FormTools
             if (_isVisibleWorldAxis) _worldAxisRenderer.Render(camera.VPMatrix);
 
             _gbuffer.Unbind();  // ⭐ G-Buffer 언바인드
+            Gl.MemoryBarrier(MemoryBarrierMask.TextureFetchBarrierBit | MemoryBarrierMask.ShaderImageAccessBarrierBit);
         }
 
         private void BlitToScreen(int deltaTime, Camera camera)
@@ -532,7 +557,8 @@ namespace FormTools
         {
             if (e.KeyCode == Keys.O)
             {
-                
+                _isFridged = !_isFridged;
+                Console.WriteLine($"IsFridged={_isFridged}");
             }
             else if (e.KeyCode == Keys.D1)
             {
@@ -563,14 +589,12 @@ namespace FormTools
                 _level = Math.Min(_level + 1, _hiZBuffer.Levels - 1);
                 _isDebugTextDirty = true;
                 _culledText.Text = $"HiZBuffer 레벨 {_level}";
-                Console.WriteLine(_level);
             }
             else if (e.KeyCode == Keys.Oemplus)
             {
                 _level = Math.Max(_level - 1, 0);
                 _isDebugTextDirty = true;
                 _culledText.Text = $"HiZBuffer 레벨 {_level}";
-                Console.WriteLine(_level);
             }
             else if (e.KeyCode == Keys.OemQuestion)
             {

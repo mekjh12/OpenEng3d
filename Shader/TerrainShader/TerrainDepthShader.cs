@@ -12,7 +12,7 @@ namespace Shader
     {
         const string VERTEX_FILE = @"\Shader\TerrainShader\common\terrain.vert";
         const string TCS_FILE = @"\Shader\TerrainShader\common\terrain.tcs.glsl";
-        const string TES_FILE = @"\Shader\TerrainShader\common\terrain.tes.glsl";
+        const string TES_FILE = @"\Shader\TerrainShader\common\terrain_depth.tes.glsl"; // ← 변경
         const string FRAGMENT_FILE = @"\Shader\TerrainShader\terrain_depth.frag";
 
         // 유니폼 위치 캐싱

@@ -15,6 +15,16 @@ namespace GlWindow
     /// </summary>
     public class GBuffer
     {
+        // 멤버 변수로 한 번만 할당
+        private static readonly int[] MRT_DRAW_BUFFERS = new int[]
+        {
+            Gl.COLOR_ATTACHMENT0,
+            Gl.COLOR_ATTACHMENT1,
+            Gl.COLOR_ATTACHMENT2,
+            Gl.COLOR_ATTACHMENT3,
+            Gl.COLOR_ATTACHMENT4
+        };
+
         public uint FramebufferId { get; private set; }
 
         public uint AlbedoTextureId{ get; private set; }      // Albedo/Color
@@ -235,25 +245,18 @@ namespace GlWindow
             Gl.TexParameter(target, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
         }
 
+
         public void Bind()
         {
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, FramebufferId);
-
-            // MRT 드로우 버퍼 재설정 (5개!)
-            int[] drawBuffers = new int[]
-            {
-                Gl.COLOR_ATTACHMENT0,
-                Gl.COLOR_ATTACHMENT1,
-                Gl.COLOR_ATTACHMENT2,
-                Gl.COLOR_ATTACHMENT3,
-                Gl.COLOR_ATTACHMENT4   // ← 추가!
-            };
-            Gl.DrawBuffers(drawBuffers);
+            Gl.DrawBuffers(MRT_DRAW_BUFFERS);
         }
 
         public void Unbind()
         {
+            Gl.Flush();  // Intel iGPU: MRT 쓰기 완료 보장
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            Gl.DrawBuffer(DrawBufferMode.Back);
         }
 
         /// <summary>

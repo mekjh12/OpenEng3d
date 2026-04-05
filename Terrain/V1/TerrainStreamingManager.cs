@@ -1,4 +1,5 @@
 ﻿using Common;
+using OpenGL;
 using System;
 using System.Collections.Generic;
 using ZetaExt;
@@ -36,10 +37,11 @@ namespace Terrain
                 folder, tileRadius: 3, maxUploadsPerFrame: 1, tileFileSuffix: "_low", TileFormat.HeightmapLowFloat(), keepCpuData: true);
 
             _terrainNormalMapStreamer = new TerrainStreamer(
-                folder, tileRadius: 3, maxUploadsPerFrame: 1, tileFileSuffix: "_normal", TileFormat.MapRGB(), keepCpuData: false);
+                //folder, tileRadius: 3, maxUploadsPerFrame: 1, tileFileSuffix: "_normal", TileFormat.NormalMapRGB16f(), keepCpuData: false);
+                folder, tileRadius: 3, maxUploadsPerFrame: 1, tileFileSuffix: "_normal", TileFormat.MapRGB8f(), keepCpuData: false);
 
             _terrainFeatureStreamer = new TerrainStreamer(
-                folder, tileRadius: 3, maxUploadsPerFrame: 1, tileFileSuffix: "_feature", TileFormat.MapRGB(), keepCpuData: true);
+                folder, tileRadius: 3, maxUploadsPerFrame: 1, tileFileSuffix: "_feature", TileFormat.MapRGB8f(), keepCpuData: true);
 
             _adjRegionTilesTextures = new Dictionary<(int, int), uint[]>();
 
@@ -77,6 +79,16 @@ namespace Terrain
                 // 주변 타일들의 텍스처 아이디를 업데이트한다.
                 UpdateAdjTilesTextureIds();
             }
+        }
+
+        public AABB3f GetTileAABB(int regionX, int regionY)
+        {
+            return _terrainLowStreamer.GetTileAABB(regionX, regionY);
+        }
+
+        public void SetTileAABBColor(int regionX, int regionY, Vertex4f color)
+        {
+            _terrainLowStreamer.SetTileAABBColor(regionX, regionY, color);
         }
 
         public float? SampleHeightWorld(float worldX, float worldY, float verticalScale)

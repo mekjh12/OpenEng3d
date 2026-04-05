@@ -1,7 +1,5 @@
-﻿using OpenGL;
-using System;
-using Common;
-using System.Drawing.Drawing2D;
+﻿using Common;
+using OpenGL;
 
 namespace Shader
 {

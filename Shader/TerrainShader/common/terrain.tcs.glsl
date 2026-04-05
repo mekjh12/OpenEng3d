@@ -115,10 +115,10 @@ void main()
         const float MAX_TESS = 64.0;  // 가까이 있을 때 최대 레벨
 
         // 엣지 레벨 계산 (mix 함수로 선형 보간)
-        float tessLevel0 = mix(MAX_TESS, MIN_TESS, min(d10, d00)); // Left
-        float tessLevel1 = mix(MAX_TESS, MIN_TESS, min(d00, d01)); // Bottom
-        float tessLevel2 = mix(MAX_TESS, MIN_TESS, min(d01, d11)); // Right
-        float tessLevel3 = mix(MAX_TESS, MIN_TESS, min(d11, d10)); // Top
+        float tessLevel0 = floor(mix(MAX_TESS, MIN_TESS, min(d10, d00)));
+        float tessLevel1 = floor(mix(MAX_TESS, MIN_TESS, min(d00, d01)));
+        float tessLevel2 = floor(mix(MAX_TESS, MIN_TESS, min(d01, d11)));
+        float tessLevel3 = floor(mix(MAX_TESS, MIN_TESS, min(d11, d10)));
 
         // 레벨 적용
         gl_TessLevelOuter[0] = tessLevel0;

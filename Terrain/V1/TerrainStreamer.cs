@@ -1,4 +1,5 @@
 ﻿using Common;
+using OpenGL;
 using System;
 using System.Collections.Generic;
 
@@ -50,7 +51,7 @@ namespace Terrain
             _tileFileSuffix = tileFileSuffix;
             _heightmapBasePath = heightmapBasePath;
 
-            _loader = new AsyncHeightmapLoader(tileFormat, 128, maxUploadsPerFrame, keepCpuData);
+            _loader = new AsyncHeightmapLoader(tileFileSuffix, tileFormat, maxCacheSize: 128, maxUploadsPerFrame, keepCpuData);
             _loader.Start(_tileFileSuffix);
         }
 
@@ -164,6 +165,16 @@ namespace Terrain
                 }
                 Console.WriteLine(txt);
             }
+        }
+
+        public AABB3f GetTileAABB(int regionX, int regionY)
+        {
+            return _loader.GetTileAABB(regionX, regionY);
+        }
+
+        public void SetTileAABBColor(int regionX, int regionY, Vertex4f color)
+        {
+            _loader.SetTileAABBColor(regionX, regionY, color);
         }
 
         /// <summary>

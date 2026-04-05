@@ -90,6 +90,7 @@ namespace Ui3d
 
             _instance = new CharacterTextureAtlas();
 
+            Console.WriteLine("-------------------[ 문자열 아트랄스 ]------------------------\r\n");
             Console.WriteLine($"Initializing CharacterTextureAtlas with {CHARACTER_SET.Length} characters...");
             var startTime = DateTime.Now;
 

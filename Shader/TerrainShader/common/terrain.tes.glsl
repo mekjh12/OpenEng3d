@@ -9,7 +9,7 @@
 #include "./../../includes/lib_terrain_height_sampling_v2.glsl"
 
 // 테셀레이션 제어 파라미터
-layout (quads, fractional_odd_spacing, ccw) in;
+layout (quads, equal_spacing, ccw) in;
 
 layout(std140, binding = 0) uniform CameraBlock {
     mat4 view; 

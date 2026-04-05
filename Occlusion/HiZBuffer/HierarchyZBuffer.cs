@@ -49,12 +49,11 @@ namespace Occlusion
 
         // 임시 변수
         private AABB3f _trans;                      // AABB 변환용 임시 변수
-
+        private Vertex3f[] _cornersInViewSpace = new Vertex3f[8];
 
         // ===================================================================
         // 속성
         // ===================================================================
-
         public uint Framebuffer => _fbo;
         public uint DepthTexture => _depthTexture;
         public uint[] HiZTexture => _hzbTextures;
@@ -184,6 +183,8 @@ namespace Occlusion
         public void BindFramebuffer()
         {
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, _fbo);
+            int[] drawBuffers = new int[] { Gl.COLOR_ATTACHMENT0 };
+            Gl.DrawBuffers(drawBuffers);  // ← GBuffer 5개 MRT 상태 차단
         }
 
         /// <summary>
@@ -200,22 +201,59 @@ namespace Occlusion
         public void PrepareRenderSurface()
         {
             Gl.Viewport(0, 0, _width, _height);
+            Gl.Enable(EnableCap.DepthTest);      // ← 추가: 이전 상태 누출 방지
+            Gl.DepthMask(true);                  // ← 추가: 깊이 쓰기 보장
             Gl.Clear(ClearBufferMask.DepthBufferBit);
         }
-
 
         // ===================================================================
         // 지형 렌더링
         // ===================================================================
+        /// <summary>
+        /// 지형을 간단하게 그려 지평선 깊이맵을 생성합니다.
+        /// HiZ 목적상 고해상도 타일(3×3)만 렌더링합니다.
+        /// </summary>
+        public void RenderTerrainDepth(float heightScale, TerrainDepthRenderData data)
+        {
+            TerrainDepthShader shader = _terrainDepthShader;
+            shader.Bind();
+            shader.LoadHeightScale(heightScale);
+            shader.SetInt("gHeightMap", 0);
+
+            Gl.PatchParameter(PatchParameterName.PatchVertices, PATCH_VERTICES);
+
+            try
+            {
+                Gl.BindVertexArray(data.VAO);
+                Gl.EnableVertexAttribArray(POSITION_ATTRIB);
+                Gl.EnableVertexAttribArray(TEXCOORD_ATTRIB);
+                Gl.BindBuffer(BufferTarget.ElementArrayBuffer, data.IBO);
+
+                foreach (var (heightMapTextureId, worldMatrix) in data.Tiles)
+                {
+                    Gl.ActiveTexture(TextureUnit.Texture0);
+                    Gl.BindTexture(TextureTarget.Texture2d, heightMapTextureId);
+                    shader.LoadModelMatrix(worldMatrix);
+                    Gl.DrawElements(PrimitiveType.Patches, data.Count, DrawElementsType.UnsignedInt, IntPtr.Zero);
+                }
+            }
+            finally
+            {
+                Gl.DisableVertexAttribArray(TEXCOORD_ATTRIB);
+                Gl.DisableVertexAttribArray(POSITION_ATTRIB);
+                Gl.BindVertexArray(0);
+                shader.Unbind();
+            }
+        }
 
         /// <summary>
         /// 지형을 간단하게 그려 지평선 깊이맵을 생성합니다.
-        /// 
         /// 주의: 지형 렌더링시 오클루더로 나무와 같은 작은 오브젝트 사용은 권장하지 않습니다.
         /// 깜빡임 현상이 발생할 수 있습니다.
         /// </summary>
         /// <param name="heightScale">높이 스케일</param>
         /// <param name="terrianPatchEntity">지형 패치</param>
+        [Obsolete("RenderTerrainDepth(TerrainDepthRenderData data) 메서드를 사용하세요.")]
         public void RenderTerrainDepth(float heightScale, Entity terrianPatchEntity)
         {
             if (terrianPatchEntity == null) return;
@@ -260,7 +298,7 @@ namespace Occlusion
         /// Fragment 셰이더를 사용하여 밉맵을 생성합니다.
         /// </summary>
         /// <param name="maxLevel">생성할 최대 레벨 (음수이면 최대 레벨)</param>
-        public void GenerateMipmapsUsingFragment(int maxLevel = -1, bool isTransferToCpu = false)
+        public void GenerateMipmapsUsingFragment(int maxLevel = -1, bool isTransferToCpu = false, bool isBufferCaptured = false)
         {
             if (maxLevel < 0)
                 maxLevel = _levels - 1;
@@ -272,10 +310,17 @@ namespace Occlusion
             // CPU 전송
             if (_zbuffer != null)
             {
-                if (isTransferToCpu) 
+                if (isTransferToCpu)
                     TransferDepthDataToCPU(maxLevel);
             }
+
+            // ✅ 디버그: 각 레벨 이미지 저장 (정상 작동 24-04-05) 
+            if (isBufferCaptured)
+            {
+                DebugSaveAllLevels(maxLevel);
+            }
         }
+
 
         public void GenerateMipmapsUsingFragmentExt(uint depthTextureExt, int maxLevel = -1, bool isTransferToCpu = false)
         {
@@ -380,101 +425,79 @@ namespace Occlusion
             Gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
         }
 
-
-        // ===================================================================
-        // Occlusion Culling 테스트
-        // ===================================================================
-
-        /// <summary>
-        /// AABB가 시야에 보이는지 검사합니다.
-        /// </summary>
-        /// <param name="vp">뷰프로젝션행렬</param>
-        /// <param name="view">뷰행렬</param>
-        /// <param name="aabb">검사할 AABB</param>
-        /// <returns>AABB가 보이면 true, 가려졌으면 false</returns>
         public bool TestVisibility(Matrix4x4f vp, Matrix4x4f view, AABB3f aabb)
         {
             aabb.TransformViewSpace(vp, view, ref _trans, ref _cornersInViewSpace);
             return !TestOcclusion(_trans.Min.x, _trans.Min.y, _trans.Min.z, _trans.Max.x, _trans.Max.y, _trans.Max.z);
         }
 
-        private Vertex3f[] _cornersInViewSpace = new Vertex3f[8];
+        private int _debugLogCount = 0;
+        public void ResetDebugLog() => _debugLogCount = 0;
 
-        /// <summary>
-        /// AABB가 깊이 버퍼에 의해 가려졌는지 검사한다.
-        /// </summary>
-        /// <param name="minx">AABB의 최소 x 좌표 (NDC)</param>
-        /// <param name="miny">AABB의 최소 y 좌표 (NDC)</param>
-        /// <param name="minz">AABB의 최소 z 깊이값</param>
-        /// <param name="maxx">AABB의 최대 x 좌표 (NDC)</param>
-        /// <param name="maxy">AABB의 최대 y 좌표 (NDC)</param>
-        /// <param name="maxz">AABB의 최대 z 깊이값</param>
-        /// <returns>AABB가 완전히 가려졌으면 true, 아니면 false를 반환한다</returns>
-        private bool TestOcclusion(float minx, float miny, float minz, float maxx, float maxy, float maxz)
+        private const float DEPTH_NORMALIZE_FACTOR = 10000.0f;
+
+        private bool TestOcclusion(float minx, float miny, float minz,
+                    float maxx, float maxy, float maxz)
         {
-            const float NDC_TRANSFORM = 0.5f;   // NDC변환을 위한 상수
-            const int ExTRA_PADDING = 1;        // 패딩 크기
+            const float NDC_TRANSFORM = 0.5f;
+            const int EXTRA_PADDING = 1;
 
-            // 카메라 좌표공간에서 물체가 앞, 뒤로 걸쳐있는 경우는 무조건 가려지지 않는 것으로 하드코딩한다.
-            if (minz < 0 && maxz > 0) return false;
+            // near plane 걸침 검사
+            if (minz < 0 && maxz > 0) return false;  // visible
 
-            // NDC 좌표계를 스크린 좌표계로 변환 ([-1,1] -> [0,1])
+            // 카메라 뒤에 있으면 visible
+            if (maxz <= 0) return false;
+
+            // NDC Z → [0,1] 깊이값으로 변환 (가장 가까운 점 = minz)
+            // minz는 이미 NDC 공간이므로 [0,1]로 변환
+            float normalizedZ = minz * 0.5f + 0.5f;  // NDC[-1,1] → [0,1]
+
+            // NDC XY [-1,1] → UV [0,1]
             minx = NDC_TRANSFORM * minx + NDC_TRANSFORM;
             miny = NDC_TRANSFORM * miny + NDC_TRANSFORM;
             maxx = NDC_TRANSFORM * maxx + NDC_TRANSFORM;
             maxy = NDC_TRANSFORM * maxy + NDC_TRANSFORM;
 
-            // 유효성 검사
-            if (minx >= maxx || miny >= maxy) return true;                              // AABB 유효성 검사
-            if (maxx < 0.0f || minx > 1.0f || maxy < 0.0f || miny > 1.0f) return true;  // 뷰포트 검사
-            if (Zbuffer == null || Zbuffer.Count == 0) return true;                     // 버퍼 검사
+            if (minx >= maxx || miny >= maxy) return true;  // 퇴화 → occluded
+            if (maxx < 0f || minx > 1f || maxy < 0f || miny > 1f) return true;  // 뷰포트 밖
 
-            // 스크린 공간 영역 계산(s=start, e=end)
-            int sx = Math.Max(0, (int)(minx * _width) - ExTRA_PADDING);
-            int sy = Math.Max(0, (int)(miny * _height) - ExTRA_PADDING);
-            int ex = Math.Min(_width - 1, (int)(maxx * _width) + ExTRA_PADDING);
-            int ey = Math.Min(_height - 1, (int)(maxy * _height) + ExTRA_PADDING);
+            if (Zbuffer == null || Zbuffer.Count == 0) return false;  // 버퍼 없으면 visible
 
-            // LOD 레벨 계산
-            int sizex = ex - sx;
-            int sizeY = ey - sy;
-            int searchLOD = ComputeLODLevel(sizex, sizeY);
+            // 픽셀 크기 계산 (searchLOD 결정용, level 0 기준)
+            int sx = Math.Max(0, (int)(minx * _width) - EXTRA_PADDING);
+            int sy = Math.Max(0, (int)(miny * _height) - EXTRA_PADDING);
+            int ex = Math.Min(_width - 1, (int)(maxx * _width) + EXTRA_PADDING);
+            int ey = Math.Min(_height - 1, (int)(maxy * _height) + EXTRA_PADDING);
+            int searchLOD = ComputeLODLevel(ex - sx, ey - sy);
+            searchLOD = searchLOD.Clamp(0, _levels - 1);
 
-            // 각 레벨별 깊이값 검사 (coarse-to-fine)
+            // coarse(searchLOD) → fine(0) 순으로 검사
             for (int level = searchLOD; level >= 0; level--)
             {
                 float[] depthBuffer = Zbuffer[level];
                 int levelWidth = _width >> level;
                 int levelHeight = _height >> level;
 
-                // AABB 영역 계산 (패딩 포함)
-                int startx = Math.Max(0, (int)(minx * levelWidth) - ExTRA_PADDING);
-                int startY = Math.Max(0, (int)(miny * levelHeight) - ExTRA_PADDING);
-                int endx = Math.Min(levelWidth - 1, (int)(maxx * levelWidth) + ExTRA_PADDING);
-                int endY = Math.Min(levelHeight - 1, (int)(maxy * levelHeight) + ExTRA_PADDING);
+                int startX = Math.Max(0, (int)(minx * levelWidth) - EXTRA_PADDING);
+                int startY = Math.Max(0, (int)(miny * levelHeight) - EXTRA_PADDING);
+                int endX = Math.Min(levelWidth - 1, (int)(maxx * levelWidth) + EXTRA_PADDING);
+                int endY = Math.Min(levelHeight - 1, (int)(maxy * levelHeight) + EXTRA_PADDING);
 
                 bool allOccluded = true;
-
-                // AABB 영역 내 픽셀 검사
                 for (int y = startY; y <= endY && allOccluded; y++)
-                {
-                    for (int x = startx; x <= endx; x++)
+                    for (int x = startX; x <= endX && allOccluded; x++)
                     {
-                        int index = y * levelWidth + x;
-                        float terrainDepth = depthBuffer[index];
-
-                        if (minz <= terrainDepth)
-                        {
+                        // HZB값(occluder 깊이) < AABB 최근접점 깊이 → 이 픽셀은 가려짐
+                        // HZB값 >= normalizedZ → 이 픽셀은 안 가려짐 → visible
+                        if (normalizedZ <= depthBuffer[y * levelWidth + x])
                             allOccluded = false;
-                            break;
-                        }
                     }
-                }
 
-                if (allOccluded) return true;
+                if (allOccluded) return true;   // 완전히 가려짐
+                                                // allOccluded=false여도 바로 return하지 않고 더 fine한 레벨 검사
             }
 
-            return false;
+            return false;  // 최종적으로 가려지지 않음 → visible
         }
 
         /// <summary>
@@ -487,7 +510,7 @@ namespace Occlusion
         /// <returns>계산된 LOD 레벨</returns>
         private int ComputeLODLevel(int width, int height)
         {
-            return (int)Math.Ceiling(MathF.Log2(Math.Max(width, height) * 0.5f));
+            return (int)Math.Ceiling(MathF.Log2(Math.Max(width, height) * 0.5f)) - 1;   // 여기에 -1이 이상한데......
         }
 
 
@@ -512,6 +535,26 @@ namespace Occlusion
         // ===================================================================
         // 디버깅 및 시각화
         // ===================================================================
+
+        /// <summary>
+        /// 모든 HZB 레벨을 컬러맵 이미지로 저장합니다 (디버깅용).
+        /// </summary>
+        public void DebugSaveAllLevels(int maxLevel)
+        {
+            string debugDir = @"C:\Users\mekjh\OneDrive\바탕 화면\HZBDebug\";  // ← 원하는 경로로 변경
+            if (!Directory.Exists(debugDir))
+                Directory.CreateDirectory(debugDir);
+
+            for (int level = 0; level <= maxLevel; level++)
+            {
+                string path = Path.Combine(debugDir, $"hzb_level_{level}.png");
+                SaveTextureToImageWithColorMap(level, path);
+            }
+
+            // ✅ CPU 버퍼도 같이 저장해서 GPU 읽기와 비교
+            if (_zbuffer != null)
+                HierarchyZBufferDebug.DebugSaveCpuBuffer(_zbuffer, _width, _height, debugDir, maxLevel);
+        }
 
         /// <summary>
         /// 텍스처를 컬러맵 이미지로 저장합니다.

@@ -1,4 +1,4 @@
-﻿#version 430 core
+﻿#version 450 core
 
 // G-Buffer MRT 출력
 layout(location = 0) out vec4 gAlbedo;
@@ -78,8 +78,9 @@ vec4 CalculateStructureOutput(float z)
     uint hBits = zBits & 0xFFFFE000u;
     float h = uintBitsToFloat(hBits);
     
-    float dzdx = dFdx(z) * 64.0;
-    float dzdy = dFdy(z) * 64.0;
+    // coarse → fine으로 명시적 지정 (GLSL 4.0+, Intel 포함 지원)
+    float dzdx = dFdxFine(z) * 64.0;
+    float dzdy = dFdyFine(z) * 64.0;
     
     return vec4(dzdx, dzdy, h, z - h);
 }
